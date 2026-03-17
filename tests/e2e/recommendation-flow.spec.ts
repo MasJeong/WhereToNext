@@ -60,6 +60,26 @@ test("shows a sticky compare tray on mobile after saving a card", async ({ page 
   await expect(page.getByTestId("sticky-compare-action")).toBeVisible();
 });
 
+test("allows sign-up, trip history save, and personalized recommendations", async ({ page }) => {
+  const email = `trip-compass-${Date.now()}@example.com`;
+
+  await page.goto("/auth");
+  await page.getByTestId("auth-mode-sign-up").click();
+  await page.getByTestId("auth-name-input").fill("지훈");
+  await page.getByTestId("auth-email-input").fill(email);
+  await page.getByTestId("auth-password-input").fill("tripCompass123");
+  await page.getByTestId("auth-submit").click();
+
+  await expect(page).toHaveURL(/\/account/);
+  await page.getByTestId("preference-discover").click();
+  await page.getByTestId("new-history-submit").click();
+  await expect(page.getByTestId("history-entry-0")).toBeVisible();
+
+  await page.goto("/");
+  await submitGuidedRecommendation(page);
+  await expect(page.getByTestId("personalized-note")).toBeVisible();
+});
+
 test("shows trust-first recommendation signals on the lead card", async ({ page }) => {
   await submitGuidedRecommendation(page);
 
