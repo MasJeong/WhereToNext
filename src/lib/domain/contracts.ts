@@ -29,6 +29,7 @@ export const evidenceSourceTypeValues = [
 ] as const;
 export const freshnessStateValues = ["fresh", "aging", "stale"] as const;
 export const snapshotKindValues = ["recommendation", "comparison"] as const;
+export const explorationPreferenceValues = ["repeat", "balanced", "discover"] as const;
 
 export const destinationKindSchema = z.enum(destinationKindValues);
 export const budgetBandSchema = z.enum(budgetBandValues);
@@ -42,6 +43,7 @@ export const evidenceTierSchema = z.enum(evidenceTierValues);
 export const evidenceSourceTypeSchema = z.enum(evidenceSourceTypeValues);
 export const freshnessStateSchema = z.enum(freshnessStateValues);
 export const snapshotKindSchema = z.enum(snapshotKindValues);
+export const explorationPreferenceSchema = z.enum(explorationPreferenceValues);
 
 export const scoringWeightsSchema = z.object({
   vibeMatch: z.literal(25),
@@ -145,6 +147,40 @@ export const comparisonSnapshotSchema = z.object({
   destinationIds: z.array(z.string().min(1)).min(2).max(4),
 });
 
+export const userPreferenceProfileSchema = z.object({
+  userId: z.string().min(1),
+  explorationPreference: explorationPreferenceSchema,
+});
+
+export const userPreferenceProfileUpdateSchema = z.object({
+  explorationPreference: explorationPreferenceSchema,
+});
+
+export const userDestinationHistorySchema = z.object({
+  id: z.string().uuid(),
+  userId: z.string().min(1),
+  destinationId: z.string().min(1),
+  rating: z.number().int().min(1).max(5),
+  tags: z.array(vibeSchema).min(1).max(4),
+  wouldRevisit: z.boolean(),
+  visitedAt: z.string().datetime(),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const userDestinationHistoryInputSchema = z.object({
+  destinationId: z.string().min(1),
+  rating: z.number().int().min(1).max(5),
+  tags: z.array(vibeSchema).min(1).max(4),
+  wouldRevisit: z.boolean(),
+  visitedAt: z.string().datetime(),
+});
+
+export const recommendationPersonalizationContextSchema = z.object({
+  explorationPreference: explorationPreferenceSchema,
+  history: z.array(userDestinationHistorySchema),
+});
+
 export type DestinationProfile = z.infer<typeof destinationProfileSchema>;
 export type RecommendationQuery = z.infer<typeof recommendationQuerySchema>;
 export type RecommendationResult = z.infer<typeof recommendationResultSchema>;
@@ -154,3 +190,11 @@ export type ComparisonSnapshot = z.infer<typeof comparisonSnapshotSchema>;
 export type ScoringVersion = z.infer<typeof scoringVersionSchema>;
 export type EvidenceTier = z.infer<typeof evidenceTierSchema>;
 export type EvidenceSourceType = z.infer<typeof evidenceSourceTypeSchema>;
+export type ExplorationPreference = z.infer<typeof explorationPreferenceSchema>;
+export type UserPreferenceProfile = z.infer<typeof userPreferenceProfileSchema>;
+export type UserPreferenceProfileUpdate = z.infer<typeof userPreferenceProfileUpdateSchema>;
+export type UserDestinationHistory = z.infer<typeof userDestinationHistorySchema>;
+export type UserDestinationHistoryInput = z.infer<typeof userDestinationHistoryInputSchema>;
+export type RecommendationPersonalizationContext = z.infer<
+  typeof recommendationPersonalizationContextSchema
+>;
