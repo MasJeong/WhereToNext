@@ -2,10 +2,12 @@ import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import { activeScoringVersion } from "@/lib/catalog/scoring-version";
 import {
   type DestinationProfile,
+  type RecommendationPersonalizationContext,
   type RecommendationQuery,
   type RecommendationResult,
   type TrendEvidenceSnapshot,
 } from "@/lib/domain/contracts";
+import { buildPersonalizationEffect } from "@/lib/recommendation/personalization";
 
 type ScoreBreakdown = RecommendationResult["scoreBreakdown"];
 
@@ -280,6 +282,7 @@ function buildRecommendationResult(
   destination: DestinationProfile,
   query: RecommendationQuery,
   evidence: TrendEvidenceSnapshot[],
+  personalization?: RecommendationPersonalizationContext,
 ): RecommendationResult {
   const scoreBreakdown: ScoreBreakdown = {
     vibeMatch: scoreVibeMatch(destination, query),
@@ -293,11 +296,20 @@ function buildRecommendationResult(
     total: 0,
   };
 
-  scoreBreakdown.total = Object.entries(scoreBreakdown)
+  const baseTotal = Object.entries(scoreBreakdown)
     .filter(([key]) => key !== "total")
     .reduce((sum, [, value]) => sum + value, 0);
 
+  const personalizationEffect = personalization
+    ? buildPersonalizationEffect(destination, personalization, activeScoringVersion.tieBreakerCap)
+    : { delta: 0, reason: null };
+
+  scoreBreakdown.total = Math.max(0, Math.min(100, baseTotal + personalizationEffect.delta));
+
   const reasons = buildReasons(destination, query, scoreBreakdown);
+  if (personalizationEffect.reason) {
+    reasons.unshift(personalizationEffect.reason);
+  }
 
   return {
     destinationId: destination.id,
@@ -322,12 +334,18 @@ export function rankDestinations(
   query: RecommendationQuery,
   destinations: DestinationProfile[] = launchCatalog,
   evidenceByDestination: Map<string, TrendEvidenceSnapshot[]> = new Map(),
+  personalization?: RecommendationPersonalizationContext,
 ): RecommendationResult[] {
   return destinations
     .filter((destination) => destination.active)
     .filter((destination) => getEligibility(destination, query).eligible)
     .map((destination) =>
-      buildRecommendationResult(destination, query, evidenceByDestination.get(destination.id) ?? []),
+      buildRecommendationResult(
+        destination,
+        query,
+        evidenceByDestination.get(destination.id) ?? [],
+        personalization,
+      ),
     )
     .sort((left, right) => {
       if (right.scoreBreakdown.total !== left.scoreBreakdown.total) {

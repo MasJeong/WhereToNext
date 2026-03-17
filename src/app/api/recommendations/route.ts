@@ -1,9 +1,14 @@
 import { NextResponse } from "next/server";
 import { ZodError } from "zod";
 
+import { getSessionFromHeaders } from "@/lib/auth";
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import { activeScoringVersion } from "@/lib/catalog/scoring-version";
 import { buildEvidenceMap } from "@/lib/evidence/service";
+import {
+  getOrCreateUserPreferenceProfile,
+  listUserDestinationHistory,
+} from "@/lib/profile/service";
 import { rankDestinations } from "@/lib/recommendation/engine";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { parseRecommendationQuery } from "@/lib/security/validation";
@@ -59,7 +64,15 @@ export async function GET(request: Request) {
   try {
     const query = parseRecommendationQuery(new URL(request.url).searchParams);
     const evidenceMap = await buildEvidenceMap(launchCatalog);
-    const recommendations = rankDestinations(query, launchCatalog, evidenceMap);
+    const session = await getSessionFromHeaders(request.headers);
+    const personalization = session?.user
+      ? {
+          explorationPreference: (await getOrCreateUserPreferenceProfile(session.user.id))
+            .explorationPreference,
+          history: await listUserDestinationHistory(session.user.id),
+        }
+      : undefined;
+    const recommendations = rankDestinations(query, launchCatalog, evidenceMap, personalization);
 
     return NextResponse.json(
       {
@@ -68,6 +81,7 @@ export async function GET(request: Request) {
         meta: {
           scoringVersion: activeScoringVersion.id,
           resultCount: recommendations.length,
+          personalized: Boolean(personalization),
         },
         sourceSummary: buildSourceSummary(recommendations),
       },
