@@ -1,36 +1,59 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Trip Compass
 
-## Getting Started
+Trip Compass는 로그인 없이 바로 사용하는 해외 여행지 추천 플랫폼입니다.
+사용자가 동행, 예산, 일정, 여행 시기, 분위기를 선택하면 설명 가능한 추천 엔진이 목적지를 제안하고,
+각 결과 카드에는 Instagram vibe 근거와 저장/공유/비교 흐름이 함께 붙습니다.
 
-First, run the development server:
+## 핵심 특징
+
+- 로그인 없이 바로 추천, 저장 링크, 비교 링크 생성
+- 결정형 추천 엔진 기반의 설명 가능한 결과
+- 인스타그램은 추천 엔진이 아니라 분위기/최신성 증거 레이어로만 사용
+- 저장 링크 `/s/[snapshotId]`, 비교 링크 `/compare/[snapshotId]`
+- 로컬 개발 시 PGlite 파일 저장소, 운영 시 `DATABASE_URL` 기반 Postgres 사용
+
+## 실행 방법
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+브라우저에서 `http://localhost:3000`을 열면 됩니다.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 환경 변수
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+기본 개발 환경에서는 `.data/trip-compass` 아래의 PGlite 파일 저장소를 사용하므로
+필수 환경 변수 없이도 앱이 동작합니다.
 
-## Learn More
+운영 또는 외부 Postgres 연결 시에는 `.env.local`에 아래 값을 설정하세요.
 
-To learn more about Next.js, take a look at the following resources:
+```bash
+DATABASE_URL=postgres://postgres:postgres@localhost:5432/trip_compass
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## 주요 스크립트
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+npm run lint
+npm run build
+npm run test:unit
+npm run test:e2e
+npm run test:smoke
+npm run db:generate
+npm run db:seed
+```
 
-## Deploy on Vercel
+## 데이터 / 저장 정책
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- 추천 카탈로그는 36개 해외 목적지로 시작합니다.
+- 추천 스냅샷은 저장 당시의 recommendation 결과를 함께 저장해 복원 시 재계산 드리프트를 줄입니다.
+- 비교 스냅샷은 저장된 추천 스냅샷 2~4개를 묶어 복원합니다.
+- 인스타그램 관련 표시는 공식 계정, 해시태그 캡슐, 큐레이션, 대체 소스 라벨을 명시합니다.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## 현재 범위에서 제외한 것
+
+- 회원가입 / 로그인
+- 예약, 결제, 지도, CMS
+- 비공식 인스타그램 스크래핑
+- 장소 단위 전역 트렌드 탐색
