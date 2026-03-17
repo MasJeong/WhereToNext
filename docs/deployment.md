@@ -43,6 +43,18 @@ DATABASE_URL=postgres://...
 
 현재 코드 기준으로 필수 배포 환경 변수는 `DATABASE_URL` 하나입니다.
 
+### 2-1. GitHub Actions 자동 배포 시크릿
+
+`/.github/workflows/vercel-production.yml`를 쓰려면 아래 Repository Secrets를 설정하세요.
+
+```bash
+VERCEL_TOKEN=...
+VERCEL_ORG_ID=...
+VERCEL_PROJECT_ID=...
+```
+
+위 값은 `vercel login` 또는 Vercel 대시보드 프로젝트 연결 이후 확인할 수 있습니다.
+
 ### 3. Build / Install
 
 - Install Command: `npm install`
@@ -67,7 +79,6 @@ DATABASE_URL=postgres://...
 
 ## 아직 자동화되지 않은 것
 
-- 배포 플랫폼 프로젝트 자동 생성
 - 배포 후 migration 자동 실행
 - preview/production 환경 분리 문서
 

@@ -1,5 +1,7 @@
 # Trip Compass
 
+[![CI](https://github.com/MasJeong/trip-compass/actions/workflows/ci.yml/badge.svg)](https://github.com/MasJeong/trip-compass/actions/workflows/ci.yml)
+
 Trip Compass는 로그인 없이 바로 사용하는 해외 여행지 추천 플랫폼입니다.
 사용자가 동행, 예산, 일정, 여행 시기, 분위기를 선택하면 설명 가능한 추천 엔진이 목적지를 제안하고,
 각 결과 카드에는 Instagram vibe 근거와 저장/공유/비교 흐름이 함께 붙습니다.
@@ -58,6 +60,14 @@ npm run db:seed
 3. 환경 변수에 `DATABASE_URL`을 추가합니다.
 4. 첫 배포 전에 `npm run db:generate` 결과가 커밋되어 있는지 확인합니다.
 5. 배포 후 `/`, `/s/[snapshotId]`, `/compare/[snapshotId]`, `/api/recommendations`가 정상 응답하는지 확인합니다.
+
+GitHub Actions로 자동 배포하려면 아래 GitHub Secrets가 필요합니다.
+
+```bash
+VERCEL_TOKEN=
+VERCEL_ORG_ID=
+VERCEL_PROJECT_ID=
+```
 
 배포 상세 체크리스트는 `docs/deployment.md`를 참고하세요.
 
