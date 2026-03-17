@@ -4,6 +4,8 @@ Trip Compass는 로그인 없이 바로 사용하는 해외 여행지 추천 플
 사용자가 동행, 예산, 일정, 여행 시기, 분위기를 선택하면 설명 가능한 추천 엔진이 목적지를 제안하고,
 각 결과 카드에는 Instagram vibe 근거와 저장/공유/비교 흐름이 함께 붙습니다.
 
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MasJeong/trip-compass)
+
 ## 핵심 특징
 
 - 로그인 없이 바로 추천, 저장 링크, 비교 링크 생성
@@ -32,6 +34,9 @@ npm run dev
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/trip_compass
 ```
 
+`DATABASE_URL`이 없으면 로컬 개발에서는 `.data/trip-compass` 아래의 PGlite 저장소를 사용합니다.
+배포 환경에서는 반드시 외부 Postgres를 연결하세요.
+
 ## 주요 스크립트
 
 ```bash
@@ -43,6 +48,18 @@ npm run test:smoke
 npm run db:generate
 npm run db:seed
 ```
+
+## 배포
+
+가장 간단한 배포 대상은 Vercel입니다.
+
+1. GitHub 저장소를 Import 합니다.
+2. 프레임워크는 Next.js로 자동 인식됩니다.
+3. 환경 변수에 `DATABASE_URL`을 추가합니다.
+4. 첫 배포 전에 `npm run db:generate` 결과가 커밋되어 있는지 확인합니다.
+5. 배포 후 `/`, `/s/[snapshotId]`, `/compare/[snapshotId]`, `/api/recommendations`가 정상 응답하는지 확인합니다.
+
+배포 상세 체크리스트는 `docs/deployment.md`를 참고하세요.
 
 ## 데이터 / 저장 정책
 

@@ -1,0 +1,74 @@
+# Trip Compass Deployment Guide
+
+## 대상 환경
+
+- 애플리케이션: Next.js App Router
+- 권장 배포 플랫폼: Vercel
+- 필수 외부 의존성: Postgres (`DATABASE_URL`)
+
+로컬 개발에서는 `DATABASE_URL`이 없으면 PGlite fallback이 동작하지만,
+실서비스 배포에서는 반드시 외부 Postgres를 연결해야 합니다.
+
+## 배포 전 체크리스트
+
+```bash
+npm run lint
+npm run test:unit
+npm run build
+npm run test:e2e
+```
+
+아래 항목도 함께 확인하세요.
+
+- `drizzle/` 아래 최신 migration 파일이 커밋되어 있는지
+- `.env.example`가 현재 필요한 환경 변수를 반영하는지
+- 공유/비교 링크가 snapshot 기반으로 정상 복원되는지
+- 한국어 UI 문구와 카피가 최신 상태인지
+
+## Vercel 기준 설정
+
+### 1. GitHub 저장소 Import
+
+- Repository: `MasJeong/trip-compass`
+- Framework Preset: Next.js
+- Root Directory: repo root
+
+### 2. 환경 변수
+
+필수:
+
+```bash
+DATABASE_URL=postgres://...
+```
+
+현재 코드 기준으로 필수 배포 환경 변수는 `DATABASE_URL` 하나입니다.
+
+### 3. Build / Install
+
+- Install Command: `npm install`
+- Build Command: `npm run build`
+
+기본값으로 충분하지만, 커스텀 설정이 필요한 경우에도 위 값을 유지하세요.
+
+### 4. 런타임 확인
+
+배포 직후 최소한 아래를 확인하세요.
+
+- 메인 추천 화면 `/`
+- 저장 복원 화면 `/s/[snapshotId]`
+- 비교 화면 `/compare/[snapshotId]`
+- 추천 API `/api/recommendations`
+
+## 운영 메모
+
+- `middleware.ts`가 공통 보안 헤더와 API `X-Robots-Tag`를 설정합니다.
+- 추천 결과는 인스타그램을 랭킹 엔진으로 쓰지 않고, 분위기/최신성 보조 근거로만 사용합니다.
+- snapshot 복원은 실패 시 닫힌 상태로 멈추도록 설계되어 있으므로, 오류가 나면 데이터 누락이나 DB 연결 상태를 먼저 확인하세요.
+
+## 아직 자동화되지 않은 것
+
+- 배포 플랫폼 프로젝트 자동 생성
+- 배포 후 migration 자동 실행
+- preview/production 환경 분리 문서
+
+필요하면 다음 단계로 CI/CD와 production DB migration 전략을 추가할 수 있습니다.
