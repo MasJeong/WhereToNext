@@ -1,0 +1,1 @@
+ALTER TABLE "recommendation_snapshots" ALTER COLUMN "query" DROP NOT NULL;
