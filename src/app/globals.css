@@ -1,26 +1,103 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --color-ink: #11201d;
+  --color-ink-soft: #355048;
+  --color-paper: #f7efe2;
+  --color-paper-soft: #f0dcb9;
+  --color-sand: #d8b78d;
+  --color-muted: rgb(247 239 226 / 0.78);
+  --color-wash: rgb(247 239 226 / 0.06);
+  --color-frame: rgb(247 239 226 / 0.12);
+  --color-frame-strong: rgb(240 220 185 / 0.42);
+  --color-accent: #d46f4d;
+  --color-accent-soft: #f6b9a4;
+  --shadow-shell: 0 28px 90px rgb(5 11 10 / 0.34);
+  --shadow-card: 0 18px 48px rgb(4 10 9 / 0.2);
+  --radius-shell: 2rem;
+  --radius-card: 1.625rem;
+  --radius-pill: 999px;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+* {
+  box-sizing: border-box;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  background:
+    radial-gradient(circle at 18% 16%, rgb(216 183 141 / 0.2), transparent 28%),
+    radial-gradient(circle at 82% 10%, rgb(212 111 77 / 0.18), transparent 24%),
+    linear-gradient(180deg, #0a120f 0%, var(--color-ink) 100%);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  min-height: 100vh;
+  background: transparent;
+  color: var(--color-paper);
+  font-family: var(--font-body), sans-serif;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(var(--color-wash) 1px, transparent 1px),
+    linear-gradient(90deg, var(--color-wash) 1px, transparent 1px);
+  background-size: 120px 120px;
+  mask-image: linear-gradient(180deg, rgb(0 0 0 / 0.65), transparent 92%);
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:focus-visible,
+a:focus-visible {
+  outline: 2px solid var(--color-paper-soft);
+  outline-offset: 3px;
+}
+
+::selection {
+  background: var(--color-accent);
+  color: var(--color-paper);
+}
+
+.font-display {
+  font-family: var(--font-display), serif;
+}
+
+.compass-panel {
+  border: 1px solid var(--color-frame);
+  background:
+    linear-gradient(180deg, rgb(247 239 226 / 0.06), rgb(247 239 226 / 0.03)),
+    linear-gradient(145deg, rgb(29 53 47 / 0.96), rgb(17 32 29 / 0.96));
+  box-shadow: var(--shadow-shell);
+  backdrop-filter: blur(18px);
+}
+
+.compass-card {
+  border: 1px solid var(--color-frame);
+  background:
+    linear-gradient(180deg, rgb(247 239 226 / 0.05), rgb(247 239 226 / 0.025)),
+    linear-gradient(160deg, rgb(17 32 29 / 0.92), rgb(11 21 18 / 0.98));
+  box-shadow: var(--shadow-card);
+}
+
+.compass-pill {
+  border: 1px solid var(--color-frame-strong);
+  background: linear-gradient(135deg, rgb(240 220 185 / 0.18), rgb(247 239 226 / 0.06));
+}
+
+.instagram-card {
+  border: 1px solid var(--color-frame);
+  background:
+    radial-gradient(circle at top right, rgb(247 239 226 / 0.18), transparent 32%),
+    linear-gradient(150deg, rgb(212 111 77 / 0.4), rgb(53 80 72 / 0.82));
 }
