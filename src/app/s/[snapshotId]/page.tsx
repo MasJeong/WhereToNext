@@ -118,6 +118,7 @@ export default async function SnapshotRestorePage({ params }: SnapshotPageProps)
               key={`${snapshot.id}-${card.destination.id}`}
               card={card}
               index={index}
+              query={restored.query}
               actionSlot={
                 <>
                   <Link
