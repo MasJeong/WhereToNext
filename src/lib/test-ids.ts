@@ -1,4 +1,19 @@
 export const testIds = {
+  shell: {
+    identityCard: "identity-card",
+    authCta: "auth-cta",
+    accountLink: "account-link",
+    personalizedNote: "personalized-note",
+  },
+  auth: {
+    modeSignIn: "auth-mode-sign-in",
+    modeSignUp: "auth-mode-sign-up",
+    nameInput: "auth-name-input",
+    emailInput: "auth-email-input",
+    passwordInput: "auth-password-input",
+    submit: "auth-submit",
+    error: "auth-error",
+  },
   query: {
     partyTypeCouple: "party-type-couple",
     partyTypeFriends: "party-type-friends",
@@ -42,6 +57,17 @@ export const testIds = {
   compare: {
     column0: "compare-column-0",
     restoreError: "restore-error",
+  },
+  account: {
+    preferenceRepeat: "preference-repeat",
+    preferenceBalanced: "preference-balanced",
+    preferenceDiscover: "preference-discover",
+    newHistoryDestination: "new-history-destination",
+    newHistoryDate: "new-history-date",
+    newHistorySubmit: "new-history-submit",
+    historyEntry0: "history-entry-0",
+    historySave0: "history-save-0",
+    historyDelete0: "history-delete-0",
   },
 } as const;
 
@@ -97,4 +123,31 @@ export function getCompareColumnTestId(index: number): string {
  */
 export function getRelaxFilterActionTestId(index: number): string {
   return index === 0 ? testIds.result.relaxFilterAction0 : `relax-filter-action-${index}`;
+}
+
+/**
+ * Returns a stable account history card selector for a given index.
+ * @param index History entry index
+ * @returns History entry test id
+ */
+export function getAccountHistoryEntryTestId(index: number): string {
+  return index === 0 ? testIds.account.historyEntry0 : `history-entry-${index}`;
+}
+
+/**
+ * Returns a stable account history save selector for a given index.
+ * @param index History entry index
+ * @returns Save action test id
+ */
+export function getAccountHistorySaveTestId(index: number): string {
+  return index === 0 ? testIds.account.historySave0 : `history-save-${index}`;
+}
+
+/**
+ * Returns a stable account history delete selector for a given index.
+ * @param index History entry index
+ * @returns Delete action test id
+ */
+export function getAccountHistoryDeleteTestId(index: number): string {
+  return index === 0 ? testIds.account.historyDelete0 : `history-delete-${index}`;
 }

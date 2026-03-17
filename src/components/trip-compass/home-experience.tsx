@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
+import { authClient } from "@/lib/auth-client";
 import type { ComparisonSnapshot, RecommendationQuery } from "@/lib/domain/contracts";
 import {
   buildQueryNarrative,
@@ -360,6 +361,7 @@ function buildAbsoluteShareUrl(sharePath: string): string {
  */
 export function HomeExperience() {
   const router = useRouter();
+  const sessionState = authClient.useSession();
   const [query, setQuery] = useState<RecommendationQuery>(defaultRecommendationQuery);
   const [results, setResults] = useState<RecommendationApiResponse | null>(null);
   const [cards, setCards] = useState<RecommendationCardView[]>([]);
@@ -373,6 +375,8 @@ export function HomeExperience() {
   const [compareLoading, setCompareLoading] = useState(false);
 
   const queryNarrative = useMemo(() => buildQueryNarrative(query), [query]);
+  const viewer = sessionState.data?.user ?? null;
+  const isSessionPending = sessionState.isPending;
   const visibleCards = showAllResults ? cards : cards.slice(0, 3);
   const canCreateCompare = selectedCompareIds.length >= 2 && selectedCompareIds.length <= 4;
   const emptyStateActions = useMemo(() => buildRelaxationActions(query), [query]);
@@ -648,6 +652,61 @@ export function HomeExperience() {
       title="한국에서 떠나는 해외여행, 취향에 맞는 목적지를 빠르게 골라보세요."
       intro="여행 조건을 한 번만 정하면 Trip Compass가 목적지를 추립니다. 인스타그램 감도는 분위기를 확인하는 보조 근거로만 쓰고, 순위는 설명 가능한 추천 로직이 결정해요."
       capsule="추천이 먼저, 분위기 근거는 그다음. 로그인 없이 바로 쓸 수 있어요."
+      headerAside={
+        <article
+          data-testid={testIds.shell.identityCard}
+          className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] px-4 py-4 text-[var(--color-paper)]"
+        >
+          {isSessionPending ? (
+            <>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-sand)]">
+                Travel Profile
+              </p>
+              <p className="mt-3 text-sm leading-6 text-[var(--color-muted)]">
+                저장된 여행 기록을 확인하고 있어요.
+              </p>
+            </>
+          ) : viewer ? (
+            <>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-sand)]">
+                기억이 연결된 추천
+              </p>
+              <p className="mt-3 text-lg font-semibold text-[var(--color-paper)]">
+                {viewer.name}님의 여행 프로필
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">
+                선호와 방문 이력을 관리하면 다음 추천에 바로 반영돼요.
+              </p>
+              <Link
+                data-testid={testIds.shell.accountLink}
+                href="/account"
+                className="mt-4 inline-flex rounded-full border border-[color:var(--color-frame-strong)] bg-[color:var(--color-paper-soft)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink)] transition hover:-translate-y-0.5"
+              >
+                여행 프로필 열기
+              </Link>
+            </>
+          ) : (
+            <>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-sand)]">
+                Optional Memory
+              </p>
+              <p className="mt-3 text-lg font-semibold text-[var(--color-paper)]">
+                마음에 든 여행을 남겨 다음 추천까지 이어보세요.
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">
+                익명 추천은 그대로 두고, 로그인하면 취향과 여행 이력만 가볍게 덧붙일 수 있어요.
+              </p>
+              <Link
+                data-testid={testIds.shell.authCta}
+                href="/auth"
+                className="mt-4 inline-flex rounded-full border border-[color:var(--color-frame-strong)] bg-[color:var(--color-paper-soft)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink)] transition hover:-translate-y-0.5"
+              >
+                로그인 · 회원가입
+              </Link>
+            </>
+          )}
+        </article>
+      }
     >
       <>
         <div
@@ -989,6 +1048,15 @@ export function HomeExperience() {
                       </button>
                     ))}
                   </div>
+                </div>
+              ) : null}
+
+              {results?.meta.personalized ? (
+                <div
+                  data-testid={testIds.shell.personalizedNote}
+                  className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame-strong)] bg-[color:rgb(240_220_185_/_0.12)] px-4 py-4 text-sm leading-6 text-[var(--color-paper)]"
+                >
+                  개인화 안내 · 지금 추천에는 로그인한 여행 기록과 선호가 함께 반영되고 있어요.
                 </div>
               ) : null}
 

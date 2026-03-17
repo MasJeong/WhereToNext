@@ -22,6 +22,7 @@ export type RecommendationApiResponse = {
   meta: {
     scoringVersion: string;
     resultCount: number;
+    personalized: boolean;
   };
   sourceSummary: {
     mode: "live" | "fallback";
@@ -404,44 +405,65 @@ export function formatMonthList(months: number[]): string {
 }
 
 /**
+ * Formats a single vibe label.
+ * @param vibe Destination or query vibe
+ * @returns Localized vibe label
+ */
+export function formatVibeLabel(vibe: string): string {
+  if (vibe === "romance") {
+    return "로맨틱";
+  }
+
+  if (vibe === "food") {
+    return "미식";
+  }
+
+  if (vibe === "nature") {
+    return "자연";
+  }
+
+  if (vibe === "city") {
+    return "도시";
+  }
+
+  if (vibe === "beach") {
+    return "휴양";
+  }
+
+  if (vibe === "culture") {
+    return "문화";
+  }
+
+  if (vibe === "shopping") {
+    return "쇼핑";
+  }
+
+  if (vibe === "nightlife") {
+    return "야간 활기";
+  }
+
+  if (vibe === "family") {
+    return "가족형";
+  }
+
+  if (vibe === "luxury") {
+    return "럭셔리";
+  }
+
+  if (vibe === "desert") {
+    return "사막 풍경";
+  }
+
+  return vibe;
+}
+
+/**
  * Formats a vibe list.
  * @param vibes Destination or query vibes
  * @returns Joined vibe label string
  */
 export function formatVibeList(vibes: string[]): string {
-  return vibes
-    .map((vibe) => {
-      if (vibe === "romance") {
-        return "로맨틱";
-      }
-
-      if (vibe === "food") {
-        return "미식";
-      }
-
-      if (vibe === "nature") {
-        return "자연";
-      }
-
-      if (vibe === "city") {
-        return "도시";
-      }
-
-      if (vibe === "beach") {
-        return "휴양";
-      }
-
-      if (vibe === "culture") {
-        return "문화";
-      }
-
-      if (vibe === "shopping") {
-        return "쇼핑";
-      }
-
-      return vibe;
-    })
-    .join(" + ");
+  return vibes.map((vibe) => formatVibeLabel(vibe)).join(" + ");
 }
 
 /**

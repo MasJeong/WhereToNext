@@ -5,6 +5,7 @@ type ExperienceShellProps = {
   title: string;
   intro: string;
   capsule: string;
+  headerAside?: ReactNode;
   children: ReactNode;
 };
 
@@ -18,6 +19,7 @@ export function ExperienceShell({
   title,
   intro,
   capsule,
+  headerAside,
   children,
 }: ExperienceShellProps) {
   return (
@@ -39,8 +41,11 @@ export function ExperienceShell({
               </div>
             </div>
 
-            <div className="compass-pill max-w-sm self-start px-4 py-4 text-sm leading-6 text-[var(--color-paper)] lg:self-end">
-              {capsule}
+            <div className="flex max-w-sm flex-col gap-3 self-start lg:self-end">
+              <div className="compass-pill px-4 py-4 text-sm leading-6 text-[var(--color-paper)]">
+                {capsule}
+              </div>
+              {headerAside ? headerAside : null}
             </div>
           </div>
         </header>
