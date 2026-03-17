@@ -15,6 +15,7 @@ import {
   flightToleranceOptions,
   formatDepartureAirport,
   formatEvidenceMode,
+  formatFlightTolerance,
   formatTravelMonth,
   formatVibeList,
   getPartySizeForType,
@@ -29,6 +30,7 @@ import {
   type RecommendationCardView,
 } from "@/lib/trip-compass/presentation";
 import {
+  getRelaxFilterActionTestId,
   getSaveSnapshotTestId,
   getSavedSnapshotTestId,
   testIds,
@@ -80,6 +82,102 @@ type SavedSnapshotCardProps = {
   onToggle: (snapshotId: string) => void;
   onCopy: (shareUrl: string) => void;
 };
+
+type RelaxationAction = {
+  id: "trip-length" | "flight-tolerance" | "departure-airport" | "secondary-vibe" | "travel-month";
+  label: string;
+  description: string;
+  nextQuery: RecommendationQuery;
+};
+
+const tripLengthRelaxationOrder = [3, 5, 8] as const;
+const flightToleranceRelaxationOrder = ["short", "medium", "long"] as const;
+const travelMonthRelaxationOrder = [7, 10, 12] as const;
+
+/**
+ * Finds the next broader option in a predefined query sequence.
+ * @param currentValue Currently selected value
+ * @param options Ordered progression from strict to broad
+ * @returns Next broader value or null when already at the broadest option
+ */
+function getNextRelaxedOption<TValue extends string | number>(
+  currentValue: TValue,
+  options: readonly TValue[],
+): TValue | null {
+  const currentIndex = options.indexOf(currentValue);
+
+  if (currentIndex === -1 || currentIndex === options.length - 1) {
+    return null;
+  }
+
+  return options[currentIndex + 1] ?? null;
+}
+
+/**
+ * Builds actionable empty-state refinements from the current query.
+ * @param query Active recommendation query
+ * @returns Up to three one-tap relaxation actions
+ */
+function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] {
+  const actions: RelaxationAction[] = [];
+
+  const nextTripLength = getNextRelaxedOption(query.tripLengthDays, tripLengthRelaxationOrder);
+  if (nextTripLength) {
+    actions.push({
+      id: "trip-length",
+      label: `일정을 ${nextTripLength}일로 넓히기`,
+      description: "짧은 일정 제약을 줄여 더 많은 목적지를 다시 찾아봐요.",
+      nextQuery: { ...query, tripLengthDays: nextTripLength },
+    });
+  }
+
+  const nextFlightTolerance = getNextRelaxedOption(
+    query.flightTolerance,
+    flightToleranceRelaxationOrder,
+  );
+  if (nextFlightTolerance) {
+    actions.push({
+      id: "flight-tolerance",
+      label: `비행 범위를 ${formatFlightTolerance(nextFlightTolerance)}로 넓히기`,
+      description: "거리 제한을 조금 풀어 더 넓은 후보군을 바로 다시 불러와요.",
+      nextQuery: { ...query, flightTolerance: nextFlightTolerance },
+    });
+  }
+
+  if (query.departureAirport !== "ICN") {
+    actions.push({
+      id: "departure-airport",
+      label: "출발 공항을 인천(ICN)으로 바꾸기",
+      description: "노선 선택지가 가장 넓은 출발지로 바로 다시 탐색해 봐요.",
+      nextQuery: { ...query, departureAirport: "ICN" },
+    });
+  }
+
+  if (query.vibes.length > 1) {
+    actions.push({
+      id: "secondary-vibe",
+      label: "보조 분위기 조건 빼기",
+      description: "대표 분위기만 남겨 목적지 후보를 덜 촘촘하게 걸러봐요.",
+      nextQuery: { ...query, vibes: [query.vibes[0]] },
+    });
+  }
+
+  const nextTravelMonth =
+    getNextRelaxedOption(query.travelMonth, travelMonthRelaxationOrder) ??
+    travelMonthRelaxationOrder.find((month) => month !== query.travelMonth) ??
+    null;
+
+  if (nextTravelMonth) {
+    actions.push({
+      id: "travel-month",
+      label: `출발 월을 ${formatTravelMonth(nextTravelMonth)}로 바꾸기`,
+      description: "다른 대표 시즌으로 바꿔 지금 조건에 맞는 목적지를 다시 확인해 봐요.",
+      nextQuery: { ...query, travelMonth: nextTravelMonth },
+    });
+  }
+
+  return actions.filter((action, index, source) => source.findIndex((item) => item.id === action.id) === index).slice(0, 3);
+}
 
 /**
  * Renders a labeled group of guided query choices.
@@ -276,6 +374,24 @@ export function HomeExperience() {
 
   const queryNarrative = useMemo(() => buildQueryNarrative(query), [query]);
   const visibleCards = showAllResults ? cards : cards.slice(0, 3);
+  const canCreateCompare = selectedCompareIds.length >= 2 && selectedCompareIds.length <= 4;
+  const emptyStateActions = useMemo(() => buildRelaxationActions(query), [query]);
+  const compareTrayDestinations = useMemo(() => {
+    const selectedSnapshots = savedSnapshots.filter((snapshot) =>
+      selectedCompareIds.includes(snapshot.snapshotId),
+    );
+    const previewSource = selectedSnapshots.length > 0 ? selectedSnapshots : savedSnapshots;
+
+    return previewSource
+      .slice(0, 2)
+      .map((snapshot) => snapshot.destinationName)
+      .join(" · ");
+  }, [savedSnapshots, selectedCompareIds]);
+  const compareButtonLabel = compareLoading
+    ? "비교 보드 저장 중..."
+    : canCreateCompare
+      ? `${selectedCompareIds.length}곳 비교 보드 만들기`
+      : "2개부터 선택하면 비교돼요";
 
   /**
    * Applies a typed query patch while preserving derived party size.
@@ -425,6 +541,7 @@ export function HomeExperience() {
    * @param snapshotId Saved recommendation snapshot id
    */
   function toggleCompareSelection(snapshotId: string) {
+    setCompareError(null);
     setSelectedCompareIds((currentSelection) => {
       if (currentSelection.includes(snapshotId)) {
         return currentSelection.filter((id) => id !== snapshotId);
@@ -478,14 +595,15 @@ export function HomeExperience() {
   }
 
   /**
-   * Submits the active query state to the recommendation API.
+   * Requests recommendations for a specific query state.
+   * @param nextQuery Query state to submit
    */
-  async function submitRecommendation() {
+  async function requestRecommendations(nextQuery: RecommendationQuery) {
     setIsSubmitting(true);
     setSubmitError(null);
 
     try {
-      const searchParams = buildRecommendationSearchParams(query);
+      const searchParams = buildRecommendationSearchParams(nextQuery);
       const response = await fetch(`/api/recommendations?${searchParams.toString()}`, {
         method: "GET",
         cache: "no-store",
@@ -508,6 +626,22 @@ export function HomeExperience() {
     }
   }
 
+  /**
+   * Applies a one-tap empty-state refinement and refreshes results.
+   * @param nextQuery Relaxed query state to submit
+   */
+  async function applyRelaxation(nextQuery: RecommendationQuery) {
+    setQuery(nextQuery);
+    await requestRecommendations(nextQuery);
+  }
+
+  /**
+   * Submits the active query state to the recommendation API.
+   */
+  async function submitRecommendation() {
+    await requestRecommendations(query);
+  }
+
   return (
     <ExperienceShell
       eyebrow="Trip Compass"
@@ -515,53 +649,56 @@ export function HomeExperience() {
       intro="여행 조건을 한 번만 정하면 Trip Compass가 목적지를 추립니다. 인스타그램 감도는 분위기를 확인하는 보조 근거로만 쓰고, 순위는 설명 가능한 추천 로직이 결정해요."
       capsule="추천이 먼저, 분위기 근거는 그다음. 로그인 없이 바로 쓸 수 있어요."
     >
-      <div className="grid gap-6 xl:grid-cols-[minmax(0,0.92fr)_minmax(22rem,1.08fr)]">
-        <section className="space-y-6">
-          <article className="compass-panel rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(16rem,0.9fr)]">
-              <div className="space-y-4">
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-sand)]">
-                  현재 여행 조건
-                </p>
-                <h2 className="font-display text-4xl leading-none tracking-[-0.05em] text-[var(--color-paper)] sm:text-5xl">
-                  빠르게 끝나는 맞춤 추천 흐름
-                </h2>
-                <p
-                  data-testid={testIds.result.querySummary}
-                  className="max-w-2xl text-sm leading-7 text-[var(--color-muted)] sm:text-base"
-                >
-                  {queryNarrative}
-                </p>
-              </div>
+      <>
+        <div
+          className={`grid gap-6 xl:grid-cols-[minmax(0,0.92fr)_minmax(22rem,1.08fr)] ${savedSnapshots.length > 0 ? "pb-32 md:pb-0" : ""}`}
+        >
+          <section className="space-y-6">
+            <article className="compass-panel rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
+              <div className="grid gap-5 lg:grid-cols-[minmax(0,1.1fr)_minmax(16rem,0.9fr)]">
+                <div className="space-y-4">
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-sand)]">
+                    현재 여행 조건
+                  </p>
+                  <h2 className="font-display text-4xl leading-none tracking-[-0.05em] text-[var(--color-paper)] sm:text-5xl">
+                    빠르게 끝나는 맞춤 추천 흐름
+                  </h2>
+                  <p
+                    data-testid={testIds.result.querySummary}
+                    className="max-w-2xl text-sm leading-7 text-[var(--color-muted)] sm:text-base"
+                  >
+                    {queryNarrative}
+                  </p>
+                </div>
 
-              <div className="instagram-card rounded-[calc(var(--radius-card)-6px)] p-5">
-                <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-paper)]">
-                  조건 미리보기
-                </p>
-                <p className="font-display mt-10 text-4xl leading-none tracking-[-0.05em] text-[var(--color-paper)]">
-                  {formatTravelMonth(query.travelMonth)}
-                </p>
-                <p className="mt-2 text-sm leading-6 text-[var(--color-paper)]">
-                  {formatDepartureAirport(query.departureAirport)} 출발 · {query.tripLengthDays}일 일정 · {formatVibeList(query.vibes)}
-                </p>
+                <div className="instagram-card rounded-[calc(var(--radius-card)-6px)] p-5">
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-paper)]">
+                    조건 미리보기
+                  </p>
+                  <p className="font-display mt-10 text-4xl leading-none tracking-[-0.05em] text-[var(--color-paper)]">
+                    {formatTravelMonth(query.travelMonth)}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--color-paper)]">
+                    {formatDepartureAirport(query.departureAirport)} 출발 · {query.tripLengthDays}일 일정 · {formatVibeList(query.vibes)}
+                  </p>
+                </div>
               </div>
-            </div>
-          </article>
+            </article>
 
-          <article className="compass-panel rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
-            <div className="flex flex-col gap-4 border-b border-[color:var(--color-frame)] pb-5">
-              <div>
-                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-sand)]">
-                  추천 흐름
+            <article className="compass-panel rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
+              <div className="flex flex-col gap-4 border-b border-[color:var(--color-frame)] pb-5">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-sand)]">
+                    추천 흐름
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold text-[var(--color-paper)]">
+                    5단계로 여행 방향을 정해보세요.
+                  </h2>
+                </div>
+                <p className="max-w-3xl text-sm leading-7 text-[var(--color-muted)]">
+                  아래 선택은 모두 하나의 추천 조건으로 쌓여요. 기본 흐름을 정한 뒤에는 출발 공항, 일정 밀도, 비행 거리 허용 범위, 보조 분위기까지 같은 화면에서 바로 다듬을 수 있어요.
                 </p>
-                <h2 className="mt-2 text-2xl font-semibold text-[var(--color-paper)]">
-                  5단계로 여행 방향을 정해보세요.
-                </h2>
               </div>
-              <p className="max-w-3xl text-sm leading-7 text-[var(--color-muted)]">
-                아래 선택은 모두 하나의 추천 조건으로 쌓여요. 기본 흐름을 정한 뒤에는 출발 공항, 일정 밀도, 비행 거리 허용 범위, 보조 분위기까지 같은 화면에서 바로 다듬을 수 있어요.
-              </p>
-            </div>
 
             <div className="mt-5 space-y-4">
               <FlowStep
@@ -717,27 +854,33 @@ export function HomeExperience() {
                 </p>
               </div>
             </div>
-          </article>
-        </section>
+            </article>
+          </section>
 
         <section className="space-y-6">
           {savedSnapshots.length > 0 ? (
-            <article className="compass-panel rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
+            <article
+              id="saved-snapshots-section"
+              className="compass-panel rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 xl:sticky xl:top-6"
+            >
               <div className="flex flex-col gap-4 border-b border-[color:var(--color-frame)] pb-5 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-sand)]">
                     저장한 카드
                   </p>
                   <h2 className="mt-2 text-2xl font-semibold text-[var(--color-paper)]">
-                    공유하거나, 비교 후보로 모아보세요.
+                    공유하거나, 바로 비교 후보로 모아보세요.
                   </h2>
+                  <p className="mt-2 max-w-2xl text-sm leading-6 text-[var(--color-muted)]">
+                    저장한 순간부터 비교 준비가 돼요. 모바일에서는 고정 트레이에서 바로 비교 보드를 만들 수 있어요.
+                  </p>
                 </div>
 
                 <div
                   data-testid={testIds.snapshot.compareSelectionCount}
                   className="rounded-full border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] px-4 py-2 text-sm text-[var(--color-paper)]"
                 >
-                  {selectedCompareIds.length}개 선택됨
+                  선택 {selectedCompareIds.length}개 · 최대 4개
                 </div>
               </div>
 
@@ -764,10 +907,10 @@ export function HomeExperience() {
                   type="button"
                   data-testid={testIds.snapshot.compareSnapshot}
                   onClick={createCompareSnapshot}
-                  disabled={compareLoading}
+                  disabled={!canCreateCompare || compareLoading}
                   className="rounded-full border border-[color:var(--color-frame-strong)] bg-[color:var(--color-paper-soft)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-ink)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {compareLoading ? "비교 보드 저장 중..." : "저장한 카드 비교하기"}
+                  {compareButtonLabel}
                 </button>
               </div>
 
@@ -780,13 +923,13 @@ export function HomeExperience() {
           <article className="compass-panel rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
             <div className="flex flex-col gap-4 border-b border-[color:var(--color-frame)] pb-5 lg:flex-row lg:items-end lg:justify-between">
               <div>
-                  <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-sand)]">
-                추천 결과
-                  </p>
-                  <h2 className="mt-2 text-2xl font-semibold text-[var(--color-paper)]">
-                    한눈에 보는 목적지 카드
-                  </h2>
-                </div>
+                <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-sand)]">
+                  추천 결과
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold text-[var(--color-paper)]">
+                  한눈에 보는 목적지 카드
+                </h2>
+              </div>
 
               {results ? (
                 <div className="rounded-full border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] px-4 py-2 text-sm text-[var(--color-paper)]">
@@ -821,17 +964,30 @@ export function HomeExperience() {
                   </p>
                   <div
                     data-testid={testIds.result.relaxableFilters}
-                    className="mt-4 flex flex-wrap gap-2"
+                    className="mt-4 grid gap-3 sm:grid-cols-2"
                   >
-                    <span className="rounded-full border border-[color:var(--color-frame)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--color-paper)]">
-                      여행 기간 늘리기
-                    </span>
-                    <span className="rounded-full border border-[color:var(--color-frame)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--color-paper)]">
-                      비행 거리 넓히기
-                    </span>
-                    <span className="rounded-full border border-[color:var(--color-frame)] px-3 py-2 text-xs uppercase tracking-[0.18em] text-[var(--color-paper)]">
-                      출발 월 바꾸기
-                    </span>
+                    {emptyStateActions.map((action, index) => (
+                      <button
+                        key={action.id}
+                        type="button"
+                        data-testid={getRelaxFilterActionTestId(index)}
+                        onClick={() => {
+                          void applyRelaxation(action.nextQuery);
+                        }}
+                        disabled={isSubmitting}
+                        className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-[color:var(--color-frame-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        <span className="block text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-sand)]">
+                          바로 완화하기
+                        </span>
+                        <span className="mt-3 block text-sm font-semibold text-[var(--color-paper)]">
+                          {action.label}
+                        </span>
+                        <span className="mt-2 block text-xs leading-5 text-[var(--color-muted)]">
+                          {action.description}
+                        </span>
+                      </button>
+                    ))}
                   </div>
                 </div>
               ) : null}
@@ -844,6 +1000,7 @@ export function HomeExperience() {
                     key={card.destination.id}
                     card={card}
                     index={index}
+                    query={results?.query}
                     actionSlot={
                       <>
                         <button
@@ -908,7 +1065,58 @@ export function HomeExperience() {
             </div>
           </article>
         </section>
-      </div>
+        </div>
+
+        {savedSnapshots.length > 0 ? (
+          <div className="pointer-events-none fixed inset-x-4 bottom-4 z-30 md:hidden">
+            <article
+              data-testid={testIds.snapshot.stickyCompareTray}
+              className="compass-panel pointer-events-auto rounded-[calc(var(--radius-card)-6px)] px-4 py-4"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-sand)]">
+                    비교 트레이
+                  </p>
+                  <p className="mt-2 text-sm font-semibold text-[var(--color-paper)]">
+                    {compareTrayDestinations || `${savedSnapshots.length}개 저장 카드`}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-[var(--color-muted)]">
+                    저장 {savedSnapshots.length}개 · 선택 {selectedCompareIds.length}개
+                  </p>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    document.getElementById("saved-snapshots-section")?.scrollIntoView({
+                      behavior: "smooth",
+                      block: "start",
+                    });
+                  }}
+                  className="rounded-full border border-[color:var(--color-frame)] px-3 py-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-[var(--color-paper)]"
+                >
+                  카드 보기
+                </button>
+              </div>
+
+              <button
+                type="button"
+                data-testid={testIds.snapshot.stickyCompareAction}
+                onClick={createCompareSnapshot}
+                disabled={!canCreateCompare || compareLoading}
+                className="mt-4 w-full rounded-full border border-[color:var(--color-frame-strong)] bg-[color:var(--color-paper-soft)] px-4 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-ink)] transition disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {compareButtonLabel}
+              </button>
+
+              <p className="mt-2 text-xs leading-5 text-[var(--color-muted)]">
+                저장한 카드에서 2개부터 4개까지 고르면 바로 비교 보드를 만들 수 있어요.
+              </p>
+            </article>
+          </div>
+        ) : null}
+      </>
     </ExperienceShell>
   );
 }
