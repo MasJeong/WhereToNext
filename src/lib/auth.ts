@@ -1,0 +1,677 @@
+import { createHash, randomBytes, randomUUID, scryptSync, timingSafeEqual } from "node:crypto";
+
+import { and, eq, gt } from "drizzle-orm";
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+
+import { getRuntimeDatabase } from "@/lib/db/runtime";
+import { account, session, user } from "@/lib/db/schema";
+import { readLocalStore, writeLocalStore } from "@/lib/persistence/local-store";
+import { memoryStore } from "@/lib/persistence/memory-store";
+
+const SESSION_COOKIE_NAME = "trip_compass_session";
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+const SESSION_MAX_AGE_MS = SESSION_MAX_AGE_SECONDS * 1000;
+const usePersistentDatabase = Boolean(process.env.DATABASE_URL);
+const useLocalFileStore = !usePersistentDatabase && process.env.NODE_ENV !== "test";
+
+type AuthUser = {
+  id: string;
+  name: string;
+  email: string;
+};
+
+type AuthSession = {
+  user: AuthUser;
+  session: {
+    id: string;
+    expiresAt: string;
+  };
+};
+
+/**
+ * cookie 헤더 문자열에서 현재 세션 토큰을 파싱한다.
+ * @param cookieHeader 요청 cookie 헤더 값
+ * @returns 세션 토큰 또는 null
+ */
+function getSessionTokenFromCookieHeader(cookieHeader: string | null): string | null {
+  if (!cookieHeader) {
+    return null;
+  }
+
+  const cookieValue = cookieHeader
+    .split(";")
+    .map((entry) => entry.trim())
+    .find((entry) => entry.startsWith(`${SESSION_COOKIE_NAME}=`));
+
+  return cookieValue ? cookieValue.slice(`${SESSION_COOKIE_NAME}=`.length) : null;
+}
+
+/**
+ * 원문 세션 토큰으로부터 인증 세션을 조회한다.
+ * @param token 원문 세션 토큰
+ * @returns 인증 세션 또는 null
+ */
+async function getSessionByToken(token: string | null): Promise<AuthSession | null> {
+  if (!token) {
+    return null;
+  }
+
+  if (!usePersistentDatabase) {
+    if (useLocalFileStore) {
+      const store = await readLocalStore();
+      const tokenHash = hashSessionToken(token);
+      const localSession = Object.values(store.sessions).find(
+        (entry) => entry.token === tokenHash && new Date(entry.expiresAt) > new Date(),
+      );
+
+      if (!localSession) {
+        return null;
+      }
+
+      const localUser = store.users[localSession.userId];
+      if (!localUser) {
+        return null;
+      }
+
+      return {
+        user: {
+          id: localUser.id,
+          name: localUser.name,
+          email: localUser.email,
+        },
+        session: {
+          id: localSession.id,
+          expiresAt: localSession.expiresAt,
+        },
+      };
+    }
+
+    const tokenHash = hashSessionToken(token);
+    const memorySession = [...memoryStore.sessions.values()].find(
+      (entry) => entry.token === tokenHash && new Date(entry.expiresAt) > new Date(),
+    );
+
+    if (!memorySession) {
+      return null;
+    }
+
+    const memoryUser = memoryStore.users.get(memorySession.userId);
+    if (!memoryUser) {
+      return null;
+    }
+
+    return {
+      user: {
+        id: memoryUser.id,
+        name: memoryUser.name,
+        email: memoryUser.email,
+      },
+      session: {
+        id: memorySession.id,
+        expiresAt: memorySession.expiresAt,
+      },
+    };
+  }
+
+  const { db } = await getRuntimeDatabase();
+
+  const tokenHash = hashSessionToken(token);
+  const sessionRow = await db.query.session.findFirst({
+    where: and(eq(session.token, tokenHash), gt(session.expiresAt, new Date())),
+  });
+
+  if (!sessionRow) {
+    return null;
+  }
+
+  const userRow = await db.query.user.findFirst({
+    where: eq(user.id, sessionRow.userId),
+  });
+
+  if (!userRow) {
+    return null;
+  }
+
+  return buildAuthSession(userRow, sessionRow);
+}
+
+type AuthResult = {
+  data?: AuthSession;
+  error?: {
+    message: string;
+  };
+};
+
+/**
+ * DB unique 제약 오류인지 판별한다.
+ * @param error 예외 객체
+ * @returns unique 충돌 여부
+ */
+function isUniqueConstraintError(error: unknown): boolean {
+  if (!(error instanceof Error)) {
+    return false;
+  }
+
+  const message = error.message.toLowerCase();
+  return message.includes("unique") || message.includes("duplicate") || message.includes("constraint");
+}
+
+/**
+ * 비밀번호를 salt와 함께 scrypt로 해시한다.
+ * @param password 원문 비밀번호
+ * @returns 저장 가능한 해시 문자열
+ */
+function hashPassword(password: string): string {
+  const salt = randomBytes(16).toString("hex");
+  const derivedKey = scryptSync(password, salt, 64).toString("hex");
+
+  return `${salt}:${derivedKey}`;
+}
+
+/**
+ * 저장된 비밀번호 해시와 입력값을 비교한다.
+ * @param password 원문 비밀번호
+ * @param storedHash 저장된 해시 문자열
+ * @returns 비밀번호 일치 여부
+ */
+function verifyPassword(password: string, storedHash: string): boolean {
+  const [salt, hash] = storedHash.split(":");
+  if (!salt || !hash) {
+    return false;
+  }
+
+  const derivedKey = scryptSync(password, salt, 64);
+  const storedBuffer = Buffer.from(hash, "hex");
+
+  return derivedKey.length === storedBuffer.length && timingSafeEqual(derivedKey, storedBuffer);
+}
+
+/**
+ * 세션 쿠키 원문 토큰을 서버 저장용 해시로 바꾼다.
+ * @param token 세션 쿠키 원문 토큰
+ * @returns SHA-256 해시 문자열
+ */
+function hashSessionToken(token: string): string {
+  return createHash("sha256").update(token).digest("hex");
+}
+
+/**
+ * 사용자와 세션 정보를 응답용 구조로 변환한다.
+ * @param userRow 사용자 행
+ * @param sessionRow 세션 행
+ * @returns 인증 응답용 세션 객체
+ */
+function buildAuthSession(
+  userRow: typeof user.$inferSelect,
+  sessionRow: typeof session.$inferSelect,
+): AuthSession {
+  return {
+    user: {
+      id: userRow.id,
+      name: userRow.name,
+      email: userRow.email,
+    },
+    session: {
+      id: sessionRow.id,
+      expiresAt: sessionRow.expiresAt.toISOString(),
+    },
+  };
+}
+
+/**
+ * 세션 쿠키를 응답에 설정한다.
+ * @param response Next 응답 객체
+ * @param token 원문 세션 토큰
+ */
+export function setSessionCookie(response: import("next/server").NextResponse, token: string) {
+  response.cookies.set({
+    name: SESSION_COOKIE_NAME,
+    value: token,
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: SESSION_MAX_AGE_SECONDS,
+  });
+}
+
+/**
+ * 세션 쿠키를 응답에서 제거한다.
+ * @param response Next 응답 객체
+ */
+export function clearSessionCookie(response: import("next/server").NextResponse) {
+  response.cookies.set({
+    name: SESSION_COOKIE_NAME,
+    value: "",
+    httpOnly: true,
+    sameSite: "lax",
+    secure: process.env.NODE_ENV === "production",
+    path: "/",
+    maxAge: 0,
+  });
+}
+
+/**
+ * 새 사용자 계정과 세션을 만든다.
+ * @param input 이름/이메일/비밀번호 및 요청 메타데이터
+ * @returns 생성된 세션 또는 에러
+ */
+export async function signUpWithEmailPassword(input: {
+  name: string;
+  email: string;
+  password: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}): Promise<AuthResult & { token?: string }> {
+  const email = input.email.trim().toLowerCase();
+  const userId = randomUUID();
+  const now = new Date();
+  const sessionToken = randomBytes(32).toString("hex");
+  const sessionTokenHash = hashSessionToken(sessionToken);
+  const sessionId = randomUUID();
+
+  if (!usePersistentDatabase) {
+    if (useLocalFileStore) {
+      const store = await readLocalStore();
+      const existingLocalUser = Object.values(store.users).find((entry) => entry.email === email);
+
+      if (existingLocalUser) {
+        return {
+          error: {
+            message: "이미 가입된 이메일이에요. 로그인으로 이어서 사용해 주세요.",
+          },
+        };
+      }
+
+      const expiresAtIso = new Date(now.getTime() + SESSION_MAX_AGE_MS).toISOString();
+      store.users[userId] = {
+        id: userId,
+        name: input.name.trim(),
+        email,
+        emailVerified: false,
+        image: null,
+      };
+      store.accounts[userId] = {
+        id: randomUUID(),
+        userId,
+        providerId: "credentials",
+        accountId: email,
+        password: hashPassword(input.password),
+      };
+      store.sessions[sessionId] = {
+        id: sessionId,
+        userId,
+        token: sessionTokenHash,
+        expiresAt: expiresAtIso,
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
+      };
+      await writeLocalStore(store);
+
+      return {
+        data: {
+          user: {
+            id: userId,
+            name: input.name.trim(),
+            email,
+          },
+          session: {
+            id: sessionId,
+            expiresAt: expiresAtIso,
+          },
+        },
+        token: sessionToken,
+      };
+    }
+
+    const existingMemoryUser = [...memoryStore.users.values()].find((entry) => entry.email === email);
+
+    if (existingMemoryUser) {
+      return {
+        error: {
+          message: "이미 가입된 이메일이에요. 로그인으로 이어서 사용해 주세요.",
+        },
+      };
+    }
+
+    const expiresAtIso = new Date(now.getTime() + SESSION_MAX_AGE_MS).toISOString();
+
+    memoryStore.users.set(userId, {
+      id: userId,
+      name: input.name.trim(),
+      email,
+      emailVerified: false,
+      image: null,
+    });
+    memoryStore.accounts.set(userId, {
+      id: randomUUID(),
+      userId,
+      providerId: "credentials",
+      accountId: email,
+      password: hashPassword(input.password),
+    });
+    memoryStore.sessions.set(sessionId, {
+      id: sessionId,
+      userId,
+      token: sessionTokenHash,
+      expiresAt: expiresAtIso,
+      ipAddress: input.ipAddress ?? null,
+      userAgent: input.userAgent ?? null,
+    });
+
+    return {
+      data: {
+        user: {
+          id: userId,
+          name: input.name.trim(),
+          email,
+        },
+        session: {
+          id: sessionId,
+          expiresAt: expiresAtIso,
+        },
+      },
+      token: sessionToken,
+    };
+  }
+
+  const { db } = await getRuntimeDatabase();
+
+  const existingUser = await db.query.user.findFirst({
+    where: eq(user.email, email),
+  });
+
+  if (existingUser) {
+    return {
+      error: {
+        message: "이미 가입된 이메일이에요. 로그인으로 이어서 사용해 주세요.",
+      },
+    };
+  }
+
+  let createdUser: typeof user.$inferSelect;
+  let createdSession: typeof session.$inferSelect;
+
+  try {
+    [createdUser, createdSession] = await db.transaction(async (tx) => {
+      const [nextUser] = await tx
+        .insert(user)
+        .values({
+          id: userId,
+          name: input.name.trim(),
+          email,
+          emailVerified: false,
+          image: null,
+          createdAt: now,
+          updatedAt: now,
+        })
+        .returning();
+
+      await tx.insert(account).values({
+        id: randomUUID(),
+        accountId: email,
+        providerId: "credentials",
+        userId,
+        accessToken: null,
+        refreshToken: null,
+        idToken: null,
+        accessTokenExpiresAt: null,
+        refreshTokenExpiresAt: null,
+        scope: null,
+        password: hashPassword(input.password),
+        createdAt: now,
+        updatedAt: now,
+      });
+
+      const expiresAt = new Date(now.getTime() + SESSION_MAX_AGE_MS);
+      const [nextSession] = await tx
+        .insert(session)
+        .values({
+          id: sessionId,
+          expiresAt,
+          token: sessionTokenHash,
+          createdAt: now,
+          updatedAt: now,
+          ipAddress: input.ipAddress ?? null,
+          userAgent: input.userAgent ?? null,
+          userId,
+        })
+        .returning();
+
+      return [nextUser, nextSession] as const;
+    });
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      return {
+        error: {
+          message: "이미 가입된 이메일이에요. 로그인으로 이어서 사용해 주세요.",
+        },
+      };
+    }
+
+    throw error;
+  }
+
+  return {
+    data: buildAuthSession(createdUser, createdSession),
+    token: sessionToken,
+  };
+}
+
+/**
+ * 이메일/비밀번호로 로그인 세션을 만든다.
+ * @param input 이메일/비밀번호 및 요청 메타데이터
+ * @returns 생성된 세션 또는 에러
+ */
+export async function signInWithEmailPassword(input: {
+  email: string;
+  password: string;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}): Promise<AuthResult & { token?: string }> {
+  const email = input.email.trim().toLowerCase();
+  const now = new Date();
+
+  if (!usePersistentDatabase) {
+    if (useLocalFileStore) {
+      const store = await readLocalStore();
+      const localUser = Object.values(store.users).find((entry) => entry.email === email);
+      const localAccount = localUser ? store.accounts[localUser.id] : null;
+
+      if (!localUser || !localAccount?.password || !verifyPassword(input.password, localAccount.password)) {
+        return {
+          error: {
+            message: "이메일 또는 비밀번호를 다시 확인해 주세요.",
+          },
+        };
+      }
+
+      const expiresAtIso = new Date(now.getTime() + SESSION_MAX_AGE_MS).toISOString();
+      const nextSessionId = randomUUID();
+      const nextToken = randomBytes(32).toString("hex");
+      store.sessions[nextSessionId] = {
+        id: nextSessionId,
+        userId: localUser.id,
+        token: hashSessionToken(nextToken),
+        expiresAt: expiresAtIso,
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
+      };
+      await writeLocalStore(store);
+
+      return {
+        data: {
+          user: {
+            id: localUser.id,
+            name: localUser.name,
+            email: localUser.email,
+          },
+          session: {
+            id: nextSessionId,
+            expiresAt: expiresAtIso,
+          },
+        },
+        token: nextToken,
+      };
+    }
+
+    const memoryUser = [...memoryStore.users.values()].find((entry) => entry.email === email);
+    const memoryAccount = memoryUser ? memoryStore.accounts.get(memoryUser.id) : null;
+
+    if (!memoryUser || !memoryAccount?.password || !verifyPassword(input.password, memoryAccount.password)) {
+      return {
+        error: {
+          message: "이메일 또는 비밀번호를 다시 확인해 주세요.",
+        },
+      };
+    }
+
+    const expiresAtIso = new Date(now.getTime() + SESSION_MAX_AGE_MS).toISOString();
+    const nextSessionId = randomUUID();
+    const nextToken = randomBytes(32).toString("hex");
+
+    memoryStore.sessions.set(nextSessionId, {
+      id: nextSessionId,
+      userId: memoryUser.id,
+      token: hashSessionToken(nextToken),
+      expiresAt: expiresAtIso,
+      ipAddress: input.ipAddress ?? null,
+      userAgent: input.userAgent ?? null,
+    });
+
+    return {
+      data: {
+        user: {
+          id: memoryUser.id,
+          name: memoryUser.name,
+          email: memoryUser.email,
+        },
+        session: {
+          id: nextSessionId,
+          expiresAt: expiresAtIso,
+        },
+      },
+      token: nextToken,
+    };
+  }
+
+  const { db } = await getRuntimeDatabase();
+
+  const userRow = await db.query.user.findFirst({
+    where: eq(user.email, email),
+  });
+
+  if (!userRow) {
+    return {
+      error: {
+        message: "이메일 또는 비밀번호를 다시 확인해 주세요.",
+      },
+    };
+  }
+
+  const accountRow = await db.query.account.findFirst({
+    where: and(eq(account.userId, userRow.id), eq(account.providerId, "credentials")),
+  });
+
+  if (!accountRow?.password || !verifyPassword(input.password, accountRow.password)) {
+    return {
+      error: {
+        message: "이메일 또는 비밀번호를 다시 확인해 주세요.",
+      },
+    };
+  }
+
+  const sessionToken = randomBytes(32).toString("hex");
+  const sessionTokenHash = hashSessionToken(sessionToken);
+  const expiresAt = new Date(now.getTime() + SESSION_MAX_AGE_MS);
+  const [createdSession] = await db
+    .insert(session)
+    .values({
+      id: randomUUID(),
+      expiresAt,
+      token: sessionTokenHash,
+      createdAt: now,
+      updatedAt: now,
+      ipAddress: input.ipAddress ?? null,
+      userAgent: input.userAgent ?? null,
+      userId: userRow.id,
+    })
+    .returning();
+
+  return {
+    data: buildAuthSession(userRow, createdSession),
+    token: sessionToken,
+  };
+}
+
+/**
+ * 현재 요청의 인증 세션을 조회한다.
+ * @returns 인증 세션 또는 null
+ */
+export async function getSessionOrNull(): Promise<AuthSession | null> {
+  const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value ?? null;
+  return getSessionByToken(token);
+}
+
+/**
+ * 요청 헤더를 기반으로 인증 세션을 조회한다.
+ * @param requestHeaders 현재 HTTP 요청 헤더
+ * @returns 인증 세션 또는 null
+ */
+export async function getSessionFromHeaders(requestHeaders: Headers): Promise<AuthSession | null> {
+  return getSessionByToken(getSessionTokenFromCookieHeader(requestHeaders.get("cookie")));
+}
+
+/**
+ * 로그인 세션을 강제하고 없으면 인증 화면으로 보낸다.
+ * @returns 보장된 세션 객체
+ */
+export async function requireSession() {
+  const session = await getSessionOrNull();
+
+  if (!session) {
+    redirect("/auth");
+  }
+
+  return session;
+}
+
+/**
+ * 현재 세션 쿠키에 연결된 세션을 삭제한다.
+ */
+export async function deleteCurrentSession(): Promise<void> {
+  const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+
+  if (!token) {
+    return;
+  }
+
+  const tokenHash = hashSessionToken(token);
+
+  if (!usePersistentDatabase) {
+    if (useLocalFileStore) {
+      const store = await readLocalStore();
+
+      for (const [sessionId, localSession] of Object.entries(store.sessions)) {
+        if (localSession.token === tokenHash) {
+          delete store.sessions[sessionId];
+        }
+      }
+
+      await writeLocalStore(store);
+      return;
+    }
+
+    for (const [sessionId, memorySession] of memoryStore.sessions.entries()) {
+      if (memorySession.token === tokenHash) {
+        memoryStore.sessions.delete(sessionId);
+      }
+    }
+
+    return;
+  }
+
+  const { db } = await getRuntimeDatabase();
+  await db.delete(session).where(eq(session.token, tokenHash));
+}
