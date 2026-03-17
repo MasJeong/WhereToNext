@@ -1,10 +1,11 @@
-import { mkdir } from "node:fs/promises";
+import { existsSync, mkdirSync } from "node:fs";
+import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import { PGlite } from "@electric-sql/pglite";
 import { inArray } from "drizzle-orm";
+import { sql } from "drizzle-orm";
 import { drizzle as drizzlePglite } from "drizzle-orm/pglite";
-import { migrate as migratePglite } from "drizzle-orm/pglite/migrator";
 import { drizzle as drizzlePostgresJs } from "drizzle-orm/postgres-js";
 import { migrate as migratePostgresJs } from "drizzle-orm/postgres-js/migrator";
 import postgres from "postgres";
@@ -21,19 +22,35 @@ declare global {
 }
 
 /**
- * 런타임에서 사용할 로컬 PGlite 데이터 디렉터리를 계산한다.
- * @returns 파일 기반 PGlite 저장 경로
- */
-function getLocalDataDir(): string {
-  return resolve(process.cwd(), ".data", "trip-compass");
-}
-
-/**
  * Drizzle 마이그레이션 폴더 절대 경로를 반환한다.
  * @returns migration 폴더 절대 경로
  */
 function getMigrationsFolder(): string {
   return resolve(process.cwd(), "drizzle");
+}
+
+/**
+ * `drizzle/` 폴더의 SQL 마이그레이션 파일을 직접 순서대로 실행한다.
+ * @param db Drizzle 데이터베이스 인스턴스
+ * @returns Promise<void>
+ */
+async function applySqlMigrations(db: RuntimeDatabase["db"]): Promise<void> {
+  const migrationsFolder = getMigrationsFolder();
+  const migrationFiles = (await readdir(migrationsFolder))
+    .filter((fileName) => fileName.endsWith(".sql"))
+    .sort();
+
+  for (const fileName of migrationFiles) {
+    const content = await readFile(resolve(migrationsFolder, fileName), "utf8");
+    const statements = content
+      .split("--> statement-breakpoint")
+      .map((statement) => statement.trim())
+      .filter(Boolean);
+
+    for (const statement of statements) {
+      await db.execute(sql.raw(statement));
+    }
+  }
 }
 
 /**
@@ -76,14 +93,13 @@ async function ensureSeedData(db: RuntimeDatabase["db"]): Promise<void> {
  * @returns 데이터베이스 인스턴스와 모드 정보
  */
 async function createRuntimeDatabase() {
-  const migrationsFolder = getMigrationsFolder();
   const databaseUrl = process.env.DATABASE_URL?.trim();
 
   if (databaseUrl) {
     const client = postgres(databaseUrl, { prepare: false });
-    const db = drizzlePostgresJs({ client, schema });
+    const db = drizzlePostgresJs(client, { schema });
 
-    await migratePostgresJs(db, { migrationsFolder });
+    await migratePostgresJs(db, { migrationsFolder: getMigrationsFolder() });
     await ensureSeedData(db);
 
     return {
@@ -95,13 +111,19 @@ async function createRuntimeDatabase() {
     };
   }
 
-  const dataDir = getLocalDataDir();
-  await mkdir(dataDir, { recursive: true });
+  const localDataDir =
+    process.env.PGLITE_DATA_DIR?.trim() && process.env.NODE_ENV !== "test"
+      ? resolve(process.cwd(), process.env.PGLITE_DATA_DIR.trim())
+      : null;
 
-  const client = new PGlite(dataDir);
+  if (localDataDir && !existsSync(localDataDir)) {
+    mkdirSync(localDataDir, { recursive: true });
+  }
+
+  const client = localDataDir ? new PGlite(localDataDir) : new PGlite();
   const db = drizzlePglite({ client, schema });
 
-  await migratePglite(db, { migrationsFolder });
+  await applySqlMigrations(db);
   await ensureSeedData(db);
 
   return {

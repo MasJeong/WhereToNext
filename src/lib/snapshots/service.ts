@@ -1,3 +1,5 @@
+import { randomUUID } from "node:crypto";
+
 import { desc, eq, inArray } from "drizzle-orm";
 
 import { getRuntimeDatabase } from "@/lib/db/runtime";
@@ -9,7 +11,16 @@ import {
   type RecommendationSnapshot,
   type TrendEvidenceSnapshot,
 } from "@/lib/domain/contracts";
+import {
+  readLocalStore,
+  type LocalSnapshotRecord,
+  writeLocalStore,
+} from "@/lib/persistence/local-store";
+import { memoryStore } from "@/lib/persistence/memory-store";
 import type { CreateSnapshotBody } from "@/lib/security/validation";
+
+const usePersistentDatabase = Boolean(process.env.DATABASE_URL);
+const useLocalFileStore = !usePersistentDatabase && process.env.NODE_ENV !== "test";
 
 type RecommendationStoredSnapshot = {
   id: string;
@@ -107,6 +118,59 @@ function normalizeSnapshotInput(body: CreateSnapshotBody) {
  */
 export async function createSnapshot(body: CreateSnapshotBody): Promise<StoredSnapshot> {
   const input = normalizeSnapshotInput(body);
+
+  if (!usePersistentDatabase) {
+    if (useLocalFileStore) {
+      const store = await readLocalStore();
+
+      for (const trendSnapshot of input.trendSnapshots) {
+        store.trendSnapshots[trendSnapshot.id] = trendSnapshot;
+      }
+
+      const createdAt = new Date().toISOString();
+      const snapshotRecord: StoredSnapshot =
+        input.kind === "recommendation"
+          ? {
+              id: randomUUID(),
+              kind: "recommendation",
+              createdAt,
+              payload: input.payload,
+              scoringVersionId: input.scoringVersionId,
+              destinationIds: input.destinationIds,
+            }
+          : {
+              id: randomUUID(),
+              kind: "comparison",
+              createdAt,
+              payload: input.payload,
+              scoringVersionId: input.scoringVersionId,
+              destinationIds: input.destinationIds,
+            };
+
+      store.snapshots[snapshotRecord.id] = snapshotRecord satisfies LocalSnapshotRecord;
+      await writeLocalStore(store);
+
+      return snapshotRecord;
+    }
+
+    for (const trendSnapshot of input.trendSnapshots) {
+      memoryStore.trendSnapshots.set(trendSnapshot.id, trendSnapshot);
+    }
+
+    const createdAt = new Date().toISOString();
+    const snapshotRecord: StoredSnapshot = {
+      id: randomUUID(),
+      kind: input.kind,
+      createdAt,
+      payload: input.payload,
+      scoringVersionId: input.scoringVersionId,
+      destinationIds: input.destinationIds,
+    } as StoredSnapshot;
+
+    memoryStore.snapshots.set(snapshotRecord.id, snapshotRecord);
+    return snapshotRecord;
+  }
+
   const { db } = await getRuntimeDatabase();
 
   if (input.trendSnapshots.length > 0) {
@@ -152,6 +216,17 @@ export async function createSnapshot(body: CreateSnapshotBody): Promise<StoredSn
  * @returns 저장된 스냅샷 또는 null
  */
 export async function readSnapshot(snapshotId: string): Promise<StoredSnapshot | null> {
+  if (!usePersistentDatabase) {
+    if (useLocalFileStore) {
+      const store = await readLocalStore();
+      const snapshot = store.snapshots[snapshotId];
+      return (snapshot as StoredSnapshot | undefined) ?? null;
+    }
+
+    const snapshot = memoryStore.snapshots.get(snapshotId);
+    return (snapshot as StoredSnapshot | undefined) ?? null;
+  }
+
   const { db } = await getRuntimeDatabase();
   const hit = await db.query.recommendationSnapshots.findFirst({
     where: eq(recommendationSnapshots.id, snapshotId),
@@ -188,6 +263,23 @@ export async function readSnapshot(snapshotId: string): Promise<StoredSnapshot |
  * @returns 생성일 내림차순 추천 스냅샷 목록
  */
 export async function readRecommendationSnapshots(snapshotIds: string[]) {
+  if (!usePersistentDatabase) {
+    if (useLocalFileStore) {
+      const store = await readLocalStore();
+
+      return snapshotIds
+        .map((snapshotId) => store.snapshots[snapshotId])
+        .filter(
+          (snapshot): snapshot is RecommendationStoredSnapshot =>
+            Boolean(snapshot && snapshot.kind === "recommendation"),
+        );
+    }
+
+    return snapshotIds
+      .map((snapshotId) => memoryStore.snapshots.get(snapshotId))
+      .filter((snapshot): snapshot is RecommendationStoredSnapshot => Boolean(snapshot && snapshot.kind === "recommendation"));
+  }
+
   const { db } = await getRuntimeDatabase();
 
   const hits = await db.query.recommendationSnapshots.findMany({
