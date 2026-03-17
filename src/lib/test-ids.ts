@@ -27,6 +27,7 @@ export const testIds = {
     querySummary: "query-summary",
     showMoreResults: "show-more-results",
     relaxableFilters: "relaxable-filters",
+    relaxFilterAction0: "relax-filter-action-0",
   },
   snapshot: {
     saveSnapshot: "save-snapshot",
@@ -35,6 +36,8 @@ export const testIds = {
     copyShareLink: "copy-share-link",
     savedSnapshot0: "saved-snapshot-0",
     compareSelectionCount: "compare-selection-count",
+    stickyCompareTray: "sticky-compare-tray",
+    stickyCompareAction: "sticky-compare-action",
   },
   compare: {
     column0: "compare-column-0",
@@ -85,4 +88,13 @@ export function getSavedSnapshotTestId(index: number): string {
  */
 export function getCompareColumnTestId(index: number): string {
   return index === 0 ? testIds.compare.column0 : `compare-column-${index}`;
+}
+
+/**
+ * Returns a stable empty-state relaxation selector for a given index.
+ * @param index Relaxation action index
+ * @returns Relaxation action test id
+ */
+export function getRelaxFilterActionTestId(index: number): string {
+  return index === 0 ? testIds.result.relaxFilterAction0 : `relax-filter-action-${index}`;
 }

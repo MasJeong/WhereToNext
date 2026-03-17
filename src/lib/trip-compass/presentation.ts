@@ -346,6 +346,25 @@ export function formatFlightBand(flightBand: DestinationProfile["flightBand"]): 
 }
 
 /**
+ * Formats a flight tolerance label.
+ * @param flightTolerance Flight tolerance value
+ * @returns Display label
+ */
+export function formatFlightTolerance(
+  flightTolerance: RecommendationQuery["flightTolerance"],
+): string {
+  if (flightTolerance === "short") {
+    return "단거리 위주";
+  }
+
+  if (flightTolerance === "medium") {
+    return "중거리까지";
+  }
+
+  return "장거리도 가능";
+}
+
+/**
  * Formats a party type label.
  * @param partyType Party type value
  * @returns Display label
