@@ -14,7 +14,9 @@ Trip Compass는 로그인 없이 바로 사용하는 해외 여행지 추천 플
 - 결정형 추천 엔진 기반의 설명 가능한 결과
 - 인스타그램은 추천 엔진이 아니라 분위기/최신성 증거 레이어로만 사용
 - 저장 링크 `/s/[snapshotId]`, 비교 링크 `/compare/[snapshotId]`
-- 로컬 개발 시 PGlite 파일 저장소, 운영 시 `DATABASE_URL` 기반 Postgres 사용
+- 로그인은 가벼운 이메일/비밀번호 + 세션 쿠키 방식으로 동작
+- 다녀온 여행지 평점, 태그, 재방문 의사에 따라 추천을 미세하게 개인화
+- 로컬 개발은 JSON 파일 fallback, 테스트는 메모리 fallback, 운영은 `DATABASE_URL` 기반 Postgres 사용
 
 ## 실행 방법
 
@@ -27,16 +29,17 @@ npm run dev
 
 ## 환경 변수
 
-기본 개발 환경에서는 `.data/trip-compass` 아래의 PGlite 파일 저장소를 사용하므로
-필수 환경 변수 없이도 앱이 동작합니다.
+기본 개발 환경에서는 외부 DB 없이도 동작합니다.
 
 운영 또는 외부 Postgres 연결 시에는 `.env.local`에 아래 값을 설정하세요.
 
 ```bash
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/trip_compass
+PGLITE_DATA_DIR=.data/trip-compass
 ```
 
-`DATABASE_URL`이 없으면 로컬 개발에서는 `.data/trip-compass` 아래의 PGlite 저장소를 사용합니다.
+`DATABASE_URL`이 없으면 로컬 개발에서는 `.data/trip-compass-local-store.json` 파일 fallback을 사용합니다.
+테스트에서는 메모리 fallback을 사용합니다.
 배포 환경에서는 반드시 외부 Postgres를 연결하세요.
 
 ## 주요 스크립트
@@ -77,10 +80,11 @@ VERCEL_PROJECT_ID=
 - 추천 스냅샷은 저장 당시의 recommendation 결과를 함께 저장해 복원 시 재계산 드리프트를 줄입니다.
 - 비교 스냅샷은 저장된 추천 스냅샷 2~4개를 묶어 복원합니다.
 - 인스타그램 관련 표시는 공식 계정, 해시태그 캡슐, 큐레이션, 대체 소스 라벨을 명시합니다.
+- 계정 사용자는 방문했던 여행지, 평점, 태그, 재방문 의사를 남길 수 있습니다.
+- 추천은 `repeat / balanced / discover` 선호에 따라 미세 조정됩니다.
 
 ## 현재 범위에서 제외한 것
 
-- 회원가입 / 로그인
 - 예약, 결제, 지도, CMS
 - 비공식 인스타그램 스크래핑
 - 장소 단위 전역 트렌드 탐색

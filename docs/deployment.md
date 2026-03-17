@@ -6,7 +6,7 @@
 - 권장 배포 플랫폼: Vercel
 - 필수 외부 의존성: Postgres (`DATABASE_URL`)
 
-로컬 개발에서는 `DATABASE_URL`이 없으면 PGlite fallback이 동작하지만,
+로컬 개발에서는 `DATABASE_URL`이 없으면 JSON 파일 fallback이 동작하지만,
 실서비스 배포에서는 반드시 외부 Postgres를 연결해야 합니다.
 
 ## 배포 전 체크리스트
@@ -42,6 +42,7 @@ DATABASE_URL=postgres://...
 ```
 
 현재 코드 기준으로 필수 배포 환경 변수는 `DATABASE_URL` 하나입니다.
+`PGLITE_DATA_DIR`는 로컬 파일 fallback이 필요할 때만 선택적으로 사용합니다.
 
 ### 2-1. GitHub Actions 자동 배포 시크릿
 
@@ -70,10 +71,13 @@ VERCEL_PROJECT_ID=...
 - 저장 복원 화면 `/s/[snapshotId]`
 - 비교 화면 `/compare/[snapshotId]`
 - 추천 API `/api/recommendations`
+- 인증 페이지 `/auth`
+- 여행 프로필 페이지 `/account`
 
 ## 운영 메모
 
 - `middleware.ts`가 공통 보안 헤더와 API `X-Robots-Tag`를 설정합니다.
+- 인증은 이메일/비밀번호 + httpOnly 세션 쿠키 방식입니다.
 - 추천 결과는 인스타그램을 랭킹 엔진으로 쓰지 않고, 분위기/최신성 보조 근거로만 사용합니다.
 - snapshot 복원은 실패 시 닫힌 상태로 멈추도록 설계되어 있으므로, 오류가 나면 데이터 누락이나 DB 연결 상태를 먼저 확인하세요.
 
