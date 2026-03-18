@@ -8,6 +8,14 @@ Scope: entire repository.
 - Keep changes focused, minimal, and consistent with nearby code.
 - Do not invent commands, routes, schema shapes, or workflows.
 - Use the repo’s existing helpers instead of duplicating logic.
+- For technology stack questions, consult `docs/tech-stack.md` first.
+- For recurring bugs, incidents, or previously solved implementation issues, consult `docs/issue-resolution-log.md` before debugging.
+- Treat `main` as the production deployment branch and `dev` as the integration branch.
+- Do not use `main` for in-progress feature work.
+- Create feature work on `feature/*` branches, even for solo development.
+- Merge feature work into `dev` first, continue verification there, and promote `dev` to `main` only when ready to deploy.
+- Deploy production only from merged `main`.
+- After resolving a non-trivial issue through investigation, append a concise verified entry to `docs/issue-resolution-log.md` so future work can reuse it.
 
 ## 2) Repository Snapshot
 - App: `SooGo`
