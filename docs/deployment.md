@@ -1,4 +1,4 @@
-# Trip Compass Deployment Guide
+# SooGo Deployment Guide
 
 ## 대상 환경
 
@@ -29,7 +29,7 @@ npm run test:e2e
 
 ### 1. GitHub 저장소 Import
 
-- Repository: `MasJeong/trip-compass`
+- Repository: `MasJeong/SooGo`
 - Framework Preset: Next.js
 - Root Directory: repo root
 

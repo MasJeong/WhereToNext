@@ -1,5 +1,5 @@
 # AGENTS.md
-Agent guide for the `trip-compass` repository.
+Agent guide for the `SooGo` repository.
 Scope: entire repository.
 
 ## 1) Working Contract
@@ -10,7 +10,7 @@ Scope: entire repository.
 - Use the repo’s existing helpers instead of duplicating logic.
 
 ## 2) Repository Snapshot
-- App: `trip-compass`
+- App: `SooGo`
 - Stack: Next.js 16 App Router, React 19, TypeScript, Tailwind CSS 4, Zod
 - Data: Drizzle ORM + Postgres, with local PGlite fallback in runtime code
 - Testing: Vitest (unit) + Playwright (e2e)

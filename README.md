@@ -1,12 +1,12 @@
-# Trip Compass
+# SooGo
 
-[![CI](https://github.com/MasJeong/trip-compass/actions/workflows/ci.yml/badge.svg)](https://github.com/MasJeong/trip-compass/actions/workflows/ci.yml)
+[![CI](https://github.com/MasJeong/SooGo/actions/workflows/ci.yml/badge.svg)](https://github.com/MasJeong/SooGo/actions/workflows/ci.yml)
 
-Trip Compass는 로그인 없이 바로 사용하는 해외 여행지 추천 플랫폼입니다.
+SooGo는 로그인 없이 바로 사용하는 해외 여행지 추천 플랫폼입니다.
 사용자가 동행, 예산, 일정, 여행 시기, 분위기를 선택하면 설명 가능한 추천 엔진이 목적지를 제안하고,
 각 결과 카드에는 Instagram vibe 근거와 저장/공유/비교 흐름이 함께 붙습니다.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MasJeong/trip-compass)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MasJeong/SooGo)
 
 ## 핵심 특징
 

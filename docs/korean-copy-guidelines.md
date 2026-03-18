@@ -1,8 +1,8 @@
-# Trip Compass Korean Copy Guidelines
+# SooGo Korean Copy Guidelines
 
 ## Purpose
 
-Trip Compass is a Korean-first outbound travel recommendation product. Write every user-facing string for Korean travelers departing from Korea, not for a global English audience.
+SooGo is a Korean-first outbound travel recommendation product. Write every user-facing string for Korean travelers departing from Korea, not for a global English audience.
 
 ## Product Voice
 
