@@ -36,6 +36,12 @@ export type RecommendationCardView = {
   recommendation: RecommendationResult;
 };
 
+export type RecommendationVerdictView = {
+  label: string;
+  headline: string;
+  support: string;
+};
+
 const destinationIndex = new Map(launchCatalog.map((destination) => [destination.id, destination]));
 
 const monthLabels = [
@@ -287,6 +293,98 @@ export function createRecommendationCards(
 }
 
 /**
+ * 추천 점수를 카드에서 바로 읽기 쉬운 적합도 문구로 바꾼다.
+ * @param score 실제 획득 점수
+ * @param maxScore 해당 항목의 최대 점수
+ * @returns 한국어 적합도 문구
+ */
+export function formatFitStrengthLabel(score: number, maxScore: number): string {
+  const ratio = maxScore === 0 ? 0 : score / maxScore;
+
+  if (ratio >= 0.85) {
+    return "강하게 맞아요";
+  }
+
+  if (ratio >= 0.6) {
+    return "대체로 잘 맞아요";
+  }
+
+  return "한 번 더 체크해 보세요";
+}
+
+/**
+ * 추천 카드의 첫 판단에 쓰는 한 줄 verdict를 만든다.
+ * @param card 추천 카드 뷰 모델
+ * @param query 추천을 만든 현재 질의
+ * @returns 카드 상단에 노출할 판단 문구 세트
+ */
+export function buildRecommendationVerdict(
+  card: RecommendationCardView,
+  query?: RecommendationQuery,
+): RecommendationVerdictView {
+  const strengthAreas = [
+    {
+      label: "여행 분위기",
+      ratio: card.recommendation.scoreBreakdown.vibeMatch / 25,
+    },
+    {
+      label: "예산 감각",
+      ratio: card.recommendation.scoreBreakdown.budgetFit / 18,
+    },
+    {
+      label: "일정 소화",
+      ratio: card.recommendation.scoreBreakdown.tripLengthFit / 15,
+    },
+    {
+      label: "시즌 흐름",
+      ratio: card.recommendation.scoreBreakdown.seasonFit / 14,
+    },
+    {
+      label: "비행 부담",
+      ratio: card.recommendation.scoreBreakdown.flightToleranceFit / 12,
+    },
+    {
+      label: "동행 궁합",
+      ratio: card.recommendation.scoreBreakdown.partyFit / 8,
+    },
+    {
+      label: "일정 리듬",
+      ratio: card.recommendation.scoreBreakdown.paceFit / 5,
+    },
+  ]
+    .sort((left, right) => right.ratio - left.ratio)
+    .slice(0, 2)
+    .map((item) => item.label);
+
+  const context = query
+    ? `${formatTravelMonth(query.travelMonth)} ${query.tripLengthDays}일 일정 기준`
+    : `${formatMonthList(card.destination.bestMonths)} 여행 기준`;
+  const support = `${context} ${strengthAreas.join(" · ")} 쪽이 특히 안정적이에요.`;
+
+  if (card.recommendation.confidence >= 88) {
+    return {
+      label: "지금 가장 안정적",
+      headline: "가장 먼저 저장 후보로 남겨둘 만해요.",
+      support,
+    };
+  }
+
+  if (card.recommendation.confidence >= 74) {
+    return {
+      label: "우선 검토",
+      headline: "짧게 좁힐 때 우선순위에 두기 좋아요.",
+      support,
+    };
+  }
+
+  return {
+    label: "체크 후 검토",
+    headline: "장점은 분명하지만 체크할 점까지 보고 남길지 결정해 보세요.",
+    support,
+  };
+}
+
+/**
  * Builds a concise narrative for the active query state.
  * @param query Typed recommendation query
  * @returns Human-readable query summary
@@ -455,6 +553,32 @@ export function formatVibeLabel(vibe: string): string {
   }
 
   return vibe;
+}
+
+/**
+ * 일정 밀도 값을 한국어 라벨로 변환한다.
+ * @param pace 일정 밀도 값
+ * @returns 한국어 라벨
+ */
+export function formatPaceLabel(pace: RecommendationQuery["pace"]): string {
+  if (pace === "slow") {
+    return "여유롭게";
+  }
+
+  if (pace === "balanced") {
+    return "균형 있게";
+  }
+
+  return "꽉 차게";
+}
+
+/**
+ * 일정 밀도 목록을 카드/비교 보드용 문자열로 합친다.
+ * @param paces 목적지의 pace 태그 목록
+ * @returns joined pace label string
+ */
+export function formatPaceList(paces: RecommendationQuery["pace"][]): string {
+  return paces.map((pace) => formatPaceLabel(pace)).join(" / ");
 }
 
 /**
