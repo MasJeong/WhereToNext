@@ -1,5 +1,6 @@
+import { randomUUID } from "node:crypto";
 import { existsSync, mkdirSync } from "node:fs";
-import { readFile, writeFile } from "node:fs/promises";
+import { readFile, rename, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import type {
@@ -30,6 +31,17 @@ type LocalStoreData = {
 };
 
 const localStoreFilePath = resolve(process.cwd(), ".data", "trip-compass-local-store.json");
+
+/**
+ * 짧은 대기 후 다시 시도하기 위한 sleep helper.
+ * @param ms 대기 밀리초
+ * @returns Promise<void>
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolvePromise) => {
+    setTimeout(resolvePromise, ms);
+  });
+}
 
 /**
  * JSON 파일 기반 로컬 스토어 기본 구조를 반환한다.
@@ -63,8 +75,22 @@ export async function readLocalStore(): Promise<LocalStoreData> {
     return initialStore;
   }
 
-  const content = await readFile(localStoreFilePath, "utf8");
-  return JSON.parse(content) as LocalStoreData;
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const content = await readFile(localStoreFilePath, "utf8");
+
+    if (!content.trim()) {
+      await sleep(20);
+      continue;
+    }
+
+    try {
+      return JSON.parse(content) as LocalStoreData;
+    } catch {
+      await sleep(20);
+    }
+  }
+
+  throw new Error("LOCAL_STORE_PARSE_FAILED");
 }
 
 /**
@@ -77,5 +103,9 @@ export async function writeLocalStore(store: LocalStoreData): Promise<void> {
     mkdirSync(directory, { recursive: true });
   }
 
-  await writeFile(localStoreFilePath, JSON.stringify(store, null, 2), "utf8");
+  const tempPath = `${localStoreFilePath}.${randomUUID()}.tmp`;
+
+  await writeFile(tempPath, JSON.stringify(store, null, 2), "utf8");
+  await rm(localStoreFilePath, { force: true });
+  await rename(tempPath, localStoreFilePath);
 }

@@ -2,7 +2,8 @@ import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
   testDir: "./tests/e2e",
-  fullyParallel: true,
+  fullyParallel: false,
+  workers: 1,
   use: {
     baseURL: "http://localhost:3000",
     trace: "on-first-retry",
@@ -10,7 +11,7 @@ export default defineConfig({
   webServer: {
     command: "npm run start",
     url: "http://localhost:3000",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
   },
   projects: [
     {
