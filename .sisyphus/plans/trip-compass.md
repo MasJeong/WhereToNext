@@ -576,3 +576,38 @@ Wave 3: experience and release polish (`9`, `10`, `11`)
 - [roadmap-3]: Connect official Meta live adapters only where approvals and quotas make the signal trustworthy.
 - [roadmap-4]: Move from local fallback-first development into a real remote Postgres deployment setup with production-ready `DATABASE_URL` usage.
 - [roadmap-5]: Expand destination imagery and editorial curation depth so recommendation cards feel stronger before live social signals arrive.
+
+## Social Login Planning
+- [provider-priority]: Implement providers in this order: `Google` -> `Kakao` -> `Apple`.
+- [reason-google]: Best first provider for low-friction web sign-in, strong email identity quality, and lowest operational surprise.
+- [reason-kakao]: Important for Korean-market familiarity and conversion after the baseline Google flow is stable.
+- [reason-apple]: Useful for iPhone-heavy users and privacy-oriented sign-in, but lower initial impact than Google/Kakao for this product.
+- [provider-data-risk]: Apple email can be hidden/relay-based, Kakao profile/email availability depends on consent scope, and callback URL setup differs per provider, so implementation should not assume identical identity fields.
+- [provider-identity-key]: Persist provider-native stable subject identifiers as the real account key (`Google sub`, `Kakao id`, `Apple sub`), not provider email.
+- [provider-rollout-caveat]: If App Store/iOS distribution later makes Sign in with Apple mandatory, Apple priority may need to move forward even though the current web-first rollout keeps it third.
+
+## Account Linking Policy
+- [default-policy]: Use `explicit linking by verified email` as the default policy, not silent auto-merge.
+- [policy-rule-1]: If a social provider returns a verified email that matches an existing password account, require the signed-in user to confirm linking instead of silently merging.
+- [policy-rule-2]: If a provider does not return a verified email, create an unlinked social identity first and require in-app confirmation before attaching it to an existing account.
+- [policy-rule-3]: If the email is new, create a fresh linked account record normally.
+- [policy-rule-4]: Never auto-merge accounts based only on display name or provider profile data.
+- [policy-rule-5]: Treat one `user` as the canonical profile owner, and attach multiple provider identities through `account` rows keyed by `providerId + accountId`.
+- [policy-rule-6]: Password sign-in remains available even after social linking; social login adds entry points, not a replacement.
+- [policy-rule-7]: Use provider-stable subject identifiers as the true identity key; provider email is only a linking hint and must not be treated as the canonical account key.
+- [policy-rule-8]: If the same-email collision path is triggered, require proof of ownership of the existing account before linking (password, passkey, or future MFA), not just another email prompt.
+- [policy-rule-9]: Provider email mismatch must never silently merge; if the user is already signed in, treat it as an explicit account-link action only.
+- [policy-rule-10]: Linking and unlinking are security-sensitive account changes and should require a recent authenticated session.
+- [policy-rule-11]: Every link/unlink event should be auditable and user-visible through notification or account activity history.
+- [policy-rule-12]: If a social provider is not yet linked and no collision exists, create a new user only when the provider supplies enough usable identity data for the canonical `user` record.
+- [policy-rule-13]: Kakao without usable email and Apple relay/hidden email must never trigger silent merge; if needed, require an explicit completion/linking step.
+
+## Social Auth Implementation Notes
+- [schema-impact]: Keep the current `user` table as canonical identity and extend `account` rows to store OAuth provider identities alongside `credentials`.
+- [session-impact]: Reuse the existing session-cookie model rather than creating a separate session system for social providers.
+- [ui-impact]: Add provider buttons to the auth page only after callback/identity-linking screens are defined.
+- [security-impact]: Add provider-specific callback URL validation, CSRF/state handling through the chosen OAuth flow, and rate-limited linking endpoints.
+- [security-impact-2]: Do not auto-link social identities by email in normal consumer flows; reserve any auto-linking only for tightly controlled migration/import paths.
+- [security-impact-3]: Collision messaging must avoid account enumeration language and keep errors generic until the user is in a proof-of-ownership flow.
+- [schema-impact-2]: Add uniqueness for `(providerId, accountId)` and prevent duplicate provider links for one canonical `user`.
+- [fallback-impact]: The current local JSON and memory fallback stores model accounts too simply for multi-provider linking, so those stores must be reshaped or social login should be restricted to the DB-backed path during implementation.
