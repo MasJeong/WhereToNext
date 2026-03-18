@@ -4,6 +4,9 @@ export const testIds = {
     authCta: "auth-cta",
     accountLink: "account-link",
     personalizedNote: "personalized-note",
+    heroStartCta: "hero-start-cta",
+    advancedFiltersToggle: "advanced-filters-toggle",
+    advancedFiltersPanel: "advanced-filters-panel",
   },
   auth: {
     modeSignIn: "auth-mode-sign-in",
@@ -15,6 +18,10 @@ export const testIds = {
     error: "auth-error",
   },
   query: {
+    intentFirstEurope: "intent-first-europe",
+    intentShortFlightCity: "intent-short-flight-city",
+    intentCoupleNightView: "intent-couple-night-view",
+    intentFamilyReset: "intent-family-reset",
     partyTypeCouple: "party-type-couple",
     partyTypeFriends: "party-type-friends",
     partyTypeFamily: "party-type-family",
@@ -57,6 +64,10 @@ export const testIds = {
   compare: {
     column0: "compare-column-0",
     restoreError: "restore-error",
+    differencesToggle: "compare-differences-toggle",
+    mobilePrev: "compare-mobile-prev",
+    mobileNext: "compare-mobile-next",
+    verdictRow: "compare-verdict-row",
   },
   account: {
     preferenceRepeat: "preference-repeat",

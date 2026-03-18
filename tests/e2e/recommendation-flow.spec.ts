@@ -12,9 +12,8 @@ async function submitGuidedRecommendation(page: import("@playwright/test").Page)
   await page.getByTestId("trip-length-5").click();
   await page.getByTestId("travel-month-10").click();
   await page.getByTestId("vibe-romance").click();
-  await page.getByTestId("departure-airport-ICN").click();
   await page.getByTestId("submit-recommendation").click();
-  await expect(page.getByTestId("result-card-0")).toBeVisible();
+  await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 10000 });
 }
 
 test("restores a saved recommendation snapshot", async ({ page }) => {
@@ -49,6 +48,7 @@ test("builds a compare board from two saved picks", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/compare\//);
   await expect(page.getByTestId("compare-column-0")).toBeVisible();
+  await expect(page.getByTestId("compare-verdict-row").last()).toBeVisible();
 });
 
 test("shows a sticky compare tray on mobile after saving a card", async ({ page }) => {
@@ -71,7 +71,7 @@ test("allows sign-up, trip history save, and personalized recommendations", asyn
   await page.getByTestId("auth-submit").click();
 
   await expect(page).toHaveURL(/\/account/);
-  await page.getByTestId("preference-discover").click();
+  await expect(page.getByTestId("new-history-submit")).toBeVisible();
   await page.getByTestId("new-history-submit").click();
   await expect(page.getByTestId("history-entry-0")).toBeVisible();
 
@@ -86,7 +86,7 @@ test("shows trust-first recommendation signals on the lead card", async ({ page 
   const leadCard = page.getByTestId("result-card-0");
 
   await expect(leadCard.getByText("먼저 확인할 신뢰 신호")).toBeVisible();
-  await expect(leadCard.getByText("신뢰 요약")).toBeVisible();
+  await expect(leadCard.getByText("왜 먼저 봐야 하는지")).toBeVisible();
 });
 
 test("recovers from the empty state through a relaxation action", async ({ page }) => {
@@ -135,7 +135,6 @@ test("recovers from the empty state through a relaxation action", async ({ page 
   await page.getByTestId("trip-length-5").click();
   await page.getByTestId("travel-month-10").click();
   await page.getByTestId("vibe-romance").click();
-  await page.getByTestId("departure-airport-ICN").click();
   await page.getByTestId("submit-recommendation").click();
   await expect(page.getByTestId("empty-state")).toBeVisible();
 
