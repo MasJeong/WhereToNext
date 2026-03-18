@@ -12,7 +12,7 @@ type ExperienceShellProps = {
 /**
  * Renders the shared editorial shell used across home, restore, and compare pages.
  * @param props Shell copy and content slots
- * @returns Framed Trip Compass page layout
+ * @returns Framed SooGo page layout
  */
 export function ExperienceShell({
   eyebrow,
@@ -25,10 +25,10 @@ export function ExperienceShell({
   return (
     <main className="relative isolate min-h-screen overflow-hidden px-4 py-5 sm:px-6 lg:px-8">
       <div className="mx-auto flex max-w-7xl flex-col gap-6">
-        <header className="compass-panel rounded-[var(--radius-shell)] px-6 py-7 sm:px-8 sm:py-9 lg:px-10">
+        <header className="compass-hero rounded-[var(--radius-shell)] px-6 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-10">
           <div className="flex flex-col gap-5 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-3xl space-y-4">
-              <p className="text-xs font-semibold uppercase tracking-[0.34em] text-[var(--color-sand)]">
+              <p className="text-sm font-semibold tracking-[0.08em] text-[var(--color-sand)]">
                 {eyebrow}
               </p>
               <div className="space-y-3">
@@ -50,7 +50,9 @@ export function ExperienceShell({
           </div>
         </header>
 
-        {children}
+        <div className="compass-desk rounded-[var(--radius-shell)] px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
+          {children}
+        </div>
       </div>
     </main>
   );

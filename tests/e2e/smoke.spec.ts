@@ -6,7 +6,7 @@ test("shows the Trip Compass smoke shell", async ({ page }) => {
   await expect(page).toHaveTitle("Trip Compass");
   await expect(
     page.getByRole("heading", {
-      name: "한국에서 떠나는 해외여행, 취향에 맞는 목적지를 빠르게 골라보세요.",
+      name: "어디로 갈지 아직 몰라도, 내 여행 조건으로 목적지를 먼저 추려드려요.",
     }),
   ).toBeVisible();
 });
