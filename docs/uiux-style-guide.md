@@ -81,16 +81,77 @@ Target correction:
 
 Use color with role clarity.
 
-- `paper`: planning surface and readable content background
+- `paper`: reading surface and primary background
 - `ink`: primary text and rational decision layers
-- `sand`: metadata, section labels, secondary guidance
-- `accent`: only for action, urgency, or standout partner modules
+- `sand`: metadata, section labels, low-pressure guidance
+- `accent`: action only
 
 Rules:
 
 - do not let accent dominate recommendation cards
 - do not use Instagram-like mood colors to overpower trust information
 - trust layers should feel cleaner and quieter than mood layers
+
+### Preferred palette direction
+
+SooGo should use a warm, edible palette built from:
+
+- `white / ivory`
+- `soft yellow`
+- `orange`
+- `brown`
+
+This palette fits the product because:
+
+- white and ivory create readable planning surfaces
+- yellow creates low-pressure guidance and friendly momentum
+- orange signals action and attraction without looking like an error state
+- brown anchors trust, maturity, and decision seriousness
+
+### Role-based color assignment
+
+Do not assign color by feature. Assign it by role.
+
+| Role | Meaning | Suggested palette direction | Usage |
+|---|---|---|---|
+| `surface-base` | page base, long-read background | deep brown / dark ink-brown | app background |
+| `surface-elevated` | cards and sections | warm ivory / soft paper | recommendation surfaces |
+| `surface-muted` | low-priority grouped blocks | pale yellow-tinted ivory | helper rails, subtle grouping |
+| `text-primary` | main reading content | dark brown / ink | headings, verdicts, main facts |
+| `text-secondary` | supporting explanation | softened brown | helper text, captions |
+| `meta-label` | section labels and small metadata | muted ochre / sand | section eyebrow, key labels |
+| `action-primary` | main CTA only | saturated orange | start, save, compare primary actions |
+| `action-secondary` | non-primary actions | light brown border + ivory fill | secondary buttons |
+| `selected-state` | currently chosen chip/filter | strong warm yellow with dark text | selected chips and toggles |
+| `decision-highlight` | verdict or priority summary | pale yellow / ivory with warm border | verdict box, decision summary |
+| `trust-info` | trust and evidence blocks | ivory + brown text, low chroma | season/flight/source signals |
+| `warning` | caution, watch-outs | deeper ochre / muted orange | watch-outs, “check again” states |
+| `error` | blocked or failed actions | reserved burnt orange-red | actual errors only |
+
+### Hard rules
+
+- `action-primary` and `selected-state` must not use the same exact color treatment.
+- `decision-highlight` must not look clickable.
+- `warning` must not share the same look as `action-primary`.
+- `mood evidence` must not use stronger color than `trust-info` or `decision-highlight`.
+- if a user can infer “click this now” from a box, it should not be a verdict summary box.
+
+### Implementation guidance
+
+Map the current token system toward role-based use:
+
+- `--color-paper`, `--color-paper-sheet`, `--color-paper-elevated` -> surfaces only
+- `--color-ink`, `--color-ink-soft` -> text only
+- `--color-sand`, `--color-sand-deep` -> labels and secondary structure
+- `--color-accent` -> primary action only
+- `--color-paper-soft` should stop acting as both selected state and decision summary highlight
+
+If needed, split it into separate tokens such as:
+
+- `--color-action-primary`
+- `--color-selected`
+- `--color-decision-highlight`
+- `--color-warning-soft`
 
 ## 7. Typography
 
