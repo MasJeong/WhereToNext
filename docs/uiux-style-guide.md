@@ -1,5 +1,7 @@
 # SooGo UI/UX Style Guide
 
+Reference note: `docs/designus-reference-notes.md`
+
 ## 1. Product stance
 
 SooGo is not a search engine and not a booking-first OTA.
