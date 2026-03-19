@@ -100,7 +100,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
 
   return (
     <section className="space-y-4">
-      <div className="compass-note compass-stage-reveal flex flex-col gap-3 rounded-[calc(var(--radius-card)-6px)] p-4 sm:p-5 sm:flex-row sm:items-center sm:justify-between">
+      <div className="compass-open-info compass-stage-reveal flex flex-col gap-3 rounded-[calc(var(--radius-card)-6px)] p-4 sm:p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="compass-editorial-kicker">비교 방식</p>
           <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
@@ -113,7 +113,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
             type="button"
             data-testid={testIds.compare.differencesToggle}
             onClick={() => setShowDifferencesOnly((currentState) => !currentState)}
-            className={`${showDifferencesOnly ? "compass-selected" : "compass-action-secondary"} rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]`}
+            className={`${showDifferencesOnly ? "compass-selected" : "compass-action-secondary"} compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]`}
           >
             {showDifferencesOnly ? "차이만 보기 해제" : "차이만 보기"}
           </button>
@@ -123,7 +123,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
               data-testid={testIds.compare.mobilePrev}
               onClick={() => setMobileStartIndex((currentIndex) => Math.max(0, currentIndex - 1))}
               disabled={!canMovePrev}
-              className="compass-action-secondary rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] disabled:opacity-40"
+              className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] disabled:opacity-40"
             >
               이전
             </button>
@@ -132,7 +132,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
               data-testid={testIds.compare.mobileNext}
               onClick={() => setMobileStartIndex((currentIndex) => (canMoveNext ? currentIndex + 1 : currentIndex))}
               disabled={!canMoveNext}
-              className="compass-action-secondary rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] disabled:opacity-40"
+              className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] disabled:opacity-40"
             >
               다음
             </button>
@@ -140,7 +140,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
         </div>
       </div>
 
-      <div className="md:hidden">
+      <div className="compass-compare-wrap rounded-[var(--radius-card)] md:hidden">
         <div
           className="compass-compare-grid grid w-full gap-px rounded-[var(--radius-card)]"
           style={{
@@ -158,7 +158,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
                   {column.card.destination.nameKo}
                 </p>
                 <p className="text-xs text-[var(--color-ink-soft)]">{column.card.destination.nameEn}</p>
-                <div className="compass-decision-card rounded-[calc(var(--radius-card)-10px)] px-3 py-3 text-sm">
+                <div className="compass-compare-column-summary px-3 text-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-soft)]">결정 요약</p>
                   <p className="mt-2 font-semibold text-[var(--color-ink)]">
                     {column.card.recommendation.scoreBreakdown.total}점 · {column.card.recommendation.confidence}% 일치
@@ -185,7 +185,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
               {mobileColumns.map((column) => (
                 <div
                   key={`mobile-${row.label}-${column.snapshotId}`}
-                  className={`${row.label === "체크할 점" ? "compass-warning-card" : "compass-trust-card"} px-3 py-4 text-xs leading-5 sm:px-4 sm:text-sm sm:leading-6`}
+                  className={`${row.label === "체크할 점" ? "compass-compare-cell compass-compare-cell-warning" : "compass-compare-cell"} px-3 py-4 text-xs leading-5 sm:px-4 sm:text-sm sm:leading-6`}
                 >
                   {row.value(column)}
                 </div>
@@ -195,7 +195,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
         </div>
       </div>
 
-      <div className="hidden overflow-x-auto md:block">
+      <div className="compass-compare-wrap hidden overflow-x-auto rounded-[var(--radius-card)] md:block compass-stage-reveal compass-stage-reveal-delayed">
         <div
           className="compass-compare-grid grid min-w-[52rem] gap-px rounded-[var(--radius-card)]"
           style={{
@@ -214,7 +214,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
                   {column.card.destination.nameKo}
                 </p>
                 <p className="text-xs text-[var(--color-ink-soft)]">{column.card.destination.nameEn}</p>
-                <div className="compass-decision-card rounded-[calc(var(--radius-card)-10px)] px-3 py-3 text-sm">
+                <div className="compass-compare-column-summary px-3 text-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-soft)]">결정 요약</p>
                   <p className="mt-2 font-semibold text-[var(--color-ink)]">
                     {column.card.recommendation.scoreBreakdown.total}점 · {column.card.recommendation.confidence}% 일치
@@ -241,7 +241,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
               {columns.map((column) => (
                 <div
                   key={`desktop-${row.label}-${column.snapshotId}`}
-                  className={`${row.label === "체크할 점" ? "compass-warning-card" : "compass-trust-card"} px-4 py-4 text-sm leading-6`}
+                  className={`${row.label === "체크할 점" ? "compass-compare-cell compass-compare-cell-warning" : "compass-compare-cell"} px-4 py-4 text-sm leading-6`}
                 >
                   {row.value(column)}
                 </div>

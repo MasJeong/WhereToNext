@@ -570,8 +570,10 @@ export function HomeExperience() {
    * Scrolls the user to the guided recommendation-start section.
    */
   function scrollToRecommendationStart() {
+    const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     document.getElementById("recommendation-start-section")?.scrollIntoView({
-      behavior: "smooth",
+      behavior: prefersReducedMotion ? "auto" : "smooth",
       block: "start",
     });
   }
@@ -885,7 +887,7 @@ export function HomeExperience() {
           className={`grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(22rem,1.1fr)] xl:gap-7 ${savedSnapshots.length > 0 ? "pb-32 md:pb-0" : ""}`}
         >
           <section className="space-y-6">
-            <article className="compass-desk compass-stage-reveal rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
+            <article className="compass-desk compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
               <div className="grid gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(19rem,0.92fr)] lg:gap-7">
                 <div className="space-y-6">
                   <div>
@@ -901,7 +903,7 @@ export function HomeExperience() {
                         type="button"
                         data-testid={testIds.shell.heroStartCta}
                         onClick={scrollToRecommendationStart}
-                        className="compass-action-primary rounded-full px-5 py-3 text-sm font-semibold tracking-[0.04em]"
+                        className="compass-action-primary compass-soft-press rounded-full px-5 py-3 text-sm font-semibold tracking-[0.04em]"
                       >
                         내 여행 조건으로 추천 받기
                       </button>
@@ -965,7 +967,7 @@ export function HomeExperience() {
 
             <article
               id="recommendation-start-section"
-              className="compass-sheet compass-stage-reveal compass-stage-reveal-delayed rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8"
+              className="compass-sheet compass-stage-reveal compass-stage-reveal-slower rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8"
             >
               <div className="flex flex-col gap-4 border-b border-[color:var(--color-frame-soft)] pb-5 lg:pb-6">
                 <div>
@@ -1159,7 +1161,7 @@ export function HomeExperience() {
             {savedSnapshots.length > 0 ? (
               <article
                 id="saved-snapshots-section"
-                className="compass-desk compass-stage-reveal compass-stage-reveal-delayed rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 xl:sticky xl:top-6"
+                className="compass-desk compass-stage-reveal compass-stage-reveal-later rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 xl:sticky xl:top-8"
               >
                 <div className="flex flex-col gap-4 border-b border-[color:var(--color-frame-soft)] pb-5 lg:flex-row lg:items-end lg:justify-between">
                   <div>
@@ -1204,7 +1206,7 @@ export function HomeExperience() {
                     data-testid={testIds.snapshot.compareSnapshot}
                     onClick={createCompareSnapshot}
                     disabled={!canCreateCompare || compareLoading}
-                    className="compass-action-primary rounded-full px-5 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="compass-action-primary compass-soft-press rounded-full px-5 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {compareButtonLabel}
                   </button>
@@ -1218,8 +1220,8 @@ export function HomeExperience() {
               </article>
             ) : null}
 
-            <article className="compass-desk compass-stage-reveal compass-stage-reveal-slower rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
-              <div className="flex flex-col gap-4 border-b border-[color:var(--color-frame-soft)] pb-5 lg:flex-row lg:items-end lg:justify-between">
+            <article className="compass-editorial-band compass-stage-reveal compass-stage-reveal-later rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
+              <div className="compass-ambient-divider flex flex-col gap-4 pb-5 lg:flex-row lg:items-end lg:justify-between">
                 <div>
                   <p className="compass-editorial-kicker">추천 결과</p>
                   <h2 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">
@@ -1237,9 +1239,9 @@ export function HomeExperience() {
                 ) : null}
               </div>
 
-              <div className="mt-5 space-y-4">
+              <div className="mt-5 space-y-5">
                 {submitError ? (
-                  <div className="compass-sheet rounded-[calc(var(--radius-card)-10px)] p-5 text-sm leading-7 text-[var(--color-ink)]">
+                  <div className="compass-open-info rounded-[calc(var(--radius-card)-12px)] p-5 text-sm leading-7 text-[var(--color-ink)]">
                     {submitError}
                   </div>
                 ) : null}
@@ -1265,7 +1267,7 @@ export function HomeExperience() {
                 ) : null}
 
                 {!results && !submitError && !isSubmitting ? (
-                  <div className="compass-note rounded-[calc(var(--radius-card)-10px)] p-5 sm:p-6">
+                  <div className="compass-open-info rounded-[calc(var(--radius-card)-12px)] p-5 sm:p-6">
                     <p className="compass-editorial-kicker">추천 결과는 이렇게 읽어요</p>
                     <div className="mt-4 grid gap-3 sm:grid-cols-3">
                       <div>
@@ -1287,7 +1289,7 @@ export function HomeExperience() {
                 {results && cards.length === 0 ? (
                   <div
                     data-testid={testIds.result.emptyState}
-                    className="compass-sheet rounded-[calc(var(--radius-card)-10px)] p-5"
+                    className="compass-open-info rounded-[calc(var(--radius-card)-12px)] p-5"
                   >
                     <p className="text-lg font-semibold text-[var(--color-ink)]">
                       지금 조건에 딱 맞는 목적지가 없어요.
@@ -1328,78 +1330,82 @@ export function HomeExperience() {
                 {results?.meta.personalized ? (
                   <div
                     data-testid={testIds.shell.personalizedNote}
-                    className="compass-trust-card rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm leading-6"
+                    className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6"
                   >
                     개인화 안내 · 지금 추천에는 로그인한 여행 기록과 선호가 함께 반영되고 있어요.
                   </div>
                 ) : null}
 
-                {visibleCards.map((card, index) => {
-                  const saveState = saveStates[card.destination.id] ?? { status: "idle" as const };
+                {visibleCards.length > 0 ? (
+                  <div className="compass-result-flow pt-2">
+                    {visibleCards.map((card, index) => {
+                      const saveState = saveStates[card.destination.id] ?? { status: "idle" as const };
 
-                  return (
-                    <RecommendationCard
-                      key={card.destination.id}
-                      card={card}
-                      index={index}
-                      query={results?.query}
-                      actionSlot={
-                        <>
-                          <button
-                            type="button"
-                            data-testid={getSaveSnapshotTestId(index)}
-                            onClick={() => {
-                              void saveCard(card);
-                            }}
-                            disabled={saveState.status === "saving"}
-                            className="compass-action-primary rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
-                          >
-                            {saveState.status === "saving"
-                              ? "저장 중..."
-                              : saveState.status === "saved"
-                                ? "저장 완료"
-                                : "이 카드 저장"}
-                          </button>
-                          {saveState.shareUrl ? (
+                      return (
+                        <RecommendationCard
+                          key={card.destination.id}
+                          card={card}
+                          index={index}
+                          query={results?.query}
+                          actionSlot={
                             <>
-                              <Link
-                                data-testid={testIds.snapshot.shareLink}
-                                href={buildSnapshotPath(saveState.snapshotId ?? "", "recommendation")}
-                                className="compass-action-secondary rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em]"
-                              >
-                                공유 페이지 보기
-                              </Link>
                               <button
                                 type="button"
-                                data-testid={testIds.snapshot.copyShareLink}
+                                data-testid={getSaveSnapshotTestId(index)}
                                 onClick={() => {
-                                  if (saveState.shareUrl) {
-                                    void copyShareUrl(saveState.shareUrl);
-                                  }
+                                  void saveCard(card);
                                 }}
-                                className="compass-action-secondary rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em]"
+                                disabled={saveState.status === "saving"}
+                                className="compass-action-primary compass-soft-press rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
                               >
-                                링크 복사
+                                {saveState.status === "saving"
+                                  ? "저장 중..."
+                                  : saveState.status === "saved"
+                                    ? "저장 완료"
+                                    : "이 카드 저장"}
                               </button>
+                              {saveState.shareUrl ? (
+                                <>
+                                  <Link
+                                    data-testid={testIds.snapshot.shareLink}
+                                    href={buildSnapshotPath(saveState.snapshotId ?? "", "recommendation")}
+                                    className="compass-action-secondary rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em]"
+                                  >
+                                    공유 페이지 보기
+                                  </Link>
+                                  <button
+                                    type="button"
+                                    data-testid={testIds.snapshot.copyShareLink}
+                                    onClick={() => {
+                                      if (saveState.shareUrl) {
+                                        void copyShareUrl(saveState.shareUrl);
+                                      }
+                                    }}
+                                    className="compass-action-secondary rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em]"
+                                  >
+                                    링크 복사
+                                  </button>
+                                </>
+                              ) : null}
+                              {saveState.status === "error" ? (
+                                <span className="compass-warning-card rounded-full px-3 py-2 text-xs font-semibold">
+                                  저장에 실패했어요. 다시 시도해 주세요.
+                                </span>
+                              ) : null}
                             </>
-                          ) : null}
-                          {saveState.status === "error" ? (
-                            <span className="compass-warning-card rounded-full px-3 py-2 text-xs font-semibold">
-                              저장에 실패했어요. 다시 시도해 주세요.
-                            </span>
-                          ) : null}
-                        </>
-                      }
-                    />
-                  );
-                })}
+                          }
+                        />
+                      );
+                    })}
+                  </div>
+                ) : null}
 
                 {cards.length > 3 ? (
                   <button
                     type="button"
                     data-testid={testIds.result.showMoreResults}
                     onClick={() => setShowAllResults((currentValue) => !currentValue)}
-                    className="compass-action-secondary w-full rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm font-semibold tracking-[0.04em]"
+                    className="compass-action-secondary mx-auto block w-full max-w-xl rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm font-semibold tracking-[0.04em]"
                   >
                     {showAllResults ? "상위 3개만 다시 보기" : `목적지 카드 ${cards.length - 3}개 더 보기`}
                   </button>
@@ -1413,7 +1419,7 @@ export function HomeExperience() {
           <div className="pointer-events-none fixed inset-x-4 bottom-4 z-30 md:hidden">
             <article
               data-testid={testIds.snapshot.stickyCompareTray}
-              className="compass-panel pointer-events-auto rounded-[calc(var(--radius-card)-6px)] px-4 py-4 text-[var(--color-paper)]"
+              className="compass-panel compass-sticky-tray pointer-events-auto rounded-[calc(var(--radius-card)-6px)] px-4 py-4 text-[var(--color-paper)]"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
@@ -1427,15 +1433,17 @@ export function HomeExperience() {
                 </div>
 
                 <button
-                  type="button"
-                  onClick={() => {
-                    document.getElementById("saved-snapshots-section")?.scrollIntoView({
-                      behavior: "smooth",
-                      block: "start",
-                    });
-                  }}
-                  className="compass-action-secondary rounded-full px-3 py-2 text-[11px] font-semibold tracking-[0.04em]"
-                >
+                    type="button"
+                    onClick={() => {
+                      const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+                      document.getElementById("saved-snapshots-section")?.scrollIntoView({
+                        behavior: prefersReducedMotion ? "auto" : "smooth",
+                        block: "start",
+                      });
+                    }}
+                    className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-[11px] font-semibold tracking-[0.04em]"
+                  >
                   카드 보기
                 </button>
               </div>
@@ -1445,7 +1453,7 @@ export function HomeExperience() {
                 data-testid={testIds.snapshot.stickyCompareAction}
                 onClick={createCompareSnapshot}
                 disabled={!canCreateCompare || compareLoading}
-                className="compass-action-primary mt-4 w-full rounded-full px-4 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
+                className="compass-action-primary compass-soft-press mt-4 w-full rounded-full px-4 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {compareButtonLabel}
               </button>
