@@ -1,5 +1,9 @@
 # SooGo MVP UX Proposal
 
+Reference notes:
+- `docs/uiux-style-guide.md`
+- `docs/designus-reference-notes.md`
+
 ## 1. 서비스 한 줄 정의
 
 SooGo는 아직 목적지를 정하지 못한 사용자가 몇 가지 여행 조건만 선택하면, 자신에게 맞는 해외 여행지를 빠르게 발견하고 추천 이유를 납득한 뒤 저장·비교까지 이어갈 수 있게 돕는 발견형 추천 서비스다.
