@@ -9,6 +9,7 @@ Scope: entire repository.
 - Do not invent routes, schema shapes, commands, or workflows.
 - Prefer existing helpers and service layers over parallel abstractions.
 - Read `docs/tech-stack.md` for stack questions before inferring from memory.
+- Read `docs/korean-copy-guidelines.md` before changing user-facing Korean copy.
 - Read `docs/issue-resolution-log.md` before debugging recurring or recent issues.
 - After resolving a non-trivial issue, append a short verified note to `docs/issue-resolution-log.md`.
 
@@ -25,11 +26,9 @@ Scope: entire repository.
 - If any of those appear later, follow them and update this file to reflect the new instruction stack.
 
 ## 4) Repository Snapshot
-- Product: `SooGo`, an anonymous-first travel recommendation app.
 - Stack: `Next.js 16 App Router`, `React 19`, `TypeScript 5` strict, `Tailwind CSS 4`, `Zod`.
 - Data: `Drizzle ORM` with `Postgres` when `DATABASE_URL` exists and `PGlite` fallback otherwise.
 - Testing: `Vitest` for unit tests, `Playwright` for e2e.
-- Package manager: `npm`.
 
 ## 5) Important Paths
 - App routes: `src/app/`
@@ -40,14 +39,11 @@ Scope: entire repository.
 - Runtime DB setup: `src/lib/db/runtime.ts`
 - DB schema: `src/lib/db/schema.ts`
 - Recommendation engine: `src/lib/recommendation/engine.ts`
-- Snapshot service: `src/lib/snapshots/service.ts`
-- Presentation helpers: `src/lib/trip-compass/presentation.ts`
 - Test selectors: `src/lib/test-ids.ts`
 - Global styles: `src/app/globals.css`
 - Middleware/security headers: `middleware.ts`
 - Migrations: `drizzle/`
-- Unit tests: `tests/unit/**`
-- E2E tests: `tests/e2e/**`
+- Korean UX copy guidance: `docs/korean-copy-guidelines.md`
 
 ## 6) Build, Lint, and Test Commands
 - Install: `npm install`
@@ -81,7 +77,6 @@ Scope: entire repository.
   2. internal `@/` modules
   3. relative imports when truly local
 - Prefer `import type` for type-only imports.
-- Remove unused imports.
 - Reuse helpers from `src/lib/` instead of re-implementing logic in routes or components.
 
 ## 9) TypeScript and Data Contracts
@@ -97,7 +92,6 @@ Scope: entire repository.
 - Functions, variables, and hooks: camelCase.
 - Constants: UPPER_SNAKE_CASE only for real constants.
 - Component and utility filenames are usually kebab-case.
-- Next route filenames stay conventional: `page.tsx`, `layout.tsx`, `route.ts`.
 
 ## 11) Next.js and React Conventions
 - Default to Server Components in `src/app/`.
@@ -112,7 +106,6 @@ Scope: entire repository.
 - Reuse shared visual primitives and token classes from `src/app/globals.css`.
 - Existing UI language is editorial, warm, and summary-first; keep new UI aligned with that direction.
 - Prefer Tailwind utilities plus shared classes such as `compass-*` and `instagram-card`.
-- Avoid one-off inline styles unless necessary.
 - Keep cards and comparison views easy to scan on both desktop and mobile.
 
 ## 13) Validation, Errors, and API Behavior
@@ -145,9 +138,7 @@ Scope: entire repository.
 - If UI copy changes break tests, update the assertions deliberately instead of weakening coverage.
 
 ## 17) Documentation Updates
-- Update `README.md` for product or command changes.
-- Update `AGENTS.md` when workflow or coding conventions change.
-- Update `.env.example` when environment variables change.
+- Update `README.md`, `AGENTS.md`, or `.env.example` when commands, conventions, or environment variables change.
 
 ## 18) Finish Checklist
 - Did I use only real scripts and installed tools?
