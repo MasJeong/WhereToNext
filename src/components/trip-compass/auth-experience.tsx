@@ -103,7 +103,7 @@ export function AuthExperience() {
       headerAside={
         <Link
           href="/"
-          className="compass-panel rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm leading-6 text-[var(--color-paper)]"
+          className="compass-panel compass-soft-press rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm leading-6 text-[var(--color-paper)]"
         >
           추천부터 먼저 둘러볼게요
         </Link>
@@ -243,7 +243,7 @@ export function AuthExperience() {
                 data-testid={testIds.auth.submit}
                 type="submit"
                 disabled={isSubmitting}
-                className="compass-action-primary rounded-full px-5 py-3 text-sm font-semibold tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-60"
+                className="compass-action-primary compass-soft-press rounded-full px-5 py-3 text-sm font-semibold tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSubmitting
                   ? "처리 중..."

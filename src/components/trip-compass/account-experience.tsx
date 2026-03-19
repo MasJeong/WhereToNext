@@ -221,7 +221,7 @@ export function AccountExperience({
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
               href="/"
-              className="compass-action-secondary rounded-full px-4 py-2 text-xs font-semibold tracking-[0.18em]"
+              className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.18em]"
             >
               홈으로
             </Link>
@@ -230,7 +230,7 @@ export function AccountExperience({
               onClick={() => {
                 void handleSignOut();
               }}
-              className="compass-action-primary rounded-full px-4 py-2 text-xs font-semibold tracking-[0.18em]"
+              className="compass-action-primary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.18em]"
             >
               로그아웃
             </button>
@@ -387,7 +387,7 @@ export function AccountExperience({
                 onClick={() => {
                   void createHistoryEntry();
                 }}
-                className="compass-action-primary rounded-full px-5 py-3 text-sm font-semibold tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-60"
+                className="compass-action-primary compass-soft-press rounded-full px-5 py-3 text-sm font-semibold tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isCreatingHistory ? "저장 중..." : "여행 기록 저장"}
               </button>
@@ -456,7 +456,7 @@ export function AccountExperience({
                           onClick={() => {
                             void deleteHistoryEntry(entry.id);
                           }}
-                          className="compass-action-secondary rounded-full px-4 py-2 text-xs font-semibold tracking-[0.18em]"
+                          className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.18em]"
                         >
                           삭제
                         </button>
