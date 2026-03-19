@@ -100,9 +100,9 @@ export function CompareBoard({ columns }: CompareBoardProps) {
 
   return (
     <section className="space-y-4">
-      <div className="compass-note flex flex-col gap-3 rounded-[calc(var(--radius-card)-6px)] p-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="compass-note compass-stage-reveal flex flex-col gap-3 rounded-[calc(var(--radius-card)-6px)] p-4 sm:p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] compass-kicker">비교 방식</p>
+          <p className="compass-editorial-kicker">비교 방식</p>
           <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
             모바일에서는 두 후보씩, 데스크톱에서는 전체 후보를 같은 기준 행으로 비교해요.
           </p>
@@ -140,21 +140,23 @@ export function CompareBoard({ columns }: CompareBoardProps) {
         </div>
       </div>
 
-      <div className="overflow-x-auto md:hidden">
+      <div className="md:hidden">
         <div
-          className="grid min-w-[30rem] gap-px rounded-[var(--radius-card)] bg-[color:var(--color-trust-info-border)]"
+          className="compass-compare-grid grid w-full gap-px rounded-[var(--radius-card)]"
           style={{
-            gridTemplateColumns: `minmax(8rem, 10rem) repeat(${mobileColumns.length}, minmax(10rem, 1fr))`,
+            gridTemplateColumns: `minmax(6.25rem, 7rem) repeat(${mobileColumns.length}, minmax(0, 1fr))`,
           }}
         >
-          <div className="compass-trust-card px-4 py-4 text-sm font-semibold">비교 기준</div>
-        {mobileColumns.map((column) => (
+          <div className="compass-compare-label px-3 py-4 text-xs font-semibold sm:px-4 sm:text-sm">비교 기준</div>
+          {mobileColumns.map((column) => (
             <div
               key={`mobile-header-${column.snapshotId}`}
-              className="compass-trust-card px-4 py-4"
+              className="compass-compare-column px-3 py-4 sm:px-4"
             >
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-[var(--color-ink)]">{column.card.destination.nameKo}</p>
+                <p className="text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                  {column.card.destination.nameKo}
+                </p>
                 <p className="text-xs text-[var(--color-ink-soft)]">{column.card.destination.nameEn}</p>
                 <div className="compass-decision-card rounded-[calc(var(--radius-card)-10px)] px-3 py-3 text-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-soft)]">결정 요약</p>
@@ -176,14 +178,14 @@ export function CompareBoard({ columns }: CompareBoardProps) {
             <Fragment key={`mobile-${row.label}`}>
               <div
                 data-testid={row.label === "한 줄 판정" ? testIds.compare.verdictRow : undefined}
-                className={`${row.label === "한 줄 판정" ? "compass-decision-card" : "compass-trust-card"} px-4 py-4 text-sm font-semibold`}
+                className={`${row.label === "한 줄 판정" ? "compass-decision-card" : "compass-compare-label"} px-3 py-4 text-xs font-semibold sm:px-4 sm:text-sm`}
               >
                 {row.label}
               </div>
-          {mobileColumns.map((column) => (
+              {mobileColumns.map((column) => (
                 <div
                   key={`mobile-${row.label}-${column.snapshotId}`}
-                  className={`${row.label === "체크할 점" ? "compass-warning-card" : "compass-trust-card"} px-4 py-4 text-sm leading-6`}
+                  className={`${row.label === "체크할 점" ? "compass-warning-card" : "compass-trust-card"} px-3 py-4 text-xs leading-5 sm:px-4 sm:text-sm sm:leading-6`}
                 >
                   {row.value(column)}
                 </div>
@@ -195,20 +197,22 @@ export function CompareBoard({ columns }: CompareBoardProps) {
 
       <div className="hidden overflow-x-auto md:block">
         <div
-          className="grid min-w-[52rem] gap-px rounded-[var(--radius-card)] bg-[color:var(--color-trust-info-border)]"
+          className="compass-compare-grid grid min-w-[52rem] gap-px rounded-[var(--radius-card)]"
           style={{
             gridTemplateColumns: `minmax(10rem, 12rem) repeat(${columns.length}, minmax(14rem, 1fr))`,
           }}
         >
-          <div className="compass-trust-card px-4 py-4 text-sm font-semibold">비교 기준</div>
+          <div className="compass-compare-label px-4 py-4 text-sm font-semibold">비교 기준</div>
           {columns.map((column, index) => (
             <div
               key={`desktop-header-${column.snapshotId}`}
               data-testid={getCompareColumnTestId(index)}
-              className="compass-trust-card px-4 py-4"
+              className="compass-compare-column px-4 py-4"
             >
               <div className="space-y-2">
-                <p className="text-sm font-semibold text-[var(--color-ink)]">{column.card.destination.nameKo}</p>
+                <p className="text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                  {column.card.destination.nameKo}
+                </p>
                 <p className="text-xs text-[var(--color-ink-soft)]">{column.card.destination.nameEn}</p>
                 <div className="compass-decision-card rounded-[calc(var(--radius-card)-10px)] px-3 py-3 text-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-soft)]">결정 요약</p>
@@ -230,7 +234,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
             <Fragment key={`desktop-${row.label}`}>
               <div
                 data-testid={row.label === "한 줄 판정" ? testIds.compare.verdictRow : undefined}
-                className={`${row.label === "한 줄 판정" ? "compass-decision-card" : "compass-trust-card"} px-4 py-4 text-sm font-semibold`}
+                className={`${row.label === "한 줄 판정" ? "compass-decision-card" : "compass-compare-label"} px-4 py-4 text-sm font-semibold`}
               >
                 {row.label}
               </div>

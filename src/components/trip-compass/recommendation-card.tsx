@@ -130,92 +130,108 @@ export function RecommendationCard({ card, index, query, actionSlot }: Recommend
   const leadReasons = card.recommendation.reasons.slice(0, 3);
   const verdictBadge = buildVerdictBadge(card.recommendation.scoreBreakdown.total);
   const verdict = buildRecommendationVerdict(card, query);
+  const resultToneClass =
+    index === 0
+      ? "compass-result-card-primary"
+      : index === 1
+        ? "compass-result-card-secondary"
+        : "compass-result-card-tertiary";
 
   return (
     <article
       data-testid={getResultCardTestId(index)}
-      className="compass-result-card rounded-[var(--radius-card)] p-5 text-[var(--color-ink)] sm:p-6"
+      className={`compass-result-card ${resultToneClass} compass-stage-reveal rounded-[var(--radius-card)] p-5 text-[var(--color-ink)] sm:p-6 lg:p-7`}
     >
-      <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-4 border-b border-[color:var(--color-frame-soft)] pb-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="space-y-2">
+      <div className="flex flex-col gap-6">
+        <div className="flex flex-col gap-5 border-b border-[color:var(--color-frame-soft)] pb-5 xl:flex-row xl:items-end xl:justify-between">
+          <div className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <p className="text-xs font-semibold uppercase tracking-[0.28em] text-[var(--color-sand-deep)]">
+              <p className="compass-editorial-kicker">
                 {formatDestinationKind(destination.kind)} 추천
               </p>
-              <span className="compass-surface-muted rounded-full px-3 py-1 text-[11px] font-semibold">
+              <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
                 {verdictBadge}
               </span>
             </div>
-            <div>
-              <h2 className="font-display text-4xl tracking-[-0.05em] text-[var(--color-ink)] sm:text-5xl">
+            <div className="space-y-2">
+              <h2 className="font-display text-[2.65rem] leading-[0.94] tracking-[-0.06em] text-[var(--color-ink)] sm:text-[3.55rem]">
                 {destination.nameKo}
               </h2>
-              <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
+              <p className="text-sm text-[var(--color-ink-soft)] sm:text-base">
                 {destination.nameEn} · {destination.countryCode}
               </p>
             </div>
           </div>
 
-          <div className="compass-trust-card flex items-center gap-3 self-start rounded-full px-4 py-2 text-sm">
-            <span className="text-[var(--color-sand-deep)]">점수</span>
-            <strong className="text-base font-semibold text-[var(--color-ink)]">
-              {card.recommendation.scoreBreakdown.total}
-            </strong>
+          <div className="grid gap-3 sm:grid-cols-2 xl:min-w-[18rem]">
+            <div className="compass-decision-card rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
+                적합 점수
+              </p>
+              <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[var(--color-ink)]">
+                {card.recommendation.scoreBreakdown.total}점
+              </p>
+            </div>
+            <div className="compass-trust-card rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
+                일치도
+              </p>
+              <p className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-[var(--color-ink)]">
+                {card.recommendation.confidence}%
+              </p>
+            </div>
           </div>
         </div>
 
-        <section className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-sand-deep)]">
-            왜 먼저 봐야 하는지
-          </p>
-          <div className="compass-decision-card rounded-[calc(var(--radius-card)-6px)] p-4 sm:p-5">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
-              {verdict.label}
-            </p>
-            <p className="font-display mt-2 text-3xl leading-tight tracking-[-0.04em] sm:text-4xl">
-              {verdict.headline}
-            </p>
-            <p className="mt-3 text-sm leading-6 text-[var(--color-ink-soft)]">{verdict.support}</p>
-            <p className="mt-3 text-sm font-semibold text-[var(--color-ink-soft)]">
-              {card.recommendation.confidence}% 일치 · {describeTrustLead(primaryEvidence, card.recommendation.trendEvidence.length)}
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {leadReasons.map((reason) => (
-              <span
-                key={reason}
-                className="compass-surface-muted rounded-full px-3 py-1 text-xs"
-              >
-                {reason}
-              </span>
-            ))}
-          </div>
-        </section>
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.12fr)_minmax(17rem,0.88fr)]">
+          <section className="space-y-3">
+            <p className="compass-editorial-kicker">왜 먼저 봐야 하는지</p>
+            <div className="compass-decision-card rounded-[calc(var(--radius-card)-6px)] p-4 sm:p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
+                {verdict.label}
+              </p>
+              <p className="font-display mt-3 text-3xl leading-tight tracking-[-0.05em] sm:text-4xl">
+                {verdict.headline}
+              </p>
+              <p className="mt-3 text-sm leading-6 text-[var(--color-ink-soft)]">{verdict.support}</p>
+              <p className="mt-4 text-sm font-semibold text-[var(--color-ink-soft)]">
+                {describeTrustLead(primaryEvidence, card.recommendation.trendEvidence.length)}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {leadReasons.map((reason) => (
+                <span
+                  key={reason}
+                  className="compass-metric-pill rounded-full px-3 py-1 text-xs"
+                >
+                  {reason}
+                </span>
+              ))}
+            </div>
+          </section>
 
-        <section className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-sand-deep)]">
-            먼저 확인할 신뢰 신호
-          </p>
-          <div className="grid gap-3 sm:grid-cols-3">
-            {trustSignals.map((signal) => (
-              <div key={signal.label} className="compass-trust-card rounded-[calc(var(--radius-card)-10px)] p-4">
-                <p className="text-xs uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
-                  {signal.label}
-                </p>
-                <p className="mt-2 text-base font-semibold text-[var(--color-ink)]">{signal.value}</p>
-                <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{signal.detail}</p>
-              </div>
-            ))}
-          </div>
-        </section>
+          <section className="space-y-3">
+            <p className="compass-editorial-kicker">먼저 확인할 신뢰 신호</p>
+            <div className="grid gap-3">
+              {trustSignals.map((signal) => (
+                <div key={signal.label} className="compass-trust-card rounded-[calc(var(--radius-card)-10px)] p-4">
+                  <p className="text-xs uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
+                    {signal.label}
+                  </p>
+                  <p className="mt-2 text-base font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                    {signal.value}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{signal.detail}</p>
+                </div>
+              ))}
+            </div>
+          </section>
+        </div>
 
-        <section className="grid gap-3 sm:grid-cols-[1.1fr_0.9fr]">
-          <div className="compass-trust-card rounded-[calc(var(--radius-card)-10px)] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-sand-deep)]">
-              여행 정보
-            </p>
-            <div className="mt-3 grid gap-3 sm:grid-cols-3">
+        <section className="grid gap-3 lg:grid-cols-[minmax(0,1.08fr)_minmax(16rem,0.92fr)]">
+          <div className="compass-trust-card rounded-[calc(var(--radius-card)-10px)] p-4 sm:p-5">
+            <p className="compass-editorial-kicker">여행 정보</p>
+            <div className="mt-4 grid gap-4 sm:grid-cols-3">
               <div>
                 <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-ink-soft)]">추천 시기</p>
                 <p className="mt-2 text-sm leading-6">{formatMonthList(destination.bestMonths)}</p>
@@ -231,33 +247,29 @@ export function RecommendationCard({ card, index, query, actionSlot }: Recommend
             </div>
           </div>
 
-          <div className="compass-warning-card rounded-[calc(var(--radius-card)-10px)] p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.22em]">먼저 체크할 점</p>
+          <div className="compass-warning-card rounded-[calc(var(--radius-card)-10px)] p-4 sm:p-5">
+            <p className="compass-editorial-kicker text-[var(--color-warning-text)]">먼저 체크할 점</p>
             <p className="mt-3 text-sm leading-6">{compactWatchOut}</p>
           </div>
         </section>
 
         <section className="space-y-3">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-sand-deep)]">
-            다음 행동
-          </p>
+          <p className="compass-editorial-kicker">다음 행동</p>
           <div className="flex flex-wrap gap-3">{actionSlot}</div>
         </section>
 
         <section className="space-y-3" data-testid={getInstagramVibeTestId(index)}>
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-sand-deep)]">
-              분위기 참고
-            </p>
+            <p className="compass-editorial-kicker">분위기 참고</p>
             <p className="text-xs leading-5 text-[var(--color-ink-soft)]">
               저장 여부를 거의 정했을 때, 마지막으로 감도만 확인하는 보조 레이어예요.
             </p>
           </div>
-          <div className="compass-note rounded-[calc(var(--radius-card)-6px)] p-4">
+          <div className="compass-note rounded-[calc(var(--radius-card)-6px)] p-4 sm:p-5">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
-                  <span className="compass-surface-muted rounded-full px-3 py-1 text-[11px] font-semibold">
+                  <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
                     {describeSourceBadge(primaryEvidence)}
                   </span>
                   <span className="text-xs uppercase tracking-[0.2em] text-[var(--color-ink-soft)]">

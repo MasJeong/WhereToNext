@@ -297,14 +297,14 @@ function IntentChip({ preset, active, onSelect }: IntentChipProps) {
       data-testid={preset.testId}
       aria-pressed={active}
       onClick={() => onSelect(preset)}
-      className={`rounded-[calc(var(--radius-card)-10px)] border px-4 py-4 text-left transition ${
+      className={`rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-left sm:px-5 sm:py-5 ${
         active
           ? "compass-selected shadow-[0_14px_32px_rgb(177_141_70_/_0.16)]"
-          : "border-[color:var(--color-frame-soft)] bg-[color:var(--color-paper-elevated)] text-[var(--color-ink)] hover:-translate-y-0.5 hover:border-[color:var(--color-sand)]"
+          : "compass-selection-chip"
       }`}
     >
-      <span className="block text-base font-semibold">{preset.label}</span>
-      <span className="mt-2 block text-sm leading-6 text-[var(--color-ink-soft)]">
+      <span className="block text-base font-semibold tracking-[-0.02em]">{preset.label}</span>
+      <span className="mt-2 block text-sm leading-6 text-[var(--color-ink-soft)] sm:mt-3">
         {preset.description}
       </span>
     </button>
@@ -340,13 +340,13 @@ function FlowStep<TValue extends string | number>({
   onSelect,
 }: FlowStepProps<TValue>) {
   return (
-    <section className="compass-sheet space-y-3 rounded-[calc(var(--radius-card)-8px)] p-4 sm:p-5">
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <p className="text-sm font-semibold text-[var(--color-sand-deep)]">{step}</p>
-          <h3 className="mt-2 text-lg font-semibold text-[var(--color-ink)]">{title}</h3>
+    <section className="compass-sheet compass-lift-card space-y-4 rounded-[calc(var(--radius-card)-8px)] p-4 sm:p-5">
+      <div className="flex flex-col gap-3 border-b border-[color:var(--color-frame-soft)] pb-4 sm:flex-row sm:items-start sm:justify-between">
+        <div className="space-y-2">
+          <p className="compass-editorial-kicker">{step}</p>
+          <h3 className="text-lg font-semibold tracking-[-0.02em] text-[var(--color-ink)]">{title}</h3>
         </div>
-        <p className="max-w-52 text-right text-xs leading-5 text-[var(--color-ink-soft)]">
+        <p className="max-w-60 text-xs leading-5 text-[var(--color-ink-soft)] sm:text-right">
           {caption}
         </p>
       </div>
@@ -379,13 +379,13 @@ function ChoiceButton({ label, description, active, onClick, testId }: ChoiceBut
       data-testid={testId}
       aria-pressed={active}
       onClick={onClick}
-      className={`rounded-[calc(var(--radius-card)-10px)] border px-4 py-4 text-left transition ${
+      className={`rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-left ${
         active
           ? "compass-selected shadow-[0_12px_30px_rgb(177_141_70_/_0.14)]"
-          : "border-[color:var(--color-frame-soft)] bg-[color:var(--color-paper-elevated)] text-[var(--color-ink)] hover:border-[color:var(--color-sand)] hover:-translate-y-0.5"
+          : "compass-selection-chip"
       }`}
     >
-      <span className="block text-sm font-semibold">{label}</span>
+      <span className="block text-sm font-semibold tracking-[-0.01em]">{label}</span>
       <span className="mt-2 block text-xs leading-5 text-[var(--color-ink-soft)]">
         {description}
       </span>
@@ -408,21 +408,23 @@ function SavedSnapshotRailCard({
   return (
     <div
       data-testid={getSavedSnapshotTestId(index)}
-      className="compass-sheet rounded-[calc(var(--radius-card)-10px)] p-4"
+      className="compass-sheet compass-lift-card rounded-[calc(var(--radius-card)-10px)] p-4 sm:p-5"
     >
-      <div className="flex items-start justify-between gap-3">
+      <div className="flex items-start justify-between gap-3 border-b border-[color:var(--color-frame-soft)] pb-4">
         <div>
-          <p className="text-sm font-semibold text-[var(--color-sand-deep)]">저장한 카드</p>
-          <p className="mt-2 text-base font-semibold text-[var(--color-ink)]">{snapshot.destinationName}</p>
+          <p className="compass-editorial-kicker">저장한 카드</p>
+          <p className="mt-2 text-base font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+            {snapshot.destinationName}
+          </p>
         </div>
         <button
           type="button"
           onClick={() => onToggle(snapshot.snapshotId)}
-          className={`rounded-full border px-3 py-1 text-xs font-semibold tracking-[0.04em] ${
+          className={`rounded-full px-3 py-1 text-xs font-semibold tracking-[0.04em] ${
             selected
               ? "compass-selected"
-              : "border-[color:var(--color-frame-soft)] text-[var(--color-ink)]"
-          }`}
+              : "compass-selection-chip"
+           }`}
         >
           {selected ? "선택됨" : "선택"}
         </button>
@@ -831,48 +833,48 @@ export function HomeExperience() {
       headerAside={
         <article
           data-testid={testIds.shell.identityCard}
-          className="compass-trust-card rounded-[calc(var(--radius-card)-10px)] px-4 py-4"
+          className="compass-trust-card compass-lift-card rounded-[calc(var(--radius-card)-10px)] px-4 py-4 sm:px-5 sm:py-5"
         >
           {isSessionPending ? (
             <>
-                <p className="text-sm font-semibold text-[var(--color-sand-deep)]">여행 기억 확인 중</p>
-                <p className="mt-3 text-sm leading-6 text-[var(--color-ink-soft)]">
-                  저장된 여행 기록을 확인하고 있어요.
-                </p>
+              <p className="compass-editorial-kicker">여행 기억 확인 중</p>
+              <p className="mt-3 text-sm leading-6 text-[var(--color-ink-soft)]">
+                저장된 여행 기록을 확인하고 있어요.
+              </p>
             </>
           ) : viewer ? (
             <>
-                <p className="text-sm font-semibold text-[var(--color-sand-deep)]">기억이 연결된 추천</p>
-                <p className="mt-3 text-lg font-semibold text-[var(--color-ink)]">
-                  {viewer.name}님의 여행 프로필
-                </p>
-                <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-                  선호와 방문 이력을 관리하면 다음 추천에 바로 반영돼요.
-                </p>
-                <Link
-                  data-testid={testIds.shell.accountLink}
-                  href="/account"
-                  className="compass-action-secondary mt-4 inline-flex rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em] transition hover:-translate-y-0.5"
-                >
-                  여행 프로필 열기
-                </Link>
+              <p className="compass-editorial-kicker">기억이 연결된 추천</p>
+              <p className="mt-3 text-lg font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                {viewer.name}님의 여행 프로필
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
+                선호와 방문 이력을 관리하면 다음 추천에 바로 반영돼요.
+              </p>
+              <Link
+                data-testid={testIds.shell.accountLink}
+                href="/account"
+                className="compass-action-secondary mt-4 inline-flex rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em]"
+              >
+                여행 프로필 열기
+              </Link>
             </>
           ) : (
             <>
-                <p className="text-sm font-semibold text-[var(--color-sand-deep)]">로그인은 선택</p>
-                <p className="mt-3 text-lg font-semibold text-[var(--color-ink)]">
-                  마음에 든 여행을 남겨 다음 추천까지 이어보세요.
-                </p>
-                <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-                  익명 추천은 그대로 두고, 로그인하면 취향과 여행 이력만 가볍게 덧붙일 수 있어요.
-                </p>
-                <Link
-                  data-testid={testIds.shell.authCta}
-                  href="/auth"
-                  className="compass-action-secondary mt-4 inline-flex rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em] transition hover:-translate-y-0.5"
-                >
-                  로그인 · 회원가입
-                </Link>
+              <p className="compass-editorial-kicker">로그인은 선택</p>
+              <p className="mt-3 text-lg font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                마음에 든 여행을 남겨 다음 추천까지 이어보세요.
+              </p>
+              <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
+                익명 추천은 그대로 두고, 로그인하면 취향과 여행 이력만 가볍게 덧붙일 수 있어요.
+              </p>
+              <Link
+                data-testid={testIds.shell.authCta}
+                href="/auth"
+                className="compass-action-secondary mt-4 inline-flex rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em]"
+              >
+                로그인 · 회원가입
+              </Link>
             </>
           )}
         </article>
@@ -880,26 +882,26 @@ export function HomeExperience() {
     >
       <>
         <div
-          className={`grid gap-6 xl:grid-cols-[minmax(0,0.92fr)_minmax(22rem,1.08fr)] ${savedSnapshots.length > 0 ? "pb-32 md:pb-0" : ""}`}
+          className={`grid gap-6 xl:grid-cols-[minmax(0,0.9fr)_minmax(22rem,1.1fr)] xl:gap-7 ${savedSnapshots.length > 0 ? "pb-32 md:pb-0" : ""}`}
         >
           <section className="space-y-6">
-            <article className="compass-desk rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
-              <div className="grid gap-6 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]">
-                <div className="space-y-5">
+            <article className="compass-desk compass-stage-reveal rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
+              <div className="grid gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(19rem,0.92fr)] lg:gap-7">
+                <div className="space-y-6">
                   <div>
-                    <p className="text-sm font-semibold text-[var(--color-sand-deep)]">빠른 시작 의도</p>
-                    <h2 className="mt-2 text-3xl font-semibold tracking-[-0.03em] text-[var(--color-ink)] sm:text-4xl">
+                    <p className="compass-editorial-kicker">빠른 시작 의도</p>
+                    <h2 className="font-display mt-3 text-3xl leading-[0.98] tracking-[-0.04em] text-[var(--color-ink)] sm:text-4xl">
                       여행의 결부터 고르면, 목적지는 그다음에 좁혀져요.
                     </h2>
-                    <p className="mt-3 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)] sm:text-base">
+                    <p className="mt-4 max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)] sm:text-base sm:leading-8">
                       아직 도시를 정하지 못했어도 괜찮아요. 자주 나오는 여행 의도부터 한 번에 고른 뒤, 아래 조건 카드에서 바로 다듬어 추천을 시작할 수 있어요.
                     </p>
-                    <div className="mt-5 flex flex-wrap items-center gap-3">
+                    <div className="mt-6 flex flex-wrap items-center gap-3">
                       <button
                         type="button"
                         data-testid={testIds.shell.heroStartCta}
                         onClick={scrollToRecommendationStart}
-                        className="compass-action-primary rounded-full px-5 py-3 text-sm font-semibold tracking-[0.04em] transition hover:-translate-y-0.5"
+                        className="compass-action-primary rounded-full px-5 py-3 text-sm font-semibold tracking-[0.04em]"
                       >
                         내 여행 조건으로 추천 받기
                       </button>
@@ -909,7 +911,7 @@ export function HomeExperience() {
                     </div>
                   </div>
 
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <div className="grid gap-3 sm:grid-cols-2 lg:gap-4">
                     {quickIntentPresets.map((preset) => (
                       <IntentChip
                         key={preset.id}
@@ -921,20 +923,20 @@ export function HomeExperience() {
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="compass-sheet rounded-[calc(var(--radius-card)-6px)] px-4 py-5 sm:px-5">
-                    <p className="text-sm font-semibold text-[var(--color-sand-deep)]">지금 고르는 기준</p>
+                <div className="space-y-4 lg:pt-1">
+                  <div className="compass-sheet compass-lift-card rounded-[calc(var(--radius-card)-6px)] px-4 py-5 sm:px-5 sm:py-6">
+                    <p className="compass-editorial-kicker">지금 고르는 기준</p>
                     <div className="mt-4 flex flex-wrap gap-2">
-                      <span className="compass-surface-muted rounded-full px-3 py-1 text-xs font-semibold">
+                      <span className="compass-metric-pill rounded-full px-3 py-1 text-xs font-semibold">
                         {formatPartyType(query.partyType)}
                       </span>
-                      <span className="compass-surface-muted rounded-full px-3 py-1 text-xs font-semibold">
+                      <span className="compass-metric-pill rounded-full px-3 py-1 text-xs font-semibold">
                         {query.tripLengthDays}일 일정
                       </span>
-                      <span className="compass-surface-muted rounded-full px-3 py-1 text-xs font-semibold">
+                      <span className="compass-metric-pill rounded-full px-3 py-1 text-xs font-semibold">
                         {formatTravelMonth(query.travelMonth)} 출발
                       </span>
-                      <span className="compass-surface-muted rounded-full px-3 py-1 text-xs font-semibold">
+                      <span className="compass-metric-pill rounded-full px-3 py-1 text-xs font-semibold">
                         {formatBudgetBand(query.budgetBand)}
                       </span>
                     </div>
@@ -946,11 +948,11 @@ export function HomeExperience() {
                     </p>
                   </div>
 
-                  <div className="compass-note rounded-[calc(var(--radius-card)-8px)] px-4 py-5 sm:px-5">
-                    <p className="text-sm font-semibold compass-kicker">추천 흐름 요약</p>
-                    <div className="mt-4 grid gap-3">
+                  <div className="compass-note compass-lift-card rounded-[calc(var(--radius-card)-8px)] px-4 py-5 sm:px-5 sm:py-6">
+                    <p className="compass-editorial-kicker">추천 흐름 요약</p>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
                       {discoveryCues.map((cue) => (
-                        <div key={cue.title} className="border-b border-[color:var(--color-trust-info-border)] pb-3 last:border-b-0 last:pb-0">
+                        <div key={cue.title} className="rounded-[calc(var(--radius-card)-12px)] border border-[color:var(--color-trust-info-border)] bg-[color:var(--color-paper-frost)] p-4">
                           <p className="text-sm font-semibold text-[var(--color-ink)]">{cue.title}</p>
                           <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{cue.detail}</p>
                         </div>
@@ -963,12 +965,12 @@ export function HomeExperience() {
 
             <article
               id="recommendation-start-section"
-              className="compass-sheet rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7"
+              className="compass-sheet compass-stage-reveal compass-stage-reveal-delayed rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8"
             >
-              <div className="flex flex-col gap-4 border-b border-[color:var(--color-frame-soft)] pb-5">
+              <div className="flex flex-col gap-4 border-b border-[color:var(--color-frame-soft)] pb-5 lg:pb-6">
                 <div>
-                  <p className="text-sm font-semibold text-[var(--color-sand-deep)]">추천 시작 흐름</p>
-                  <h2 className="mt-2 text-2xl font-semibold tracking-[-0.02em] text-[var(--color-ink)] sm:text-3xl">
+                  <p className="compass-editorial-kicker">추천 시작 흐름</p>
+                  <h2 className="font-display mt-3 text-2xl leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-3xl">
                     조건 3~5개만 정하면 추천이 바로 시작돼요.
                   </h2>
                 </div>
@@ -977,7 +979,7 @@ export function HomeExperience() {
                 </p>
               </div>
 
-              <div className="mt-5 grid gap-4 xl:grid-cols-2">
+              <div className="mt-6 grid gap-4 xl:grid-cols-2 xl:gap-5">
                 <FlowStep
                   step="1. 동행"
                   title="누가 함께 가나요?"
@@ -1022,10 +1024,10 @@ export function HomeExperience() {
                 </div>
               </div>
 
-              <div className="mt-5 rounded-[calc(var(--radius-card)-8px)] border border-[color:var(--color-frame-soft)] bg-[color:rgb(255_250_243_/_0.7)] px-4 py-4 sm:px-5">
+              <div className="compass-note mt-6 rounded-[calc(var(--radius-card)-8px)] px-4 py-4 sm:px-5 sm:py-5">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-[var(--color-sand-deep)]">세부 조건은 필요할 때만</p>
+                    <p className="compass-editorial-kicker">세부 조건은 필요할 때만</p>
                     <p className="mt-1 text-sm leading-6 text-[var(--color-ink-soft)]">
                       출발 공항, 일정 밀도, 비행 부담, 보조 분위기는 추천을 더 미세하게 다듬고 싶을 때만 열어 보세요.
                     </p>
@@ -1035,7 +1037,7 @@ export function HomeExperience() {
                     data-testid={testIds.shell.advancedFiltersToggle}
                     aria-expanded={showAdvancedFilters}
                     onClick={toggleAdvancedFiltersVisibility}
-                    className="compass-action-secondary rounded-full px-4 py-2 text-sm font-semibold tracking-[0.04em] transition hover:border-[color:var(--color-sand)]"
+                    className="compass-action-secondary rounded-full px-4 py-2 text-sm font-semibold tracking-[0.04em]"
                   >
                     {showAdvancedFilters ? "세부 조건 접기" : "세부 조건 더 조정하기"}
                   </button>
@@ -1055,11 +1057,11 @@ export function HomeExperience() {
                             type="button"
                             data-testid={option.testId}
                             onClick={() => updateQuery({ departureAirport: option.value })}
-                            className={`rounded-full border px-3 py-2 text-xs font-semibold tracking-[0.04em] ${
+                            className={`rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] ${
                               query.departureAirport === option.value
                                 ? "compass-selected"
-                                : "border-[color:var(--color-frame-soft)] bg-[color:var(--color-paper-elevated)] text-[var(--color-ink)]"
-                             }`}
+                                : "compass-selection-chip"
+                              }`}
                           >
                             {option.label}
                           </button>
@@ -1076,11 +1078,11 @@ export function HomeExperience() {
                             type="button"
                             data-testid={option.testId}
                             onClick={() => updateQuery({ pace: option.value })}
-                            className={`rounded-full border px-3 py-2 text-xs font-semibold tracking-[0.04em] ${
+                            className={`rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] ${
                               query.pace === option.value
                                 ? "compass-selected"
-                                : "border-[color:var(--color-frame-soft)] bg-[color:var(--color-paper-elevated)] text-[var(--color-ink)]"
-                             }`}
+                                : "compass-selection-chip"
+                              }`}
                           >
                             {option.label}
                           </button>
@@ -1097,11 +1099,11 @@ export function HomeExperience() {
                             type="button"
                             data-testid={option.testId}
                             onClick={() => updateQuery({ flightTolerance: option.value })}
-                            className={`rounded-full border px-3 py-2 text-xs font-semibold tracking-[0.04em] ${
+                            className={`rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] ${
                               query.flightTolerance === option.value
                                 ? "compass-selected"
-                                : "border-[color:var(--color-frame-soft)] bg-[color:var(--color-paper-elevated)] text-[var(--color-ink)]"
-                             }`}
+                                : "compass-selection-chip"
+                              }`}
                           >
                             {option.label}
                           </button>
@@ -1120,11 +1122,11 @@ export function HomeExperience() {
                               key={option.value}
                               type="button"
                               onClick={() => toggleSecondaryVibe(option.value)}
-                              className={`rounded-full border px-3 py-2 text-xs font-semibold tracking-[0.04em] ${
+                              className={`rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] ${
                                 active
                                   ? "compass-selected"
-                                  : "border-[color:var(--color-frame-soft)] bg-[color:var(--color-paper-elevated)] text-[var(--color-ink)]"
-                               }`}
+                                  : "compass-selection-chip"
+                                }`}
                             >
                               {option.label}
                             </button>
@@ -1136,13 +1138,13 @@ export function HomeExperience() {
                 ) : null}
               </div>
 
-              <div className="mt-6 flex flex-wrap items-center gap-3">
+              <div className="mt-6 flex flex-col gap-3 border-t border-[color:var(--color-frame-soft)] pt-5 sm:flex-row sm:items-center">
                 <button
                   type="button"
                   data-testid={testIds.query.submitRecommendation}
                   onClick={submitRecommendation}
                   disabled={isSubmitting}
-                  className="compass-action-primary rounded-full px-5 py-3 text-sm font-semibold tracking-[0.04em] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="compass-action-primary rounded-full px-5 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isSubmitting ? "조건에 맞는 목적지를 고르는 중..." : "이 조건으로 여행지 추천 받기"}
                 </button>
@@ -1157,11 +1159,11 @@ export function HomeExperience() {
             {savedSnapshots.length > 0 ? (
               <article
                 id="saved-snapshots-section"
-                className="compass-desk rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 xl:sticky xl:top-6"
+                className="compass-desk compass-stage-reveal compass-stage-reveal-delayed rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 xl:sticky xl:top-6"
               >
                 <div className="flex flex-col gap-4 border-b border-[color:var(--color-frame-soft)] pb-5 lg:flex-row lg:items-end lg:justify-between">
                   <div>
-                    <p className="text-sm font-semibold text-[var(--color-sand-deep)]">저장한 카드</p>
+                    <p className="compass-editorial-kicker">저장한 카드</p>
                     <h2 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">
                       공유하거나, 바로 비교 후보로 모아보세요.
                     </h2>
@@ -1172,7 +1174,7 @@ export function HomeExperience() {
 
                   <div
                     data-testid={testIds.snapshot.compareSelectionCount}
-                    className="compass-surface-muted rounded-full px-4 py-2 text-sm"
+                    className="compass-metric-pill rounded-full px-4 py-2 text-sm"
                   >
                     선택 {selectedCompareIds.length}개 · 최대 4개
                   </div>
@@ -1202,7 +1204,7 @@ export function HomeExperience() {
                     data-testid={testIds.snapshot.compareSnapshot}
                     onClick={createCompareSnapshot}
                     disabled={!canCreateCompare || compareLoading}
-                    className="compass-action-primary rounded-full px-5 py-3 text-sm font-semibold tracking-[0.04em] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                    className="compass-action-primary rounded-full px-5 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {compareButtonLabel}
                   </button>
@@ -1216,10 +1218,10 @@ export function HomeExperience() {
               </article>
             ) : null}
 
-            <article className="compass-desk rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
+            <article className="compass-desk compass-stage-reveal compass-stage-reveal-slower rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
               <div className="flex flex-col gap-4 border-b border-[color:var(--color-frame-soft)] pb-5 lg:flex-row lg:items-end lg:justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-[var(--color-sand-deep)]">추천 결과</p>
+                  <p className="compass-editorial-kicker">추천 결과</p>
                   <h2 className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">
                     상위 3곳부터, 저장과 비교까지 바로 이어지게 정리해드려요.
                   </h2>
@@ -1229,9 +1231,9 @@ export function HomeExperience() {
                 </div>
 
                 {results ? (
-                    <div className="compass-surface-muted rounded-full px-4 py-2 text-sm">
-                      추천 {results.meta.resultCount}곳 · {formatEvidenceMode(results.sourceSummary.mode)} 근거 모드
-                    </div>
+                  <div className="compass-metric-pill rounded-full px-4 py-2 text-sm">
+                    추천 {results.meta.resultCount}곳 · {formatEvidenceMode(results.sourceSummary.mode)} 근거 모드
+                  </div>
                 ) : null}
               </div>
 
@@ -1247,15 +1249,15 @@ export function HomeExperience() {
                     {[0, 1, 2].map((placeholder) => (
                       <div
                         key={`loading-card-${placeholder}`}
-                        className="compass-sheet animate-pulse rounded-[calc(var(--radius-card)-10px)] p-5"
+                        className="compass-skeleton-card rounded-[calc(var(--radius-card)-10px)] p-5"
                       >
-                        <div className="h-4 w-24 rounded-full bg-[color:rgb(17_32_29_/_0.08)]" />
-                        <div className="mt-5 h-10 w-2/3 rounded-full bg-[color:rgb(17_32_29_/_0.12)]" />
-                        <div className="mt-4 h-4 w-full rounded-full bg-[color:rgb(17_32_29_/_0.08)]" />
-                        <div className="mt-2 h-4 w-5/6 rounded-full bg-[color:rgb(17_32_29_/_0.08)]" />
+                        <div className="compass-skeleton-shimmer h-4 w-24 rounded-full" />
+                        <div className="compass-skeleton-shimmer mt-5 h-10 w-2/3 rounded-full" />
+                        <div className="compass-skeleton-shimmer mt-4 h-4 w-full rounded-full" />
+                        <div className="compass-skeleton-shimmer mt-2 h-4 w-5/6 rounded-full" />
                         <div className="mt-6 grid gap-3 sm:grid-cols-2">
-                          <div className="h-20 rounded-[calc(var(--radius-card)-12px)] bg-[color:rgb(17_32_29_/_0.08)]" />
-                          <div className="h-20 rounded-[calc(var(--radius-card)-12px)] bg-[color:rgb(17_32_29_/_0.08)]" />
+                          <div className="compass-skeleton-shimmer h-20 rounded-[calc(var(--radius-card)-12px)]" />
+                          <div className="compass-skeleton-shimmer h-20 rounded-[calc(var(--radius-card)-12px)]" />
                         </div>
                       </div>
                     ))}
@@ -1263,8 +1265,8 @@ export function HomeExperience() {
                 ) : null}
 
                 {!results && !submitError && !isSubmitting ? (
-                  <div className="compass-note rounded-[calc(var(--radius-card)-10px)] p-5">
-                    <p className="text-sm font-semibold compass-kicker">추천 결과는 이렇게 읽어요</p>
+                  <div className="compass-note rounded-[calc(var(--radius-card)-10px)] p-5 sm:p-6">
+                    <p className="compass-editorial-kicker">추천 결과는 이렇게 읽어요</p>
                     <div className="mt-4 grid gap-3 sm:grid-cols-3">
                       <div>
                         <p className="text-sm font-semibold text-[var(--color-ink)]">상위 3곳부터</p>
@@ -1306,7 +1308,7 @@ export function HomeExperience() {
                             void applyRelaxation(action.nextQuery);
                           }}
                           disabled={isSubmitting}
-                        className="compass-action-secondary rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-left transition hover:-translate-y-0.5 hover:border-[color:var(--color-sand)] disabled:cursor-not-allowed disabled:opacity-60"
+                          className="compass-selection-chip rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-left disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           <span className="block text-xs font-semibold tracking-[0.04em] text-[var(--color-sand-deep)]">
                             바로 완화하기
@@ -1350,7 +1352,7 @@ export function HomeExperience() {
                               void saveCard(card);
                             }}
                             disabled={saveState.status === "saving"}
-                            className="compass-action-primary rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                            className="compass-action-primary rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
                           >
                             {saveState.status === "saving"
                               ? "저장 중..."
@@ -1363,7 +1365,7 @@ export function HomeExperience() {
                               <Link
                                 data-testid={testIds.snapshot.shareLink}
                                 href={buildSnapshotPath(saveState.snapshotId ?? "", "recommendation")}
-                                className="compass-action-secondary rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em] transition hover:border-[color:var(--color-sand)]"
+                                className="compass-action-secondary rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em]"
                               >
                                 공유 페이지 보기
                               </Link>
@@ -1375,7 +1377,7 @@ export function HomeExperience() {
                                     void copyShareUrl(saveState.shareUrl);
                                   }
                                 }}
-                                className="compass-action-secondary rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em] transition hover:border-[color:var(--color-sand)]"
+                                className="compass-action-secondary rounded-full px-4 py-3 text-xs font-semibold tracking-[0.04em]"
                               >
                                 링크 복사
                               </button>
@@ -1397,7 +1399,7 @@ export function HomeExperience() {
                     type="button"
                     data-testid={testIds.result.showMoreResults}
                     onClick={() => setShowAllResults((currentValue) => !currentValue)}
-                    className="compass-action-secondary w-full rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm font-semibold tracking-[0.04em] transition hover:border-[color:var(--color-sand)]"
+                    className="compass-action-secondary w-full rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm font-semibold tracking-[0.04em]"
                   >
                     {showAllResults ? "상위 3개만 다시 보기" : `목적지 카드 ${cards.length - 3}개 더 보기`}
                   </button>
@@ -1411,15 +1413,15 @@ export function HomeExperience() {
           <div className="pointer-events-none fixed inset-x-4 bottom-4 z-30 md:hidden">
             <article
               data-testid={testIds.snapshot.stickyCompareTray}
-              className="compass-desk pointer-events-auto rounded-[calc(var(--radius-card)-6px)] px-4 py-4"
+              className="compass-panel pointer-events-auto rounded-[calc(var(--radius-card)-6px)] px-4 py-4 text-[var(--color-paper)]"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-[var(--color-sand-deep)]">비교 트레이</p>
-                  <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">
+                  <p className="compass-editorial-kicker text-[var(--color-sand)]">비교 트레이</p>
+                  <p className="mt-2 text-sm font-semibold text-[var(--color-paper)]">
                     {compareTrayDestinations || `${savedSnapshots.length}개 저장 카드`}
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">
+                  <p className="mt-1 text-xs leading-5 text-[var(--color-paper-soft)]">
                     저장 {savedSnapshots.length}개 · 선택 {selectedCompareIds.length}개
                   </p>
                 </div>
@@ -1443,12 +1445,12 @@ export function HomeExperience() {
                 data-testid={testIds.snapshot.stickyCompareAction}
                 onClick={createCompareSnapshot}
                 disabled={!canCreateCompare || compareLoading}
-                className="compass-action-primary mt-4 w-full rounded-full px-4 py-3 text-sm font-semibold tracking-[0.04em] transition disabled:cursor-not-allowed disabled:opacity-60"
+                className="compass-action-primary mt-4 w-full rounded-full px-4 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {compareButtonLabel}
               </button>
 
-              <p className="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">
+              <p className="mt-2 text-xs leading-5 text-[var(--color-paper-soft)]">
                 저장한 카드에서 2개부터 4개까지 고르면 바로 비교 보드를 만들 수 있어요.
               </p>
             </article>

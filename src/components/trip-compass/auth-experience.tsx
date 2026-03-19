@@ -103,7 +103,7 @@ export function AuthExperience() {
       headerAside={
         <Link
           href="/"
-          className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] px-4 py-4 text-sm leading-6 text-[var(--color-paper)] transition hover:border-[color:var(--color-frame-strong)]"
+          className="compass-panel rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm leading-6 text-[var(--color-paper)]"
         >
           추천부터 먼저 둘러볼게요
         </Link>
@@ -111,9 +111,9 @@ export function AuthExperience() {
     >
       <div className="grid gap-6 xl:grid-cols-[minmax(18rem,0.78fr)_minmax(0,1.22fr)]">
         <section className="space-y-6">
-          <article className="instagram-card rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
-            <p className="text-xs font-semibold uppercase tracking-[0.26em] text-[var(--color-paper)]">
-              Why Sign In
+          <article className="instagram-card compass-stage-reveal rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
+            <p className="compass-editorial-kicker text-[var(--color-paper)]">
+              선택형 계정 레이어
             </p>
             <h2 className="font-display mt-6 text-4xl leading-none tracking-[-0.05em] text-[var(--color-paper)] sm:text-5xl">
               좋아했던 여행의 결을 다음 추천에 남겨둘 수 있어요.
@@ -125,22 +125,22 @@ export function AuthExperience() {
             </div>
           </article>
 
-          <article className="compass-card rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
-            <p className="text-xs font-semibold uppercase tracking-[0.26em] text-[var(--color-sand)]">
-              Trust First
+          <article className="compass-note compass-stage-reveal compass-stage-reveal-delayed rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
+            <p className="compass-editorial-kicker">
+              신뢰 우선 원칙
             </p>
             <div className="mt-4 grid gap-3">
-              <div className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] p-4 text-sm leading-6 text-[var(--color-muted)]">
+              <div className="compass-sheet rounded-[calc(var(--radius-card)-10px)] p-4 text-sm leading-6 text-[var(--color-ink-soft)]">
                 추천 로직은 그대로 설명 가능하게 유지되고, 개인화는 동점 조정과 이유 문구에만 가볍게 더해져요.
               </div>
-              <div className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] p-4 text-sm leading-6 text-[var(--color-muted)]">
+              <div className="compass-sheet rounded-[calc(var(--radius-card)-10px)] p-4 text-sm leading-6 text-[var(--color-ink-soft)]">
                 계정을 만들면 바로 여행 프로필 페이지로 이동해 선호와 방문 기록을 정리할 수 있어요.
               </div>
             </div>
           </article>
         </section>
 
-        <section className="compass-panel rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
+        <section className="compass-panel compass-stage-reveal compass-stage-reveal-slower rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
           <div className="flex flex-wrap gap-3 border-b border-[color:var(--color-frame)] pb-5">
             <button
               type="button"
@@ -149,10 +149,10 @@ export function AuthExperience() {
                 setMode("sign-in");
                 setError(null);
               }}
-              className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition ${
+              className={`rounded-full px-4 py-2 text-xs font-semibold tracking-[0.18em] ${
                 mode === "sign-in"
-                  ? "border-[color:var(--color-frame-strong)] bg-[color:var(--color-paper-soft)] text-[var(--color-ink)]"
-                  : "border-[color:var(--color-frame)] text-[var(--color-paper)]"
+                  ? "compass-selected"
+                  : "border border-[color:var(--color-frame)] text-[var(--color-paper)] transition hover:-translate-y-0.5 hover:border-[color:var(--color-sand)]"
               }`}
             >
               로그인
@@ -164,10 +164,10 @@ export function AuthExperience() {
                 setMode("sign-up");
                 setError(null);
               }}
-              className={`rounded-full border px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] transition ${
+              className={`rounded-full px-4 py-2 text-xs font-semibold tracking-[0.18em] ${
                 mode === "sign-up"
-                  ? "border-[color:var(--color-frame-strong)] bg-[color:var(--color-paper-soft)] text-[var(--color-ink)]"
-                  : "border-[color:var(--color-frame)] text-[var(--color-paper)]"
+                  ? "compass-selected"
+                  : "border border-[color:var(--color-frame)] text-[var(--color-paper)] transition hover:-translate-y-0.5 hover:border-[color:var(--color-sand)]"
               }`}
             >
               회원가입
@@ -175,11 +175,11 @@ export function AuthExperience() {
           </div>
 
           <div className="mt-5 max-w-2xl">
-            <p className="text-xs font-semibold uppercase tracking-[0.26em] text-[var(--color-sand)]">
+            <p className="compass-editorial-kicker text-[var(--color-sand)]">
               Optional Identity
             </p>
             <h2 className="mt-3 text-3xl font-semibold text-[var(--color-paper)]">{title}</h2>
-            <p className="mt-3 text-sm leading-7 text-[var(--color-muted)]">
+            <p className="mt-3 text-sm leading-7 text-[var(--color-paper-soft)]">
               {mode === "sign-in"
                 ? "저장해 둔 여행 선호와 방문 기록을 다시 불러와요."
                 : "한 번만 계정을 만들면 다음부터는 여행 취향과 이력을 가볍게 이어서 관리할 수 있어요."}
@@ -196,9 +196,9 @@ export function AuthExperience() {
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   required
-                  className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] px-4 py-3 text-[var(--color-paper)] placeholder:text-[var(--color-muted)]"
-                  placeholder="예: 지훈"
-                />
+                className="compass-form-field rounded-[calc(var(--radius-card)-10px)] px-4 py-3 placeholder:text-[var(--color-muted)]"
+                placeholder="예: 지훈"
+              />
               </label>
             ) : null}
 
@@ -210,7 +210,7 @@ export function AuthExperience() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
-                className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] px-4 py-3 text-[var(--color-paper)] placeholder:text-[var(--color-muted)]"
+                className="compass-form-field rounded-[calc(var(--radius-card)-10px)] px-4 py-3 placeholder:text-[var(--color-muted)]"
                 placeholder="you@example.com"
               />
             </label>
@@ -224,7 +224,7 @@ export function AuthExperience() {
                 onChange={(event) => setPassword(event.target.value)}
                 required
                 minLength={8}
-                className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] px-4 py-3 text-[var(--color-paper)] placeholder:text-[var(--color-muted)]"
+                className="compass-form-field rounded-[calc(var(--radius-card)-10px)] px-4 py-3 placeholder:text-[var(--color-muted)]"
                 placeholder="8자 이상 입력해 주세요"
               />
             </label>
@@ -232,7 +232,7 @@ export function AuthExperience() {
             {error ? (
               <p
                 data-testid={testIds.auth.error}
-                className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] px-4 py-3 text-sm leading-6 text-[var(--color-accent-soft)]"
+                className="compass-warning-card rounded-[calc(var(--radius-card)-10px)] px-4 py-3 text-sm leading-6"
               >
                 {error}
               </p>
@@ -243,7 +243,7 @@ export function AuthExperience() {
                 data-testid={testIds.auth.submit}
                 type="submit"
                 disabled={isSubmitting}
-                className="rounded-full border border-[color:var(--color-frame-strong)] bg-[color:var(--color-paper-soft)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-ink)] transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60"
+                className="compass-action-primary rounded-full px-5 py-3 text-sm font-semibold tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSubmitting
                   ? "처리 중..."
@@ -253,7 +253,7 @@ export function AuthExperience() {
               </button>
               <Link
                 href="/"
-                className="text-sm leading-6 text-[var(--color-muted)] underline decoration-[color:var(--color-frame-strong)] underline-offset-4"
+                className="text-sm leading-6 text-[var(--color-paper-soft)] underline decoration-[color:var(--color-frame-strong)] underline-offset-4"
               >
                 아니면 로그인 없이 추천 계속 보기
               </Link>

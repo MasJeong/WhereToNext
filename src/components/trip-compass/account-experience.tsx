@@ -214,14 +214,14 @@ export function AccountExperience({
       intro="좋았던 여행지와 분위기를 남겨두면 Trip Compass가 익숙한 취향과 새로운 후보의 균형을 더 잘 맞춰줘요."
       capsule="익명 추천 유지 · 로그인은 선택 · 개인화는 가볍게"
       headerAside={
-        <div className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] px-4 py-4 text-sm text-[var(--color-paper)]">
-          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-sand)]">
+        <div className="compass-panel rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm text-[var(--color-paper)] sm:px-5 sm:py-5">
+          <p className="compass-editorial-kicker text-[var(--color-sand)]">
             {userName}님의 여행 기억
           </p>
           <div className="mt-4 flex flex-wrap gap-3">
             <Link
               href="/"
-              className="rounded-full border border-[color:var(--color-frame)] px-4 py-2 text-xs uppercase tracking-[0.18em] text-[var(--color-paper)]"
+              className="compass-action-secondary rounded-full px-4 py-2 text-xs font-semibold tracking-[0.18em]"
             >
               홈으로
             </Link>
@@ -230,7 +230,7 @@ export function AccountExperience({
               onClick={() => {
                 void handleSignOut();
               }}
-              className="rounded-full border border-[color:var(--color-frame-strong)] bg-[color:var(--color-paper-soft)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink)]"
+              className="compass-action-primary rounded-full px-4 py-2 text-xs font-semibold tracking-[0.18em]"
             >
               로그아웃
             </button>
@@ -240,8 +240,8 @@ export function AccountExperience({
     >
       <div className="grid gap-6 xl:grid-cols-[minmax(18rem,0.82fr)_minmax(0,1.18fr)]">
         <section className="space-y-6">
-          <article className="instagram-card rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-paper)]">
+          <article className="instagram-card compass-stage-reveal rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
+            <p className="compass-editorial-kicker text-[var(--color-paper)]">
               여행 선호 모드
             </p>
             <div className="mt-6 grid gap-3">
@@ -257,10 +257,10 @@ export function AccountExperience({
                     onClick={() => {
                       void savePreference(option.value);
                     }}
-                    className={`rounded-[calc(var(--radius-card)-10px)] border px-4 py-4 text-left transition ${
+                    className={`rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-left ${
                       active
-                        ? "border-[color:var(--color-frame-strong)] bg-[color:var(--color-paper-soft)] text-[var(--color-ink)]"
-                        : "border-[color:var(--color-frame)] bg-[color:rgb(247_239_226_/_0.06)] text-[var(--color-paper)]"
+                        ? "compass-selected"
+                        : "border border-[color:var(--color-frame)] bg-[color:rgb(247_239_226_/_0.08)] text-[var(--color-paper)] transition hover:-translate-y-0.5 hover:border-[color:var(--color-sand)]"
                     }`}
                   >
                     <p className="text-sm font-semibold">{option.label}</p>
@@ -273,8 +273,8 @@ export function AccountExperience({
             </div>
           </article>
 
-          <article className="compass-card rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
-            <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-sand)]">
+          <article className="compass-card compass-stage-reveal compass-stage-reveal-delayed rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
+            <p className="compass-editorial-kicker text-[var(--color-sand)]">
               새 여행 기록 추가
             </p>
             <div className="mt-5 grid gap-4">
@@ -289,7 +289,7 @@ export function AccountExperience({
                       destinationId: event.target.value,
                     }))
                   }
-                  className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] px-4 py-3 text-[var(--color-paper)]"
+                  className="compass-form-field rounded-[calc(var(--radius-card)-10px)] px-4 py-3"
                 >
                   {launchCatalog.map((destination) => (
                     <option key={destination.id} value={destination.id}>
@@ -311,7 +311,7 @@ export function AccountExperience({
                       visitedAt: event.target.value,
                     }))
                   }
-                  className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] px-4 py-3 text-[var(--color-paper)]"
+                  className="compass-form-field rounded-[calc(var(--radius-card)-10px)] px-4 py-3"
                 />
               </label>
 
@@ -321,10 +321,10 @@ export function AccountExperience({
                     key={rating}
                     type="button"
                     onClick={() => setDraft((currentDraft) => ({ ...currentDraft, rating }))}
-                    className={`rounded-[calc(var(--radius-card)-10px)] border px-3 py-3 text-sm font-semibold ${
+                    className={`rounded-[calc(var(--radius-card)-10px)] px-3 py-3 text-sm font-semibold ${
                       draft.rating === rating
-                        ? "border-[color:var(--color-frame-strong)] bg-[color:var(--color-paper-soft)] text-[var(--color-ink)]"
-                        : "border-[color:var(--color-frame)] text-[var(--color-paper)]"
+                        ? "compass-selected"
+                        : "border border-[color:var(--color-frame)] text-[var(--color-paper)] transition hover:-translate-y-0.5 hover:border-[color:var(--color-sand)]"
                     }`}
                   >
                     {rating}점
@@ -352,10 +352,10 @@ export function AccountExperience({
                         key={tag}
                         type="button"
                         onClick={() => toggleDraftTag(tag)}
-                        className={`rounded-full border px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] ${
+                        className={`rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] ${
                           active
-                            ? "border-[color:var(--color-frame-strong)] bg-[color:var(--color-paper-soft)] text-[var(--color-ink)]"
-                            : "border-[color:var(--color-frame)] text-[var(--color-paper)]"
+                            ? "compass-selected"
+                            : "border border-[color:var(--color-frame)] text-[var(--color-paper)] transition hover:-translate-y-0.5 hover:border-[color:var(--color-sand)]"
                         }`}
                       >
                         {tag}
@@ -365,8 +365,9 @@ export function AccountExperience({
                 </div>
               </div>
 
-              <label className="flex items-center gap-3 rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] px-4 py-4 text-sm text-[var(--color-paper)]">
+              <label className="compass-form-field flex items-center gap-3 rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm text-[var(--color-paper)]">
                 <input
+                  className="compass-checkbox"
                   type="checkbox"
                   checked={draft.wouldRevisit}
                   onChange={(event) =>
@@ -386,7 +387,7 @@ export function AccountExperience({
                 onClick={() => {
                   void createHistoryEntry();
                 }}
-                className="rounded-full border border-[color:var(--color-frame-strong)] bg-[color:var(--color-paper-soft)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-ink)] disabled:cursor-not-allowed disabled:opacity-60"
+                className="compass-action-primary rounded-full px-5 py-3 text-sm font-semibold tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isCreatingHistory ? "저장 중..." : "여행 기록 저장"}
               </button>
@@ -395,18 +396,18 @@ export function AccountExperience({
         </section>
 
         <section className="space-y-6">
-          <article className="compass-card rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
+          <article className="compass-desk compass-stage-reveal compass-stage-reveal-slower rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
             <div className="flex flex-col gap-3 border-b border-[color:var(--color-frame)] pb-5">
-              <p className="text-xs font-semibold uppercase tracking-[0.24em] text-[var(--color-sand)]">
+              <p className="compass-editorial-kicker">
                 저장한 여행 이력
               </p>
-              <h2 className="text-2xl font-semibold text-[var(--color-paper)]">
+              <h2 className="text-2xl font-semibold text-[var(--color-ink)]">
                 좋았던 여행지의 결을 다음 추천의 기준으로 남겨요.
               </h2>
             </div>
 
             {error ? (
-              <p className="mt-5 rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] px-4 py-3 text-sm leading-6 text-[var(--color-accent-soft)]">
+              <p className="compass-warning-card mt-5 rounded-[calc(var(--radius-card)-10px)] px-4 py-3 text-sm leading-6">
                 {error}
               </p>
             ) : null}
@@ -422,17 +423,17 @@ export function AccountExperience({
                     <article
                       key={entry.id}
                       data-testid={getAccountHistoryEntryTestId(index)}
-                      className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] p-4"
+                      className="compass-sheet compass-lift-card rounded-[calc(var(--radius-card)-10px)] p-4 sm:p-5"
                     >
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                          <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-sand)]">
+                          <p className="compass-editorial-kicker">
                             {destination?.nameKo ?? entry.destinationId}
                           </p>
-                          <p className="mt-2 text-sm leading-6 text-[var(--color-paper)]">
+                          <p className="mt-2 text-sm leading-6 text-[var(--color-ink)]">
                             평점 {entry.rating}점 · 방문일 {entry.visitedAt.slice(0, 10)}
                           </p>
-                          <p className="mt-2 text-sm leading-6 text-[var(--color-muted)]">
+                          <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
                             {entry.wouldRevisit
                               ? "이 결의 여행은 다시 가고 싶은 쪽으로 반영돼요."
                               : "새로운 여행지를 더 넓게 찾는 기준으로 반영돼요."}
@@ -441,7 +442,7 @@ export function AccountExperience({
                             {entry.tags.map((tag) => (
                               <span
                                 key={`${entry.id}-${tag}`}
-                                className="rounded-full border border-[color:var(--color-frame)] px-3 py-1 text-xs uppercase tracking-[0.18em] text-[var(--color-paper)]"
+                                className="compass-metric-pill rounded-full px-3 py-1 text-xs uppercase tracking-[0.18em]"
                               >
                                 {tag}
                               </span>
@@ -455,7 +456,7 @@ export function AccountExperience({
                           onClick={() => {
                             void deleteHistoryEntry(entry.id);
                           }}
-                          className="rounded-full border border-[color:var(--color-frame)] px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-paper)]"
+                          className="compass-action-secondary rounded-full px-4 py-2 text-xs font-semibold tracking-[0.18em]"
                         >
                           삭제
                         </button>
@@ -464,7 +465,7 @@ export function AccountExperience({
                   );
                 })
               ) : (
-                <div className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] p-5 text-sm leading-7 text-[var(--color-muted)]">
+                <div className="compass-note rounded-[calc(var(--radius-card)-10px)] p-5 text-sm leading-7 text-[var(--color-ink-soft)]">
                   아직 남겨 둔 여행 이력이 없어요. 왼쪽에서 한 곳만 먼저 추가해도 다음 추천이 더 개인 취향에 가까워져요.
                 </div>
               )}
