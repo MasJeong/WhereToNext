@@ -140,6 +140,13 @@ Scope: entire repository.
 ## 17) Documentation Updates
 - Update `README.md`, `AGENTS.md`, or `.env.example` when commands, conventions, or environment variables change.
 
+## 17.5) Project Skills
+- Repo-local task-specific skills live in `.claude/skills/`.
+- `AGENTS.md` remains the always-on repository policy; do not duplicate broad global rules into skill files.
+- Skills should stay narrow, reusable, and grounded in real SooGo file paths and verification commands.
+- OpenCode can use the Claude-compatible skill path, so keep one checked-in source under `.claude/skills/`.
+- `docs/skills/` is optional supporting documentation only, not the primary discovery path.
+
 ## 18) Finish Checklist
 - Did I use only real scripts and installed tools?
 - Did I preserve strict typing and avoid suppression shortcuts?

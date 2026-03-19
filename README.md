@@ -25,7 +25,7 @@ npm install
 npm run dev
 ```
 
-브라우저에서 `http://localhost:3000`을 열면 됩니다.
+브라우저에서 `http://localhost:4010`을 열면 됩니다.
 
 ## 환경 변수
 
