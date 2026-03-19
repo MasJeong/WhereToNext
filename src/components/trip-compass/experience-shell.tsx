@@ -23,7 +23,7 @@ export function ExperienceShell({
   children,
 }: ExperienceShellProps) {
   return (
-    <main className="compass-shell-stage relative isolate min-h-screen overflow-hidden px-4 py-5 sm:px-6 lg:px-8">
+    <main className="compass-route-shell compass-shell-stage relative isolate min-h-screen overflow-hidden px-4 py-5 sm:px-6 lg:px-8">
       <div
         aria-hidden="true"
         className="compass-orbit top-16 right-[max(1.5rem,calc(50%-34rem))] h-40 w-40"
@@ -34,7 +34,7 @@ export function ExperienceShell({
       />
 
       <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-6 lg:gap-8">
-        <header className="compass-hero compass-stage-reveal rounded-[var(--radius-shell)] px-6 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-10">
+        <header className="compass-hero compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-shell)] px-6 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-10">
           <div className="grid gap-8 lg:grid-cols-[minmax(0,1.22fr)_minmax(18rem,0.78fr)] lg:items-end">
             <div className="max-w-4xl space-y-5">
               <p className="compass-editorial-kicker text-[var(--color-sand)]">

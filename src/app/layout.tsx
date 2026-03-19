@@ -38,9 +38,9 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body
-        className={`${bodyFont.variable} ${displayFont.variable} ${monoFont.variable} antialiased`}
+        className={`${bodyFont.variable} ${displayFont.variable} ${monoFont.variable} compass-app-body antialiased`}
       >
-        {children}
+        <div className="compass-route-stage">{children}</div>
       </body>
     </html>
   );

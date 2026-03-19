@@ -24,7 +24,7 @@ export default async function SnapshotRestorePage({ params }: SnapshotPageProps)
 
   if (!snapshot || snapshot.kind !== "recommendation") {
     return (
-        <ExperienceShell
+      <ExperienceShell
           eyebrow="Trip Compass"
           title="저장한 추천 결과를 찾지 못했어요."
           intro="링크가 잘못되었거나 다른 저장 결과를 가리키고 있을 수 있어요. 이 페이지에서는 오래된 결과를 임의로 다시 계산해 보여주지 않아요."
@@ -32,7 +32,7 @@ export default async function SnapshotRestorePage({ params }: SnapshotPageProps)
         >
         <section
           data-testid={testIds.compare.restoreError}
-          className="compass-panel rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7"
+          className="compass-panel compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7"
         >
           <div className="space-y-4">
             <p className="text-sm leading-7 text-[var(--color-muted)]">
@@ -40,7 +40,7 @@ export default async function SnapshotRestorePage({ params }: SnapshotPageProps)
             </p>
             <Link
               href="/"
-              className="inline-flex rounded-full border border-[color:var(--color-frame-strong)] bg-[color:var(--color-paper-soft)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-ink)]"
+              className="compass-action-primary compass-soft-press inline-flex rounded-full px-5 py-3 text-sm font-semibold tracking-[0.18em]"
             >
               홈으로 돌아가기
             </Link>
@@ -67,7 +67,7 @@ export default async function SnapshotRestorePage({ params }: SnapshotPageProps)
       >
         <section
           data-testid={testIds.compare.restoreError}
-          className="compass-panel rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7"
+          className="compass-panel compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7"
         >
           <div className="space-y-4">
             <p className="text-sm leading-7 text-[var(--color-muted)]">
@@ -75,7 +75,7 @@ export default async function SnapshotRestorePage({ params }: SnapshotPageProps)
             </p>
             <Link
               href="/"
-              className="inline-flex rounded-full border border-[color:var(--color-frame-strong)] bg-[color:var(--color-paper-soft)] px-5 py-3 text-sm font-semibold uppercase tracking-[0.18em] text-[var(--color-ink)]"
+              className="compass-action-primary compass-soft-press inline-flex rounded-full px-5 py-3 text-sm font-semibold tracking-[0.18em]"
             >
               홈으로 돌아가기
             </Link>
@@ -94,7 +94,7 @@ export default async function SnapshotRestorePage({ params }: SnapshotPageProps)
     >
       <div className="grid gap-6 xl:grid-cols-[minmax(18rem,0.7fr)_minmax(0,1.3fr)]">
         <section className="space-y-6">
-          <article className="compass-panel rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
+          <article className="compass-panel compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
             <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-sand)]">
               복원된 여행 조건
             </p>
@@ -102,10 +102,10 @@ export default async function SnapshotRestorePage({ params }: SnapshotPageProps)
               {buildQueryNarrative(restored.query)}
             </p>
             <div className="mt-5 grid gap-3">
-              <div className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] p-4 text-sm text-[var(--color-paper)]">
+              <div className="compass-card-settle rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] p-4 text-sm text-[var(--color-paper)]">
                 추천 버전 · {restored.scoringVersionId}
               </div>
-              <div className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] p-4 text-sm text-[var(--color-paper)]">
+              <div className="compass-card-settle rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] p-4 text-sm text-[var(--color-paper)]">
                 저장된 목적지 수 · {restored.cards.length}곳
               </div>
             </div>
@@ -123,13 +123,13 @@ export default async function SnapshotRestorePage({ params }: SnapshotPageProps)
                 <>
                   <Link
                     href="/"
-                    className="rounded-full border border-[color:var(--color-frame-strong)] bg-[color:var(--color-paper-soft)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-ink)]"
+                    className="compass-action-primary compass-soft-press rounded-full px-4 py-3 text-xs font-semibold tracking-[0.18em]"
                   >
                     새 여행 추천 다시 만들기
                   </Link>
                   <Link
                     href={card.recommendation.trendEvidence[0]?.sourceUrl ?? "/"}
-                    className="rounded-full border border-[color:var(--color-frame)] px-4 py-3 text-xs font-semibold uppercase tracking-[0.18em] text-[var(--color-paper)]"
+                    className="compass-action-secondary compass-soft-press rounded-full px-4 py-3 text-xs font-semibold tracking-[0.18em]"
                   >
                     분위기 근거 보기
                   </Link>
