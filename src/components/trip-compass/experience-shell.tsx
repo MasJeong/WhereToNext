@@ -23,7 +23,7 @@ export function ExperienceShell({
   children,
 }: ExperienceShellProps) {
   return (
-    <main className="compass-route-shell compass-shell-stage relative isolate min-h-screen overflow-hidden px-4 py-5 sm:px-6 lg:px-8">
+    <main className="compass-route-shell compass-shell-stage relative isolate min-h-screen overflow-hidden px-4 py-6 sm:px-6 lg:px-8 lg:py-8">
       <div
         aria-hidden="true"
         className="compass-orbit top-16 right-[max(1.5rem,calc(50%-34rem))] h-40 w-40"
@@ -33,9 +33,9 @@ export function ExperienceShell({
         className="compass-orbit bottom-24 left-[max(1rem,calc(50%-38rem))] h-28 w-28"
       />
 
-      <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-6 lg:gap-8">
-        <header className="compass-hero compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-shell)] px-6 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-10">
-          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.22fr)_minmax(18rem,0.78fr)] lg:items-end">
+      <div className="relative z-10 mx-auto flex max-w-7xl flex-col gap-6 lg:gap-8 xl:gap-10">
+        <header className="compass-hero compass-stage-shell compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-shell)] px-6 py-7 sm:px-8 sm:py-9 lg:px-10 lg:py-10 xl:px-12">
+          <div className="grid gap-8 lg:grid-cols-[minmax(0,1.18fr)_minmax(18rem,0.82fr)] lg:items-end xl:gap-10">
             <div className="max-w-4xl space-y-5">
               <p className="compass-editorial-kicker text-[var(--color-sand)]">
                 {eyebrow}
@@ -51,7 +51,7 @@ export function ExperienceShell({
               </div>
             </div>
 
-            <div className="flex max-w-md flex-col gap-3 self-start lg:self-end">
+            <div className="compass-shell-header-aside flex max-w-md flex-col gap-3 self-start lg:self-end">
               <div className="compass-hero-meta rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink)] sm:px-5 sm:py-5">
                 {capsule}
               </div>
@@ -62,7 +62,7 @@ export function ExperienceShell({
           </div>
         </header>
 
-        <div className="compass-desk compass-stage-reveal compass-stage-reveal-slower rounded-[var(--radius-shell)] px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6">
+        <div className="compass-shell-body compass-stage-shell compass-stage-reveal compass-stage-reveal-slower rounded-[var(--radius-shell)] px-4 py-4 sm:px-5 sm:py-5 lg:px-7 lg:py-7 xl:px-8 xl:py-8">
           {children}
         </div>
       </div>

@@ -99,8 +99,8 @@ export function CompareBoard({ columns }: CompareBoardProps) {
   const canMovePrev = mobileStartIndex > 0;
 
   return (
-    <section className="space-y-4">
-      <div className="compass-open-info compass-stage-reveal flex flex-col gap-3 rounded-[calc(var(--radius-card)-6px)] p-4 sm:p-5 sm:flex-row sm:items-center sm:justify-between">
+    <section className="space-y-5">
+      <div className="compass-compare-toolbar compass-stage-reveal flex flex-col gap-3 rounded-[calc(var(--radius-card)-6px)] p-4 sm:p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="compass-editorial-kicker">비교 방식</p>
           <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
@@ -140,7 +140,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
         </div>
       </div>
 
-      <div className="compass-compare-wrap rounded-[var(--radius-card)] md:hidden">
+      <div className="compass-compare-wrap compass-stage-reveal rounded-[var(--radius-card)] md:hidden">
         <div
           className="compass-compare-grid grid w-full gap-px rounded-[var(--radius-card)]"
           style={{
@@ -153,12 +153,12 @@ export function CompareBoard({ columns }: CompareBoardProps) {
               key={`mobile-header-${column.snapshotId}`}
               className="compass-compare-column px-3 py-4 sm:px-4"
             >
-              <div className="space-y-2">
+              <div className="compass-compare-header-block">
                 <p className="text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
                   {column.card.destination.nameKo}
                 </p>
                 <p className="text-xs text-[var(--color-ink-soft)]">{column.card.destination.nameEn}</p>
-                <div className="compass-compare-column-summary px-3 text-sm">
+                <div className="compass-compare-stat text-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-soft)]">결정 요약</p>
                   <p className="mt-2 font-semibold text-[var(--color-ink)]">
                     {column.card.recommendation.scoreBreakdown.total}점 · {column.card.recommendation.confidence}% 일치
@@ -166,7 +166,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
                 </div>
                 <Link
                   href={column.sharePath}
-                  className="inline-flex text-xs font-semibold text-[var(--color-sand-deep)] underline underline-offset-4"
+                  className="compass-compare-link inline-flex text-xs font-semibold"
                 >
                   공유 페이지 보기
                 </Link>
@@ -209,12 +209,12 @@ export function CompareBoard({ columns }: CompareBoardProps) {
               data-testid={getCompareColumnTestId(index)}
               className="compass-compare-column px-4 py-4"
             >
-              <div className="space-y-2">
+              <div className="compass-compare-header-block">
                 <p className="text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
                   {column.card.destination.nameKo}
                 </p>
                 <p className="text-xs text-[var(--color-ink-soft)]">{column.card.destination.nameEn}</p>
-                <div className="compass-compare-column-summary px-3 text-sm">
+                <div className="compass-compare-stat text-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-soft)]">결정 요약</p>
                   <p className="mt-2 font-semibold text-[var(--color-ink)]">
                     {column.card.recommendation.scoreBreakdown.total}점 · {column.card.recommendation.confidence}% 일치
@@ -222,7 +222,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
                 </div>
                 <Link
                   href={column.sharePath}
-                  className="inline-flex text-xs font-semibold text-[var(--color-sand-deep)] underline underline-offset-4"
+                  className="compass-compare-link inline-flex text-xs font-semibold"
                 >
                   공유 페이지 보기
                 </Link>
