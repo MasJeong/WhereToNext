@@ -3,7 +3,6 @@ import Link from "next/link";
 import { ExperienceShell } from "@/components/trip-compass/experience-shell";
 import { RecommendationCard } from "@/components/trip-compass/recommendation-card";
 import { readSnapshot } from "@/lib/snapshots/service";
-import { buildQueryNarrative } from "@/lib/trip-compass/presentation";
 import { hydrateRecommendationSnapshot } from "@/lib/trip-compass/restore";
 import { testIds } from "@/lib/test-ids";
 
@@ -25,14 +24,16 @@ export default async function SnapshotRestorePage({ params }: SnapshotPageProps)
   if (!snapshot || snapshot.kind !== "recommendation") {
     return (
       <ExperienceShell
-          eyebrow="Trip Compass"
-          title="저장한 추천 결과를 찾지 못했어요."
-          intro="링크가 잘못되었거나 다른 저장 결과를 가리키고 있을 수 있어요. 이 페이지에서는 오래된 결과를 임의로 다시 계산해 보여주지 않아요."
-          capsule="복원은 익명으로 동작하고, 저장 ID가 어긋나면 안전하게 멈춰요."
+          eyebrow=""
+          title=""
+          intro=""
+          capsule=""
+          hideHeader
+          bareBody
         >
         <section
           data-testid={testIds.compare.restoreError}
-          className="compass-panel compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7"
+          className="compass-open-info compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-5 py-5 sm:px-6 sm:py-5"
         >
           <div className="space-y-4">
             <p className="text-sm leading-7 text-[var(--color-muted)]">
@@ -60,14 +61,16 @@ export default async function SnapshotRestorePage({ params }: SnapshotPageProps)
   if (!restored) {
     return (
       <ExperienceShell
-        eyebrow="Trip Compass"
-        title="저장한 추천 카드 복원이 완전하지 않아요."
-        intro="저장 ID는 확인됐지만, 목적지 카드 정보를 안전하게 되살릴 수 없었어요. 부분 데이터나 재계산 결과는 보여주지 않고 여기서 멈춰요."
-        capsule="저장된 원본 정보가 없으면 복원은 닫힌 상태로 실패해요."
+        eyebrow=""
+        title=""
+        intro=""
+        capsule=""
+        hideHeader
+        bareBody
       >
         <section
           data-testid={testIds.compare.restoreError}
-          className="compass-panel compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7"
+          className="compass-open-info compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-5 py-5 sm:px-6 sm:py-5"
         >
           <div className="space-y-4">
             <p className="text-sm leading-7 text-[var(--color-muted)]">
@@ -87,29 +90,19 @@ export default async function SnapshotRestorePage({ params }: SnapshotPageProps)
 
   return (
     <ExperienceShell
-      eyebrow="저장한 카드"
-      title="저장해 둔 목적지를 그대로 다시 확인해 보세요."
-      intro="공유 페이지는 저장된 목적지 선택을 먼저 복원한 뒤 카드 화면을 다시 구성해요. 왜 추천됐는지, 무엇을 체크해야 하는지, 분위기 근거까지 한 번에 살펴볼 수 있어요."
-      capsule={`저장 ID ${snapshot.id.slice(0, 8)} · ${snapshot.createdAt.slice(0, 10)}`}
+      eyebrow=""
+      title=""
+      intro=""
+      capsule=""
+      hideHeader
+      bareBody
     >
-      <div className="grid gap-6 xl:grid-cols-[minmax(18rem,0.7fr)_minmax(0,1.3fr)]">
-        <section className="space-y-6">
-          <article className="compass-panel compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7">
-            <p className="text-xs font-semibold uppercase tracking-[0.3em] text-[var(--color-sand)]">
-              복원된 여행 조건
-            </p>
-            <p className="mt-4 text-sm leading-7 text-[var(--color-muted)]">
-              {buildQueryNarrative(restored.query)}
-            </p>
-            <div className="mt-5 grid gap-3">
-              <div className="compass-card-settle rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] p-4 text-sm text-[var(--color-paper)]">
-                추천 버전 · {restored.scoringVersionId}
-              </div>
-              <div className="compass-card-settle rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame)] bg-[color:var(--color-wash)] p-4 text-sm text-[var(--color-paper)]">
-                저장된 목적지 수 · {restored.cards.length}곳
-              </div>
-            </div>
-          </article>
+      <div className="space-y-4">
+        <section className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-3 text-[var(--color-ink)]">
+          <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--color-ink-soft)]">
+            <span className="compass-metric-pill rounded-full px-3 py-1 text-xs">추천 버전 · {restored.scoringVersionId}</span>
+            <span className="compass-metric-pill rounded-full px-3 py-1 text-xs">저장된 목적지 수 · {restored.cards.length}곳</span>
+          </div>
         </section>
 
         <section className="space-y-4">

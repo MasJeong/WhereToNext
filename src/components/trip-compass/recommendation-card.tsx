@@ -147,11 +147,11 @@ export function RecommendationCard({ card, index, query, actionSlot }: Recommend
       style={revealStyle}
     >
       <div
-        className={`compass-result-card ${resultToneClass} flex flex-col gap-7 rounded-[calc(var(--radius-card)-2px)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8`}
+        className={`compass-result-card ${resultToneClass} flex flex-col gap-4 rounded-[calc(var(--radius-card)-2px)] px-4 py-4 sm:px-5 sm:py-5 lg:px-5 lg:py-5`}
       >
-        <div className="compass-result-layout gap-6">
-          <div className="space-y-6">
-            <div className="compass-result-accent space-y-3">
+        <div className="compass-result-layout gap-4">
+          <div className="space-y-4">
+            <div className="compass-result-accent space-y-2.5">
               <div className="flex flex-wrap items-center gap-2">
                 <p className="compass-editorial-kicker">
                   {formatDestinationKind(destination.kind)} 추천
@@ -161,7 +161,7 @@ export function RecommendationCard({ card, index, query, actionSlot }: Recommend
                 </span>
               </div>
               <div className="space-y-2">
-                <h2 className="font-display text-[2.65rem] leading-[0.94] tracking-[-0.06em] text-[var(--color-ink)] sm:text-[3.7rem]">
+                <h2 className="font-display text-[1.48rem] leading-[1] tracking-[-0.035em] text-[var(--color-ink)] sm:text-[1.95rem]">
                   {destination.nameKo}
                 </h2>
                 <p className="text-sm text-[var(--color-ink-soft)] sm:text-base">
@@ -170,12 +170,12 @@ export function RecommendationCard({ card, index, query, actionSlot }: Recommend
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               <p className="compass-editorial-kicker">왜 먼저 봐야 하는지</p>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
                 {verdict.label}
               </p>
-              <p className="font-display text-3xl leading-tight tracking-[-0.05em] sm:text-4xl">
+              <p className="font-display text-[1.16rem] leading-tight tracking-[-0.025em] sm:text-[1.38rem]">
                 {verdict.headline}
               </p>
               <p className="text-sm leading-6 text-[var(--color-ink-soft)]">{verdict.support}</p>
@@ -196,7 +196,7 @@ export function RecommendationCard({ card, index, query, actionSlot }: Recommend
             </div>
           </div>
 
-          <aside className="compass-result-scoreboard rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm sm:px-5 sm:py-5">
+          <aside className="compass-result-scoreboard rounded-[calc(var(--radius-card)-10px)] px-3.5 py-3.5 text-sm sm:px-4 sm:py-3.5">
             <div className="compass-result-score-row">
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
                 적합 점수
@@ -223,7 +223,7 @@ export function RecommendationCard({ card, index, query, actionSlot }: Recommend
           </aside>
         </div>
 
-        <div className="compass-result-section compass-result-layout gap-6">
+        <div className="compass-result-section compass-result-layout gap-4">
           <section className="space-y-3">
             <p className="compass-editorial-kicker">먼저 확인할 신뢰 신호</p>
             <div className="compass-result-signal-list">
@@ -241,7 +241,7 @@ export function RecommendationCard({ card, index, query, actionSlot }: Recommend
             </div>
           </section>
 
-          <section className="compass-result-sidepanel rounded-[calc(var(--radius-card)-10px)] px-4 py-4 sm:px-5 sm:py-5">
+          <section className="compass-result-sidepanel rounded-[calc(var(--radius-card)-10px)] px-3.5 py-3.5 sm:px-4 sm:py-3.5">
             <p className="compass-editorial-kicker">여행 정보</p>
             <div className="compass-result-facts-grid mt-4">
               <div>
@@ -257,7 +257,7 @@ export function RecommendationCard({ card, index, query, actionSlot }: Recommend
                 <p className="mt-2 text-sm leading-6 text-[var(--color-ink)]">{formatFlightBand(destination.flightBand)}</p>
               </div>
             </div>
-            <div className="compass-warning-card mt-5 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm">
+            <div className="compass-warning-card mt-4 rounded-[calc(var(--radius-card)-12px)] px-4 py-3.5 text-sm">
               <p className="compass-editorial-kicker text-[var(--color-warning-text)]">먼저 체크할 점</p>
               <p className="mt-3 leading-6">{compactWatchOut}</p>
             </div>
@@ -271,7 +271,7 @@ export function RecommendationCard({ card, index, query, actionSlot }: Recommend
               저장 여부를 거의 정했을 때, 마지막으로 감도만 확인하는 보조 레이어예요.
             </p>
           </div>
-          <div className="compass-result-source-strip rounded-[calc(var(--radius-card)-12px)] px-4 py-4 sm:px-5 sm:py-5">
+          <div className="compass-result-source-strip rounded-[calc(var(--radius-card)-12px)] px-4 py-4 sm:px-5 sm:py-4">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <div className="flex flex-wrap items-center gap-2">
