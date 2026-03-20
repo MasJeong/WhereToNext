@@ -95,9 +95,9 @@ export function AuthExperience() {
       hideHeader
       bareBody
     >
-      <div className="grid gap-3 xl:items-start">
-        <section className="compass-sheet compass-stage-reveal compass-stage-reveal-slower rounded-[var(--radius-card)] px-5 py-4 sm:px-6 sm:py-5 lg:px-6 lg:py-5 xl:max-w-3xl">
-          <div className="flex flex-wrap gap-3 border-b border-[color:var(--color-frame-soft)] pb-4">
+      <div className="grid gap-2.5 xl:items-start">
+        <section className="compass-sheet compass-form-stage compass-stage-reveal compass-stage-reveal-slower rounded-[var(--radius-card)] px-4 py-2.5 sm:px-5 sm:py-3 lg:px-5 lg:py-3 xl:max-w-3xl">
+          <div className="flex flex-wrap gap-2.5 border-b border-[color:var(--color-frame-soft)] pb-2.5">
             <button
               type="button"
               data-testid={testIds.auth.modeSignIn}
@@ -121,12 +121,7 @@ export function AuthExperience() {
               회원가입
             </button>
           </div>
-
-          <div className="mt-4 max-w-2xl">
-            <h2 className="text-[1.2rem] font-semibold leading-tight text-[var(--color-ink)] sm:text-[1.35rem]">로그인</h2>
-          </div>
-
-          <form className="mt-5 grid gap-4" onSubmit={handleSubmit}>
+          <form className="mt-2.5 grid gap-2.5" onSubmit={handleSubmit}>
             {mode === "sign-up" ? (
               <label className="grid gap-2 text-sm text-[var(--color-ink)]">
                 <span>이름</span>
@@ -136,7 +131,7 @@ export function AuthExperience() {
                   value={name}
                   onChange={(event) => setName(event.target.value)}
                   required
-                className="compass-form-field-light rounded-[calc(var(--radius-card)-10px)] px-4 py-3 placeholder:text-[var(--color-muted)]"
+                className="compass-form-field-light rounded-[calc(var(--radius-card)-10px)] px-4 py-2.5 placeholder:text-[var(--color-muted)]"
                 placeholder="예: 지훈"
               />
               </label>
@@ -150,7 +145,7 @@ export function AuthExperience() {
                 value={email}
                 onChange={(event) => setEmail(event.target.value)}
                 required
-                className="compass-form-field-light rounded-[calc(var(--radius-card)-10px)] px-4 py-3 placeholder:text-[var(--color-muted)]"
+                className="compass-form-field-light rounded-[calc(var(--radius-card)-10px)] px-4 py-2.5 placeholder:text-[var(--color-muted)]"
                 placeholder="you@example.com"
               />
             </label>
@@ -164,7 +159,7 @@ export function AuthExperience() {
                 onChange={(event) => setPassword(event.target.value)}
                 required
                 minLength={8}
-                className="compass-form-field-light rounded-[calc(var(--radius-card)-10px)] px-4 py-3 placeholder:text-[var(--color-muted)]"
+                className="compass-form-field-light rounded-[calc(var(--radius-card)-10px)] px-4 py-2.5 placeholder:text-[var(--color-muted)]"
                 placeholder="8자 이상 입력해 주세요"
               />
             </label>
@@ -178,12 +173,12 @@ export function AuthExperience() {
               </p>
             ) : null}
 
-            <div className="flex flex-wrap items-center gap-3 pt-2">
+            <div className="flex flex-wrap items-center gap-2 pt-1">
               <button
                 data-testid={testIds.auth.submit}
                 type="submit"
                 disabled={isSubmitting}
-                className="compass-action-primary compass-soft-press rounded-full px-5 py-3 text-sm font-semibold tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-60"
+                className="compass-action-primary compass-soft-press rounded-full px-5 py-2 text-sm font-semibold tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {isSubmitting
                   ? "처리 중..."
@@ -193,7 +188,7 @@ export function AuthExperience() {
               </button>
               <Link
                 href="/"
-                className="text-sm leading-6 text-[var(--color-ink-soft)] underline decoration-[color:var(--color-frame-strong)] underline-offset-4"
+                className="text-sm leading-5 text-[var(--color-ink-soft)] underline decoration-[color:var(--color-frame-strong)] underline-offset-4"
               >
                 아니면 로그인 없이 추천 계속 보기
               </Link>

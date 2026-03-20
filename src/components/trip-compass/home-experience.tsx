@@ -313,10 +313,10 @@ function PlannerColumn<TValue extends string | number>({
   onSelect,
 }: PlannerColumnProps<TValue>) {
   return (
-    <section className="space-y-2 border-t border-[color:var(--color-frame-soft)] pt-3 first:border-t-0 first:pt-0 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-4 first:lg:border-l-0 first:lg:pl-0">
-      <h3 className="text-[0.95rem] font-semibold tracking-[-0.02em] text-[var(--color-ink)]">{title}</h3>
+    <section className="space-y-2.5 border-t border-[color:var(--color-frame-soft)] pt-3 first:border-t-0 first:pt-0 lg:border-t-0 lg:border-l lg:pt-0 lg:pl-4 first:lg:border-l-0 first:lg:pl-0">
+      <h3 className="text-[0.88rem] font-semibold tracking-[-0.015em] text-[var(--color-ink)]">{title}</h3>
 
-      <div className="grid gap-2 md:grid-cols-2 xl:grid-cols-3">
+      <div className="flex flex-wrap gap-2">
         {options.map((option) => (
           <ChoiceButton
             key={`${title}-${String(option.value)}`}
@@ -344,13 +344,11 @@ function ChoiceButton({ label, active, onClick, testId }: ChoiceButtonProps) {
       data-testid={testId}
       aria-pressed={active}
       onClick={onClick}
-      className={`rounded-[calc(var(--radius-card)-10px)] px-2.5 py-1.5 text-left ${
-        active
-          ? "compass-selected shadow-[0_12px_30px_rgb(37_99_235_/_0.14)]"
-          : "compass-selection-chip"
+      className={`rounded-full px-3 py-1.5 text-left ${
+        active ? "compass-selected shadow-[0_10px_24px_rgb(37_99_235_/_0.12)]" : "compass-selection-chip"
       }`}
     >
-      <span className="block text-[0.8rem] font-semibold tracking-[-0.01em]">{label}</span>
+      <span className="block text-[0.74rem] font-semibold leading-4 tracking-[-0.01em] sm:text-[0.78rem]">{label}</span>
     </button>
   );
 }
@@ -786,62 +784,68 @@ export function HomeExperience() {
         <div className={`compass-stage-stack ${savedSnapshots.length > 0 ? "pb-28 md:pb-0" : ""}`}>
           <article
             id="recommendation-start-section"
-            className="compass-sheet compass-form-stage compass-stage-shell compass-stage-reveal compass-stage-reveal-slower rounded-[var(--radius-card)] px-5 py-4 sm:px-6 sm:py-5 lg:px-6 lg:py-5"
+            className="compass-sheet compass-form-stage compass-stage-shell compass-stage-reveal compass-stage-reveal-slower rounded-[var(--radius-card)] px-4 py-3.5 sm:px-5 sm:py-4 lg:flex lg:min-h-[38rem] lg:flex-col lg:px-5 lg:py-4"
           >
             <div className="compass-stage-header">
               <div className="space-y-2.5">
                 <div>
-                  <h2 className="font-display text-[1.3rem] leading-tight tracking-[-0.025em] text-[var(--color-ink)] sm:text-[1.55rem]">
+                  <h2 className="font-display text-[1.14rem] leading-tight tracking-[-0.02em] text-[var(--color-ink)] sm:text-[1.32rem]">
                     조건만 고르면 추천이 시작돼요.
                   </h2>
                 </div>
               </div>
             </div>
 
-            <div className="mt-3 space-y-3">
-                <span className="sr-only">바로 추천 시작</span>
+            <div className="mt-2.5 space-y-2.5">
+              <div className="grid gap-3 lg:grid-cols-3 lg:gap-4">
+                <PlannerColumn
+                  title="누가 함께 가나요?"
+                  options={partyOptions}
+                  activeValue={query.partyType}
+                  onSelect={(value) => updateQuery({ partyType: value })}
+                />
+                <PlannerColumn
+                  title="예산 감각은 어느 쪽인가요?"
+                  options={budgetOptions}
+                  activeValue={query.budgetBand}
+                  onSelect={(value) => updateQuery({ budgetBand: value })}
+                />
+                <PlannerColumn
+                  title="여행 기간은 얼마나 되나요?"
+                  options={tripLengthOptions}
+                  activeValue={query.tripLengthDays}
+                  onSelect={(value) => updateQuery({ tripLengthDays: value })}
+                />
+              </div>
 
-                <section className="compass-sheet compass-lift-card rounded-[calc(var(--radius-card)-10px)] p-3 sm:p-3.5">
-                  <div className="grid gap-3 lg:grid-cols-3 lg:gap-4">
-                    <PlannerColumn
-                      title="누가 함께 가나요?"
-                      options={partyOptions}
-                      activeValue={query.partyType}
-                      onSelect={(value) => updateQuery({ partyType: value })}
-                    />
-                    <PlannerColumn
-                      title="예산 감각은 어느 쪽인가요?"
-                      options={budgetOptions}
-                      activeValue={query.budgetBand}
-                      onSelect={(value) => updateQuery({ budgetBand: value })}
-                    />
-                    <PlannerColumn
-                      title="여행 기간은 얼마나 되나요?"
-                      options={tripLengthOptions}
-                      activeValue={query.tripLengthDays}
-                      onSelect={(value) => updateQuery({ tripLengthDays: value })}
-                    />
-                  </div>
-                </section>
+              <div className="border-t border-[color:var(--color-frame-soft)] pt-3">
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <button
+                    type="button"
+                    data-testid={testIds.shell.advancedFiltersToggle}
+                    aria-expanded={showAdvancedFilters}
+                    onClick={toggleAdvancedFiltersVisibility}
+                    className="compass-action-secondary rounded-full px-3.5 py-2 text-[11px] font-semibold tracking-[0.04em]"
+                  >
+                    {showAdvancedFilters ? "세부 조건 접기" : "세부 조건 더 조정하기"}
+                  </button>
 
-                <div className="border-t border-[color:var(--color-frame-soft)] pt-3">
-                  <div className="flex justify-end">
-                    <button
-                      type="button"
-                      data-testid={testIds.shell.advancedFiltersToggle}
-                      aria-expanded={showAdvancedFilters}
-                      onClick={toggleAdvancedFiltersVisibility}
-                      className="compass-action-secondary rounded-full px-3.5 py-2 text-[11px] font-semibold tracking-[0.04em]"
-                    >
-                      {showAdvancedFilters ? "세부 조건 접기" : "세부 조건 더 조정하기"}
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    data-testid={testIds.query.submitRecommendation}
+                    onClick={submitRecommendation}
+                    disabled={isSubmitting}
+                    className="compass-action-primary rounded-full px-5 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSubmitting ? "조건에 맞는 목적지를 고르는 중..." : "이 조건으로 여행지 추천 받기"}
+                  </button>
+                </div>
 
-                  {showAdvancedFilters ? (
-                    <section
-                      data-testid={testIds.shell.advancedFiltersPanel}
-                      className="compass-note mt-4 flex flex-col gap-4 rounded-[calc(var(--radius-card)-10px)] p-4"
-                    >
+                {showAdvancedFilters ? (
+                  <section
+                    data-testid={testIds.shell.advancedFiltersPanel}
+                    className="compass-note mt-4 flex flex-col gap-4 rounded-[calc(var(--radius-card)-10px)] p-4"
+                  >
                       <div className="space-y-2.5">
                         <p className="text-xs font-semibold tracking-[0.08em] text-[var(--color-sand-deep)]">빠른 시작</p>
                         <div className="flex flex-wrap gap-2">
@@ -979,21 +983,9 @@ export function HomeExperience() {
                           })}
                         </div>
                       </div>
-                    </section>
-                  ) : null}
-                </div>
-
-                  <div className="flex justify-end border-t border-[color:var(--color-frame-soft)] pt-2.5">
-                    <button
-                      type="button"
-                      data-testid={testIds.query.submitRecommendation}
-                    onClick={submitRecommendation}
-                    disabled={isSubmitting}
-                    className="compass-action-primary rounded-full px-5 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {isSubmitting ? "조건에 맞는 목적지를 고르는 중..." : "이 조건으로 여행지 추천 받기"}
-                  </button>
-                </div>
+                  </section>
+                ) : null}
+              </div>
             </div>
           </article>
 

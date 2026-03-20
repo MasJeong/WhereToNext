@@ -33,15 +33,15 @@ export default async function CompareSnapshotPage({ params }: ComparePageProps) 
       >
         <section
           data-testid={testIds.compare.restoreError}
-          className="compass-open-info compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-5 py-5 sm:px-6 sm:py-5"
+          className="compass-open-info compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-4 py-3 sm:px-5 sm:py-3.5"
         >
-          <div className="space-y-4">
-            <p className="text-sm leading-7 text-[var(--color-muted)]">
-              홈으로 돌아가 목적지 카드 2개에서 4개를 다시 저장한 뒤 새 비교 보드를 만들어 주세요.
+          <div className="space-y-2.5">
+            <p className="text-sm leading-5 text-[var(--color-muted)]">
+              홈으로 돌아가 목적지 카드를 다시 저장한 뒤 비교 보드를 만들어 주세요.
             </p>
             <Link
               href="/"
-              className="compass-action-primary compass-soft-press inline-flex rounded-full px-5 py-3 text-sm font-semibold tracking-[0.18em]"
+              className="compass-action-primary compass-soft-press inline-flex rounded-full px-5 py-2 text-sm font-semibold tracking-[0.18em]"
             >
               홈으로 돌아가기
             </Link>
@@ -70,15 +70,15 @@ export default async function CompareSnapshotPage({ params }: ComparePageProps) 
       >
         <section
           data-testid={testIds.compare.restoreError}
-          className="compass-open-info compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-5 py-5 sm:px-6 sm:py-5"
+          className="compass-open-info compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-4 py-3 sm:px-5 sm:py-3.5"
         >
-          <div className="space-y-4">
-            <p className="text-sm leading-7 text-[var(--color-muted)]">
+          <div className="space-y-2.5">
+            <p className="text-sm leading-5 text-[var(--color-muted)]">
               홈으로 돌아가 목적지 카드를 다시 저장한 뒤 비교 보드를 새로 만들어 주세요.
             </p>
             <Link
               href="/"
-              className="compass-action-primary compass-soft-press inline-flex rounded-full px-5 py-3 text-sm font-semibold tracking-[0.18em]"
+              className="compass-action-primary compass-soft-press inline-flex rounded-full px-5 py-2 text-sm font-semibold tracking-[0.18em]"
             >
               홈으로 돌아가기
             </Link>
@@ -97,22 +97,22 @@ export default async function CompareSnapshotPage({ params }: ComparePageProps) 
       hideHeader
       bareBody
     >
-      <section className="compass-editorial-band compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-5 py-4 sm:px-6 sm:py-5">
-        <div className="compass-ambient-divider flex flex-col gap-3 border-b border-[color:var(--color-frame-soft)] pb-4 lg:flex-row lg:items-end lg:justify-between">
+      <section className="compass-open-info compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-4 py-2.5 sm:px-5 sm:py-3">
+        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-[1.35rem] font-semibold leading-tight text-[var(--color-ink)] sm:text-[1.55rem]">
+            <h2 className="text-[0.98rem] font-semibold leading-tight text-[var(--color-ink)] sm:text-[1.08rem]">
               같은 기준의 줄로 후보를 빠르게 걸러보세요.
             </h2>
           </div>
           <Link
             href="/"
-            className="compass-action-secondary compass-soft-press rounded-full px-4 py-3 text-sm font-semibold"
+            className="compass-action-secondary compass-soft-press rounded-full px-4 py-1.5 text-sm font-semibold"
           >
             새 비교 보드 만들기
           </Link>
         </div>
 
-        <div className="mt-4 compass-stage-reveal compass-stage-reveal-later">
+        <div className="mt-2 compass-stage-reveal compass-stage-reveal-later">
           <CompareBoard columns={columns} />
         </div>
       </section>
