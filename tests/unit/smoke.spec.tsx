@@ -15,7 +15,7 @@ describe("Home", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "조건만 고르면 추천이 시작돼요.",
+        name: "여행지를 먼저 고르지 말고, 이번 휴가의 결부터 정리해 보세요.",
       }),
     ).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "이 조건으로 여행지 추천 받기" })).toBeInTheDocument();
