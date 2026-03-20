@@ -172,6 +172,27 @@ const quickIntentPresets: IntentPreset[] = [
   },
 ];
 
+const editorialGuideSteps = [
+  {
+    id: "brief",
+    label: "01",
+    title: "여행의 기본 결부터 정리해요.",
+    description: "동행, 예산, 일정처럼 크게 흔들리지 않는 기준부터 먼저 잡으면 목적지 후보의 톤이 빠르게 정리돼요.",
+  },
+  {
+    id: "read",
+    label: "02",
+    title: "추천은 이유와 체크 포인트를 같이 읽어요.",
+    description: "상위 후보 카드마다 왜 맞는지, 무엇을 더 확인해야 하는지를 한 번에 보여줘서 바로 판단할 수 있어요.",
+  },
+  {
+    id: "save",
+    label: "03",
+    title: "마음에 드는 후보는 저장해 바로 비교해요.",
+    description: "저장한 카드만 골라 비교 보드로 넘길 수 있어서 여행지 결정을 한 화면에서 이어갈 수 있어요.",
+  },
+] as const;
+
 /**
  * Finds the next broader option in a predefined query sequence.
  * @param currentValue Currently selected value
@@ -523,6 +544,19 @@ function buildAbsoluteShareUrl(sharePath: string): string {
 }
 
 /**
+ * Scrolls to a named section with reduced-motion fallback.
+ * @param sectionId DOM id for the target section
+ */
+function scrollToNamedSection(sectionId: string) {
+  const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  document.getElementById(sectionId)?.scrollIntoView({
+    behavior: prefersReducedMotion ? "auto" : "smooth",
+    block: "start",
+  });
+}
+
+/**
  * Home page client experience for the anonymous-first recommendation flow.
  * @returns Interactive SooGo home page
  */
@@ -568,6 +602,35 @@ export function HomeExperience() {
       },
     ],
     [query.budgetBand, query.partyType, query.tripLengthDays],
+  );
+  const plannerCapsule = useMemo(
+    () => plannerSummary.map((item) => item.value).join(" · "),
+    [plannerSummary],
+  );
+  const plannerSignals = useMemo(
+    () => [
+      {
+        id: "travel-month",
+        label: "출발 월",
+        value: resolveQueryChoiceLabel(travelMonthOptions, query.travelMonth),
+        description: "가장 먼저 보는 여행 시기 기준이에요.",
+      },
+      {
+        id: "flight-tolerance",
+        label: "비행 부담",
+        value: resolveQueryChoiceLabel(flightToleranceOptions, query.flightTolerance),
+        description: "비행 피로를 얼마나 감수할지 정해요.",
+      },
+      {
+        id: "vibe",
+        label: "대표 분위기",
+        value: resolveQueryChoiceLabel(primaryVibeOptions, query.vibes[0]),
+        description: query.vibes[1]
+          ? `보조 분위기 ${resolveQueryChoiceLabel(optionalVibeOptions, query.vibes[1])}도 함께 보고 있어요.`
+          : "보조 분위기는 비워두고 더 넓게 볼 수 있어요.",
+      },
+    ],
+    [query.flightTolerance, query.travelMonth, query.vibes],
   );
   const compareTrayDestinations = useMemo(() => {
     const selectedSnapshots = savedSnapshots.filter((snapshot) =>
@@ -852,24 +915,305 @@ export function HomeExperience() {
 
   return (
     <ExperienceShell
-      eyebrow=""
-      title=""
-      intro=""
-      capsule=""
-      hideHeader
-      bareBody
+      eyebrow="Trip Compass"
+      title="여행지를 먼저 고르지 말고, 이번 휴가의 결부터 정리해 보세요."
+      intro="SooGo 홈은 플래너를 바로 여는 대신, 어떤 조건이 목적지 후보를 바꾸는지 먼저 읽게 설계했어요. 동행과 예산으로 큰 방향을 잡고, 결과 카드를 받은 뒤에는 저장 링크와 비교 보드까지 같은 흐름으로 이어집니다."
+      capsule="플래너에 들어가기 전 한 번 정리하고 · 추천 받은 뒤 저장과 비교까지 이어지는 홈"
+      headerAside={
+        <div className="compass-panel rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-[var(--color-paper)] sm:px-5 sm:py-5">
+          <p className="compass-editorial-kicker text-[var(--color-sand)]">오늘의 시작점</p>
+          <p className="mt-3 font-display text-[1.02rem] leading-tight tracking-[-0.02em] text-[var(--color-paper)] sm:text-[1.12rem]">
+            지금 기본 조합은 {plannerCapsule}예요.
+          </p>
+          <p className="mt-3 text-sm leading-6 text-[var(--color-paper-soft)]">
+            아래 랜딩에서 흐름을 먼저 읽고, 빠른 시작을 고르거나 플래너로 바로 내려갈 수 있어요. 저장한 카드가 있으면 비교 보드까지 바로 이어집니다.
+          </p>
+          <div className="mt-4 grid gap-2 sm:grid-cols-3 lg:grid-cols-1">
+            {plannerSummary.map((item) => (
+              <div
+                key={item.id}
+                className="rounded-[calc(var(--radius-card)-14px)] border border-[color:var(--color-frame)] bg-[rgb(255_255_255_/_0.08)] px-3 py-2.5"
+              >
+                <p className="text-[0.58rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-paper-soft)]">
+                  {item.label}
+                </p>
+                <p className="mt-1.5 text-sm font-semibold tracking-[-0.02em] text-[var(--color-paper)]">
+                  {item.value}
+                </p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-4 grid gap-2">
+            <button
+              type="button"
+              onClick={() => scrollToNamedSection("recommendation-start-section")}
+              className="compass-action-primary compass-soft-press rounded-full px-4 py-2.5 text-xs font-semibold tracking-[0.04em]"
+            >
+              플래너로 바로 내려가기
+            </button>
+            {savedSnapshots.length > 0 ? (
+              <button
+                type="button"
+                onClick={() => scrollToNamedSection("saved-snapshots-section")}
+                className="compass-action-secondary compass-soft-press rounded-full px-4 py-2.5 text-xs font-semibold tracking-[0.04em]"
+              >
+                저장한 카드 보기
+              </button>
+            ) : null}
+          </div>
+        </div>
+      }
     >
       <>
         <div className={`compass-stage-stack ${savedSnapshots.length > 0 ? "pb-28 md:pb-0" : ""}`}>
+          <section className="grid gap-4 xl:grid-cols-[minmax(0,1.2fr)_minmax(18rem,0.8fr)] xl:items-start">
+            <article className="compass-home-stage compass-stage-shell compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-5 py-5 sm:px-6 sm:py-6 lg:px-6 lg:py-6">
+              <div className="compass-editorial-section space-y-3">
+                <div className="compass-stage-meta">
+                  <span className="compass-stage-index">01</span>
+                  <p className="compass-editorial-kicker">Landing brief</p>
+                </div>
+                <div className="space-y-3">
+                  <h2 className="font-display text-[1.3rem] leading-[1.04] tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.55rem] lg:text-[1.75rem]">
+                    플래너를 열기 전에, 이번 여행이 어떤 장면으로 남아야 하는지 먼저 정리하는 홈이에요.
+                  </h2>
+                  <p className="max-w-3xl text-sm leading-7 text-[var(--color-ink-soft)] sm:text-[0.96rem]">
+                    처음부터 폼만 여는 대신, 어떤 기준으로 후보를 줄여 나가는지 먼저 보여줘요. 위에서 여행의 큰 결을 읽고 아래에서 실제 조건을 고르면, 추천 카드의 이유와 저장, 비교까지 한 번의 흐름으로 이어집니다.
+                  </p>
+                </div>
+
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    type="button"
+                    onClick={() => scrollToNamedSection("recommendation-start-section")}
+                    className="compass-action-primary compass-soft-press rounded-full px-4 py-3 text-sm font-semibold tracking-[0.04em]"
+                  >
+                    플래너부터 시작하기
+                  </button>
+                  <button
+                    type="button"
+                    onClick={submitRecommendation}
+                    disabled={isSubmitting}
+                    className="compass-action-secondary compass-soft-press rounded-full px-4 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {isSubmitting ? "추천 불러오는 중..." : "지금 기본 설정으로 바로 추천 보기"}
+                  </button>
+                </div>
+              </div>
+
+              <div className="compass-editorial-subsection mt-4 space-y-4">
+                <div className="grid gap-3 lg:grid-cols-[minmax(0,1.05fr)_minmax(15rem,0.95fr)]">
+                  <div className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-sand-deep)]">
+                      현재 기본 설정
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-[var(--color-ink)]">{queryNarrative}</p>
+                  </div>
+
+                  <div className="rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame-soft)] bg-[color:var(--color-paper-frost)] px-4 py-4 shadow-[inset_0_1px_0_rgb(255_255_255_/_0.48)]">
+                    <p className="text-[0.68rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-sand-deep)]">
+                      추천 뒤에 이어지는 흐름
+                    </p>
+                    <div className="mt-3 grid gap-2.5 text-sm leading-6 text-[var(--color-ink-soft)]">
+                      <p>
+                        <span className="font-semibold text-[var(--color-ink)]">01.</span> 결과 카드는 왜 맞는지부터 읽고
+                      </p>
+                      <p>
+                        <span className="font-semibold text-[var(--color-ink)]">02.</span> 남겨둘 후보만 저장 링크로 묶고
+                      </p>
+                      <p>
+                        <span className="font-semibold text-[var(--color-ink)]">03.</span> 최종 후보는 비교 보드에서 한 번 더 줄여요
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </article>
+
+            <aside className="compass-note compass-stage-shell compass-stage-reveal compass-stage-reveal-delayed rounded-[var(--radius-card)] px-5 py-5 sm:px-6 sm:py-6 lg:px-6 lg:py-6">
+              <div className="space-y-3 border-b border-[color:var(--color-frame-soft)] pb-4">
+                <p className="compass-editorial-kicker">지금 출발점</p>
+                <h2 className="font-display text-[1.08rem] leading-tight tracking-[-0.02em] text-[var(--color-ink)] sm:text-[1.2rem]">
+                  아래 플래너에 들어가기 전, 지금 홈이 먼저 잡아두는 기준이에요.
+                </h2>
+                <p className="text-sm leading-6 text-[var(--color-ink-soft)]">
+                  동행, 예산, 일정은 추천 카드의 결을 가장 크게 바꾸는 축이에요. 홈 상단에서 먼저 읽고 들어가면 아래 선택이 훨씬 빨라져요.
+                </p>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+                {plannerSummary.map((item) => (
+                  <div
+                    key={item.id}
+                    className="rounded-[calc(var(--radius-card)-12px)] border border-[color:var(--color-frame-soft)] bg-[color:var(--color-paper-frost)] px-4 py-3.5"
+                  >
+                    <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
+                      {item.label}
+                    </p>
+                    <p className="mt-2 text-[0.98rem] font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                      {item.value}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </aside>
+          </section>
+
+          <article className="compass-editorial-band compass-stage-shell compass-stage-reveal compass-stage-reveal-delayed rounded-[var(--radius-card)] px-5 py-5 sm:px-6 sm:py-6 lg:px-6 lg:py-6">
+            <div className="compass-stage-header">
+              <div className="space-y-2.5">
+                <div className="compass-stage-meta">
+                  <span className="compass-stage-index">02</span>
+                  <p className="compass-editorial-kicker">Guide</p>
+                </div>
+                <div>
+                  <h2 className="font-display text-[1.2rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.38rem]">
+                    홈에서는 목적지를 보여주기 전에, 먼저 무엇을 보고 결정할지 정리해 둬요.
+                  </h2>
+                  <p className="compass-stage-caption mt-2 text-sm leading-6">
+                    검색창보다 먼저 판단 흐름을 소개하는 편집형 랜딩이라서, 추천을 받기 전에도 이 서비스가 어떻게 결정을 도와주는지 한 번에 읽을 수 있어요.
+                  </p>
+                </div>
+              </div>
+
+              <div className="compass-stage-aside">
+                <div className="compass-stage-panel rounded-[calc(var(--radius-card)-8px)] px-4 py-3 sm:px-5 sm:py-4">
+                  <p className="text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                    많이 고르는 것보다, 왜 맞는지 빠르게 판단하는 편이 여행 결정에는 더 중요해요.
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">
+                    그래서 홈 상단부터 추천 이후의 저장과 비교 흐름까지 순서를 먼저 보여줘요.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 lg:grid-cols-3">
+              {editorialGuideSteps.map((step) => (
+                <article
+                  key={step.id}
+                  className="compass-sheet rounded-[calc(var(--radius-card)-10px)] px-4 py-4 sm:px-5 sm:py-5"
+                >
+                  <div className="flex items-start gap-3 border-b border-[color:var(--color-frame-soft)] pb-3">
+                    <div className="compass-stage-list-number shrink-0">{step.label}</div>
+                    <div>
+                      <p className="text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                        {step.title}
+                      </p>
+                    </div>
+                  </div>
+                  <p className="mt-3 text-sm leading-6 text-[var(--color-ink-soft)]">{step.description}</p>
+                </article>
+              ))}
+            </div>
+          </article>
+
+          <article className="compass-editorial-band compass-stage-shell compass-stage-reveal compass-stage-reveal-slower rounded-[var(--radius-card)] px-5 py-5 sm:px-6 sm:py-6 lg:px-6 lg:py-6">
+            <div className="compass-stage-header">
+              <div className="space-y-2.5">
+                <div className="compass-stage-meta">
+                  <span className="compass-stage-index">03</span>
+                  <p className="compass-editorial-kicker">빠른 시작</p>
+                </div>
+                <div>
+                  <h2 className="font-display text-[1.2rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.38rem]">
+                    떠오르는 여행 장면이 있다면, 아래 네 가지 출발점에서 바로 톤을 고를 수 있어요.
+                  </h2>
+                  <p className="compass-stage-caption mt-2 text-sm leading-6">
+                    자주 찾는 결을 먼저 열어 두었어요. 하나를 고르면 아래 플래너가 그 분위기와 조건에 맞춰 바로 준비됩니다.
+                  </p>
+                </div>
+              </div>
+
+              <div className="compass-stage-aside">
+                <div className="compass-stage-panel rounded-[calc(var(--radius-card)-8px)] px-4 py-3 sm:px-5 sm:py-4">
+                  <p className="text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                    익명으로 바로 시작하고, 마음에 드는 결과만 저장해 비교 보드까지 넘겨요.
+                  </p>
+                  <p className="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">
+                    빠른 시작은 플래너를 대체하는 게 아니라, 아래 선택을 더 빠르게 맞추기 위한 첫 문장 역할이에요.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-5 grid gap-3 lg:grid-cols-2 xl:grid-cols-4">
+              {quickIntentPresets.map((preset) => {
+                const primaryVibe = preset.patch.vibes?.[0];
+                const active = activeIntentPresetId === preset.id;
+
+                return (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    data-testid={preset.testId}
+                    aria-pressed={active}
+                    onClick={() => {
+                      applyIntentPreset(preset);
+                      scrollToNamedSection("recommendation-start-section");
+                    }}
+                    className={`rounded-[calc(var(--radius-card)-10px)] p-4 text-left compass-soft-press ${active ? "compass-selected shadow-[0_12px_24px_rgb(37_99_235_/_0.14)]" : "compass-sheet compass-lift-card"}`}
+                  >
+                    <p className="compass-editorial-kicker">{preset.label}</p>
+                    <p className="mt-3 text-base font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                      {preset.description}
+                    </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
+                        {resolveQueryChoiceLabel(tripLengthOptions, preset.patch.tripLengthDays ?? query.tripLengthDays)}
+                      </span>
+                      <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
+                        {resolveQueryChoiceLabel(budgetOptions, preset.patch.budgetBand ?? query.budgetBand)}
+                      </span>
+                      {primaryVibe ? (
+                        <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
+                          {resolveQueryChoiceLabel(primaryVibeOptions, primaryVibe)}
+                        </span>
+                      ) : null}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </article>
+
           <article
             id="recommendation-start-section"
             className="compass-sheet compass-form-stage compass-stage-shell compass-stage-reveal compass-stage-reveal-slower rounded-[var(--radius-card)] px-4 py-3 sm:px-5 sm:py-3.5 lg:px-4 lg:py-3 xl:px-4 xl:py-3.5"
           >
             <div className="space-y-2.5 lg:space-y-3">
-              <div className="border-b border-[color:var(--color-frame-soft)] pb-2.5 lg:pb-2">
-                <h2 className="font-display text-[1.02rem] leading-tight tracking-[-0.02em] text-[var(--color-ink)] sm:text-[1.18rem] lg:text-[1.12rem]">
-                  조건만 고르면 추천이 시작돼요.
-                </h2>
+              <div className="grid gap-4 border-b border-[color:var(--color-frame-soft)] pb-3 lg:grid-cols-[minmax(0,1.1fr)_minmax(16rem,0.9fr)] lg:items-start lg:pb-3">
+                <div>
+                  <div className="compass-stage-meta">
+                    <span className="compass-stage-index">04</span>
+                    <p className="compass-editorial-kicker">Recommendation planner</p>
+                  </div>
+                  <h2 className="mt-2 font-display text-[1.12rem] leading-tight tracking-[-0.02em] text-[var(--color-ink)] sm:text-[1.28rem] lg:text-[1.22rem]">
+                    이제 실제 조건으로 목적지를 좁혀 보세요.
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
+                    위에서 여행 톤을 읽었다면, 여기서는 동행과 예산, 일정부터 고르고 필요하면 세부 조건까지 더해요. 추천을 받은 뒤에는 카드 저장과 비교까지 같은 화면에서 이어집니다.
+                  </p>
+                </div>
+
+                <div className="grid gap-2 sm:grid-cols-3 lg:grid-cols-1 xl:grid-cols-3">
+                  {plannerSignals.map((signal) => (
+                    <div
+                      key={signal.id}
+                      className="rounded-[calc(var(--radius-card)-12px)] border border-[color:var(--color-frame-soft)] bg-[color:var(--color-paper-frost)] px-3 py-3"
+                    >
+                      <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
+                        {signal.label}
+                      </p>
+                      <p className="mt-2 text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                        {signal.value}
+                      </p>
+                      <p className="mt-1.5 text-xs leading-5 text-[var(--color-ink-soft)]">
+                        {signal.description}
+                      </p>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div
