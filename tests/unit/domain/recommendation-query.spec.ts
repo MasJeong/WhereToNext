@@ -53,6 +53,8 @@ describe("recommendationQuerySchema", () => {
     expect(testIds.result.card0).toBe("result-card-0");
     expect(testIds.result.instagramVibe0).toBe("instagram-vibe-0");
     expect(testIds.snapshot.saveSnapshot).toBe("save-snapshot");
+    expect(testIds.snapshot.restoreBrief).toBe("restore-brief");
     expect(testIds.snapshot.compareSnapshot).toBe("compare-snapshot");
+    expect(testIds.compare.summary).toBe("compare-summary");
   });
 });

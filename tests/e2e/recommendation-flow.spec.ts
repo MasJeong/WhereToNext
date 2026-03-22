@@ -10,6 +10,7 @@ async function submitGuidedRecommendation(page: import("@playwright/test").Page)
   await page.getByTestId("party-type-couple").click();
   await page.getByTestId("budget-mid").click();
   await page.getByTestId("trip-length-5").click();
+  await page.getByTestId("advanced-filters-toggle").click();
   await page.getByTestId("travel-month-10").click();
   await page.getByTestId("vibe-romance").click();
   await page.getByTestId("submit-recommendation").click();
@@ -30,6 +31,7 @@ test("restores a saved recommendation snapshot", async ({ page }) => {
 
   await page.goto(href!);
   await expect(page).toHaveURL(/\/s\//);
+  await expect(page.getByTestId("restore-brief")).toBeVisible();
   await expect(page.getByTestId("result-card-0")).toBeVisible();
   await expect(page.getByTestId("instagram-vibe-0")).toBeVisible();
 });
@@ -47,6 +49,7 @@ test("builds a compare board from two saved picks", async ({ page }) => {
   await page.getByTestId("compare-snapshot").click();
 
   await expect(page).toHaveURL(/\/compare\//);
+  await expect(page.getByTestId("compare-summary")).toBeVisible();
   await expect(page.getByTestId("compare-column-0")).toBeVisible();
   await expect(page.getByTestId("compare-verdict-row").last()).toBeVisible();
 });
@@ -133,6 +136,7 @@ test("recovers from the empty state through a relaxation action", async ({ page 
   await page.getByTestId("party-type-couple").click();
   await page.getByTestId("budget-mid").click();
   await page.getByTestId("trip-length-5").click();
+  await page.getByTestId("advanced-filters-toggle").click();
   await page.getByTestId("travel-month-10").click();
   await page.getByTestId("vibe-romance").click();
   await page.getByTestId("submit-recommendation").click();

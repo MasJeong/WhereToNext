@@ -15,9 +15,9 @@ describe("Home", () => {
 
     expect(
       screen.getByRole("heading", {
-        name: "여행지를 먼저 고르지 말고, 이번 휴가의 결부터 정리해 보세요.",
+        name: "이번 여행, 누구와 떠나나요?",
       }),
     ).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "이 조건으로 여행지 추천 받기" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "커플 기준으로 바로 추천 받기" })).toBeInTheDocument();
   });
 });

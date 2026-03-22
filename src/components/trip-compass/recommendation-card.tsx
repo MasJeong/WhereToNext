@@ -2,15 +2,15 @@ import type { CSSProperties, ReactNode } from "react";
 
 import type { RecommendationQuery, TrendEvidenceSnapshot } from "@/lib/domain/contracts";
 import {
+  buildRecommendationPlanningFacts,
+  buildRecommendationPriorityBadge,
+  buildRecommendationTrustSignals,
   buildRecommendationVerdict,
   describeSourceBadge,
   formatBudgetBand,
   formatDepartureAirport,
   formatDestinationKind,
   formatFlightBand,
-  formatFlightTolerance,
-  formatFreshnessState,
-  formatMonthList,
   formatTravelMonth,
   type RecommendationCardView,
 } from "@/lib/trip-compass/presentation";
@@ -22,49 +22,6 @@ type RecommendationCardProps = {
   query?: RecommendationQuery;
   actionSlot?: ReactNode;
 };
-
-type TrustSignal = {
-  label: string;
-  value: string;
-  detail: string;
-};
-
-/**
- * 점수 범위를 사람이 읽기 쉬운 적합도 라벨로 변환한다.
- * @param score 현재 획득 점수
- * @param maxScore 최대 가능 점수
- * @returns 적합도 라벨
- */
-function formatFitStrength(score: number, maxScore: number): string {
-  const ratio = maxScore === 0 ? 0 : score / maxScore;
-
-  if (ratio >= 0.85) {
-    return "강하게 맞아요";
-  }
-
-  if (ratio >= 0.6) {
-    return "대체로 잘 맞아요";
-  }
-
-  return "한 번 더 체크해 보세요";
-}
-
-/**
- * 상단 추천 카드가 왜 먼저 노출되는지에 대한 짧은 판정 배지를 만든다.
- * @param totalScore 카드 총점
- * @returns 카드 상단 배지 문구
- */
-function buildVerdictBadge(totalScore: number): string {
-  if (totalScore >= 80) {
-    return "가장 먼저 볼 후보";
-  }
-
-  if (totalScore >= 70) {
-    return "우선 비교할 후보";
-  }
-
-  return "조건을 더 보고 판단할 후보";
-}
 
 /**
  * 대표 근거에 대한 짧은 신뢰 설명을 만든다.
@@ -85,39 +42,6 @@ function describeTrustLead(evidence: TrendEvidenceSnapshot, evidenceCount: numbe
 }
 
 /**
- * 카드에서 빠르게 판단할 최소한의 신뢰 신호를 구성한다.
- * @param card 추천 카드 뷰 모델
- * @param query 현재 추천 질의
- * @returns 간결한 신뢰 신호 목록
- */
-function buildTrustSignals(card: RecommendationCardView, query?: RecommendationQuery): TrustSignal[] {
-  const primaryEvidence = card.recommendation.trendEvidence[0];
-  const scoreBreakdown = card.recommendation.scoreBreakdown;
-
-  return [
-    {
-      label: "시즌",
-      value: formatFitStrength(scoreBreakdown.seasonFit, 14),
-      detail: query
-        ? `${formatTravelMonth(query.travelMonth)} 기준 · ${scoreBreakdown.seasonFit}/14점`
-        : `${scoreBreakdown.seasonFit}/14점`,
-    },
-    {
-      label: "비행",
-      value: formatFitStrength(scoreBreakdown.flightToleranceFit, 12),
-      detail: query
-        ? `${formatDepartureAirport(query.departureAirport)} 출발 · ${formatFlightTolerance(query.flightTolerance)}`
-        : formatFlightBand(card.destination.flightBand),
-    },
-    {
-      label: "근거",
-      value: describeSourceBadge(primaryEvidence),
-      detail: `${primaryEvidence.sourceLabel} · ${formatFreshnessState(primaryEvidence.freshnessState)}`,
-    },
-  ];
-}
-
-/**
  * 추천 카드를 verdict-first 구조로 렌더링한다.
  * @param props 카드 뷰 모델과 액션 영역
  * @returns 추천 카드 UI
@@ -125,11 +49,14 @@ function buildTrustSignals(card: RecommendationCardView, query?: RecommendationQ
 export function RecommendationCard({ card, index, query, actionSlot }: RecommendationCardProps) {
   const primaryEvidence = card.recommendation.trendEvidence[0];
   const destination = card.destination;
-  const trustSignals = buildTrustSignals(card, query);
+  const trustSignals = buildRecommendationTrustSignals(card, query);
+  const planningFacts = buildRecommendationPlanningFacts(card);
   const compactWatchOut = card.recommendation.watchOuts[0];
+  const secondaryWatchOuts = card.recommendation.watchOuts.slice(1, 3);
   const leadReasons = card.recommendation.reasons.slice(0, 2);
-  const verdictBadge = buildVerdictBadge(card.recommendation.scoreBreakdown.total);
+  const verdictBadge = buildRecommendationPriorityBadge(card.recommendation.scoreBreakdown.total);
   const verdict = buildRecommendationVerdict(card, query);
+  const shortlistLabel = `Shortlist ${index + 1}`;
   const resultToneClass =
     index === 0
       ? "compass-result-card-primary"
@@ -147,156 +74,243 @@ export function RecommendationCard({ card, index, query, actionSlot }: Recommend
       style={revealStyle}
     >
       <div
-        className={`compass-result-card ${resultToneClass} flex flex-col gap-2.5 rounded-[calc(var(--radius-card)-2px)] px-4 py-3.5 sm:px-5 sm:py-4 lg:px-5 lg:py-4`}
+        className={`compass-result-card ${resultToneClass} flex flex-col gap-4 rounded-[calc(var(--radius-card)-2px)] px-4 py-4 sm:px-5 sm:py-5 lg:px-6 lg:py-6`}
       >
-        <div className="compass-result-layout gap-2.5">
-          <div className="space-y-2.5">
-            <div className="compass-result-accent space-y-1.5">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="compass-editorial-kicker">
-                  {formatDestinationKind(destination.kind)} 추천
-                </p>
-                <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-                  {verdictBadge}
-                </span>
-              </div>
-              <div className="space-y-1">
-                <h2 className="font-display text-[1.12rem] leading-[1] tracking-[-0.02em] text-[var(--color-ink)] sm:text-[1.42rem]">
-                  {destination.nameKo}
-                </h2>
-                <p className="text-[0.92rem] text-[var(--color-ink-soft)]">
-                  {destination.nameEn} · {destination.countryCode}
-                </p>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <p className="compass-editorial-kicker">핵심 판단</p>
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
-                {verdict.label}
+        <div className="flex flex-col gap-4 border-b border-[color:var(--color-stage-divider)] pb-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2.5">
+              <span className="compass-stage-list-number">{index + 1}</span>
+              <p className="compass-editorial-kicker">
+                {shortlistLabel} · {formatDestinationKind(destination.kind)} 추천
               </p>
-              <p className="font-display text-[0.92rem] leading-tight tracking-[-0.01em] sm:text-[1rem]">
-                {verdict.headline}
-              </p>
-              <p className="text-sm leading-5 text-[var(--color-ink-soft)]">
-                {verdict.support} {describeTrustLead(primaryEvidence, card.recommendation.trendEvidence.length)}
-              </p>
+              <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
+                {verdictBadge}
+              </span>
+              <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
+                근거 {card.recommendation.trendEvidence.length}개
+              </span>
             </div>
 
             <div className="flex flex-wrap gap-2">
-              {leadReasons.map((reason) => (
-                <span
-                  key={reason}
-                  className="compass-metric-pill rounded-full px-3 py-1 text-xs"
-                >
-                  {reason}
-                </span>
-              ))}
+              <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
+                {formatBudgetBand(destination.budgetBand)}
+              </span>
+              <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
+                {formatFlightBand(destination.flightBand)}
+              </span>
+              <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
+                {query
+                  ? `${formatDepartureAirport(query.departureAirport)} · ${formatTravelMonth(query.travelMonth)}`
+                  : destination.countryCode}
+              </span>
             </div>
           </div>
 
-          <aside className="compass-result-scoreboard rounded-[calc(var(--radius-card)-10px)] px-3.5 py-2.5 text-sm sm:px-4 sm:py-3">
-            <div className="compass-result-score-row">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
-                적합 점수
-              </p>
-              <p className="compass-result-score-value">{card.recommendation.scoreBreakdown.total}점</p>
-            </div>
-            <div className="compass-result-score-row">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
-                일치도
-              </p>
-              <p className="compass-result-score-value">{card.recommendation.confidence}%</p>
-            </div>
-            <div className="compass-result-score-row">
-              <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
-                대표 근거
-              </p>
-              <p className="mt-2 text-base font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
-                {describeSourceBadge(primaryEvidence)}
-              </p>
-              <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-                {primaryEvidence.sourceLabel}
-              </p>
-            </div>
-          </aside>
-        </div>
-
-        <div className="compass-result-section grid gap-2.5 lg:grid-cols-[1.3fr_0.9fr]">
-          <section className="space-y-1.5">
-            <p className="compass-editorial-kicker">빠른 판단 포인트</p>
-            <div className="grid gap-2 sm:grid-cols-3">
-              {trustSignals.map((signal) => (
-                <div
-                  key={signal.label}
-                  className="rounded-[calc(var(--radius-card)-12px)] border border-[color:var(--color-frame-soft)] bg-[color:var(--color-paper-frost)] px-3 py-2.5"
-                >
-                  <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
-                    {signal.label}
+          <div className="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(17rem,0.92fr)] xl:items-start">
+            <div className="space-y-4">
+              <div className="compass-result-accent space-y-2.5">
+                <p className="text-[0.74rem] font-semibold uppercase tracking-[0.22em] text-[var(--color-sand-deep)]">
+                  목적지 브리프
+                </p>
+                <div className="space-y-1.5">
+                  <h2 className="font-display text-[1.24rem] leading-[0.98] tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.6rem]">
+                    {destination.nameKo}
+                  </h2>
+                  <p className="text-[0.92rem] text-[var(--color-ink-soft)]">
+                    {destination.nameEn} · {destination.countryCode}
                   </p>
-                  <p className="mt-1 text-[0.95rem] font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
-                    {signal.value}
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{signal.detail}</p>
                 </div>
-              ))}
-            </div>
-          </section>
-
-          <section className="compass-result-sidepanel rounded-[calc(var(--radius-card)-10px)] px-3.5 py-2.5 sm:px-4 sm:py-2.5">
-            <p className="compass-editorial-kicker">여행 정보</p>
-            <div className="mt-3 grid gap-2.5 sm:grid-cols-3 lg:grid-cols-1">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-ink-soft)]">추천 시기</p>
-                <p className="mt-1.5 text-sm leading-5 text-[var(--color-ink)]">{formatMonthList(destination.bestMonths)}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-ink-soft)]">예산 감각</p>
-                <p className="mt-1.5 text-sm leading-5 text-[var(--color-ink)]">{formatBudgetBand(destination.budgetBand)}</p>
-              </div>
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-[var(--color-ink-soft)]">비행 거리</p>
-                <p className="mt-1.5 text-sm leading-5 text-[var(--color-ink)]">{formatFlightBand(destination.flightBand)}</p>
-              </div>
-            </div>
-            <div className="compass-warning-card mt-2 rounded-[calc(var(--radius-card)-12px)] px-4 py-2.5 text-sm">
-              <p className="compass-editorial-kicker text-[var(--color-warning-text)]">먼저 체크할 점</p>
-              <p className="mt-2 leading-5">{compactWatchOut}</p>
-            </div>
-          </section>
-        </div>
-
-        <section className="compass-result-section space-y-1.5" data-testid={getInstagramVibeTestId(index)}>
-          <div className="flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
-            <p className="compass-editorial-kicker">분위기 참고</p>
-          </div>
-          <div className="compass-result-source-strip rounded-[calc(var(--radius-card)-12px)] px-4 py-2.5 sm:px-5 sm:py-3">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-                    {describeSourceBadge(primaryEvidence)}
-                  </span>
-                  <span className="text-xs uppercase tracking-[0.2em] text-[var(--color-ink-soft)]">
-                    {primaryEvidence.sourceLabel}
-                  </span>
-                </div>
-                <p className="mt-2.5 max-w-2xl text-sm leading-5 text-[var(--color-ink)]">
-                  {primaryEvidence.summary}
+                <p className="max-w-3xl text-[0.98rem] leading-7 text-[var(--color-ink)]">
+                  {card.recommendation.whyThisFits}
+                </p>
+                <p className="max-w-3xl text-xs leading-6 tracking-[0.02em] text-[var(--color-ink-soft)]">
+                  {destination.nameEn} · {destination.summary}
                 </p>
               </div>
-              <a
-                href={primaryEvidence.sourceUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="compass-action-secondary rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
-              >
-                원문 보기
-              </a>
+
+              <div className="flex flex-wrap gap-2">
+                {leadReasons.map((reason) => (
+                  <span
+                    key={reason}
+                    className="compass-metric-pill rounded-full px-3 py-1 text-xs font-semibold"
+                  >
+                    {reason}
+                  </span>
+                ))}
+              </div>
             </div>
-            {actionSlot ? <div className="compass-action-rail mt-3 pt-0">{actionSlot}</div> : null}
+
+            <section className="compass-story-note rounded-[calc(var(--radius-card)-10px)] px-4 py-4 sm:px-5 sm:py-5">
+              <p className="compass-editorial-kicker">왜 먼저 봐야 하는지</p>
+              <p className="mt-2 text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
+                {verdict.label}
+              </p>
+              <p className="mt-2 font-display text-[1.08rem] leading-tight tracking-[-0.02em] sm:text-[1.16rem]">
+                {verdict.headline}
+              </p>
+              <p className="mt-3 text-sm leading-6 text-[var(--color-ink-soft)]">
+                {verdict.support} {describeTrustLead(primaryEvidence, card.recommendation.trendEvidence.length)}
+              </p>
+              <div className="mt-4 grid gap-2 sm:grid-cols-2">
+                <div className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3">
+                  <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
+                    대표 근거
+                  </p>
+                  <p className="mt-1.5 text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                    {describeSourceBadge(primaryEvidence)}
+                  </p>
+                </div>
+                <div className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3">
+                  <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
+                    여행 결
+                  </p>
+                  <p className="mt-1.5 text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                    {formatBudgetBand(destination.budgetBand)} · {formatFlightBand(destination.flightBand)}
+                  </p>
+                </div>
+              </div>
+            </section>
           </div>
-        </section>
+        </div>
+
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(18rem,0.9fr)] xl:items-start">
+          <div className="space-y-4">
+            <section className="space-y-2">
+              <p className="compass-editorial-kicker">먼저 확인할 신뢰 신호</p>
+              <div className="grid gap-2 sm:grid-cols-3">
+                {trustSignals.map((signal) => (
+                  <div
+                    key={signal.label}
+                    className="rounded-[calc(var(--radius-card)-12px)] border border-[color:var(--color-frame-soft)] bg-[color:var(--color-paper-frost)] px-3 py-3"
+                  >
+                    <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
+                      {signal.label}
+                    </p>
+                    <p className="mt-1 text-[0.95rem] font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                      {signal.value}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{signal.detail}</p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="space-y-2">
+              <p className="compass-editorial-kicker">여행 설계 힌트</p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                {planningFacts.map((fact) => (
+                  <div
+                    key={fact.id}
+                    className="rounded-[calc(var(--radius-card)-12px)] border border-[color:var(--color-frame-soft)] bg-[color:var(--color-paper-frost)] px-3.5 py-3"
+                  >
+                    <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
+                      {fact.label}
+                    </p>
+                    <p className="mt-1.5 text-[0.95rem] font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                      {fact.value}
+                    </p>
+                    <p className="mt-1.5 text-xs leading-5 text-[var(--color-ink-soft)]">
+                      {fact.detail}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </section>
+
+            <section className="space-y-1.5" data-testid={getInstagramVibeTestId(index)}>
+              <div className="flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
+                <p className="compass-editorial-kicker">분위기 근거</p>
+              </div>
+              <div className="compass-result-source-strip rounded-[calc(var(--radius-card)-12px)] px-4 py-3 sm:px-5 sm:py-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
+                        {describeSourceBadge(primaryEvidence)}
+                      </span>
+                      <span className="text-xs uppercase tracking-[0.2em] text-[var(--color-ink-soft)]">
+                        {primaryEvidence.sourceLabel}
+                      </span>
+                    </div>
+                    <p className="mt-2.5 max-w-2xl text-sm leading-6 text-[var(--color-ink)]">
+                      {primaryEvidence.summary}
+                    </p>
+                  </div>
+                  <a
+                    href={primaryEvidence.sourceUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="compass-action-secondary rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
+                  >
+                    원문 보기
+                  </a>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <aside className="space-y-3">
+            <section className="compass-result-scoreboard rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm sm:px-5 sm:py-5">
+              <div>
+                <p className="compass-editorial-kicker">Decision readout</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
+                  점수와 대표 근거를 한 번에 보고 shortlist의 우선순위를 빠르게 잡아요.
+                </p>
+              </div>
+              <div className="compass-result-score-row">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
+                  적합 점수
+                </p>
+                <p className="compass-result-score-value">{card.recommendation.scoreBreakdown.total}점</p>
+              </div>
+              <div className="compass-result-score-row">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
+                  일치도
+                </p>
+                <p className="compass-result-score-value">{card.recommendation.confidence}%</p>
+              </div>
+              <div className="compass-result-score-row">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
+                  대표 근거
+                </p>
+                <p className="mt-2 text-base font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                  {describeSourceBadge(primaryEvidence)}
+                </p>
+                <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
+                  {primaryEvidence.sourceLabel}
+                </p>
+              </div>
+              <div className="compass-result-score-row">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-[var(--color-ink-soft)]">
+                  출발 조건
+                </p>
+                <p className="mt-2 text-base font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                  {query
+                    ? `${formatDepartureAirport(query.departureAirport)} · ${formatTravelMonth(query.travelMonth)}`
+                    : destination.summary}
+                </p>
+              </div>
+            </section>
+
+            <section className="compass-warning-card rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm sm:px-5 sm:py-5">
+              <p className="compass-editorial-kicker text-[var(--color-warning-text)]">
+                비교 보드에 넘기기 전 체크
+              </p>
+              <p className="mt-2 leading-6">{compactWatchOut}</p>
+              {secondaryWatchOuts.length > 0 ? (
+                <div className="mt-3 grid gap-2 border-t border-[color:var(--color-warning-border)] pt-3">
+                  {secondaryWatchOuts.map((watchOut) => (
+                    <p key={watchOut} className="text-xs leading-5 text-[var(--color-warning-text)]">
+                      {watchOut}
+                    </p>
+                  ))}
+                </div>
+              ) : null}
+            </section>
+
+            {actionSlot ? <div className="compass-action-rail pt-0">{actionSlot}</div> : null}
+          </aside>
+        </div>
       </div>
     </article>
   );

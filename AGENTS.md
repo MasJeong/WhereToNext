@@ -146,6 +146,9 @@ Scope: entire repository.
 - Skills should stay narrow, reusable, and grounded in real SooGo file paths and verification commands.
 - OpenCode can use the Claude-compatible skill path, so keep one checked-in source under `.claude/skills/`.
 - `docs/skills/` is optional supporting documentation only, not the primary discovery path.
+- Installed repo-local UI skill: `.claude/skills/ui-ux-pro-max/`.
+- To generate or refresh the current SooGo design system, run `python3 .claude/skills/ui-ux-pro-max/scripts/search.py "travel recommendation platform editorial calm premium trust-first nextjs" --design-system --persist -p "SooGo" -f markdown` from the repo root.
+- Current persisted design system output lives at `design-system/soogo/MASTER.md`.
 
 ## 18) Finish Checklist
 - Did I use only real scripts and installed tools?

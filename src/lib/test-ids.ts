@@ -56,6 +56,7 @@ export const testIds = {
     compareSnapshot: "compare-snapshot",
     shareLink: "share-link",
     copyShareLink: "copy-share-link",
+    restoreBrief: "restore-brief",
     savedSnapshot0: "saved-snapshot-0",
     compareSelectionCount: "compare-selection-count",
     stickyCompareTray: "sticky-compare-tray",
@@ -63,6 +64,7 @@ export const testIds = {
   },
   compare: {
     column0: "compare-column-0",
+    summary: "compare-summary",
     restoreError: "restore-error",
     differencesToggle: "compare-differences-toggle",
     mobilePrev: "compare-mobile-prev",

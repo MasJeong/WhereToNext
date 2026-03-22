@@ -10,6 +10,7 @@ import {
   formatBudgetBand,
   formatFlightBand,
   formatMonthList,
+  formatPaceList,
   formatVibeList,
 } from "@/lib/trip-compass/presentation";
 import { getCompareColumnTestId, testIds } from "@/lib/test-ids";
@@ -34,8 +35,12 @@ function buildCompareRows(): CompareRow[] {
       value: (column) => buildRecommendationVerdict(column.card).headline,
     },
     {
-      label: "추천 근거",
+      label: "shortlist 이유",
       value: (column) => column.card.recommendation.whyThisFits,
+    },
+    {
+      label: "핵심 이유",
+      value: (column) => column.card.recommendation.reasons.slice(0, 2).join(" / "),
     },
     {
       label: "예산 감각",
@@ -44,6 +49,10 @@ function buildCompareRows(): CompareRow[] {
     {
       label: "비행 거리",
       value: (column) => formatFlightBand(column.card.destination.flightBand),
+    },
+    {
+      label: "일정 리듬",
+      value: (column) => formatPaceList(column.card.destination.paceTags),
     },
     {
       label: "추천 시기",
@@ -97,18 +106,34 @@ export function CompareBoard({ columns }: CompareBoardProps) {
     : rows;
   const canMoveNext = mobileStartIndex + 2 < columns.length;
   const canMovePrev = mobileStartIndex > 0;
+  const differenceCount = rows.filter((row) => !isSameRow(row, columns)).length;
+  const comparedNames = columns.map((column) => column.card.destination.nameKo).join(" · ");
 
   return (
     <section className="space-y-5">
       <div className="compass-compare-toolbar compass-stage-reveal flex flex-col gap-3 rounded-[calc(var(--radius-card)-6px)] p-4 sm:p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="compass-editorial-kicker">비교 방식</p>
+          <p className="compass-editorial-kicker">Decision board</p>
+          <p className="mt-2 font-display text-[1.08rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.24rem]">
+            {comparedNames}
+          </p>
           <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-            모바일에서는 두 후보씩, 데스크톱에서는 전체 후보를 같은 기준 행으로 비교해요.
+            모바일에서는 두 후보씩, 데스크톱에서는 전체 후보를 같은 질문의 행 위에 올려 다시 읽어요. 최종 결정을 앞둔 작업대처럼 같은 렌즈를 반복해 비교합니다.
           </p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
+          <div className="compass-compare-pill-row">
+            <span className="compass-metric-pill rounded-full px-3 py-2 text-xs font-semibold">
+              후보 {columns.length}곳
+            </span>
+            <span className="compass-metric-pill rounded-full px-3 py-2 text-xs font-semibold">
+              핵심 차이 {differenceCount}개
+            </span>
+            <span className="compass-metric-pill rounded-full px-3 py-2 text-xs font-semibold">
+              저장된 카드만 비교
+            </span>
+          </div>
           <button
             type="button"
             data-testid={testIds.compare.differencesToggle}
@@ -147,23 +172,37 @@ export function CompareBoard({ columns }: CompareBoardProps) {
             gridTemplateColumns: `minmax(6.25rem, 7rem) repeat(${mobileColumns.length}, minmax(0, 1fr))`,
           }}
         >
-          <div className="compass-compare-label px-3 py-4 text-xs font-semibold sm:px-4 sm:text-sm">비교 기준</div>
+          <div className="compass-compare-label px-3 py-4 text-xs font-semibold sm:px-4 sm:text-sm">비교 질문</div>
           {mobileColumns.map((column) => (
             <div
               key={`mobile-header-${column.snapshotId}`}
               className="compass-compare-column px-3 py-4 sm:px-4"
             >
               <div className="compass-compare-header-block">
-                <p className="text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                <p className="compass-editorial-kicker">보드 후보</p>
+                <p className="font-display text-[1.06rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
                   {column.card.destination.nameKo}
                 </p>
                 <p className="text-xs text-[var(--color-ink-soft)]">{column.card.destination.nameEn}</p>
+                <div className="compass-compare-pill-row">
+                  {column.card.recommendation.reasons.slice(0, 2).map((reason) => (
+                    <span
+                      key={`mobile-reason-${column.snapshotId}-${reason}`}
+                      className="compass-metric-pill rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                    >
+                      {reason}
+                    </span>
+                  ))}
+                </div>
                 <div className="compass-compare-stat text-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-soft)]">결정 요약</p>
                   <p className="mt-2 font-semibold text-[var(--color-ink)]">
                     {column.card.recommendation.scoreBreakdown.total}점 · {column.card.recommendation.confidence}% 일치
                   </p>
                 </div>
+                <p className="text-xs leading-5 text-[var(--color-ink-soft)]">
+                  {buildRecommendationVerdict(column.card).headline}
+                </p>
                 <Link
                   href={column.sharePath}
                   className="compass-compare-link inline-flex text-xs font-semibold"
@@ -202,7 +241,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
             gridTemplateColumns: `minmax(10rem, 12rem) repeat(${columns.length}, minmax(14rem, 1fr))`,
           }}
         >
-          <div className="compass-compare-label px-4 py-4 text-sm font-semibold">비교 기준</div>
+          <div className="compass-compare-label px-4 py-4 text-sm font-semibold">비교 질문</div>
           {columns.map((column, index) => (
             <div
               key={`desktop-header-${column.snapshotId}`}
@@ -210,16 +249,30 @@ export function CompareBoard({ columns }: CompareBoardProps) {
               className="compass-compare-column px-4 py-4"
             >
               <div className="compass-compare-header-block">
-                <p className="text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
+                <p className="compass-editorial-kicker">보드 후보</p>
+                <p className="font-display text-[1.16rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
                   {column.card.destination.nameKo}
                 </p>
                 <p className="text-xs text-[var(--color-ink-soft)]">{column.card.destination.nameEn}</p>
+                <div className="compass-compare-pill-row">
+                  {column.card.recommendation.reasons.slice(0, 2).map((reason) => (
+                    <span
+                      key={`desktop-reason-${column.snapshotId}-${reason}`}
+                      className="compass-metric-pill rounded-full px-2.5 py-1 text-[11px] font-semibold"
+                    >
+                      {reason}
+                    </span>
+                  ))}
+                </div>
                 <div className="compass-compare-stat text-sm">
                   <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--color-ink-soft)]">결정 요약</p>
                   <p className="mt-2 font-semibold text-[var(--color-ink)]">
                     {column.card.recommendation.scoreBreakdown.total}점 · {column.card.recommendation.confidence}% 일치
                   </p>
                 </div>
+                <p className="text-xs leading-5 text-[var(--color-ink-soft)]">
+                  {buildRecommendationVerdict(column.card).headline}
+                </p>
                 <Link
                   href={column.sharePath}
                   className="compass-compare-link inline-flex text-xs font-semibold"

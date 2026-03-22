@@ -90,19 +90,43 @@ export default async function CompareSnapshotPage({ params }: ComparePageProps) 
 
   return (
     <ExperienceShell
-      eyebrow=""
-      title=""
-      intro=""
-      capsule=""
-      hideHeader
-      bareBody
+      eyebrow="결정 보드"
+      title={`${columns.length}개 저장 후보를 같은 질문의 decision board 위에서 다시 좁혀 보세요.`}
+      intro="비교 링크는 저장된 recommendation snapshot만 읽어 와 변형 없이 복원해요. 추천 엔진을 다시 돌리지 않고, 최종 결정을 앞둔 워크테이블처럼 같은 기준으로 후보를 줄이는 데 집중합니다."
+      capsule="저장한 카드 2~4개 비교 · recommendation/comparison snapshot 계약 유지 · 익명 공유 가능"
+      headerAside={
+        <div className="compass-panel rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-[var(--color-paper)] sm:px-5 sm:py-5">
+          <p className="compass-editorial-kicker text-[var(--color-sand)]">현재 보드</p>
+          <p className="mt-3 text-sm leading-6 text-[var(--color-paper-soft)]">
+            {columns.map((column) => column.card.destination.nameKo).join(" · ")}
+          </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <span className="rounded-full border border-[color:var(--color-frame)] bg-[rgb(255_255_255_/_0.08)] px-3 py-1.5 text-xs font-semibold text-[var(--color-paper)]">
+              후보 {columns.length}곳
+            </span>
+            <span className="rounded-full border border-[color:var(--color-frame)] bg-[rgb(255_255_255_/_0.08)] px-3 py-1.5 text-xs font-semibold text-[var(--color-paper)]">
+              저장된 비교 링크
+            </span>
+            <span className="rounded-full border border-[color:var(--color-frame)] bg-[rgb(255_255_255_/_0.08)] px-3 py-1.5 text-xs font-semibold text-[var(--color-paper)]">
+              변형 없이 비교
+            </span>
+          </div>
+        </div>
+      }
     >
-      <section className="compass-open-info compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-4 py-2.5 sm:px-5 sm:py-3">
-        <div className="flex flex-col gap-1.5 sm:flex-row sm:items-center sm:justify-between">
+      <section
+        data-testid={testIds.compare.summary}
+        className="compass-open-info compass-stage-reveal compass-stage-reveal-fast rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5"
+      >
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-[0.98rem] font-semibold leading-tight text-[var(--color-ink)] sm:text-[1.08rem]">
-              같은 기준의 줄로 후보를 빠르게 걸러보세요.
+            <p className="compass-editorial-kicker">비교 보드 요약</p>
+            <h2 className="mt-2 font-display text-[1.02rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.18rem]">
+              같은 기준의 줄을 내려가며, 남길 후보와 뺄 후보를 더 빠르게 가려보세요.
             </h2>
+            <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
+              각 열은 저장한 shortlist 카드 하나를 뜻하고, 각 행은 실제 결정 때 다시 묻게 되는 질문이에요. 차이만 보기 토글로 핵심 판단 포인트만 남길 수도 있어요.
+            </p>
           </div>
           <Link
             href="/"
@@ -110,6 +134,15 @@ export default async function CompareSnapshotPage({ params }: ComparePageProps) 
           >
             새 비교 보드 만들기
           </Link>
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
+            저장한 카드만 비교
+          </span>
+          <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
+            추천 재계산 없음
+          </span>
         </div>
 
         <div className="mt-2 compass-stage-reveal compass-stage-reveal-later">

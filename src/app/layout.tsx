@@ -21,8 +21,8 @@ const monoFont = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Trip Compass",
-  description: "한국 출발 해외여행 추천을 익명으로 탐색하고 저장·공유·비교할 수 있는 Trip Compass입니다.",
+  title: "SooGo",
+  description: "한국 출발 해외여행 추천을 익명으로 탐색하고 저장·공유·비교할 수 있는 SooGo입니다.",
 };
 
 /**

@@ -6,6 +6,7 @@ import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import { readRecommendationSnapshots } from "@/lib/snapshots/service";
 
 import {
+  buildSnapshotPath,
   createRecommendationCards,
   type RecommendationCardView,
 } from "./presentation";
@@ -14,6 +15,7 @@ export type RestoredRecommendationView = {
   cards: RecommendationCardView[];
   query: RecommendationSnapshot["query"];
   scoringVersionId: string;
+  primaryCard: RecommendationCardView | null;
 };
 
 export type ComparisonColumnView = {
@@ -55,10 +57,13 @@ function restoreCardsFromSnapshot(snapshot: RecommendationSnapshot): Recommendat
 export async function hydrateRecommendationSnapshot(
   snapshot: RecommendationSnapshot,
 ): Promise<RestoredRecommendationView> {
+  const cards = restoreCardsFromSnapshot(snapshot);
+
   return {
-    cards: restoreCardsFromSnapshot(snapshot),
+    cards,
     query: snapshot.query,
     scoringVersionId: snapshot.scoringVersionId,
+    primaryCard: cards[0] ?? null,
   };
 }
 
@@ -87,7 +92,7 @@ export async function hydrateComparisonSnapshot(
 
     return {
       snapshotId,
-      sharePath: `/s/${snapshotId}`,
+      sharePath: buildSnapshotPath(snapshotId, "recommendation"),
       card: primaryCard,
     } satisfies ComparisonColumnView;
   });

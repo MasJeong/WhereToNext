@@ -42,6 +42,20 @@ export type RecommendationVerdictView = {
   support: string;
 };
 
+export type WorkspaceBriefItemView = {
+  id: string;
+  label: string;
+  value: string;
+  detail: string;
+};
+
+export type RecommendationWorkspaceFactView = {
+  id: string;
+  label: string;
+  value: string;
+  detail: string;
+};
+
 const destinationIndex = new Map(launchCatalog.map((destination) => [destination.id, destination]));
 
 const monthLabels = [
@@ -382,6 +396,136 @@ export function buildRecommendationVerdict(
     headline: "장점은 분명하지만 체크할 점까지 보고 남길지 결정해 보세요.",
     support,
   };
+}
+
+/**
+ * 현재 query를 워크스페이스용 trip brief 카드 묶음으로 정리한다.
+ * @param query 활성 추천 질의
+ * @returns 홈/복원 화면에서 재사용할 brief 항목 목록
+ */
+export function buildStructuredTripBrief(
+  query: RecommendationQuery,
+): WorkspaceBriefItemView[] {
+  return [
+    {
+      id: "travel-window",
+      label: "여행 창",
+      value: `${formatTravelMonth(query.travelMonth)} · ${query.tripLengthDays}일`,
+      detail: `${formatDepartureAirport(query.departureAirport)} 출발 기준으로 ${formatPartyType(query.partyType)} 리듬을 잡고 있어요.`,
+    },
+    {
+      id: "budget-pace",
+      label: "예산·밀도",
+      value: `${formatBudgetBand(query.budgetBand)} · ${formatPaceLabel(query.pace)}`,
+      detail: "예산 감각과 일정 밀도가 shortlist를 가장 빠르게 좁히는 축이에요.",
+    },
+    {
+      id: "flight-window",
+      label: "비행 범위",
+      value: formatFlightTolerance(query.flightTolerance),
+      detail: "비행 부담을 얼마나 허용하는지가 후보 풀의 넓이를 바꿔요.",
+    },
+    {
+      id: "vibes",
+      label: "핵심 분위기",
+      value: formatVibeList(query.vibes),
+      detail: query.vibes[1]
+        ? "대표 분위기와 보조 분위기를 함께 맞춰 설명 가능한 후보만 남겨요."
+        : "대표 분위기 하나로 먼저 넓게 보고, 저장 후 비교 단계에서 더 좁혀요.",
+    },
+  ];
+}
+
+/**
+ * 추천 카드에서 바로 읽을 shortlist 신뢰 신호를 구성한다.
+ * @param card 추천 카드 뷰 모델
+ * @param query 현재 추천 질의
+ * @returns 카드 상단 판단용 신뢰 신호 목록
+ */
+export function buildRecommendationTrustSignals(
+  card: RecommendationCardView,
+  query?: RecommendationQuery,
+): RecommendationWorkspaceFactView[] {
+  const primaryEvidence = card.recommendation.trendEvidence[0];
+  const scoreBreakdown = card.recommendation.scoreBreakdown;
+
+  return [
+    {
+      id: "season-fit",
+      label: "시즌",
+      value: formatFitStrengthLabel(scoreBreakdown.seasonFit, 14),
+      detail: query
+        ? `${formatTravelMonth(query.travelMonth)} 기준 · ${scoreBreakdown.seasonFit}/14점`
+        : `${scoreBreakdown.seasonFit}/14점`,
+    },
+    {
+      id: "flight-fit",
+      label: "비행",
+      value: formatFitStrengthLabel(scoreBreakdown.flightToleranceFit, 12),
+      detail: query
+        ? `${formatDepartureAirport(query.departureAirport)} 출발 · ${formatFlightTolerance(query.flightTolerance)}`
+        : formatFlightBand(card.destination.flightBand),
+    },
+    {
+      id: "evidence-trust",
+      label: "근거",
+      value: describeSourceBadge(primaryEvidence),
+      detail: `${primaryEvidence.sourceLabel} · ${formatFreshnessState(primaryEvidence.freshnessState)}`,
+    },
+  ];
+}
+
+/**
+ * 카드 하나를 실제 일정 판단용 fact 블록으로 바꾼다.
+ * @param card 추천 카드 뷰 모델
+ * @returns 여행 설계에 바로 쓸 fact 목록
+ */
+export function buildRecommendationPlanningFacts(
+  card: RecommendationCardView,
+): RecommendationWorkspaceFactView[] {
+  return [
+    {
+      id: "best-months",
+      label: "추천 시기",
+      value: formatMonthList(card.destination.bestMonths),
+      detail: "저장 후 다시 볼 때도 같은 시즌 감각을 유지하는 기준이에요.",
+    },
+    {
+      id: "budget-band",
+      label: "예산 감각",
+      value: formatBudgetBand(card.destination.budgetBand),
+      detail: "숙소와 이동 체감이 이 예산대에 가장 자연스럽게 맞아요.",
+    },
+    {
+      id: "pace-tags",
+      label: "일정 리듬",
+      value: formatPaceList(card.destination.paceTags),
+      detail: card.destination.summary,
+    },
+    {
+      id: "flight-band",
+      label: "비행 거리",
+      value: formatFlightBand(card.destination.flightBand),
+      detail: "출발 피로와 첫날 컨디션을 감안해 비교 보드에서 다시 보는 축이에요.",
+    },
+  ];
+}
+
+/**
+ * 총점 기준으로 shortlist 우선순위 배지를 만든다.
+ * @param totalScore 카드 총점
+ * @returns 카드 상단 우선순위 문구
+ */
+export function buildRecommendationPriorityBadge(totalScore: number): string {
+  if (totalScore >= 80) {
+    return "가장 먼저 볼 후보";
+  }
+
+  if (totalScore >= 70) {
+    return "우선 비교할 후보";
+  }
+
+  return "체크 후 남길 후보";
 }
 
 /**

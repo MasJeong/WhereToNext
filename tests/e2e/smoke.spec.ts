@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
 
-test("shows the Trip Compass smoke shell", async ({ page }) => {
+test("shows the SooGo smoke shell", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page).toHaveTitle("Trip Compass");
+  await expect(page).toHaveTitle("SooGo");
   await expect(
     page.getByRole("heading", {
-      name: "어디로 갈지 아직 몰라도, 내 여행 조건으로 목적지를 먼저 추려드려요.",
+      name: "이번 여행, 누구와 떠나나요?",
     }),
   ).toBeVisible();
 });
