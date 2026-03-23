@@ -81,16 +81,16 @@ export function CompareBoard({ columns }: CompareBoardProps) {
   const differenceCount = rows.filter((row) => !isSameRow(row, columns)).length;
 
   return (
-    <section className="space-y-5">
-      <div className="compass-compare-toolbar compass-stage-reveal flex flex-col gap-4 rounded-[var(--radius-card)] p-4 sm:p-5">
+    <section className="space-y-3.5">
+      <div className="compass-compare-toolbar compass-stage-reveal flex flex-col gap-3.5 rounded-[var(--radius-card)] p-3.5 sm:p-4">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="compass-editorial-kicker">비교 화면</p>
-            <h3 className="mt-2 font-display text-[1.16rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.34rem]">
-              최종 선택 직전, 같은 질문으로 후보를 다시 줄여 보세요.
+            <h3 className="mt-1.5 font-display text-[1.08rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.24rem]">
+              최종 선택 전, 같은 항목으로 빠르게 좁혀 보세요.
             </h3>
-            <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-              모바일에서는 두 후보씩 가볍게 넘겨 보고, 데스크톱에서는 전체 후보를 한 번에 비교해요. 핵심 차이만 남겨 최종 결정 피로를 줄이는 데 집중했어요.
+            <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
+              모바일에서는 두 후보씩 넘겨 보고, 차이만 남겨 결정 피로를 줄여요.
             </p>
           </div>
 
@@ -112,21 +112,21 @@ export function CompareBoard({ columns }: CompareBoardProps) {
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4">
           {columns.map((column, index) => (
             <article
               key={column.snapshotId}
               data-testid={getCompareColumnTestId(index)}
-              className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4"
+              className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-3.5 py-3.5"
             >
               <p className="compass-editorial-kicker">후보 {index + 1}</p>
-              <p className="mt-2 font-display text-[1.02rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
+              <p className="mt-1.5 font-display text-[0.98rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
                 {column.card.destination.nameKo}
               </p>
               <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
                 {column.card.recommendation.scoreBreakdown.total}점 · {column.card.recommendation.confidence}% 일치
               </p>
-              <div className="mt-3 flex flex-wrap gap-2">
+              <div className="mt-2.5 flex flex-wrap gap-2">
                 <Link
                   href={buildDestinationDetailPath(column.card.destination, undefined, column.snapshotId)}
                   className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-[11px] font-semibold tracking-[0.04em]"
@@ -170,15 +170,15 @@ export function CompareBoard({ columns }: CompareBoardProps) {
         <div
           className="compass-compare-grid grid w-full gap-px rounded-[var(--radius-card)]"
           style={{
-            gridTemplateColumns: `minmax(6.5rem, 7rem) repeat(${mobileColumns.length}, minmax(0, 1fr))`,
+            gridTemplateColumns: `minmax(5.8rem, 6.4rem) repeat(${mobileColumns.length}, minmax(0, 1fr))`,
           }}
         >
-          <div className="compass-compare-label px-3 py-4 text-xs font-semibold">비교 질문</div>
+          <div className="compass-compare-label px-3 py-3 text-xs font-semibold">비교 질문</div>
           {mobileColumns.map((column) => (
-            <div key={`mobile-header-${column.snapshotId}`} className="compass-compare-column px-3 py-4">
+            <div key={`mobile-header-${column.snapshotId}`} className="compass-compare-column px-3 py-3">
               <div className="compass-compare-header-block">
                 <p className="compass-editorial-kicker">보드 후보</p>
-                <p className="font-display text-[1.02rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
+                <p className="font-display text-[0.98rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
                   {column.card.destination.nameKo}
                 </p>
                 <p className="text-xs text-[var(--color-ink-soft)]">
@@ -192,14 +192,14 @@ export function CompareBoard({ columns }: CompareBoardProps) {
             <Fragment key={`mobile-${row.label}`}>
               <div
                 data-testid={row.label === "한 줄 판정" ? testIds.compare.verdictRow : undefined}
-                className={`${row.label === "한 줄 판정" ? "compass-decision-card" : "compass-compare-label"} px-3 py-4 text-xs font-semibold`}
+                className={`${row.label === "한 줄 판정" ? "compass-decision-card" : "compass-compare-label"} px-3 py-3 text-xs font-semibold`}
               >
                 {row.label}
               </div>
               {mobileColumns.map((column) => (
                 <div
                   key={`mobile-${row.label}-${column.snapshotId}`}
-                  className={`${row.warning ? "compass-compare-cell compass-compare-cell-warning" : "compass-compare-cell"} px-3 py-4 text-xs leading-5`}
+                  className={`${row.warning ? "compass-compare-cell compass-compare-cell-warning" : "compass-compare-cell"} px-3 py-3 text-xs leading-5`}
                 >
                   {row.value(column)}
                 </div>
@@ -213,15 +213,15 @@ export function CompareBoard({ columns }: CompareBoardProps) {
         <div
           className="compass-compare-grid grid min-w-[56rem] gap-px rounded-[var(--radius-card)]"
           style={{
-            gridTemplateColumns: `minmax(10rem, 12rem) repeat(${columns.length}, minmax(15rem, 1fr))`,
+            gridTemplateColumns: `minmax(9rem, 11rem) repeat(${columns.length}, minmax(14rem, 1fr))`,
           }}
         >
-          <div className="compass-compare-label px-4 py-4 text-sm font-semibold">비교 질문</div>
+          <div className="compass-compare-label px-4 py-3.5 text-sm font-semibold">비교 질문</div>
           {columns.map((column, index) => (
-            <div key={`desktop-header-${column.snapshotId}`} className="compass-compare-column px-4 py-4">
+            <div key={`desktop-header-${column.snapshotId}`} className="compass-compare-column px-4 py-3.5">
               <div className="compass-compare-header-block">
                 <p className="compass-editorial-kicker">보드 후보 {index + 1}</p>
-                <p className="font-display text-[1.12rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
+                <p className="font-display text-[1.06rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
                   {column.card.destination.nameKo}
                 </p>
                 <p className="text-xs text-[var(--color-ink-soft)]">
@@ -238,14 +238,14 @@ export function CompareBoard({ columns }: CompareBoardProps) {
             <Fragment key={`desktop-${row.label}`}>
               <div
                 data-testid={row.label === "한 줄 판정" ? testIds.compare.verdictRow : undefined}
-                className={`${row.label === "한 줄 판정" ? "compass-decision-card" : "compass-compare-label"} px-4 py-4 text-sm font-semibold`}
+                className={`${row.label === "한 줄 판정" ? "compass-decision-card" : "compass-compare-label"} px-4 py-3.5 text-sm font-semibold`}
               >
                 {row.label}
               </div>
               {columns.map((column) => (
                 <div
                   key={`desktop-${row.label}-${column.snapshotId}`}
-                  className={`${row.warning ? "compass-compare-cell compass-compare-cell-warning" : "compass-compare-cell"} px-4 py-4 text-sm leading-6`}
+                  className={`${row.warning ? "compass-compare-cell compass-compare-cell-warning" : "compass-compare-cell"} px-4 py-3.5 text-sm leading-6`}
                 >
                   {row.value(column)}
                 </div>

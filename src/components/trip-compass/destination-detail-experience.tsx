@@ -116,25 +116,25 @@ export function DestinationDetailExperience({
       id: "best-months",
       label: "추천 시기",
       value: formatMonthList(destination.bestMonths),
-      detail: "한국 출발 기준으로 계절감이 가장 편안한 구간이에요.",
+      detail: "한국 출발 기준으로 보기 편한 시즌이에요.",
     },
     {
       id: "budget",
       label: "예산 감각",
       value: formatBudgetBand(destination.budgetBand),
-      detail: "숙소와 이동 체감이 이 예산대에서 자연스러워요.",
+      detail: "숙소와 이동 체감이 이 정도예요.",
     },
     {
       id: "flight",
       label: "비행 거리",
       value: formatFlightBand(destination.flightBand),
-      detail: "연차 길이와 첫날 피로를 같이 볼 때 기준이 돼요.",
+      detail: "연차 길이와 첫날 피로를 함께 봐요.",
     },
     {
       id: "pace",
       label: "일정 리듬",
       value: formatPaceList(destination.paceTags),
-      detail: "현지에서 움직이는 속도를 가늠하기 쉬워요.",
+      detail: "현지에서 움직이는 속도를 가늠해요.",
     },
   ];
 
@@ -238,9 +238,9 @@ export function DestinationDetailExperience({
   }
 
   return (
-    <div data-testid={rootTestId ?? testIds.detail.root} className="space-y-4 text-[var(--color-ink)]">
-      <section className="compass-sheet rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
-        <div className="flex flex-col gap-4 border-b border-[color:var(--color-frame-soft)] pb-4">
+    <div data-testid={rootTestId ?? testIds.detail.root} className="space-y-3.5 text-[var(--color-ink)]">
+      <section className="compass-top-summary rounded-[var(--radius-card)] px-3.5 py-3.5 sm:px-4 sm:py-4">
+        <div className="flex flex-col gap-3 border-b border-[color:var(--color-frame-soft)] pb-3.5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
               목적지 상세
@@ -265,10 +265,10 @@ export function DestinationDetailExperience({
 
           <div className="space-y-2">
             <p className="compass-editorial-kicker">{destination.nameEn}</p>
-            <h2 className="font-display text-[1.52rem] leading-[0.96] tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.82rem]">
+            <h2 className="font-display text-[1.36rem] leading-[0.96] tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.64rem]">
               {destination.nameKo}
             </h2>
-            <p className="text-[0.98rem] leading-7 text-[var(--color-ink)]">{fitLine}</p>
+            <p className="text-sm leading-6 text-[var(--color-ink)]">{fitLine}</p>
             <p className="text-sm leading-6 text-[var(--color-ink-soft)]">{destination.summary}</p>
           </div>
 
@@ -281,7 +281,7 @@ export function DestinationDetailExperience({
           </div>
         </div>
 
-        <div data-testid={testIds.detail.coreFacts} className="mt-4 grid grid-cols-2 gap-2.5 sm:grid-cols-4">
+        <div data-testid={testIds.detail.coreFacts} className="compass-fact-grid-compact mt-3.5 sm:grid-cols-2">
           {detailFacts.map((fact) => (
             <article
               key={fact.id}
@@ -293,14 +293,14 @@ export function DestinationDetailExperience({
               <p className="mt-1.5 text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)] sm:text-[0.96rem]">
                 {fact.value}
               </p>
-              <p className="mt-1.5 text-[11px] leading-5 text-[var(--color-ink-soft)]">{fact.detail}</p>
+              <p className="mt-1 text-[11px] leading-5 text-[var(--color-ink-soft)]">{fact.detail}</p>
             </article>
           ))}
         </div>
       </section>
 
-      <section data-testid={testIds.detail.fitReason} className="compass-desk rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
-        <div className="flex flex-col gap-3 border-b border-[color:var(--color-frame-soft)] pb-4">
+      <section data-testid={testIds.detail.fitReason} className="compass-desk rounded-[var(--radius-card)] px-3.5 py-3.5 sm:px-4 sm:py-4">
+        <div className="flex flex-col gap-2.5 border-b border-[color:var(--color-frame-soft)] pb-3.5">
           <div className="flex flex-wrap items-center gap-2">
             <span className="compass-editorial-kicker">추천 이유</span>
             {card ? (
@@ -312,7 +312,7 @@ export function DestinationDetailExperience({
           <p className="text-sm leading-6 text-[var(--color-ink-soft)]">{contextLine}</p>
         </div>
 
-        <div className="mt-4 grid gap-2.5">
+        <div className="mt-3.5 grid gap-2.5">
           {reasons.map((reason) => (
             <article key={reason} className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-4 py-3.5">
               <p className="text-sm leading-6 text-[var(--color-ink)]">{reason}</p>
@@ -321,20 +321,20 @@ export function DestinationDetailExperience({
         </div>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.08fr)_minmax(18rem,0.92fr)]">
+      <section className="grid gap-3.5 xl:grid-cols-[minmax(0,1.08fr)_minmax(17rem,0.92fr)]">
         <article
           data-testid={evidenceTestId ?? testIds.detail.evidence}
-          className="compass-sheet rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5"
+          className="compass-sheet rounded-[var(--radius-card)] px-3.5 py-3.5 sm:px-4 sm:py-4"
         >
-          <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
+          <div className="border-b border-[color:var(--color-frame-soft)] pb-3.5">
             <p className="compass-editorial-kicker">분위기 근거</p>
-            <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-              추천 점수는 설명 가능한 기준으로 만들고, 아래 근거는 실제 분위기를 가볍게 확인하는 용도로만 보여줘요.
+            <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
+              추천 점수와 별개로, 현지 분위기를 짧게 확인하는 용도예요.
             </p>
           </div>
 
           {evidenceItems.length > 0 ? (
-            <div className="mt-4 grid gap-2.5">
+            <div className="mt-3.5 grid gap-2.5">
               {evidenceItems.map((item) => (
                 <article
                   key={item.id}
@@ -351,7 +351,7 @@ export function DestinationDetailExperience({
                   <p className="mt-3 text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
                     {item.sourceLabel}
                   </p>
-                  <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{item.summary}</p>
+                  <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">{item.summary}</p>
                   <a
                     href={item.sourceUrl}
                     target="_blank"
@@ -364,15 +364,15 @@ export function DestinationDetailExperience({
               ))}
             </div>
           ) : (
-            <p className="compass-open-info mt-4 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
+            <p className="compass-open-info mt-3.5 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
               지금은 추가 분위기 근거가 많지 않아요. 핵심 정보와 체크할 점을 먼저 보고 판단해 보세요.
             </p>
           )}
         </article>
 
-        <article data-testid={testIds.detail.watchOuts} className="compass-warning-card rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
+        <article data-testid={testIds.detail.watchOuts} className="compass-warning-card rounded-[var(--radius-card)] px-3.5 py-3.5 sm:px-4 sm:py-4">
           <p className="compass-editorial-kicker text-[var(--color-warning-text)]">체크할 점</p>
-          <div className="mt-3 grid gap-2">
+          <div className="mt-2.5 grid gap-2">
             {watchOuts.map((watchOut) => (
               <p key={watchOut} className="text-sm leading-6 text-[var(--color-warning-text)]">
                 {watchOut}
@@ -382,24 +382,24 @@ export function DestinationDetailExperience({
         </article>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.05fr)_minmax(18rem,0.95fr)]">
-          <article data-testid={testIds.detail.tasteLogger} className="compass-desk rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
-          <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
+      <section className="grid gap-3.5 xl:grid-cols-[minmax(0,1.02fr)_minmax(18rem,0.98fr)]">
+        <article data-testid={testIds.detail.tasteLogger} className="compass-desk rounded-[var(--radius-card)] px-3.5 py-3.5 sm:px-4 sm:py-4">
+          <div className="border-b border-[color:var(--color-frame-soft)] pb-3.5">
             <p className="compass-editorial-kicker">취향 기록</p>
-            <h3 className="mt-2 font-display text-[1.14rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.3rem]">
+            <h3 className="mt-1.5 font-display text-[1.08rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.22rem]">
               다녀온 곳이면 짧게 남겨 두세요.
             </h3>
-            <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-              긴 후기 대신 별점, 태그, 재방문 의사만 기록해도 다음 추천이 더 또렷해져요.
+            <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
+              별점, 태그, 재방문 의사만 남겨도 다음 추천이 더 또렷해져요.
             </p>
           </div>
 
           {session.isPending ? (
-            <div className="compass-open-info mt-4 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
+            <div className="compass-open-info mt-3.5 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
               로그인 상태를 확인하는 중이에요.
             </div>
           ) : session.data?.user ? (
-            <div className="mt-4 space-y-4">
+            <div className="mt-3.5 space-y-3.5">
               <div>
                 <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">별점</p>
                 <div data-testid={testIds.detail.tasteRating} className="mt-2 flex flex-wrap gap-2">
@@ -418,18 +418,18 @@ export function DestinationDetailExperience({
 
               <div>
                 <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">해시태그</p>
-                  <div className="mt-2 flex flex-wrap gap-2">
-                    {destination.vibeTags.slice(0, 4).map((tag, index) => {
-                      const active = tasteState.tags.includes(tag);
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {destination.vibeTags.slice(0, 4).map((tag, index) => {
+                    const active = tasteState.tags.includes(tag);
 
-                      return (
-                        <button
-                          key={tag}
-                          type="button"
-                          data-testid={getDestinationTasteTagTestId(index)}
-                          onClick={() => toggleTasteTag(tag)}
-                          className={`rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] ${active ? "compass-selected" : "compass-selection-chip"}`}
-                        >
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        data-testid={getDestinationTasteTagTestId(index)}
+                        onClick={() => toggleTasteTag(tag)}
+                        className={`rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] ${active ? "compass-selected" : "compass-selection-chip"}`}
+                      >
                         #{formatVibeList([tag])}
                       </button>
                     );
@@ -439,9 +439,9 @@ export function DestinationDetailExperience({
 
               <div className="grid gap-3 sm:grid-cols-[auto_minmax(0,1fr)] sm:items-center">
                 <label className="flex items-center gap-2 text-sm text-[var(--color-ink)]">
-                    <input
-                      data-testid={testIds.detail.tasteRevisit}
-                      type="checkbox"
+                  <input
+                    data-testid={testIds.detail.tasteRevisit}
+                    type="checkbox"
                     checked={tasteState.wouldRevisit}
                     onChange={(event) =>
                       setTasteState((currentState) => ({
@@ -456,9 +456,9 @@ export function DestinationDetailExperience({
 
                 <label className="grid gap-2 text-sm text-[var(--color-ink)] sm:justify-self-end">
                   <span>다녀온 날짜</span>
-                    <input
-                      data-testid={testIds.detail.tasteDate}
-                      type="date"
+                  <input
+                    data-testid={testIds.detail.tasteDate}
+                    type="date"
                     value={tasteState.visitedAt}
                     onChange={(event) =>
                       setTasteState((currentState) => ({
@@ -494,14 +494,14 @@ export function DestinationDetailExperience({
               ) : null}
             </div>
           ) : (
-            <div className="compass-open-info mt-4 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
+            <div className="compass-open-info mt-3.5 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
               읽기와 저장은 로그인 없이 가능하고, 여행 기록만 로그인 후 남길 수 있어요.
               <div className="mt-3">
-                  <Link
-                    data-testid={testIds.detail.tasteLoginCta}
-                    href="/auth"
-                    className="compass-action-primary compass-soft-press inline-flex rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
-                  >
+                <Link
+                  data-testid={testIds.detail.tasteLoginCta}
+                  href="/auth"
+                  className="compass-action-primary compass-soft-press inline-flex rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
+                >
                   로그인하고 취향 남기기
                 </Link>
               </div>
@@ -509,18 +509,18 @@ export function DestinationDetailExperience({
           )}
         </article>
 
-        <article className="compass-sheet rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
-          <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
+        <article className="compass-sheet rounded-[var(--radius-card)] px-3.5 py-3.5 sm:px-4 sm:py-4">
+          <div className="border-b border-[color:var(--color-frame-soft)] pb-3.5">
             <p className="compass-editorial-kicker">저장·공유</p>
-            <h3 className="mt-2 font-display text-[1.14rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.3rem]">
+            <h3 className="mt-1.5 font-display text-[1.08rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.22rem]">
               다음 단계로 넘길 링크만 남겨도 충분해요.
             </h3>
-            <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-              마음에 들면 저장해서 공유 페이지로 이어가고, 아직 결정 전이라면 현재 상세 링크만 복사해 두세요.
+            <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
+              저장해서 공유 페이지로 넘기거나, 지금 상세 링크만 복사해 두세요.
             </p>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2">
+          <div className="mt-3.5 flex flex-wrap gap-2">
             {canSave ? (
               <button
                 type="button"
@@ -573,13 +573,13 @@ export function DestinationDetailExperience({
           </div>
 
           {saveState.status === "saved" ? (
-            <p className="compass-open-info mt-4 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
+            <p className="compass-open-info mt-3.5 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
               저장을 마쳤어요. 공유 페이지 보기나 compare 전 단계로 이어가 보세요.
             </p>
           ) : null}
 
           {linkCopyState === "copied" ? (
-            <p className="compass-open-info mt-4 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
+            <p className="compass-open-info mt-3.5 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
               링크를 복사했어요.
             </p>
           ) : null}

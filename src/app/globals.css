@@ -48,15 +48,15 @@
   --color-warning-text: #ad4f0b;
   --color-stage-divider: rgb(195 109 24 / 0.12);
   --color-stage-divider-strong: rgb(244 165 44 / 0.24);
-  --shadow-shell: 0 20px 44px rgb(195 109 24 / 0.1);
-  --shadow-hero: 0 26px 56px rgb(234 122 10 / 0.12);
-  --shadow-card: 0 14px 28px rgb(195 109 24 / 0.1);
-  --shadow-paper: 0 12px 24px rgb(195 109 24 / 0.08);
-  --shadow-float: 0 16px 28px rgb(195 109 24 / 0.12);
-  --shadow-stage: 0 18px 38px rgb(195 109 24 / 0.08);
+  --shadow-shell: 0 14px 30px rgb(195 109 24 / 0.08);
+  --shadow-hero: 0 20px 42px rgb(234 122 10 / 0.1);
+  --shadow-card: 0 10px 22px rgb(195 109 24 / 0.08);
+  --shadow-paper: 0 8px 20px rgb(195 109 24 / 0.07);
+  --shadow-float: 0 12px 24px rgb(195 109 24 / 0.1);
+  --shadow-stage: 0 14px 30px rgb(195 109 24 / 0.07);
   --shadow-inset: inset 0 1px 0 rgb(255 255 255 / 0.74);
-  --radius-shell: 2rem;
-  --radius-card: 1.75rem;
+  --radius-shell: 1.5rem;
+  --radius-card: 1.35rem;
   --radius-pill: 999px;
   --transition-smooth: 220ms cubic-bezier(0.22, 1, 0.36, 1);
   --transition-gentle: 540ms cubic-bezier(0.2, 0.9, 0.24, 1);
@@ -174,14 +174,14 @@ textarea:focus-visible {
 .compass-shell-masthead {
   overflow: hidden;
   position: sticky;
-  top: max(0.35rem, env(safe-area-inset-top));
+  top: max(0.2rem, env(safe-area-inset-top));
   z-index: 30;
   border: 1px solid rgb(221 124 15 / 0.14);
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.94), rgb(255 247 229 / 0.88)),
+    linear-gradient(180deg, rgb(255 255 255 / 0.96), rgb(255 249 236 / 0.9)),
     linear-gradient(90deg, transparent, rgb(255 190 84 / 0.08), transparent);
-  box-shadow: 0 10px 24px rgb(195 109 24 / 0.08);
-  backdrop-filter: blur(14px);
+  box-shadow: 0 6px 18px rgb(195 109 24 / 0.07);
+  backdrop-filter: blur(12px);
 }
 
 .compass-shell-masthead::before {
@@ -233,7 +233,7 @@ textarea:focus-visible {
   background:
     linear-gradient(180deg, rgb(255 255 255 / 0.92), rgb(255 248 232 / 0.88)),
     linear-gradient(90deg, transparent, rgb(255 190 84 / 0.06), transparent);
-  box-shadow: 0 8px 20px rgb(195 109 24 / 0.06);
+  box-shadow: 0 6px 16px rgb(195 109 24 / 0.05);
 }
 
 .compass-shell-context::before {
@@ -355,6 +355,7 @@ textarea:focus-visible {
 .compass-sheet,
 .compass-note,
 .compass-card,
+.compass-top-summary,
 .instagram-card,
 .compass-result-card,
 .compass-trust-card,
@@ -380,6 +381,7 @@ textarea:focus-visible {
 .compass-sheet > *,
 .compass-note > *,
 .compass-card > *,
+.compass-top-summary > *,
 .instagram-card > *,
 .compass-result-card > *,
 .compass-trust-card > *,
@@ -396,6 +398,7 @@ textarea:focus-visible {
 .compass-sheet::before,
 .compass-note::before,
 .compass-card::before,
+.compass-top-summary::before,
 .instagram-card::before,
 .compass-result-card::before,
 .compass-trust-card::before,
@@ -488,7 +491,7 @@ textarea:focus-visible {
   background:
     linear-gradient(180deg, rgb(255 255 255 / 0.95), rgb(255 248 235 / 0.92)),
     linear-gradient(145deg, rgb(255 190 84 / 0.06), transparent 60%);
-  box-shadow: 0 12px 28px rgb(195 109 24 / 0.06);
+  box-shadow: 0 8px 22px rgb(195 109 24 / 0.05);
 }
 
 .compass-shell-body::before {
@@ -941,6 +944,89 @@ textarea:focus-visible {
   border: 1px solid rgb(93 76 50 / 0.12);
   background: linear-gradient(180deg, rgb(252 248 241 / 0.92), rgb(243 236 224 / 0.7));
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.48);
+}
+
+.compass-home-answer-grid {
+  display: grid;
+  gap: 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .compass-home-answer-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.compass-home-answer-card {
+  display: flex;
+  min-height: 7rem;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.compass-home-answer-grid > *:last-child:nth-child(odd) {
+  grid-column: 1 / -1;
+}
+
+.compass-compact-stack {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.compass-compact-stack-lg {
+  display: grid;
+  gap: 1rem;
+}
+
+.compass-section-block {
+  border-top: 1px solid rgb(93 76 50 / 0.1);
+  padding-top: 0.9rem;
+}
+
+.compass-section-block:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.compass-section-row {
+  display: grid;
+  gap: 0.3rem;
+}
+
+.compass-section-row + .compass-section-row {
+  border-top: 1px solid rgb(93 76 50 / 0.08);
+  padding-top: 0.75rem;
+}
+
+.compass-fact-grid-compact {
+  display: grid;
+  gap: 0.65rem;
+}
+
+@media (min-width: 640px) {
+  .compass-fact-grid-compact {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.compass-top-summary {
+  border: 1px solid rgb(93 76 50 / 0.12);
+  background:
+    linear-gradient(180deg, rgb(255 252 246 / 0.98), rgb(244 237 226 / 0.9)),
+    radial-gradient(circle at 100% 0%, rgb(255 190 84 / 0.12), transparent 32%);
+  box-shadow: var(--shadow-paper);
+}
+
+.compass-top-summary::before {
+  content: "";
+  position: absolute;
+  inset: 1px;
+  border-radius: inherit;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.74), transparent 18%),
+    linear-gradient(90deg, transparent 68%, rgb(216 180 123 / 0.06));
 }
 
 .compass-inline-facts {
@@ -1468,6 +1554,7 @@ textarea:focus-visible {
   .compass-sheet,
   .compass-note,
   .compass-card,
+  .compass-top-summary,
   .instagram-card,
   .compass-result-card,
   .compass-trust-card,

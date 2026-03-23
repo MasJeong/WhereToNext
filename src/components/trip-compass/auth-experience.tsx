@@ -76,17 +76,17 @@ export function AuthExperience() {
 
   return (
     <ExperienceShell eyebrow="" title="" intro="" capsule="" hideHeader bareBody>
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] xl:items-start">
-        <aside className="compass-desk rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
+      <div className="grid gap-3.5 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] xl:items-start">
+        <aside className="order-2 compass-desk rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5 xl:order-1 lg:px-6 lg:py-6">
           <p className="compass-editorial-kicker">가벼운 로그인</p>
-          <h1 className="mt-3 font-display text-[1.48rem] leading-[0.96] tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.9rem]">
-            추천은 로그인 없이도 충분하고, 계정은 내 취향 기록을 남길 때만 쓰면 돼요.
+          <h1 className="mt-2 font-display text-[1.3rem] leading-[0.96] tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.62rem]">
+            추천은 로그인 없이도 충분하고, 계정은 취향 기록이 필요할 때만 쓰면 돼요.
           </h1>
-          <p className="mt-4 text-sm leading-7 text-[var(--color-ink-soft)]">
-            SooGo의 핵심은 목적지 탐색과 추천, 저장, 비교예요. 계정은 다녀온 여행 기록과 취향 모드를 남겨 다음 추천을 더 나답게 만드는 보조 루프예요.
+          <p className="mt-2.5 text-sm leading-6 text-[var(--color-ink-soft)]">
+            핵심 흐름은 탐색, 추천, 저장, 비교예요. 계정은 다녀온 여행 기록과 취향 모드를 남겨 다음 추천을 더 나답게 만드는 보조 루프예요.
           </p>
 
-          <div className="mt-5 grid gap-3 sm:grid-cols-3 xl:grid-cols-1">
+          <div className="mt-3.5 grid gap-2.5 sm:grid-cols-3 xl:grid-cols-1">
             <div className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
               <p className="text-[0.66rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">로그인 없이</p>
               <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">탐색 · 추천 · 저장 · 비교</p>
@@ -102,20 +102,20 @@ export function AuthExperience() {
           </div>
         </aside>
 
-        <section className="compass-sheet rounded-[var(--radius-card)] px-5 py-5 sm:px-6 sm:py-6 lg:px-7 lg:py-7">
-          <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
+        <section className="order-1 compass-sheet rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5 xl:order-2 lg:px-6 lg:py-6">
+          <div className="border-b border-[color:var(--color-frame-soft)] pb-3.5">
             <p className="compass-editorial-kicker">계정 시작</p>
-            <h2 className="mt-2 font-display text-[1.24rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.48rem]">
+            <h2 className="mt-1.5 font-display text-[1.14rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.32rem]">
               {mode === "sign-up" ? "내 취향 기록을 시작해요." : "저장한 취향으로 다시 이어가요."}
             </h2>
-            <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
+            <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
               {mode === "sign-up"
                 ? "계정을 만들면 방문 기록과 탐색 모드를 저장해 다음 추천에 반영할 수 있어요."
                 : "로그인하면 저장한 여행 기록과 취향 모드를 다시 불러와요."}
             </p>
           </div>
 
-          <div className="mt-4 flex flex-wrap gap-2 border-b border-[color:var(--color-frame-soft)] pb-4">
+          <div className="mt-3.5 flex flex-wrap gap-2 border-b border-[color:var(--color-frame-soft)] pb-3.5">
             <button
               type="button"
               data-testid={testIds.auth.modeSignIn}
@@ -140,7 +140,7 @@ export function AuthExperience() {
             </button>
           </div>
 
-          <form className="mt-4 grid gap-3" onSubmit={handleSubmit}>
+          <form className="mt-3.5 grid gap-3" onSubmit={handleSubmit}>
             {mode === "sign-up" ? (
               <label className="grid gap-2 text-sm text-[var(--color-ink)]">
                 <span>이름</span>
@@ -192,7 +192,7 @@ export function AuthExperience() {
               </p>
             ) : null}
 
-            <div className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
+            <div className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-3.5 text-sm leading-6 text-[var(--color-ink-soft)]">
               로그인 없이도 추천 흐름은 그대로 사용할 수 있어요. 계정은 여행 기록과 취향을 남겨 다음 추천을 더 개인화하는 용도예요.
             </div>
 
