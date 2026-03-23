@@ -6,7 +6,7 @@ test("shows the SooGo smoke shell", async ({ page }) => {
   await expect(page).toHaveTitle("SooGo");
   await expect(
     page.getByRole("heading", {
-      name: "이번 여행, 누구와 떠나나요?",
+      name: "누구와 떠나세요?",
     }),
   ).toBeVisible();
 });

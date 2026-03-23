@@ -7,13 +7,17 @@ import { expect, test } from "@playwright/test";
  */
 async function submitGuidedRecommendation(page: import("@playwright/test").Page) {
   await page.goto("/");
-  await page.getByTestId("party-type-couple").click();
-  await page.getByTestId("budget-mid").click();
-  await page.getByTestId("trip-length-5").click();
-  await page.getByTestId("advanced-filters-toggle").click();
-  await page.getByTestId("travel-month-10").click();
-  await page.getByTestId("vibe-romance").click();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-next").click();
+  await page.getByTestId("home-step-choice-2").click();
+  await page.getByTestId("home-step-next").click();
+  await page.getByTestId("home-step-choice-1").click();
+  await page.getByTestId("home-step-next").click();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-next").click();
+  await page.getByTestId("home-step-choice-0").click();
   await page.getByTestId("submit-recommendation").click();
+  await expect(page.getByTestId("home-top-summary")).toBeVisible({ timeout: 10000 });
   await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 10000 });
 }
 
@@ -133,12 +137,15 @@ test("recovers from the empty state through a relaxation action", async ({ page 
   });
 
   await page.goto("/");
-  await page.getByTestId("party-type-couple").click();
-  await page.getByTestId("budget-mid").click();
-  await page.getByTestId("trip-length-5").click();
-  await page.getByTestId("advanced-filters-toggle").click();
-  await page.getByTestId("travel-month-10").click();
-  await page.getByTestId("vibe-romance").click();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-next").click();
+  await page.getByTestId("home-step-choice-2").click();
+  await page.getByTestId("home-step-next").click();
+  await page.getByTestId("home-step-choice-1").click();
+  await page.getByTestId("home-step-next").click();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-next").click();
+  await page.getByTestId("home-step-choice-0").click();
   await page.getByTestId("submit-recommendation").click();
   await expect(page.getByTestId("empty-state")).toBeVisible();
 

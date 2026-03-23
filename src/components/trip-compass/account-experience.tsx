@@ -1,8 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useMemo, useState } from "react";
 
 import { authClient } from "@/lib/auth-client";
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
@@ -11,6 +11,7 @@ import type {
   UserDestinationHistory,
   UserPreferenceProfile,
 } from "@/lib/domain/contracts";
+import { formatVibeList } from "@/lib/trip-compass/presentation";
 import { getAccountHistoryDeleteTestId, getAccountHistoryEntryTestId, testIds } from "@/lib/test-ids";
 
 import { ExperienceShell } from "./experience-shell";
@@ -50,24 +51,15 @@ const preferenceOptions: Array<{
   {
     value: "discover",
     label: "발견형",
-    description: "이미 다녀온 곳보다는 새로운 후보를 조금 더 먼저 보여줘요.",
+    description: "이미 다녀온 곳보다 새로운 후보를 조금 더 먼저 보여줘요.",
     testId: testIds.account.preferenceDiscover,
   },
 ];
 
-/**
- * 오늘 날짜를 date input 값으로 만든다.
- * @returns YYYY-MM-DD 형식 문자열
- */
 function getTodayValue(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-/**
- * 여행 이력 draft를 API 입력 형식으로 변환한다.
- * @param draft 현재 폼 상태
- * @returns API 요청 바디
- */
 function buildHistoryBody(draft: HistoryDraft) {
   return {
     destinationId: draft.destinationId,
@@ -78,11 +70,6 @@ function buildHistoryBody(draft: HistoryDraft) {
   };
 }
 
-/**
- * 여행 프로필 관리 화면을 렌더링한다.
- * @param props 서버에서 내려준 사용자/선호/이력 데이터
- * @returns 계정 관리 경험 화면
- */
 export function AccountExperience({
   userName,
   initialProfile,
@@ -102,10 +89,26 @@ export function AccountExperience({
   const [isSavingPreference, setIsSavingPreference] = useState(false);
   const [isCreatingHistory, setIsCreatingHistory] = useState(false);
 
-  /**
-   * 여행 이력 태그 선택을 토글한다.
-   * @param tag 분위기 태그
-   */
+  const tasteSummary = useMemo(() => {
+    const totalRating = historyEntries.reduce((sum, entry) => sum + entry.rating, 0);
+    const revisitCount = historyEntries.filter((entry) => entry.wouldRevisit).length;
+    const tagCounts = new Map<string, number>();
+
+    for (const entry of historyEntries) {
+      for (const tag of entry.tags) {
+        tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
+      }
+    }
+
+    return {
+      averageRating: historyEntries.length > 0 ? (totalRating / historyEntries.length).toFixed(1) : "-",
+      revisitCount,
+      topTags: Array.from(tagCounts.entries())
+        .sort((left, right) => right[1] - left[1])
+        .slice(0, 4),
+    };
+  }, [historyEntries]);
+
   function toggleDraftTag(tag: UserDestinationHistory["tags"][number]) {
     setDraft((currentDraft) => {
       if (currentDraft.tags.includes(tag)) {
@@ -121,10 +124,6 @@ export function AccountExperience({
     });
   }
 
-  /**
-   * 사용자의 반복/발견 선호를 저장한다.
-   * @param explorationPreference 새 선호값
-   */
   async function savePreference(explorationPreference: ExplorationPreference) {
     setIsSavingPreference(true);
     setError(null);
@@ -143,15 +142,12 @@ export function AccountExperience({
       const payload = (await response.json()) as { profile: UserPreferenceProfile };
       setProfile(payload.profile);
     } catch {
-      setError("여행 선호를 저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setError("취향 모드를 저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
     } finally {
       setIsSavingPreference(false);
     }
   }
 
-  /**
-   * 새 여행 이력을 저장한다.
-   */
   async function createHistoryEntry() {
     setIsCreatingHistory(true);
     setError(null);
@@ -176,10 +172,6 @@ export function AccountExperience({
     }
   }
 
-  /**
-   * 기존 여행 이력을 삭제한다.
-   * @param historyId 삭제할 이력 ID
-   */
   async function deleteHistoryEntry(historyId: string) {
     setError(null);
 
@@ -190,17 +182,12 @@ export function AccountExperience({
         throw new Error("history-delete-failed");
       }
 
-      setHistoryEntries((currentEntries) =>
-        currentEntries.filter((entry) => entry.id !== historyId),
-      );
+      setHistoryEntries((currentEntries) => currentEntries.filter((entry) => entry.id !== historyId));
     } catch {
       setError("여행 이력을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.");
     }
   }
 
-  /**
-   * 현재 사용자를 로그아웃한다.
-   */
   async function handleSignOut() {
     await authClient.signOut();
     router.push("/");
@@ -209,30 +196,28 @@ export function AccountExperience({
 
   return (
     <ExperienceShell
-      eyebrow="Travel Profile"
-      title="다녀온 여행의 취향을 남겨 다음 추천까지 연결해 보세요."
-      intro="좋았던 여행지와 분위기를 남겨두면 SooGo가 익숙한 취향과 새로운 후보의 균형을 더 잘 맞춰줘요."
-      capsule="익명 추천 유지 · 로그인은 선택 · 개인화는 가볍게"
+      eyebrow="내 취향"
+      title="다녀온 여행의 취향을 쌓아 다음 추천을 더 나답게 만들어 보세요."
+      intro="탐색 모드, 방문 기록, 별점, 해시태그, 재방문 의사를 한곳에 남기면 다음 추천 결과가 더 선명해져요."
+      capsule="취향 모드 · 방문 기록 · 별점/해시태그 · 재방문 의사"
       headerAside={
-        <div className="compass-panel rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm text-[var(--color-paper)] sm:px-5 sm:py-5">
-          <p className="compass-editorial-kicker text-[var(--color-sand)]">
-            {userName}님의 여행 기록
-          </p>
-          <p className="mt-3 text-sm leading-6 text-[var(--color-paper-soft)]">
-            남겨 둔 목적지와 선호 모드는 다음 recommendation shortlist를 더 나다운 방향으로 정리하는 기준이 돼요.
+        <div className="compass-sheet rounded-[calc(var(--radius-card)-10px)] px-4 py-4 sm:px-5 sm:py-5">
+          <p className="compass-editorial-kicker">{userName}님의 취향 기록</p>
+          <p className="mt-3 text-sm leading-6 text-[var(--color-ink-soft)]">
+            지금은 {profile.explorationPreference} 모드예요. 남긴 기록 {historyEntries.length}개가 다음 추천의 방향을 정리해 줘요.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <span className="rounded-full border border-[color:var(--color-frame)] bg-[rgb(255_255_255_/_0.08)] px-3 py-1.5 text-xs font-semibold text-[var(--color-paper)]">
-              선호 모드 {profile.explorationPreference}
+            <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
+              평균 만족도 {tasteSummary.averageRating}
             </span>
-            <span className="rounded-full border border-[color:var(--color-frame)] bg-[rgb(255_255_255_/_0.08)] px-3 py-1.5 text-xs font-semibold text-[var(--color-paper)]">
-              기록 {historyEntries.length}개
+            <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
+              다시 가고 싶은 곳 {tasteSummary.revisitCount}개
             </span>
           </div>
-          <div className="mt-4 flex flex-wrap gap-3">
+          <div className="mt-4 flex flex-wrap gap-2">
             <Link
               href="/"
-              className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.18em]"
+              className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
             >
               홈으로
             </Link>
@@ -241,7 +226,7 @@ export function AccountExperience({
               onClick={() => {
                 void handleSignOut();
               }}
-              className="compass-action-primary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.18em]"
+              className="compass-action-primary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
             >
               로그아웃
             </button>
@@ -249,19 +234,49 @@ export function AccountExperience({
         </div>
       }
     >
-      <div className="grid gap-6 xl:grid-cols-[minmax(18rem,0.82fr)_minmax(0,1.18fr)]">
+      <div data-testid={testIds.account.root} className="grid gap-6 xl:grid-cols-[minmax(0,1.02fr)_minmax(19rem,0.98fr)]">
         <section className="space-y-6">
-          <article className="compass-panel compass-stage-reveal rounded-[var(--radius-card)] px-5 py-6 text-[var(--color-paper)] sm:px-6 sm:py-7 lg:px-7 lg:py-8">
-            <p className="compass-editorial-kicker text-[var(--color-sand)]">
-              여행 선호 모드
-            </p>
-            <h2 className="mt-3 font-display text-[1.28rem] leading-tight tracking-[-0.03em] text-[var(--color-paper)] sm:text-[1.46rem]">
-              다음 추천이 익숙함과 새로움 중 어디에 더 가까워질지 정해요.
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-[var(--color-paper-soft)]">
-              반복형, 균형형, 발견형 중 하나를 고르면 같은 brief라도 shortlist의 결이 조금 달라져요.
-            </p>
-            <div className="mt-6 grid gap-3">
+          <article data-testid={testIds.account.tasteSummary} className="compass-desk rounded-[var(--radius-card)] px-5 py-5 sm:px-6 sm:py-6">
+            <div className="flex flex-col gap-3 border-b border-[color:var(--color-frame-soft)] pb-5">
+              <p className="compass-editorial-kicker">취향 요약</p>
+              <h2 className="font-display text-[1.28rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.52rem]">
+                여행 취향이 쌓일수록 다음 추천이 더 빨라져요.
+              </h2>
+            </div>
+
+            <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+              <article className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
+                <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">탐색 모드</p>
+                <p className="mt-2 text-base font-semibold text-[var(--color-ink)]">{profile.explorationPreference}</p>
+              </article>
+              <article className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
+                <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">방문 기록</p>
+                <p className="mt-2 text-base font-semibold text-[var(--color-ink)]">{historyEntries.length}개</p>
+              </article>
+              <article className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
+                <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">평균 만족도</p>
+                <p className="mt-2 text-base font-semibold text-[var(--color-ink)]">{tasteSummary.averageRating}</p>
+              </article>
+              <article className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
+                <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">자주 남긴 해시태그</p>
+                <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">
+                  {tasteSummary.topTags.length > 0
+                    ? tasteSummary.topTags.map(([tag]) => formatVibeList([tag])).join(" · ")
+                    : "아직 없어요"}
+                </p>
+              </article>
+            </div>
+          </article>
+
+          <article data-testid={testIds.account.tasteMode} className="compass-sheet rounded-[var(--radius-card)] px-5 py-5 sm:px-6 sm:py-6">
+            <div className="border-b border-[color:var(--color-frame-soft)] pb-5">
+              <p className="compass-editorial-kicker">탐색 모드</p>
+              <h2 className="mt-2 font-display text-[1.22rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.42rem]">
+                익숙함과 새로움의 비율을 직접 정해 보세요.
+              </h2>
+            </div>
+
+            <div className="mt-5 grid gap-3">
               {preferenceOptions.map((option) => {
                 const active = profile.explorationPreference === option.value;
 
@@ -275,35 +290,23 @@ export function AccountExperience({
                       void savePreference(option.value);
                     }}
                     className={`rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-left ${
-                      active
-                        ? "compass-selected"
-                        : "border border-[color:var(--color-frame)] bg-[rgb(255_255_255_/_0.06)] text-[var(--color-paper)] transition hover:-translate-y-0.5 hover:border-[color:var(--color-sand)]"
+                      active ? "compass-selected" : "compass-selection-chip"
                     }`}
                   >
-                    <p className="text-sm font-semibold">{option.label}</p>
-                    <p className={`mt-2 text-xs leading-5 ${active ? "text-[var(--color-ink-soft)]" : "text-[var(--color-paper)]"}`}>
-                      {option.description}
-                    </p>
+                    <p className="text-sm font-semibold text-[var(--color-ink)]">{option.label}</p>
+                    <p className="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">{option.description}</p>
                   </button>
                 );
               })}
             </div>
           </article>
 
-          <article className="compass-sheet compass-form-stage compass-stage-reveal compass-stage-reveal-delayed rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
-            <p className="compass-editorial-kicker text-[var(--color-sand-deep)]">
-              새 여행 기록 추가
-            </p>
-            <h2 className="mt-3 font-display text-[1.24rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.42rem]">
-              좋았던 목적지의 결을 남겨 다음 추천의 기준으로 쌓아 둬요.
-            </h2>
-            <p className="mt-3 text-sm leading-6 text-[var(--color-ink-soft)]">
-              목적지, 방문 시점, 평점, 기억나는 분위기를 적어 두면 다음 추천에서 익숙한 취향과 새로운 후보의 균형을 더 잘 맞출 수 있어요.
-            </p>
-
-            <div className="mt-4 flex flex-wrap gap-2">
-              <span className="compass-metric-pill rounded-full px-3 py-1 text-xs font-semibold">목적지 메모</span>
-              <span className="compass-metric-pill rounded-full px-3 py-1 text-xs font-semibold">분위기 태그 최대 4개</span>
+          <article className="compass-sheet rounded-[var(--radius-card)] px-5 py-5 sm:px-6 sm:py-6">
+            <div className="border-b border-[color:var(--color-frame-soft)] pb-5">
+              <p className="compass-editorial-kicker">새 방문 기록 추가</p>
+              <h2 className="mt-2 font-display text-[1.22rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.42rem]">
+                별점, 해시태그, 재방문 의사를 남겨 다음 추천에 연결하세요.
+              </h2>
             </div>
 
             <div className="mt-5 grid gap-4">
@@ -344,25 +347,26 @@ export function AccountExperience({
                 />
               </label>
 
-              <div className="grid gap-3 sm:grid-cols-5">
-                {[1, 2, 3, 4, 5].map((rating) => (
-                  <button
-                    key={rating}
-                    type="button"
-                    onClick={() => setDraft((currentDraft) => ({ ...currentDraft, rating }))}
-                    className={`rounded-[calc(var(--radius-card)-10px)] px-3 py-3 text-sm font-semibold ${
-                      draft.rating === rating
-                        ? "compass-selected"
-                        : "compass-selection-chip"
-                    }`}
-                  >
-                    {rating}점
-                  </button>
-                ))}
+              <div>
+                <p className="mb-2 text-sm font-semibold text-[var(--color-ink)]">별점</p>
+                <div className="grid gap-2 sm:grid-cols-5">
+                  {[1, 2, 3, 4, 5].map((rating) => (
+                    <button
+                      key={rating}
+                      type="button"
+                      onClick={() => setDraft((currentDraft) => ({ ...currentDraft, rating }))}
+                      className={`rounded-[calc(var(--radius-card)-10px)] px-3 py-3 text-sm font-semibold ${
+                        draft.rating === rating ? "compass-selected" : "compass-selection-chip"
+                      }`}
+                    >
+                      {rating}점
+                    </button>
+                  ))}
+                </div>
               </div>
 
-              <div className="space-y-3">
-                <p className="text-sm text-[var(--color-ink)]">어떤 분위기로 기억하나요?</p>
+              <div>
+                <p className="mb-2 text-sm font-semibold text-[var(--color-ink)]">해시태그</p>
                 <div className="flex flex-wrap gap-2">
                   {([
                     "city",
@@ -381,13 +385,11 @@ export function AccountExperience({
                         key={tag}
                         type="button"
                         onClick={() => toggleDraftTag(tag)}
-                        className={`rounded-full px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] ${
-                          active
-                            ? "compass-selected"
-                            : "compass-selection-chip"
+                        className={`rounded-full px-3 py-2 text-xs font-semibold ${
+                          active ? "compass-selected" : "compass-selection-chip"
                         }`}
                       >
-                        {tag}
+                        #{formatVibeList([tag])}
                       </button>
                     );
                   })}
@@ -406,63 +408,56 @@ export function AccountExperience({
                     }))
                   }
                 />
-                이 여행은 다시 가고 싶은 쪽에 가까워요.
+                이 목적지는 다음에도 다시 가고 싶은 쪽에 가까워요.
               </label>
 
-              <button
-                type="button"
-                data-testid={testIds.account.newHistorySubmit}
-                disabled={isCreatingHistory}
-                onClick={() => {
-                  void createHistoryEntry();
-                }}
-                className="compass-action-primary compass-soft-press rounded-full px-5 py-3 text-sm font-semibold tracking-[0.18em] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isCreatingHistory ? "저장 중..." : "여행 기록 저장"}
-              </button>
+              <div data-testid={testIds.account.historySave0}>
+                <button
+                  type="button"
+                  data-testid={testIds.account.newHistorySubmit}
+                  disabled={isCreatingHistory}
+                  onClick={() => {
+                    void createHistoryEntry();
+                  }}
+                  className="compass-action-primary compass-soft-press rounded-full px-5 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isCreatingHistory ? "저장 중..." : "내 취향에 기록 저장"}
+                </button>
+              </div>
             </div>
           </article>
         </section>
 
         <section className="space-y-6">
-          <article className="compass-desk compass-stage-reveal compass-stage-reveal-slower rounded-[var(--radius-card)] px-5 py-6 sm:px-6 sm:py-7 lg:px-7 lg:py-8">
-            <div className="flex flex-col gap-3 border-b border-[color:var(--color-frame)] pb-5">
-              <p className="compass-editorial-kicker">
-                저장한 여행 이력
-              </p>
-              <h2 className="font-display text-[1.42rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.6rem]">
-                좋았던 여행지의 결을 다음 추천의 기준으로 남겨요.
-              </h2>
-              <p className="text-sm leading-6 text-[var(--color-ink-soft)]">
-                각 기록은 다음 shortlist를 읽을 때 참고하는 취향의 힌트예요. 다시 가고 싶은지, 어떤 분위기로 기억하는지까지 함께 남길 수 있어요.
-              </p>
-            </div>
+          {error ? (
+            <p className="compass-warning-card rounded-[var(--radius-card)] px-5 py-4 text-sm leading-6">
+              {error}
+            </p>
+          ) : null}
 
-            {error ? (
-              <p className="compass-warning-card mt-5 rounded-[calc(var(--radius-card)-10px)] px-4 py-3 text-sm leading-6">
-                {error}
-              </p>
-            ) : null}
+          <article className="compass-desk rounded-[var(--radius-card)] px-5 py-5 sm:px-6 sm:py-6">
+            <div className="border-b border-[color:var(--color-frame-soft)] pb-5">
+              <p className="compass-editorial-kicker">방문 기록</p>
+              <h2 className="mt-2 font-display text-[1.28rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.52rem]">
+                다녀온 여행지의 감각이 다음 후보를 좁히는 기준이 돼요.
+              </h2>
+            </div>
 
             <div className="mt-5 grid gap-4">
               {historyEntries.length > 0 ? (
                 historyEntries.map((entry, index) => {
-                  const destination = launchCatalog.find(
-                    (item) => item.id === entry.destinationId,
-                  );
+                  const destination = launchCatalog.find((item) => item.id === entry.destinationId);
 
                   return (
                     <article
                       key={entry.id}
                       data-testid={getAccountHistoryEntryTestId(index)}
-                      className="compass-sheet compass-lift-card rounded-[calc(var(--radius-card)-10px)] p-4 sm:p-5"
+                      className="compass-sheet rounded-[calc(var(--radius-card)-10px)] px-4 py-4 sm:px-5 sm:py-5"
                     >
                       <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                         <div>
-                          <p className="compass-editorial-kicker">
-                            {destination?.nameKo ?? entry.destinationId}
-                          </p>
-                          <p className="mt-2 font-display text-[1.08rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
+                          <p className="compass-editorial-kicker">{destination?.nameKo ?? entry.destinationId}</p>
+                          <p className="mt-2 font-display text-[1.04rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
                             {destination?.nameEn ?? entry.destinationId}
                           </p>
                           <p className="mt-2 text-sm leading-6 text-[var(--color-ink)]">
@@ -470,16 +465,16 @@ export function AccountExperience({
                           </p>
                           <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
                             {entry.wouldRevisit
-                              ? "이 결의 여행은 다시 가고 싶은 쪽으로 반영돼요."
-                              : "새로운 여행지를 더 넓게 찾는 기준으로 반영돼요."}
+                              ? "다음 추천에서 익숙한 결을 이어가는 쪽으로 반영돼요."
+                              : "다음 추천에서 새로운 후보를 더 넓게 보는 기준으로 반영돼요."}
                           </p>
                           <div className="mt-3 flex flex-wrap gap-2">
                             {entry.tags.map((tag) => (
                               <span
                                 key={`${entry.id}-${tag}`}
-                                className="compass-metric-pill rounded-full px-3 py-1 text-xs uppercase tracking-[0.18em]"
+                                className="compass-metric-pill rounded-full px-3 py-1 text-xs font-semibold"
                               >
-                                {tag}
+                                #{formatVibeList([tag])}
                               </span>
                             ))}
                           </div>
@@ -491,7 +486,7 @@ export function AccountExperience({
                           onClick={() => {
                             void deleteHistoryEntry(entry.id);
                           }}
-                          className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.18em]"
+                          className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
                         >
                           삭제
                         </button>
@@ -501,7 +496,7 @@ export function AccountExperience({
                 })
               ) : (
                 <div className="compass-note rounded-[calc(var(--radius-card)-10px)] p-5 text-sm leading-7 text-[var(--color-ink-soft)]">
-                  아직 남겨 둔 여행 이력이 없어요. 왼쪽에서 한 곳만 먼저 추가해도 다음 추천이 더 개인 취향에 가까워져요.
+                  아직 남겨 둔 방문 기록이 없어요. 한 곳만 먼저 남겨도 다음 추천이 더 개인 취향에 가까워져요.
                 </div>
               )}
             </div>

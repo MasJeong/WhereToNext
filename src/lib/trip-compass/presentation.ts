@@ -5,7 +5,6 @@ import type {
   RecommendationResult,
   TrendEvidenceSnapshot,
 } from "@/lib/domain/contracts";
-import { testIds } from "@/lib/test-ids";
 
 type QueryOptionValue = string | number;
 
@@ -56,6 +55,13 @@ export type RecommendationWorkspaceFactView = {
   detail: string;
 };
 
+export type RecommendationEvidenceLeadView = {
+  label: string;
+  detail: string;
+  sourceLabel: string;
+  sourceUrl: string | null;
+};
+
 const destinationIndex = new Map(launchCatalog.map((destination) => [destination.id, destination]));
 
 const monthLabels = [
@@ -90,19 +96,16 @@ export const partyOptions: QueryOption<RecommendationQuery["partyType"]>[] = [
     value: "couple",
     label: "커플",
     description: "둘만의 분위기와 속도를 맞춰 떠나는 여행이에요.",
-    testId: testIds.query.partyTypeCouple,
   },
   {
     value: "friends",
     label: "친구",
     description: "맛집, 수다, 늦은 밤 동선까지 재미가 중요한 조합이에요.",
-    testId: testIds.query.partyTypeFriends,
   },
   {
     value: "family",
     label: "가족",
     description: "이동 부담을 줄이고 모두가 편한 리듬을 우선해요.",
-    testId: testIds.query.partyTypeFamily,
   },
   {
     value: "solo",
@@ -116,19 +119,16 @@ export const budgetOptions: QueryOption<RecommendationQuery["budgetBand"]>[] = [
     value: "budget",
     label: "가성비 중심",
     description: "총여행비를 아끼면서도 만족도는 챙기고 싶어요.",
-    testId: testIds.query.budgetBudget,
   },
   {
     value: "mid",
     label: "균형 예산",
     description: "숙소와 동선의 편안함을 챙기되 과하게 쓰진 않아요.",
-    testId: testIds.query.budgetMid,
   },
   {
     value: "premium",
     label: "제대로 누리기",
     description: "분위기와 편의를 위해 예산을 넉넉하게 쓰는 편이에요.",
-    testId: testIds.query.budgetPremium,
   },
 ];
 
@@ -137,19 +137,16 @@ export const tripLengthOptions: QueryOption<RecommendationQuery["tripLengthDays"
     value: 3,
     label: "3일",
     description: "짧지만 확실하게 쉬고 오는 일정이에요.",
-    testId: testIds.query.tripLength3,
   },
   {
     value: 5,
     label: "5일",
     description: "연차 부담과 만족감의 균형이 좋은 길이예요.",
-    testId: testIds.query.tripLength5,
   },
   {
     value: 8,
     label: "8일",
     description: "장거리나 여러 동선을 여유 있게 담기 좋은 일정이에요.",
-    testId: testIds.query.tripLength8,
   },
 ];
 
@@ -158,13 +155,11 @@ export const travelMonthOptions: QueryOption<RecommendationQuery["travelMonth"]>
     value: 7,
     label: "7월",
     description: "여름 휴가철 분위기와 활기가 살아나는 시기예요.",
-    testId: testIds.query.travelMonth7,
   },
   {
     value: 10,
     label: "10월",
     description: "날씨와 이동감이 안정적인 대표 성수기예요.",
-    testId: testIds.query.travelMonth10,
   },
   {
     value: 12,
@@ -178,19 +173,16 @@ export const primaryVibeOptions: QueryOption<RecommendationQuery["vibes"][number
     value: "romance",
     label: "로맨틱",
     description: "야경, 산책, 분위기 좋은 식사가 중요한 여행이에요.",
-    testId: testIds.query.vibeRomance,
   },
   {
     value: "food",
     label: "미식",
     description: "현지 식당, 디저트, 야식 동선이 여행의 중심이에요.",
-    testId: testIds.query.vibeFood,
   },
   {
     value: "nature",
     label: "자연",
     description: "탁 트인 풍경과 바깥 시간을 충분히 느끼고 싶어요.",
-    testId: testIds.query.vibeNature,
   },
   {
     value: "city",
@@ -217,7 +209,6 @@ export const departureAirportOptions: QueryOption<RecommendationQuery["departure
     value: "ICN",
     label: "인천 ICN",
     description: "노선 선택지가 가장 넓은 편이에요.",
-    testId: testIds.query.departureAirportICN,
   },
   { value: "GMP", label: "김포 GMP", description: "서울 접근성이 좋은 출발지예요." },
   { value: "PUS", label: "부산 PUS", description: "남부권 출발에 편한 선택지예요." },
@@ -230,7 +221,6 @@ export const paceOptions: QueryOption<RecommendationQuery["pace"]>[] = [
     value: "balanced",
     label: "균형 있게",
     description: "핵심 일정과 여유 시간이 함께 있는 흐름이에요.",
-    testId: testIds.query.paceBalanced,
   },
   { value: "packed", label: "꽉 차게", description: "하루를 촘촘하게 쓰는 일정이 좋아요." },
 ];
@@ -240,13 +230,11 @@ export const flightToleranceOptions: QueryOption<RecommendationQuery["flightTole
     value: "short",
     label: "단거리 위주",
     description: "비행 피로를 최대한 줄이고 싶어요.",
-    testId: testIds.query.flightToleranceShort,
   },
   {
     value: "medium",
     label: "중거리까지",
     description: "선택지는 넓히되 장거리는 아직 부담돼요.",
-    testId: testIds.query.flightToleranceMedium,
   },
   { value: "long", label: "장거리도 가능", description: "비행시간이 길어도 목적지가 좋으면 괜찮아요." },
 ];
@@ -469,10 +457,34 @@ export function buildRecommendationTrustSignals(
     {
       id: "evidence-trust",
       label: "근거",
-      value: describeSourceBadge(primaryEvidence),
-      detail: `${primaryEvidence.sourceLabel} · ${formatFreshnessState(primaryEvidence.freshnessState)}`,
+      value: primaryEvidence ? describeSourceBadge(primaryEvidence) : "근거 준비 중",
+      detail: primaryEvidence
+        ? `${primaryEvidence.sourceLabel} · ${formatFreshnessState(primaryEvidence.freshnessState)}`
+        : "아직 대표 근거가 많지 않아 핵심 정보와 체크할 점을 먼저 보세요.",
     },
   ];
+}
+
+export function buildRecommendationEvidenceLead(
+  card: RecommendationCardView,
+): RecommendationEvidenceLeadView {
+  const primaryEvidence = card.recommendation.trendEvidence[0];
+
+  if (!primaryEvidence) {
+    return {
+      label: "근거 준비 중",
+      detail: "아직 대표 근거가 충분하지 않아 핵심 정보와 체크할 점을 먼저 보여줘요.",
+      sourceLabel: "추가 근거 수집 중",
+      sourceUrl: null,
+    };
+  }
+
+  return {
+    label: describeSourceBadge(primaryEvidence),
+    detail: primaryEvidence.summary,
+    sourceLabel: primaryEvidence.sourceLabel,
+    sourceUrl: primaryEvidence.sourceUrl,
+  };
 }
 
 /**
@@ -821,4 +833,28 @@ export function buildSnapshotPath(
   kind: "recommendation" | "comparison",
 ): string {
   return kind === "recommendation" ? `/s/${snapshotId}` : `/compare/${snapshotId}`;
+}
+
+/**
+ * 목적지 상세 페이지 경로를 현재 추천 문맥과 함께 만든다.
+ * @param destination 상세를 열 목적지
+ * @param query 현재 추천 질의
+ * @param snapshotId 저장된 추천 스냅샷 ID
+ * @returns 상세 페이지 상대 경로
+ */
+export function buildDestinationDetailPath(
+  destination: Pick<DestinationProfile, "slug">,
+  query?: RecommendationQuery,
+  snapshotId?: string,
+): string {
+  const searchParams = query ? buildRecommendationSearchParams(query) : new URLSearchParams();
+
+  if (snapshotId) {
+    searchParams.set("snapshotId", snapshotId);
+  }
+
+  const queryString = searchParams.toString();
+  const pathname = `/destinations/${destination.slug}`;
+
+  return queryString ? `${pathname}?${queryString}` : pathname;
 }

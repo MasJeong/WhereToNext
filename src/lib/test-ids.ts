@@ -4,9 +4,20 @@ export const testIds = {
     authCta: "auth-cta",
     accountLink: "account-link",
     personalizedNote: "personalized-note",
-    heroStartCta: "hero-start-cta",
-    advancedFiltersToggle: "advanced-filters-toggle",
-    advancedFiltersPanel: "advanced-filters-panel",
+  },
+  home: {
+    progress: "home-step-progress",
+    question: "home-step-question",
+    helper: "home-step-helper",
+    choice0: "home-step-choice-0",
+    choice1: "home-step-choice-1",
+    choice2: "home-step-choice-2",
+    choice3: "home-step-choice-3",
+    next: "home-step-next",
+    previous: "home-step-prev",
+    browseStrip: "home-browse-strip",
+    searchTrigger: "home-search-trigger",
+    topSummary: "home-top-summary",
   },
   auth: {
     modeSignIn: "auth-mode-sign-in",
@@ -18,28 +29,6 @@ export const testIds = {
     error: "auth-error",
   },
   query: {
-    intentFirstEurope: "intent-first-europe",
-    intentShortFlightCity: "intent-short-flight-city",
-    intentCoupleNightView: "intent-couple-night-view",
-    intentFamilyReset: "intent-family-reset",
-    partyTypeCouple: "party-type-couple",
-    partyTypeFriends: "party-type-friends",
-    partyTypeFamily: "party-type-family",
-    budgetMid: "budget-mid",
-    budgetBudget: "budget-budget",
-    budgetPremium: "budget-premium",
-    tripLength3: "trip-length-3",
-    tripLength5: "trip-length-5",
-    tripLength8: "trip-length-8",
-    travelMonth7: "travel-month-7",
-    travelMonth10: "travel-month-10",
-    vibeRomance: "vibe-romance",
-    vibeFood: "vibe-food",
-    vibeNature: "vibe-nature",
-    departureAirportICN: "departure-airport-ICN",
-    flightToleranceShort: "flight-tolerance-short",
-    flightToleranceMedium: "flight-tolerance-medium",
-    paceBalanced: "pace-balanced",
     submitRecommendation: "submit-recommendation",
   },
   result: {
@@ -47,9 +36,25 @@ export const testIds = {
     instagramVibe0: "instagram-vibe-0",
     emptyState: "empty-state",
     querySummary: "query-summary",
+    topList: "result-top-list",
+    topItem0: "result-top-item-0",
     showMoreResults: "show-more-results",
     relaxableFilters: "relaxable-filters",
     relaxFilterAction0: "relax-filter-action-0",
+  },
+  detail: {
+    root: "destination-detail-root",
+    coreFacts: "destination-core-facts",
+    fitReason: "destination-fit-reason",
+    evidence: "destination-evidence",
+    watchOuts: "destination-watch-outs",
+    tasteLogger: "destination-taste-logger",
+    tasteRating: "destination-taste-rating",
+    tasteTag0: "destination-taste-tag-0",
+    tasteRevisit: "destination-taste-revisit",
+    tasteDate: "destination-taste-date",
+    tasteSubmit: "destination-taste-submit",
+    tasteLoginCta: "destination-taste-login-cta",
   },
   snapshot: {
     saveSnapshot: "save-snapshot",
@@ -72,6 +77,9 @@ export const testIds = {
     verdictRow: "compare-verdict-row",
   },
   account: {
+    root: "my-taste-root",
+    tasteMode: "my-taste-mode",
+    tasteSummary: "my-taste-summary",
     preferenceRepeat: "preference-repeat",
     preferenceBalanced: "preference-balanced",
     preferenceDiscover: "preference-discover",
@@ -83,6 +91,10 @@ export const testIds = {
     historyDelete0: "history-delete-0",
   },
 } as const;
+
+export function getHomeChoiceTestId(index: number): string {
+  return `home-step-choice-${index}`;
+}
 
 /**
  * Returns a stable result card selector for a given index.
@@ -138,6 +150,10 @@ export function getRelaxFilterActionTestId(index: number): string {
   return index === 0 ? testIds.result.relaxFilterAction0 : `relax-filter-action-${index}`;
 }
 
+export function getResultTopItemTestId(index: number): string {
+  return index === 0 ? testIds.result.topItem0 : `result-top-item-${index}`;
+}
+
 /**
  * Returns a stable account history card selector for a given index.
  * @param index History entry index
@@ -163,4 +179,8 @@ export function getAccountHistorySaveTestId(index: number): string {
  */
 export function getAccountHistoryDeleteTestId(index: number): string {
   return index === 0 ? testIds.account.historyDelete0 : `history-delete-${index}`;
+}
+
+export function getDestinationTasteTagTestId(index: number): string {
+  return index === 0 ? testIds.detail.tasteTag0 : `destination-taste-tag-${index}`;
 }
