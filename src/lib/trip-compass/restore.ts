@@ -24,6 +24,10 @@ export type ComparisonColumnView = {
   card: RecommendationCardView;
 };
 
+function buildSavedRecommendationPath(snapshotId: string): string {
+  return buildSnapshotPath(snapshotId, "recommendation");
+}
+
 /**
  * 저장된 추천 결과를 카드 뷰로 변환하고 누락 여부를 검사한다.
  * @param snapshot 저장된 추천 스냅샷 payload
@@ -92,7 +96,7 @@ export async function hydrateComparisonSnapshot(
 
     return {
       snapshotId,
-      sharePath: buildSnapshotPath(snapshotId, "recommendation"),
+      sharePath: buildSavedRecommendationPath(snapshotId),
       card: primaryCard,
     } satisfies ComparisonColumnView;
   });

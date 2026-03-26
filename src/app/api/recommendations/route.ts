@@ -10,6 +10,7 @@ import {
   listUserDestinationHistory,
 } from "@/lib/profile/service";
 import { rankDestinations } from "@/lib/recommendation/engine";
+import { applyAcquisitionCorsHeaders } from "@/lib/security/cors";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { parseRecommendationQuery } from "@/lib/security/validation";
 
@@ -48,16 +49,19 @@ export async function GET(request: Request) {
   });
 
   if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { code: "RATE_LIMITED", error: "잠시 후 다시 시도해 주세요." },
-      {
-        status: 429,
-        headers: {
-          "x-ratelimit-limit": String(RATE_LIMIT_PER_WINDOW),
-          "x-ratelimit-remaining": String(rateLimit.remaining),
-          "x-ratelimit-reset": String(rateLimit.resetAt),
+    return applyAcquisitionCorsHeaders(
+      request,
+      NextResponse.json(
+        { code: "RATE_LIMITED", error: "잠시 후 다시 시도해 주세요." },
+        {
+          status: 429,
+          headers: {
+            "x-ratelimit-limit": String(RATE_LIMIT_PER_WINDOW),
+            "x-ratelimit-remaining": String(rateLimit.remaining),
+            "x-ratelimit-reset": String(rateLimit.resetAt),
+          },
         },
-      },
+      ),
     );
   }
 
@@ -74,36 +78,45 @@ export async function GET(request: Request) {
       : undefined;
     const recommendations = rankDestinations(query, launchCatalog, evidenceMap, personalization);
 
-    return NextResponse.json(
-      {
-        query,
-        recommendations,
-        meta: {
-          scoringVersion: activeScoringVersion.id,
-          resultCount: recommendations.length,
-          personalized: Boolean(personalization),
+    return applyAcquisitionCorsHeaders(
+      request,
+      NextResponse.json(
+        {
+          query,
+          recommendations,
+          meta: {
+            scoringVersion: activeScoringVersion.id,
+            resultCount: recommendations.length,
+            personalized: Boolean(personalization),
+          },
+          sourceSummary: buildSourceSummary(recommendations),
         },
-        sourceSummary: buildSourceSummary(recommendations),
-      },
-      {
-        headers: {
-          "x-ratelimit-limit": String(RATE_LIMIT_PER_WINDOW),
-          "x-ratelimit-remaining": String(rateLimit.remaining),
-          "x-ratelimit-reset": String(rateLimit.resetAt),
+        {
+          headers: {
+            "x-ratelimit-limit": String(RATE_LIMIT_PER_WINDOW),
+            "x-ratelimit-remaining": String(rateLimit.remaining),
+            "x-ratelimit-reset": String(rateLimit.resetAt),
+          },
         },
-      },
+      ),
     );
   } catch (error) {
     if (error instanceof ZodError) {
-      return NextResponse.json(
-        { code: "INVALID_QUERY", error: "추천 조건 형식이 올바르지 않습니다." },
-        { status: 400 },
+      return applyAcquisitionCorsHeaders(
+        request,
+        NextResponse.json(
+          { code: "INVALID_QUERY", error: "추천 조건 형식이 올바르지 않습니다." },
+          { status: 400 },
+        ),
       );
     }
 
-    return NextResponse.json(
-      { code: "RECOMMENDATION_FAILED", error: "추천 결과를 불러오지 못했습니다." },
-      { status: 500 },
+    return applyAcquisitionCorsHeaders(
+      request,
+      NextResponse.json(
+        { code: "RECOMMENDATION_FAILED", error: "추천 결과를 불러오지 못했습니다." },
+        { status: 500 },
+      ),
     );
   }
 }

@@ -1,22 +1,28 @@
 export const testIds = {
   shell: {
+    header: "app-header",
     identityCard: "identity-card",
     authCta: "auth-cta",
     accountLink: "account-link",
     personalizedNote: "personalized-note",
   },
   home: {
+    landing: "home-landing",
+    searchEntry: "home-search-entry",
+    cta: "home-cta",
+    heroVisual: "home-hero-visual",
+    resultPage: "home-result-page",
     progress: "home-step-progress",
     question: "home-step-question",
     helper: "home-step-helper",
+    browseStrip: "home-browse-strip",
+    searchTrigger: "home-search-trigger",
     choice0: "home-step-choice-0",
     choice1: "home-step-choice-1",
     choice2: "home-step-choice-2",
     choice3: "home-step-choice-3",
     next: "home-step-next",
     previous: "home-step-prev",
-    browseStrip: "home-browse-strip",
-    searchTrigger: "home-search-trigger",
     topSummary: "home-top-summary",
   },
   auth: {
@@ -33,6 +39,8 @@ export const testIds = {
   },
   result: {
     card0: "result-card-0",
+    filterBar: "result-filter-bar",
+    filterChip0: "result-filter-chip-0",
     instagramVibe0: "instagram-vibe-0",
     emptyState: "empty-state",
     querySummary: "query-summary",
@@ -48,6 +56,7 @@ export const testIds = {
     fitReason: "destination-fit-reason",
     evidence: "destination-evidence",
     watchOuts: "destination-watch-outs",
+    itineraryCta: "destination-itinerary-cta",
     tasteLogger: "destination-taste-logger",
     tasteRating: "destination-taste-rating",
     tasteTag0: "destination-taste-tag-0",
@@ -152,6 +161,10 @@ export function getRelaxFilterActionTestId(index: number): string {
 
 export function getResultTopItemTestId(index: number): string {
   return index === 0 ? testIds.result.topItem0 : `result-top-item-${index}`;
+}
+
+export function getResultFilterChipTestId(index: number): string {
+  return index === 0 ? testIds.result.filterChip0 : `result-filter-chip-${index}`;
 }
 
 /**

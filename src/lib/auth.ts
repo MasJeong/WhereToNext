@@ -219,18 +219,44 @@ function buildAuthSession(
   };
 }
 
+function shouldUseSecureCookie(request?: Request): boolean {
+  if (process.env.NODE_ENV !== "production") {
+    return false;
+  }
+
+  if (!request) {
+    return true;
+  }
+
+  const requestUrl = new URL(request.url);
+  if (["localhost", "127.0.0.1", "::1"].includes(requestUrl.hostname)) {
+    return false;
+  }
+
+  const forwardedProto = request.headers.get("x-forwarded-proto")?.split(",")[0]?.trim().toLowerCase();
+  if (forwardedProto) {
+    return forwardedProto === "https";
+  }
+
+  return requestUrl.protocol === "https:";
+}
+
 /**
  * 세션 쿠키를 응답에 설정한다.
  * @param response Next 응답 객체
  * @param token 원문 세션 토큰
  */
-export function setSessionCookie(response: import("next/server").NextResponse, token: string) {
+export function setSessionCookie(
+  response: import("next/server").NextResponse,
+  token: string,
+  request?: Request,
+) {
   response.cookies.set({
     name: SESSION_COOKIE_NAME,
     value: token,
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookie(request),
     path: "/",
     maxAge: SESSION_MAX_AGE_SECONDS,
   });
@@ -240,13 +266,13 @@ export function setSessionCookie(response: import("next/server").NextResponse, t
  * 세션 쿠키를 응답에서 제거한다.
  * @param response Next 응답 객체
  */
-export function clearSessionCookie(response: import("next/server").NextResponse) {
+export function clearSessionCookie(response: import("next/server").NextResponse, request?: Request) {
   response.cookies.set({
     name: SESSION_COOKIE_NAME,
     value: "",
     httpOnly: true,
     sameSite: "lax",
-    secure: process.env.NODE_ENV === "production",
+    secure: shouldUseSecureCookie(request),
     path: "/",
     maxAge: 0,
   });

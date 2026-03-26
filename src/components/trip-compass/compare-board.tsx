@@ -87,10 +87,10 @@ export function CompareBoard({ columns }: CompareBoardProps) {
           <div>
             <p className="compass-editorial-kicker">비교 화면</p>
             <h3 className="mt-1.5 font-display text-[1.08rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.24rem]">
-              최종 선택 전, 같은 항목으로 빠르게 좁혀 보세요.
+              저장해 둔 여행끼리 마지막 판단만 빠르게 비교해 보세요.
             </h3>
             <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-              모바일에서는 두 후보씩 넘겨 보고, 차이만 남겨 결정 피로를 줄여요.
+              모바일에서는 두 후보씩 넘겨 보고, 차이만 남겨 결정 피로를 줄여요. 비교는 보조 단계이고 최종 판단은 상세 페이지와 저장한 여행 링크에서 이어가면 돼요.
             </p>
           </div>
 

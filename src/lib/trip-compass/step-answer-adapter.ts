@@ -1,10 +1,8 @@
 import type { RecommendationQuery } from "@/lib/domain/contracts";
 import {
-  budgetOptions,
   defaultRecommendationQuery,
   departureAirportOptions,
   getPartySizeForType,
-  optionalVibeOptions,
   partyOptions,
   primaryVibeOptions,
   travelMonthOptions,
@@ -30,12 +28,14 @@ export type HomeStepTripRhythm = (typeof homeStepTripRhythmValues)[number];
 
 export type HomeStepAnswers = {
   whoWith: RecommendationQuery["partyType"];
-  budgetFeel: RecommendationQuery["budgetBand"];
   travelWindow: RecommendationQuery["travelMonth"];
   tripRhythm: HomeStepTripRhythm;
   mainVibe: RecommendationQuery["vibes"][number];
-  extraVibe: RecommendationQuery["vibes"][number] | null;
   departureChoice: RecommendationQuery["departureAirport"];
+};
+
+type HomeStepAnswerDefaults = HomeStepAnswers & {
+  budgetFeel: RecommendationQuery["budgetBand"];
 };
 
 type TripRhythmQueryPatch = Pick<
@@ -76,35 +76,26 @@ const defaultHomeStepTripRhythm = homeStepTripRhythmValues.find((value) => {
   );
 });
 
-export const defaultHomeStepAnswers: HomeStepAnswers = {
+const defaultQuestionFlowAnswers: HomeStepAnswers = {
   whoWith: defaultRecommendationQuery.partyType,
-  budgetFeel: defaultRecommendationQuery.budgetBand,
   travelWindow: defaultRecommendationQuery.travelMonth,
   tripRhythm: defaultHomeStepTripRhythm ?? "steady-highlights",
   mainVibe: defaultRecommendationQuery.vibes[0],
-  extraVibe: defaultRecommendationQuery.vibes[1] ?? null,
   departureChoice: defaultRecommendationQuery.departureAirport,
 };
 
-export const homeStepCompanionOptions: HomeStepOption<HomeStepAnswers["whoWith"]>[] = partyOptions;
+export const defaultHomeStepAnswers: HomeStepAnswerDefaults = {
+  ...defaultQuestionFlowAnswers,
+  budgetFeel: defaultRecommendationQuery.budgetBand,
+};
 
-export const homeStepBudgetFeelOptions: HomeStepOption<HomeStepAnswers["budgetFeel"]>[] =
-  budgetOptions;
+export const homeStepCompanionOptions: HomeStepOption<HomeStepAnswers["whoWith"]>[] = partyOptions;
 
 export const homeStepTravelWindowOptions: HomeStepOption<HomeStepAnswers["travelWindow"]>[] =
   travelMonthOptions;
 
 export const homeStepMainVibeOptions: HomeStepOption<HomeStepAnswers["mainVibe"]>[] =
   primaryVibeOptions;
-
-export const homeStepExtraVibeOptions: HomeStepOption<HomeStepAnswers["extraVibe"]>[] = [
-  {
-    value: null,
-    label: "하나에 집중",
-    description: "대표 분위기 하나로 먼저 넓게 추천을 받아요.",
-  },
-  ...optionalVibeOptions,
-];
 
 export const homeStepDepartureOptions: HomeStepOption<HomeStepAnswers["departureChoice"]>[] =
   departureAirportOptions;
@@ -136,7 +127,7 @@ export function deriveRecommendationQueryFromHomeStepAnswers(
   answers: Partial<HomeStepAnswers> = {},
 ): RecommendationQuery {
   const mergedAnswers: HomeStepAnswers = {
-    ...defaultHomeStepAnswers,
+    ...defaultQuestionFlowAnswers,
     ...answers,
   };
   const tripRhythmQueryPatch = tripRhythmQueryPatchMap[mergedAnswers.tripRhythm];
@@ -144,23 +135,18 @@ export function deriveRecommendationQueryFromHomeStepAnswers(
   return {
     partyType: mergedAnswers.whoWith,
     partySize: getPartySizeForType(mergedAnswers.whoWith),
-    budgetBand: mergedAnswers.budgetFeel,
+    budgetBand: defaultRecommendationQuery.budgetBand,
     tripLengthDays: tripRhythmQueryPatch.tripLengthDays,
     departureAirport: mergedAnswers.departureChoice,
     travelMonth: mergedAnswers.travelWindow,
     pace: tripRhythmQueryPatch.pace,
     flightTolerance: tripRhythmQueryPatch.flightTolerance,
-    vibes: buildHomeStepVibes(mergedAnswers.mainVibe, mergedAnswers.extraVibe),
+    vibes: buildHomeStepVibes(mergedAnswers.mainVibe),
   };
 }
 
 function buildHomeStepVibes(
   mainVibe: HomeStepAnswers["mainVibe"],
-  extraVibe: HomeStepAnswers["extraVibe"],
 ): RecommendationQuery["vibes"] {
-  if (!extraVibe || extraVibe === mainVibe) {
-    return [mainVibe];
-  }
-
-  return [mainVibe, extraVibe];
+  return [mainVibe];
 }

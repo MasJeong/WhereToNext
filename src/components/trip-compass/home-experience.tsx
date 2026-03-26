@@ -2,36 +2,36 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { AnimatePresence } from "framer-motion";
+import { useMemo, useRef, useState } from "react";
 
-import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import type { ComparisonSnapshot, RecommendationQuery } from "@/lib/domain/contracts";
 import {
   buildDestinationDetailPath,
-  buildRecommendationEvidenceLead,
+  buildRecommendationDayFlow,
   buildQueryNarrative,
+  buildRecommendationDecisionFacts,
+  buildRecommendationEvidenceLead,
   buildRecommendationSearchParams,
-  buildRecommendationTrustSignals,
-  buildRecommendationVerdict,
-  buildSnapshotPath,
   buildStructuredTripBrief,
   createRecommendationCards,
-  formatBudgetBand,
   formatDepartureAirport,
   formatEvidenceMode,
-  formatFlightBand,
+  formatMonthList,
   formatTravelMonth,
-  formatVibeList,
+  formatVibeLabel,
   type RecommendationApiResponse,
   type RecommendationCardView,
 } from "@/lib/trip-compass/presentation";
 import { buildRecommendationSnapshotPayload } from "@/lib/trip-compass/snapshot-payload";
+import { buildApiUrl } from "@/lib/runtime/url";
 import {
   defaultHomeStepAnswers,
   deriveRecommendationQueryFromHomeStepAnswers,
   homeStepCompanionOptions,
   homeStepDepartureOptions,
   homeStepMainVibeOptions,
+  homeStepTravelWindowOptions,
   homeStepTripRhythmOptions,
   type HomeStepAnswers,
 } from "@/lib/trip-compass/step-answer-adapter";
@@ -40,6 +40,7 @@ import {
   getInstagramVibeTestId,
   getRelaxFilterActionTestId,
   getResultCardTestId,
+  getResultFilterChipTestId,
   getResultTopItemTestId,
   getSaveSnapshotTestId,
   getSavedSnapshotTestId,
@@ -47,6 +48,11 @@ import {
 } from "@/lib/test-ids";
 
 import { ExperienceShell } from "./experience-shell";
+import { LandingPage } from "./home/landing-page";
+import { ResultPage } from "./home/result-page";
+import { StepQuestion } from "./home/step-question";
+
+type FunnelStage = "landing" | "question" | "result";
 
 type SaveState = {
   status: "idle" | "saving" | "saved" | "error";
@@ -87,19 +93,6 @@ type HomeFlowStep = {
   onSelect: (value: StepOptionValue) => void;
 };
 
-type StepChoiceButtonProps = {
-  label: string;
-  description: string;
-  active: boolean;
-  onClick: () => void;
-  testId: string;
-};
-
-type BrowsePreviewCardProps = {
-  destinationId: string;
-  query: RecommendationQuery;
-};
-
 type SavedSnapshotCompactItemProps = {
   snapshot: SavedSnapshotCard;
   index: number;
@@ -108,7 +101,12 @@ type SavedSnapshotCompactItemProps = {
   onCopy: (shareUrl: string) => void;
 };
 
-type CompactRecommendationCardProps = {
+type LeadDestinationVisualProps = {
+  card: RecommendationCardView;
+  query: RecommendationQuery;
+};
+
+type CompactRecommendationItemProps = {
   card: RecommendationCardView;
   index: number;
   query: RecommendationQuery;
@@ -117,37 +115,26 @@ type CompactRecommendationCardProps = {
   onCopy: (shareUrl: string) => void;
 };
 
+type ResultFilterKey = "all" | "short-flight" | "city" | "rest" | "balanced-budget";
+type ResultSortKey = "fit" | "shortest-flight" | "budget";
+
 const tripLengthRelaxationOrder = [3, 5, 8] as const;
 const flightToleranceRelaxationOrder = ["short", "medium", "long"] as const;
 const travelMonthRelaxationOrder = [7, 10, 12] as const;
-const homeMainVibeStepOptions = homeStepMainVibeOptions.filter((option) =>
-  ["romance", "food", "nature", "city"].includes(option.value),
-);
-const homeTravelWindowStepOptions: StepOptionView[] = [
-  {
-    id: "travel-window-4",
-    value: 4,
-    label: "4월",
-    description: "봄 날씨에 가볍게 움직이기 좋은 시기예요.",
-  },
-  {
-    id: "travel-window-7",
-    value: 7,
-    label: "7월",
-    description: "여름 휴가 흐름에 맞춰 바로 떠나기 좋아요.",
-  },
-  {
-    id: "travel-window-10",
-    value: 10,
-    label: "10월",
-    description: "날씨와 이동감이 안정적인 대표 시즌이에요.",
-  },
-  {
-    id: "travel-window-12",
-    value: 12,
-    label: "12월",
-    description: "연말 분위기와 겨울 장면을 기대하기 좋아요.",
-  },
+const defaultAnswers: HomeStepAnswers = {
+  whoWith: defaultHomeStepAnswers.whoWith,
+  travelWindow: defaultHomeStepAnswers.travelWindow,
+  tripRhythm: defaultHomeStepAnswers.tripRhythm,
+  mainVibe: defaultHomeStepAnswers.mainVibe,
+  departureChoice: defaultHomeStepAnswers.departureChoice,
+};
+
+const resultFilterOptions: Array<{ key: ResultFilterKey; label: string; description: string }> = [
+  { key: "all", label: "전체", description: "지금 조건과 맞는 순서대로 봐요." },
+  { key: "short-flight", label: "가까운 비행", description: "비행 부담이 낮은 곳부터 볼게요." },
+  { key: "city", label: "도시 리듬", description: "도시 동선이 살아 있는 후보만 봐요." },
+  { key: "rest", label: "쉬는 흐름", description: "휴양·자연 쪽을 먼저 볼게요." },
+  { key: "balanced-budget", label: "예산 균형", description: "균형 예산 감각을 먼저 볼게요." },
 ];
 
 function getNextRelaxedOption<TValue extends string | number>(
@@ -163,19 +150,40 @@ function getNextRelaxedOption<TValue extends string | number>(
   return options[currentIndex + 1] ?? null;
 }
 
+function getFlightRank(flightBand: RecommendationCardView["destination"]["flightBand"]): number {
+  if (flightBand === "short") {
+    return 0;
+  }
+
+  if (flightBand === "medium") {
+    return 1;
+  }
+
+  return 2;
+}
+
+function getBudgetRank(budgetBand: RecommendationCardView["destination"]["budgetBand"]): number {
+  if (budgetBand === "budget") {
+    return 0;
+  }
+
+  if (budgetBand === "mid") {
+    return 1;
+  }
+
+  return 2;
+}
+
 function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] {
   const actions: RelaxationAction[] = [];
   const nextTripLength = getNextRelaxedOption(query.tripLengthDays, tripLengthRelaxationOrder);
-  const nextFlightTolerance = getNextRelaxedOption(
-    query.flightTolerance,
-    flightToleranceRelaxationOrder,
-  );
+  const nextFlightTolerance = getNextRelaxedOption(query.flightTolerance, flightToleranceRelaxationOrder);
 
   if (nextTripLength) {
     actions.push({
       id: "trip-length",
       label: `일정을 ${nextTripLength}일로 넓히기`,
-      description: "짧은 일정 제약을 줄여 후보 풀을 조금 더 넓혀요.",
+      description: "짧은 일정 제약을 풀어 후보 풀을 조금 더 넓혀요.",
       nextQuery: { ...query, tripLengthDays: nextTripLength },
     });
   }
@@ -184,7 +192,7 @@ function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] 
     actions.push({
       id: "flight-tolerance",
       label: `비행 범위를 ${nextFlightTolerance === "short" ? "단거리" : nextFlightTolerance === "medium" ? "중거리" : "장거리"}까지 넓히기`,
-      description: "거리 제한을 조금 풀어 더 넓은 후보군을 확인해요.",
+      description: "거리 제한을 조금 풀어 더 넓은 후보를 확인해요.",
       nextQuery: { ...query, flightTolerance: nextFlightTolerance },
     });
   }
@@ -193,7 +201,7 @@ function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] 
     actions.push({
       id: "departure-airport",
       label: "출발 공항을 인천(ICN)으로 바꾸기",
-      description: "노선 선택지가 가장 넓은 기준으로 다시 찾아봐요.",
+      description: "노선 선택지가 가장 넓은 기준으로 다시 볼게요.",
       nextQuery: { ...query, departureAirport: "ICN" },
     });
   }
@@ -202,7 +210,7 @@ function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] 
     actions.push({
       id: "secondary-vibe",
       label: "보조 분위기 조건 빼기",
-      description: "대표 분위기 하나만 남겨 먼저 넓게 추천을 받아요.",
+      description: "대표 분위기 하나로 먼저 넓게 받아봐요.",
       nextQuery: { ...query, vibes: [query.vibes[0]] },
     });
   }
@@ -216,7 +224,7 @@ function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] 
     actions.push({
       id: "travel-month",
       label: `출발 시기를 ${formatTravelMonth(nextTravelMonth)}로 바꾸기`,
-      description: "다른 대표 시즌으로 바꿔 다시 확인해 봐요.",
+      description: "다른 대표 시즌으로 다시 맞춰 볼게요.",
       nextQuery: { ...query, travelMonth: nextTravelMonth },
     });
   }
@@ -248,57 +256,11 @@ function getMotionBehavior(): ScrollBehavior {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth";
 }
 
-function scrollToElementById(elementId: string) {
+function scrollToElementById(elementId: string, behavior: ScrollBehavior = getMotionBehavior()) {
   document.getElementById(elementId)?.scrollIntoView({
-    behavior: getMotionBehavior(),
+    behavior,
     block: "start",
   });
-}
-
-function StepChoiceButton({ label, description, active, onClick, testId }: StepChoiceButtonProps) {
-  return (
-    <button
-      type="button"
-      data-testid={testId}
-      aria-pressed={active}
-      onClick={onClick}
-      className={`compass-home-answer-card compass-soft-press rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3.5 text-left ${
-        active ? "compass-selected" : "compass-selection-chip"
-      }`}
-    >
-      <span className="block text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">{label}</span>
-      <span className="mt-2 block text-xs leading-5 text-[var(--color-ink-soft)]">{description}</span>
-    </button>
-  );
-}
-
-function BrowsePreviewCard({ destinationId, query }: BrowsePreviewCardProps) {
-  const destination = launchCatalog.find((item) => item.id === destinationId);
-
-  if (!destination) {
-    return null;
-  }
-
-  return (
-    <Link
-      href={buildDestinationDetailPath(destination, query)}
-      className="compass-open-info compass-soft-press rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3.5"
-    >
-      <p className="compass-editorial-kicker">{destination.countryCode}</p>
-      <p className="mt-1.5 font-display text-[0.98rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
-        {destination.nameKo}
-      </p>
-      <p className="mt-1 text-xs text-[var(--color-ink-soft)]">{destination.nameEn}</p>
-      <div className="mt-2.5 flex flex-wrap gap-1.5">
-        <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-          {formatBudgetBand(destination.budgetBand)}
-        </span>
-        <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-          {formatVibeList(destination.vibeTags.slice(0, 2))}
-        </span>
-      </div>
-    </Link>
-  );
 }
 
 function SavedSnapshotCompactItem({
@@ -311,22 +273,18 @@ function SavedSnapshotCompactItem({
   return (
     <article
       data-testid={getSavedSnapshotTestId(index)}
-      className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3.5"
+      className="rounded-[calc(var(--radius-card)-12px)] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3.5"
     >
       <div className="flex flex-col gap-2.5 sm:flex-row sm:items-start sm:justify-between">
         <div>
-          <p className="compass-editorial-kicker">저장한 카드 {index + 1}</p>
+          <p className="compass-editorial-kicker">저장한 여행 {index + 1}</p>
           <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">{snapshot.destinationName}</p>
-          <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">
-            다시 열거나 비교 후보로 바로 담을 수 있어요.
-          </p>
+          <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">다시 열어 보거나 비교 보드 후보로 바로 담을 수 있어요.</p>
         </div>
         <button
           type="button"
           onClick={() => onToggle(snapshot.snapshotId)}
-          className={`rounded-full px-3 py-2 text-xs font-semibold ${
-            selected ? "compass-selected" : "compass-selection-chip"
-          }`}
+          className={`rounded-full px-3 py-2 text-xs font-semibold ${selected ? "compass-selected" : "compass-selection-chip"}`}
         >
           {selected ? "비교 포함" : "비교 담기"}
         </button>
@@ -351,170 +309,183 @@ function SavedSnapshotCompactItem({
   );
 }
 
-function CompactRecommendationCard({
+function LeadDestinationVisual({ card, query }: LeadDestinationVisualProps) {
+  const primaryVibe = card.destination.vibeTags[0] ?? "city";
+  const isRest = primaryVibe === "beach" || primaryVibe === "nature";
+  const isRomance = primaryVibe === "romance" || primaryVibe === "culture";
+
+  return (
+    <div className="relative aspect-[5/6] overflow-hidden rounded-[1.75rem] border border-[color:var(--color-funnel-border)] bg-white">
+      <div className="absolute inset-x-0 top-0 h-[46%] bg-[var(--color-funnel-accent-subtle)]" />
+      <div className="absolute inset-x-0 bottom-0 h-[34%] bg-white" />
+      <div className="absolute left-5 top-5 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+        {card.destination.nameEn}
+      </div>
+      <div className="absolute right-5 top-5 rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1 text-[0.64rem] font-semibold text-[var(--color-funnel-text-soft)]">
+        {formatDepartureAirport(query.departureAirport)} 출발
+      </div>
+
+      {isRest ? (
+        <>
+          <div className="absolute left-8 top-20 h-16 w-16 rounded-full bg-white" />
+          <div className="absolute bottom-20 left-6 right-6 h-10 rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-accent-soft)]" />
+          <div className="absolute bottom-28 left-10 h-24 w-28 rounded-t-[3rem] bg-[var(--color-funnel-accent-muted)]" />
+          <div className="absolute bottom-28 right-10 h-32 w-40 rounded-t-[4rem] bg-[var(--color-funnel-text)]" />
+        </>
+      ) : isRomance ? (
+        <>
+          <div className="absolute bottom-32 left-1/2 h-28 w-28 -translate-x-1/2 rounded-t-full border-[14px] border-b-0 border-[color:var(--color-funnel-text)]" />
+          <div className="absolute bottom-24 left-1/2 h-10 w-40 -translate-x-1/2 rounded-t-full border border-[color:var(--color-funnel-border-strong)] bg-[var(--color-funnel-accent-soft)]" />
+          <div className="absolute bottom-0 left-8 right-8 h-28 rounded-t-[2rem] bg-[var(--color-funnel-text)]" />
+        </>
+      ) : (
+        <>
+          <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between px-7">
+            <span className="h-24 w-12 rounded-t-[1rem] bg-[var(--color-funnel-accent-soft)]" />
+            <span className="h-32 w-16 rounded-t-[1rem] bg-[var(--color-funnel-text)]" />
+            <span className="h-[5.25rem] w-11 rounded-t-[0.9rem] bg-[var(--color-funnel-accent-muted)]" />
+            <span className="h-28 w-14 rounded-t-[1rem] bg-[var(--color-funnel-text)]" />
+            <span className="h-20 w-10 rounded-t-[0.9rem] bg-[var(--color-funnel-accent-soft)]" />
+          </div>
+        </>
+      )}
+
+      <div className="absolute inset-x-5 bottom-5 rounded-[1.5rem] border border-[color:var(--color-funnel-border)] bg-white px-5 py-4">
+        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+          대표 추천
+        </p>
+        <p
+          data-testid={getResultTopItemTestId(0)}
+          className="mt-2 text-[1.9rem] font-semibold leading-none tracking-[-0.06em] text-[var(--color-funnel-text)] sm:text-[2.4rem]"
+        >
+          {card.destination.nameKo}
+        </p>
+        <p className="mt-2 text-sm leading-6 text-[var(--color-funnel-text-soft)]">{formatMonthList(card.destination.bestMonths)}</p>
+      </div>
+    </div>
+  );
+}
+
+function CompactRecommendationItem({
   card,
   index,
   query,
   saveState,
   onSave,
   onCopy,
-}: CompactRecommendationCardProps) {
-  const verdict = buildRecommendationVerdict(card, query);
-  const trustSignals = buildRecommendationTrustSignals(card, query);
-  const primaryEvidence = buildRecommendationEvidenceLead(card);
-  const destination = card.destination;
-  const detailPath = buildDestinationDetailPath(destination, query, saveState.snapshotId);
+}: CompactRecommendationItemProps) {
+  const detailPath = buildDestinationDetailPath(card.destination, query, saveState.snapshotId);
+  const leadReason = card.recommendation.reasons[0] ?? card.recommendation.whyThisFits;
+  const decisionFacts = buildRecommendationDecisionFacts(card.destination);
+  const tags = card.destination.vibeTags.slice(0, 3).map((tag) => formatVibeLabel(tag));
 
   return (
     <article
       data-testid={getResultCardTestId(index)}
-      className="compass-top-summary rounded-[calc(var(--radius-card)-2px)] px-3.5 py-3.5 sm:px-4 sm:py-4"
+      className="rounded-[1.5rem] border border-[color:var(--color-funnel-border)] bg-white p-4 sm:p-5"
     >
-      <div className="flex flex-col gap-3 border-b border-[color:var(--color-stage-divider)] pb-3.5">
-        <div className="flex items-start justify-between gap-3">
-          <div data-testid={getResultTopItemTestId(index)}>
-            <p className="compass-editorial-kicker">TOP {index + 1}</p>
-            <h3 className="mt-1.5 font-display text-[1.2rem] leading-[0.96] tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.28rem]">
-              {destination.nameKo}
-            </h3>
-            <p className="mt-1 text-sm text-[var(--color-ink-soft)]">
-              {destination.nameEn} · {destination.countryCode}
-            </p>
+      <div className="grid gap-4 md:grid-cols-[12rem_minmax(0,1fr)]">
+        <div className="relative aspect-[5/4] overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)]">
+          <div className="absolute inset-x-0 top-0 h-[48%] bg-[var(--color-funnel-accent-subtle)]" />
+          <div className="absolute inset-x-0 bottom-0 h-[34%] bg-white" />
+          <div className="absolute left-4 top-4 text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-funnel-text-soft)]">
+            {card.destination.nameEn}
           </div>
-
-          <div className="flex flex-col gap-2 text-right">
-            <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-              {card.recommendation.scoreBreakdown.total}점
-            </span>
-            <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-              일치 {card.recommendation.confidence}%
-            </span>
+          <div className="absolute right-4 top-4 rounded-full border border-[color:var(--color-funnel-border)] bg-white px-2.5 py-1 text-[0.58rem] font-semibold text-[var(--color-funnel-text-soft)]">
+            {formatDepartureAirport(query.departureAirport)} 출발
+          </div>
+          <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between px-4">
+            <span className="h-14 w-8 rounded-t-[0.9rem] bg-[var(--color-funnel-accent-soft)]" />
+            <span className="h-20 w-11 rounded-t-[0.9rem] bg-[var(--color-funnel-text)]" />
+            <span className="h-11 w-8 rounded-t-[0.8rem] bg-[var(--color-funnel-accent-muted)]" />
+            <span className="h-16 w-10 rounded-t-[0.9rem] bg-[var(--color-funnel-text)]" />
+            <span className="h-10 w-7 rounded-t-[0.8rem] bg-[var(--color-funnel-accent-soft)]" />
+          </div>
+          <div className="absolute inset-x-4 bottom-4 rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-3">
+            <p className="text-[0.58rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-funnel-text-soft)]">후보</p>
+            <p className="mt-1 text-base font-semibold tracking-[-0.04em] text-[var(--color-funnel-text)]">{card.destination.nameKo}</p>
           </div>
         </div>
 
-        <div className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3">
-          <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
-            먼저 보는 이유
+        <div className="min-w-0">
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+            추천 {index + 1}
           </p>
-          <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">{verdict.headline}</p>
-          <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-            {card.recommendation.whyThisFits}
-          </p>
-        </div>
+          <h3
+            data-testid={getResultTopItemTestId(index)}
+            className="mt-2 text-[1.65rem] font-semibold leading-none tracking-[-0.05em] text-[var(--color-funnel-text)]"
+          >
+            {card.destination.nameKo}
+          </h3>
+          <p className="mt-1 text-sm text-[var(--color-funnel-text-soft)]">{card.destination.nameEn}</p>
+          <p className="mt-3 text-sm font-semibold leading-6 text-[var(--color-funnel-text)]">{leadReason}</p>
+          <p className="mt-1.5 text-sm leading-6 text-[var(--color-funnel-text-soft)]">{card.recommendation.whyThisFits}</p>
 
-        <div className="compass-fact-grid-compact">
-          <div className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3">
-            <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">대표 분위기</p>
-            <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">
-              {formatVibeList(destination.vibeTags.slice(0, 2))}
-            </p>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {tags.map((tag) => (
+              <span
+                key={`${card.destination.id}-${tag}`}
+                className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1.5 text-xs font-semibold text-[var(--color-funnel-text-soft)]"
+              >
+                #{tag}
+              </span>
+            ))}
           </div>
-          <div className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3">
-            <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">예산 감각</p>
-            <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">
-              {formatBudgetBand(destination.budgetBand)}
-            </p>
-          </div>
-          <div className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3">
-            <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">비행 거리</p>
-            <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">
-              {formatFlightBand(destination.flightBand)}
-            </p>
-          </div>
-          <div className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3">
-            <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">근거 모드</p>
-            <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">{primaryEvidence.label}</p>
-          </div>
-        </div>
-      </div>
 
-      <div className="compass-compact-stack mt-3.5">
-        <section className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-          <p className="compass-editorial-kicker">왜 먼저 봐야 하는지</p>
-          <div className="compass-section-row mt-2.5">
-            <p className="text-sm font-semibold text-[var(--color-ink)]">{verdict.support}</p>
-          </div>
-        </section>
-
-        <section className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-          <p className="compass-editorial-kicker">먼저 확인할 신뢰 신호</p>
-          <div className="mt-2.5 grid gap-2">
-            {trustSignals.map((signal) => (
-              <div key={signal.id} className="compass-section-row">
-                <p className="text-[0.64rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
-                  {signal.label}
+          <div className="mt-4 grid gap-2 sm:grid-cols-3">
+            {decisionFacts.map((fact) => (
+              <div key={fact.id} className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3">
+                <p className="text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-funnel-text-soft)]">
+                  {fact.label}
                 </p>
-                <p className="text-sm font-semibold text-[var(--color-ink)]">{signal.value}</p>
+                <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">{fact.value}</p>
               </div>
             ))}
           </div>
-        </section>
-      </div>
 
-      <section
-        data-testid={getInstagramVibeTestId(index)}
-        className="compass-open-info mt-3.5 rounded-[calc(var(--radius-card)-10px)] px-4 py-4"
-      >
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <p className="compass-editorial-kicker">분위기 근거</p>
-            <p className="mt-1.5 text-xs uppercase tracking-[0.16em] text-[var(--color-ink-soft)]">
-              {primaryEvidence.label} · {primaryEvidence.sourceLabel}
-            </p>
-            <p className="mt-2 text-sm leading-6 text-[var(--color-ink)]">{primaryEvidence.detail}</p>
-          </div>
-          {primaryEvidence.sourceUrl ? (
-            <a
-              href={primaryEvidence.sourceUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="compass-action-secondary rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
-            >
-              원문 보기
-            </a>
-          ) : null}
-        </div>
-      </section>
-
-      <div className="mt-3.5 flex flex-wrap gap-2">
-        <Link
-          href={detailPath}
-          className="compass-action-secondary compass-soft-press rounded-full px-4 py-2.5 text-xs font-semibold tracking-[0.04em]"
-        >
-          상세 보기
-        </Link>
-        <button
-          type="button"
-          data-testid={getSaveSnapshotTestId(index)}
-          onClick={() => onSave(card)}
-          disabled={saveState.status === "saving"}
-          className="compass-action-primary compass-soft-press rounded-full px-4 py-2.5 text-xs font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
-        >
-          {saveState.status === "saving"
-            ? "저장 중..."
-            : saveState.status === "saved"
-              ? "저장 완료"
-              : "이 카드 저장"}
-        </button>
-        {saveState.shareUrl ? (
-          <>
+          <div className="mt-4 flex flex-wrap gap-2">
             <Link
-              data-testid={testIds.snapshot.shareLink}
-              href={buildSnapshotPath(saveState.snapshotId ?? "", "recommendation")}
-              className="compass-action-secondary compass-soft-press rounded-full px-4 py-2.5 text-xs font-semibold tracking-[0.04em]"
+              href={detailPath}
+              className="inline-flex min-h-[2.75rem] items-center rounded-full bg-[var(--color-funnel-text)] px-4 py-2.5 text-xs font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-funnel-text-strong)]"
             >
-              공유 페이지 보기
+              상세 보기
             </Link>
             <button
               type="button"
-              data-testid={testIds.snapshot.copyShareLink}
-              onClick={() => onCopy(saveState.shareUrl ?? "")}
-              className="compass-action-secondary compass-soft-press rounded-full px-4 py-2.5 text-xs font-semibold tracking-[0.04em]"
+              data-testid={getSaveSnapshotTestId(index)}
+              onClick={() => onSave(card)}
+              disabled={saveState.status === "saving"}
+              className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-xs font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] disabled:cursor-not-allowed disabled:opacity-60"
             >
-              링크 복사
+              {saveState.status === "saving"
+                ? "저장 중..."
+                : saveState.status === "saved"
+                  ? "내 일정에 담았어요"
+                  : "내 일정에 담기"}
             </button>
-          </>
-        ) : null}
+            {saveState.shareUrl ? (
+              <>
+                <Link
+                  data-testid={testIds.snapshot.shareLink}
+                  href={`/s/${saveState.snapshotId ?? ""}`}
+                  className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-xs font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+                >
+                  공유 페이지 보기
+                </Link>
+                <button
+                  type="button"
+                  data-testid={testIds.snapshot.copyShareLink}
+                  onClick={() => {
+                    void onCopy(saveState.shareUrl ?? "");
+                  }}
+                  className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-xs font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+                >
+                  링크 복사
+                </button>
+              </>
+            ) : null}
+          </div>
+        </div>
       </div>
     </article>
   );
@@ -522,51 +493,81 @@ function CompactRecommendationCard({
 
 export function HomeExperience() {
   const router = useRouter();
-  const [answers, setAnswers] = useState<Partial<HomeStepAnswers>>({});
+  const [stage, setStage] = useState<FunnelStage>("landing");
+  const [answers, setAnswers] = useState<Partial<HomeStepAnswers>>(defaultAnswers);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [searchText, setSearchText] = useState("");
-  const [showBrowse, setShowBrowse] = useState(false);
   const [results, setResults] = useState<RecommendationApiResponse | null>(null);
   const [cards, setCards] = useState<RecommendationCardView[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [showAllResults, setShowAllResults] = useState(false);
+  const [resultFilter, setResultFilter] = useState<ResultFilterKey>("all");
+  const [resultSort, setResultSort] = useState<ResultSortKey>("fit");
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
   const [savedSnapshots, setSavedSnapshots] = useState<SavedSnapshotCard[]>([]);
+  const [copyFallbackUrl, setCopyFallbackUrl] = useState<string | null>(null);
   const [selectedCompareIds, setSelectedCompareIds] = useState<string[]>([]);
   const [compareError, setCompareError] = useState<string | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
+  const activeRecommendationRequestRef = useRef(0);
 
   const currentQuery = useMemo(() => deriveRecommendationQueryFromHomeStepAnswers(answers), [answers]);
   const resultQuery = results?.query ?? currentQuery;
   const queryNarrative = useMemo(() => buildQueryNarrative(resultQuery), [resultQuery]);
-  const structuredTripBrief = useMemo(() => buildStructuredTripBrief(resultQuery), [resultQuery]);
+  const briefItems = useMemo(() => buildStructuredTripBrief(resultQuery), [resultQuery]);
   const emptyStateActions = useMemo(() => buildRelaxationActions(resultQuery), [resultQuery]);
-  const visibleCards = showAllResults ? cards : cards.slice(0, 3);
-  const leadCard = cards[0] ?? null;
-  const canCreateCompare = selectedCompareIds.length >= 2 && selectedCompareIds.length <= 4;
-  const hasResultStage = Boolean(results || submitError || isSubmitting);
-  const filteredBrowseDestinations = useMemo(() => {
-    const loweredSearch = searchText.trim().toLowerCase();
+  const filteredCards = useMemo(() => {
+    const nextCards = [...cards];
 
-    return launchCatalog
-      .filter((destination) => {
-        if (!loweredSearch) {
-          return true;
-        }
+    const visibleByFilter = nextCards.filter((card) => {
+      if (resultFilter === "all") {
+        return true;
+      }
 
+      if (resultFilter === "short-flight") {
+        return card.destination.flightBand === "short";
+      }
+
+      if (resultFilter === "city") {
+        return card.destination.vibeTags.includes("city") || card.destination.kind === "city";
+      }
+
+      if (resultFilter === "rest") {
+        return card.destination.vibeTags.includes("beach") || card.destination.vibeTags.includes("nature");
+      }
+
+      return card.destination.budgetBand === "mid";
+    });
+
+    visibleByFilter.sort((left, right) => {
+      if (resultSort === "shortest-flight") {
         return (
-          destination.nameKo.includes(searchText.trim()) ||
-          destination.nameEn.toLowerCase().includes(loweredSearch) ||
-          destination.countryCode.toLowerCase().includes(loweredSearch)
+          getFlightRank(left.destination.flightBand) - getFlightRank(right.destination.flightBand) ||
+          right.recommendation.confidence - left.recommendation.confidence
         );
-      })
-      .slice(0, 4);
-  }, [searchText]);
+      }
+
+      if (resultSort === "budget") {
+        return (
+          getBudgetRank(left.destination.budgetBand) - getBudgetRank(right.destination.budgetBand) ||
+          right.recommendation.confidence - left.recommendation.confidence
+        );
+      }
+
+      return (
+        right.recommendation.scoreBreakdown.total - left.recommendation.scoreBreakdown.total ||
+        right.recommendation.confidence - left.recommendation.confidence
+      );
+    });
+
+    return visibleByFilter;
+  }, [cards, resultFilter, resultSort]);
+
+  const leadCard = filteredCards[0] ?? cards[0] ?? null;
+  const secondaryCards = showAllResults ? filteredCards.slice(1) : filteredCards.slice(1, 4);
+  const canCreateCompare = selectedCompareIds.length >= 2 && selectedCompareIds.length <= 4;
   const compareTrayDestinations = useMemo(() => {
-    const selectedSnapshots = savedSnapshots.filter((snapshot) =>
-      selectedCompareIds.includes(snapshot.snapshotId),
-    );
+    const selectedSnapshots = savedSnapshots.filter((snapshot) => selectedCompareIds.includes(snapshot.snapshotId));
     const previewSource = selectedSnapshots.length > 0 ? selectedSnapshots : savedSnapshots;
 
     return previewSource
@@ -578,7 +579,7 @@ export function HomeExperience() {
   const steps: HomeFlowStep[] = [
     {
       id: "who-with",
-      question: "누구와 떠나세요?",
+      question: "누구와 가세요?",
       helper: "동행만 정해도 추천 결과의 결이 크게 달라져요.",
       selectedValue: answers.whoWith,
       options: homeStepCompanionOptions.map((option) => ({
@@ -599,7 +600,12 @@ export function HomeExperience() {
       question: "언제쯤 떠나고 싶으세요?",
       helper: "출발 시기 하나만 잡아도 시즌에 맞는 후보부터 정리돼요.",
       selectedValue: answers.travelWindow,
-      options: homeTravelWindowStepOptions,
+      options: homeStepTravelWindowOptions.map((option) => ({
+        id: `travel-window-${option.value}`,
+        value: option.value,
+        label: option.label,
+        description: option.description,
+      })),
       onSelect: (value) => {
         setAnswers((currentState) => ({
           ...currentState,
@@ -609,7 +615,7 @@ export function HomeExperience() {
     },
     {
       id: "trip-rhythm",
-      question: "이번 여행 리듬은 어떤 쪽이 좋아요?",
+      question: "이번 일정은 어떤 리듬이 좋아요?",
       helper: "일정 길이, 밀도, 비행 부담을 한 번에 가볍게 맞춰요.",
       selectedValue: answers.tripRhythm,
       options: homeStepTripRhythmOptions.map((option) => ({
@@ -630,7 +636,7 @@ export function HomeExperience() {
       question: "가장 먼저 챙기고 싶은 분위기는요?",
       helper: "대표 분위기 하나만 정하면 TOP 후보가 훨씬 빨리 좁혀져요.",
       selectedValue: answers.mainVibe,
-      options: homeMainVibeStepOptions.map((option) => ({
+      options: homeStepMainVibeOptions.map((option) => ({
         id: `main-vibe-${option.value}`,
         value: option.value,
         label: option.label,
@@ -646,7 +652,7 @@ export function HomeExperience() {
     {
       id: "departure-choice",
       question: "출발은 어디 기준으로 볼까요?",
-      helper: "한국 출발 흐름을 맞추기 위한 마지막 한 질문이에요.",
+      helper: "한국 출발 흐름을 맞추는 마지막 질문이에요.",
       selectedValue: answers.departureChoice,
       options: homeStepDepartureOptions.map((option) => ({
         id: `departure-choice-${option.value}`,
@@ -664,21 +670,49 @@ export function HomeExperience() {
   ];
 
   const currentStep = steps[currentStepIndex] ?? steps[0];
-  const answeredCount = steps.filter((step) => step.selectedValue !== undefined).length;
-  const isLastStep = currentStepIndex === steps.length - 1;
-  const canAdvance = currentStep.selectedValue !== undefined;
-  const progressPercent = ((currentStepIndex + 1) / steps.length) * 100;
   const compareButtonLabel = compareLoading
     ? "비교 보드 저장 중..."
     : canCreateCompare
       ? `${selectedCompareIds.length}곳 비교 보드 만들기`
       : "2개부터 선택하면 비교돼요";
 
+  function resetFunnel() {
+    activeRecommendationRequestRef.current += 1;
+    setStage("landing");
+    setAnswers(defaultAnswers);
+    setCurrentStepIndex(0);
+    setResults(null);
+    setCards([]);
+    setIsSubmitting(false);
+    setSubmitError(null);
+    setShowAllResults(false);
+    setResultFilter("all");
+    setResultSort("fit");
+    setCopyFallbackUrl(null);
+  }
+
+  function startFunnel() {
+    activeRecommendationRequestRef.current += 1;
+    setStage("question");
+    setCurrentStepIndex(0);
+    setAnswers(defaultAnswers);
+    setResults(null);
+    setCards([]);
+    setIsSubmitting(false);
+    setSubmitError(null);
+    setShowAllResults(false);
+    setResultFilter("all");
+    setResultSort("fit");
+    setCopyFallbackUrl(null);
+  }
+
   async function copyShareUrl(shareUrl: string) {
     try {
       await navigator.clipboard.writeText(shareUrl);
+      setCopyFallbackUrl(null);
       return true;
     } catch {
+      setCopyFallbackUrl(shareUrl);
       return false;
     }
   }
@@ -688,9 +722,7 @@ export function HomeExperience() {
       return;
     }
 
-    const existingSnapshot = savedSnapshots.find(
-      (savedSnapshot) => savedSnapshot.destinationId === card.destination.id,
-    );
+    const existingSnapshot = savedSnapshots.find((savedSnapshot) => savedSnapshot.destinationId === card.destination.id);
 
     if (existingSnapshot) {
       setSaveStates((currentState) => ({
@@ -710,14 +742,12 @@ export function HomeExperience() {
     }));
 
     try {
-      const response = await fetch("/api/snapshots", {
+      const response = await fetch(buildApiUrl("/api/snapshots"), {
         method: "POST",
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify(
-          buildRecommendationSnapshotPayload(results.query, card, results.meta.scoringVersion),
-        ),
+        body: JSON.stringify(buildRecommendationSnapshotPayload(results.query, card, results.meta.scoringVersion)),
       });
 
       if (!response.ok) {
@@ -725,7 +755,7 @@ export function HomeExperience() {
       }
 
       const payload = (await response.json()) as { snapshotId: string };
-      const sharePath = buildSnapshotPath(payload.snapshotId, "recommendation");
+      const sharePath = `/s/${payload.snapshotId}`;
       const shareUrl = buildAbsoluteShareUrl(sharePath);
       const savedSnapshot: SavedSnapshotCard = {
         snapshotId: payload.snapshotId,
@@ -764,7 +794,7 @@ export function HomeExperience() {
       }
 
       if (currentSelection.length >= 4) {
-        setCompareError("비교는 저장한 카드 2개부터 4개까지 가능해요.");
+        setCompareError("비교는 저장한 여행 2개부터 4개까지 가능해요.");
         return currentSelection;
       }
 
@@ -773,12 +803,10 @@ export function HomeExperience() {
   }
 
   async function createCompareSnapshot() {
-    const selectedSnapshots = savedSnapshots.filter((snapshot) =>
-      selectedCompareIds.includes(snapshot.snapshotId),
-    );
+    const selectedSnapshots = savedSnapshots.filter((snapshot) => selectedCompareIds.includes(snapshot.snapshotId));
 
     if (selectedSnapshots.length < 2 || selectedSnapshots.length > 4) {
-      setCompareError("비교하려면 저장한 카드 2개부터 4개까지 선택해 주세요.");
+      setCompareError("비교하려면 저장한 여행 2개부터 4개까지 선택해 주세요.");
       return;
     }
 
@@ -786,7 +814,7 @@ export function HomeExperience() {
     setCompareError(null);
 
     try {
-      const response = await fetch("/api/snapshots", {
+      const response = await fetch(buildApiUrl("/api/snapshots"), {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -799,7 +827,7 @@ export function HomeExperience() {
       }
 
       const payload = (await response.json()) as { snapshotId: string };
-      router.push(buildSnapshotPath(payload.snapshotId, "comparison"));
+      router.push(`/compare/${payload.snapshotId}`);
     } catch {
       setCompareError("비교 보드를 만들지 못했어요. 잠시 후 다시 시도해 주세요.");
     } finally {
@@ -808,12 +836,18 @@ export function HomeExperience() {
   }
 
   async function requestRecommendations(nextQuery: RecommendationQuery) {
+    const requestId = activeRecommendationRequestRef.current + 1;
+    activeRecommendationRequestRef.current = requestId;
+
+    setStage("result");
     setIsSubmitting(true);
     setSubmitError(null);
+    setResults(null);
+    setCards([]);
 
     try {
       const searchParams = buildRecommendationSearchParams(nextQuery);
-      const response = await fetch(`/api/recommendations?${searchParams.toString()}`, {
+      const response = await fetch(buildApiUrl(`/api/recommendations?${searchParams.toString()}`), {
         method: "GET",
         cache: "no-store",
       });
@@ -823,21 +857,33 @@ export function HomeExperience() {
       }
 
       const payload = (await response.json()) as RecommendationApiResponse;
+      if (activeRecommendationRequestRef.current !== requestId) {
+        return;
+      }
+
       setResults(payload);
       setCards(createRecommendationCards(payload.recommendations));
+      setResultFilter("all");
+      setResultSort("fit");
       setShowAllResults(false);
       requestAnimationFrame(() => {
-        scrollToElementById("home-results-anchor");
+        scrollToElementById("home-results-anchor", "auto");
       });
     } catch {
+      if (activeRecommendationRequestRef.current !== requestId) {
+        return;
+      }
+
       setResults(null);
       setCards([]);
       setSubmitError("지금은 추천 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
       requestAnimationFrame(() => {
-        scrollToElementById("home-results-anchor");
+        scrollToElementById("home-results-anchor", "auto");
       });
     } finally {
-      setIsSubmitting(false);
+      if (activeRecommendationRequestRef.current === requestId) {
+        setIsSubmitting(false);
+      }
     }
   }
 
@@ -845,223 +891,330 @@ export function HomeExperience() {
     await requestRecommendations(nextQuery);
   }
 
-  async function submitRecommendation() {
-    await requestRecommendations(currentQuery);
-  }
-
-  function handlePrimaryAction() {
-    if (isLastStep) {
-      void submitRecommendation();
+  function handleStepSelect(stepIndex: number, value: StepOptionValue) {
+    if (isSubmitting) {
       return;
     }
 
-    setCurrentStepIndex((currentValue) => Math.min(currentValue + 1, steps.length - 1));
+    const step = steps[stepIndex];
+    step?.onSelect(value);
+
+    const answerKey =
+      step.id === "who-with"
+        ? "whoWith"
+        : step.id === "travel-window"
+          ? "travelWindow"
+          : step.id === "trip-rhythm"
+            ? "tripRhythm"
+            : step.id === "main-vibe"
+              ? "mainVibe"
+              : "departureChoice";
+
+    const nextAnswers: Partial<HomeStepAnswers> = {
+      ...answers,
+      [answerKey]: value,
+    };
+
+    setAnswers(nextAnswers);
+
+    if (stepIndex === steps.length - 1) {
+      void requestRecommendations(deriveRecommendationQueryFromHomeStepAnswers(nextAnswers));
+      return;
+    }
+
+    setCurrentStepIndex(stepIndex + 1);
   }
 
-  return (
-    <ExperienceShell eyebrow="" title="" intro="" capsule="" hideHeader>
-      <div className={`space-y-3.5 ${savedSnapshots.length > 0 ? "pb-28 md:pb-0" : ""}`}>
-        <section className="compass-desk rounded-[var(--radius-card)] px-3.5 py-4 sm:px-4 sm:py-4">
-          <div className="border-b border-[color:var(--color-stage-divider)] pb-3.5">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <p className="compass-editorial-kicker">질문 {currentStepIndex + 1}</p>
-                <p className="mt-1 text-[11px] leading-5 text-[var(--color-ink-soft)]">
-                  기본은 {formatBudgetBand(defaultHomeStepAnswers.budgetFeel)} · {" "}
-                  {formatDepartureAirport(defaultHomeStepAnswers.departureChoice)} 출발이에요.
-                </p>
-              </div>
-              <span
-                data-testid={testIds.home.progress}
-                className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold"
-              >
-                {currentStepIndex + 1} / {steps.length}
-              </span>
-            </div>
-            <div className="mt-3 h-1 rounded-full bg-[color:var(--color-stage-divider)]">
-              <div
-                className="h-full rounded-full bg-[color:var(--color-action-primary)] transition-[width] duration-200"
-                style={{ width: `${progressPercent}%` }}
-              />
-            </div>
-            <h1
-              data-testid={testIds.home.question}
-              className="mt-4 font-display text-[1.46rem] leading-[0.96] tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.72rem]"
-            >
-              {currentStep.question}
-            </h1>
-            <p
-              data-testid={testIds.home.helper}
-              className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]"
-            >
-              {currentStep.helper}
-            </p>
-          </div>
+  function goToPreviousStep() {
+    if (currentStepIndex === 0) {
+      setStage("landing");
+      return;
+    }
 
-          <div className="compass-home-answer-grid mt-4">
-            {currentStep.options.map((option, index) => (
-              <StepChoiceButton
-                key={option.id}
-                label={option.label}
-                description={option.description}
-                active={currentStep.selectedValue === option.value}
-                onClick={() => currentStep.onSelect(option.value)}
-                testId={getHomeChoiceTestId(index)}
-              />
-            ))}
-          </div>
+    setCurrentStepIndex((currentValue) => Math.max(0, currentValue - 1));
+  }
 
-          <div className="mt-4 grid gap-2 sm:grid-cols-[auto_minmax(0,1fr)]">
-            <button
-              type="button"
-              data-testid={testIds.home.previous}
-              onClick={() => setCurrentStepIndex((currentValue) => Math.max(0, currentValue - 1))}
-              disabled={currentStepIndex === 0}
-              className="compass-action-secondary compass-soft-press rounded-full px-4 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-40"
-            >
-              이전
-            </button>
-            <button
-              type="button"
-              data-testid={testIds.home.next}
-              onClick={handlePrimaryAction}
-              disabled={!canAdvance || isSubmitting}
-              className="compass-action-primary compass-soft-press rounded-full px-4 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {isLastStep ? "TOP 추천 보기" : "다음 질문"}
-            </button>
-          </div>
+  function reopenQuestionFlow() {
+    activeRecommendationRequestRef.current += 1;
+    setIsSubmitting(false);
+    setStage("question");
+    requestAnimationFrame(() => {
+      scrollToElementById("home-question-flow", "auto");
+    });
+  }
 
-          <button
-            type="button"
-            data-testid={testIds.query.submitRecommendation}
-            onClick={() => {
-              void submitRecommendation();
-            }}
-            disabled={isSubmitting}
-            className="compass-action-secondary compass-soft-press mt-2.5 w-full rounded-full px-4 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
+  const landingStage = (
+    <LandingPage
+      testId={testIds.home.landing}
+      heroTestId={testIds.home.heroVisual}
+      onStart={startFunnel}
+    />
+  );
+
+  const questionStage = (
+    <div id="home-question-flow">
+      <StepQuestion
+        current={currentStepIndex + 1}
+        total={steps.length}
+        questionTestId={testIds.home.question}
+        helperTestId={testIds.home.helper}
+        progressTestId={testIds.home.progress}
+        question={currentStep.question}
+        helper={currentStep.helper}
+        onBack={goToPreviousStep}
+        onReset={resetFunnel}
+        isSubmitting={isSubmitting}
+        options={currentStep.options.map((option, index) => ({
+          id: option.id,
+          label: option.label,
+          description: option.description,
+          selected: currentStep.selectedValue === option.value,
+          testId: getHomeChoiceTestId(index),
+          onSelect: () => handleStepSelect(currentStepIndex, option.value),
+        }))}
+      />
+    </div>
+  );
+
+  const resultStage = (
+    <div id="home-results-anchor">
+      <ResultPage
+        testId={testIds.home.resultPage}
+        leadTitle={leadCard ? leadCard.destination.nameKo : isSubmitting ? "추천 결과를 정리하고 있어요." : "다시 맞는 후보를 찾고 있어요."}
+        leadReason={leadCard?.recommendation.reasons[0] ?? "결과가 나오면 가장 먼저 볼 목적지를 짧게 정리해 드릴게요."}
+        leadDescription={leadCard ? leadCard.recommendation.whyThisFits : queryNarrative}
+        leadVisual={
+          leadCard ? <LeadDestinationVisual card={leadCard} query={resultQuery} /> : <div className="aspect-[4/5] rounded-[1.75rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)]" />
+        }
+        leadTags={leadCard ? leadCard.destination.vibeTags.slice(0, 3).map((tag) => formatVibeLabel(tag)) : []}
+        leadFacts={leadCard ? buildRecommendationDecisionFacts(leadCard.destination) : []}
+        leadDetails={
+          leadCard ? (
+            (() => {
+              const saveState = saveStates[leadCard.destination.id] ?? { status: "idle" };
+              const detailPath = buildDestinationDetailPath(leadCard.destination, results?.query ?? currentQuery, saveState.snapshotId);
+              const dayFlow = buildRecommendationDayFlow(leadCard, results?.query ?? currentQuery);
+              const evidenceLead = buildRecommendationEvidenceLead(leadCard);
+
+              return (
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,0.9fr)]">
+                  <div className="space-y-4">
+                    <section className="rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-4">
+                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                        추천 이유
+                      </p>
+                      <p className="mt-2 text-base font-semibold leading-6 text-[var(--color-funnel-text)]">
+                        {leadCard.recommendation.reasons[0] ?? leadCard.recommendation.whyThisFits}
+                      </p>
+                      <p className="mt-2 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
+                        {leadCard.recommendation.whyThisFits}
+                      </p>
+                    </section>
+
+                    <section
+                      data-testid={getInstagramVibeTestId(0)}
+                      className="rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-4"
+                    >
+                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                        분위기 근거
+                      </p>
+                      <p className="mt-2 text-sm font-semibold text-[var(--color-funnel-text)]">{evidenceLead.label}</p>
+                      <p className="mt-1.5 text-xs leading-5 text-[var(--color-funnel-text-soft)]">{evidenceLead.detail}</p>
+                    </section>
+                  </div>
+
+                  <div className="space-y-4">
+                    <section className="rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-4">
+                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                        Day-flow
+                      </p>
+                      <div className="mt-3 space-y-3">
+                        {dayFlow.map((step) => (
+                          <article key={step.id} className="border-t border-[color:var(--color-funnel-border)] pt-3 first:border-t-0 first:pt-0">
+                            <p className="text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-funnel-text-soft)]">
+                              {step.label}
+                            </p>
+                            <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">{step.title}</p>
+                            <p className="mt-1 text-xs leading-5 text-[var(--color-funnel-text-soft)]">{step.detail}</p>
+                          </article>
+                        ))}
+                      </div>
+                    </section>
+
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        href={detailPath}
+                        className="inline-flex min-h-[2.9rem] items-center rounded-full bg-[var(--color-funnel-text)] px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-funnel-text-strong)]"
+                      >
+                        상세 보기
+                      </Link>
+                      <button
+                        type="button"
+                        data-testid={getSaveSnapshotTestId(0)}
+                        onClick={() => {
+                          void saveCard(leadCard);
+                        }}
+                        disabled={saveState.status === "saving"}
+                        className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {saveState.status === "saving"
+                          ? "저장 중..."
+                          : saveState.status === "saved"
+                            ? "내 일정에 담았어요"
+                            : "내 일정에 담기"}
+                      </button>
+                      {saveState.shareUrl ? (
+                        <>
+                          <Link
+                            data-testid={testIds.snapshot.shareLink}
+                            href={`/s/${saveState.snapshotId ?? ""}`}
+                            className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+                          >
+                            공유 페이지 보기
+                          </Link>
+                          <button
+                            type="button"
+                            data-testid={testIds.snapshot.copyShareLink}
+                            onClick={() => {
+                              void copyShareUrl(saveState.shareUrl ?? "");
+                            }}
+                            className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+                          >
+                            링크 복사
+                          </button>
+                        </>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+              );
+            })()
+          ) : null
+        }
+        resultMeta={
+          <>
+            {results ? (
+              <>
+                <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[10px] font-semibold text-[var(--color-funnel-text-soft)]">
+                  결과 {results.meta.resultCount}곳
+                </span>
+                <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[10px] font-semibold text-[var(--color-funnel-text-soft)]">
+                  {formatEvidenceMode(results.sourceSummary.mode)} 근거
+                </span>
+              </>
+            ) : null}
+          </>
+        }
+        personalized={Boolean(results?.meta.personalized)}
+        briefItems={briefItems}
+        onRestart={resetFunnel}
+        onReopenQuestions={reopenQuestionFlow}
+        filtersSlot={
+          <article
+            data-testid={testIds.result.filterBar}
+            className="rounded-[1.75rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-4"
           >
-            {isSubmitting ? "TOP 후보를 고르는 중..." : "지금 추천 보기"}
-          </button>
-
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-              {answeredCount}개 선택 완료
-            </span>
-            <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-              {steps.length - answeredCount}개 남음
-            </span>
-          </div>
-        </section>
-
-        <section
-          data-testid={testIds.home.browseStrip}
-          className="compass-open-info rounded-[calc(var(--radius-card)-4px)] px-3.5 py-3.5 sm:px-4"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div>
-              <p className="compass-editorial-kicker">바로 찾기</p>
-              <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-                이름으로 먼저 보고 싶다면 여기서 빠르게 열어 보세요.
-              </p>
-            </div>
-            <button
-              type="button"
-              data-testid={testIds.home.searchTrigger}
-              onClick={() => setShowBrowse((currentValue) => !currentValue)}
-              className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
-            >
-              {showBrowse ? "닫기" : "검색 열기"}
-            </button>
-          </div>
-
-          {showBrowse ? (
-            <div className="mt-3 grid gap-3">
-              <label className="grid gap-2 text-sm text-[var(--color-ink)]">
-                <span>목적지 검색</span>
-                <input
-                  type="search"
-                  value={searchText}
-                  onChange={(event) => setSearchText(event.target.value)}
-                  className="compass-form-field-light rounded-[calc(var(--radius-card)-10px)] px-4 py-3"
-                  placeholder="도쿄, 파리, JP처럼 검색해 보세요"
-                />
-              </label>
-              <div className="grid gap-2.5 sm:grid-cols-2">
-                {filteredBrowseDestinations.map((destination) => (
-                  <BrowsePreviewCard
-                    key={destination.id}
-                    destinationId={destination.id}
-                    query={currentQuery}
-                  />
-                ))}
-              </div>
-            </div>
-          ) : null}
-        </section>
-
-        {hasResultStage ? (
-          <section id="home-results-anchor" className="space-y-3.5">
-            <article
-              data-testid={testIds.home.topSummary}
-              className="compass-top-summary rounded-[var(--radius-card)] px-3.5 py-3.5 sm:px-4 sm:py-4"
-            >
-              <div className="flex flex-col gap-3 border-b border-[color:var(--color-stage-divider)] pb-3.5">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="compass-editorial-kicker">TOP 요약</span>
-                  {results ? (
-                    <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-                      결과 {results.meta.resultCount}곳
-                    </span>
-                  ) : null}
-                  {results ? (
-                    <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-                      {formatEvidenceMode(results.sourceSummary.mode)} 근거
-                    </span>
-                  ) : null}
-                </div>
-
-                <div>
-                  <h2 className="font-display text-[1.24rem] leading-[0.98] tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.46rem]">
-                    {leadCard
-                      ? `${leadCard.destination.nameKo}부터 보면 좋아요.`
-                      : isSubmitting
-                        ? "조건에 맞는 TOP 후보를 정리하고 있어요."
-                        : "지금 조건으로 다시 맞는 후보를 찾고 있어요."}
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-                    {leadCard ? leadCard.recommendation.whyThisFits : queryNarrative}
-                  </p>
-                </div>
-              </div>
-
-              <div data-testid={testIds.result.querySummary} className="compass-fact-grid-compact mt-3.5">
-                {structuredTripBrief.map((item) => (
-                  <article key={item.id} className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3">
-                    <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
-                      {item.label}
-                    </p>
-                    <p className="mt-1.5 text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
-                      {item.value}
-                    </p>
-                  </article>
-                ))}
-              </div>
-
-              {results?.meta.personalized ? (
-                <p
-                  data-testid={testIds.shell.personalizedNote}
-                  className="compass-open-info mt-3 rounded-[calc(var(--radius-card)-12px)] px-4 py-3.5 text-sm leading-6"
-                >
-                  개인화 안내 · 로그인한 여행 기록과 취향 모드가 함께 반영되고 있어요.
+            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+              <div>
+                <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
+                  결과 조정
                 </p>
-              ) : null}
-            </article>
+                <p className="mt-1.5 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
+                  대표 추천을 먼저 보고, 아래 목록만 가볍게 좁혀 보세요.
+                </p>
+              </div>
 
+              <label className="grid gap-2 text-sm text-[var(--color-funnel-text)] lg:min-w-[12rem]">
+                <span>정렬</span>
+                <select
+                  value={resultSort}
+                  onChange={(event) => setResultSort(event.target.value as ResultSortKey)}
+                  className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm text-[var(--color-funnel-text)]"
+                >
+                  <option value="fit">적합도 순</option>
+                  <option value="shortest-flight">가까운 비행 순</option>
+                  <option value="budget">예산 가벼운 순</option>
+                </select>
+              </label>
+            </div>
+
+            <div className="mt-3 flex flex-wrap gap-2">
+              {resultFilterOptions.map((option, index) => (
+                <button
+                  key={option.key}
+                  type="button"
+                  data-testid={getResultFilterChipTestId(index)}
+                  onClick={() => setResultFilter(option.key)}
+                  className={`rounded-full border px-3.5 py-2 text-xs font-semibold tracking-[0.04em] transition-colors duration-200 ${
+                    resultFilter === option.key
+                      ? "border-[color:var(--color-funnel-text)] bg-[var(--color-funnel-text)] text-white"
+                      : "border-[color:var(--color-funnel-border)] bg-white text-[var(--color-funnel-text)] hover:bg-[var(--color-funnel-muted)]"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </article>
+        }
+        statusSlot={
+          <>
             {submitError ? (
-              <p className="compass-warning-card rounded-[calc(var(--radius-card)-4px)] px-4 py-3 text-sm leading-6">
-                {submitError}
-              </p>
+              <div className="rounded-[1.5rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-funnel-text)]">
+                <p>{submitError}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void requestRecommendations(currentQuery);
+                    }}
+                    className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-xs font-semibold tracking-[0.04em] text-[var(--color-funnel-text)]"
+                  >
+                    다시 시도
+                  </button>
+                  <button
+                    type="button"
+                    onClick={reopenQuestionFlow}
+                    className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-xs font-semibold tracking-[0.04em] text-[var(--color-funnel-text)]"
+                  >
+                    질문 다시 고르기
+                  </button>
+                </div>
+              </div>
+            ) : null}
+
+            {copyFallbackUrl ? (
+              <div className="rounded-[1.5rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-4 shadow-[var(--shadow-funnel-card)]">
+                <p className="text-sm font-semibold text-[var(--color-funnel-text)]">링크 복사가 실패했어요.</p>
+                <p className="mt-1 text-sm leading-6 text-[var(--color-funnel-text-soft)]">아래 링크를 길게 눌러 복사해 주세요.</p>
+                <input
+                  type="text"
+                  readOnly
+                  value={copyFallbackUrl}
+                  onFocus={(event) => event.currentTarget.select()}
+                  className="mt-2 w-full rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-2.5 text-xs font-semibold text-[var(--color-funnel-text)]"
+                />
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void copyShareUrl(copyFallbackUrl);
+                    }}
+                    className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-xs font-semibold tracking-[0.04em] text-[var(--color-funnel-text)]"
+                  >
+                    다시 시도
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setCopyFallbackUrl(null);
+                    }}
+                    className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-xs font-semibold tracking-[0.04em] text-[var(--color-funnel-text)]"
+                  >
+                    닫기
+                  </button>
+                </div>
+              </div>
             ) : null}
 
             {isSubmitting ? (
@@ -1069,7 +1222,7 @@ export function HomeExperience() {
                 {[0, 1, 2].map((placeholder) => (
                   <div
                     key={`loading-card-${placeholder}`}
-                    className="compass-skeleton-card rounded-[calc(var(--radius-card)-4px)] p-5"
+                    className="rounded-[1.5rem] border border-[color:var(--color-funnel-border)] bg-white p-5 shadow-[var(--shadow-funnel-card)]"
                   >
                     <div className="compass-skeleton-shimmer h-4 w-20 rounded-full" />
                     <div className="compass-skeleton-shimmer mt-4 h-8 w-2/3 rounded-full" />
@@ -1083,14 +1236,10 @@ export function HomeExperience() {
             {results && cards.length === 0 ? (
               <div
                 data-testid={testIds.result.emptyState}
-                className="compass-open-info rounded-[calc(var(--radius-card)-4px)] p-4"
+                className="rounded-[1.5rem] border border-[color:var(--color-funnel-border)] bg-white p-4 shadow-[var(--shadow-funnel-card)]"
               >
-                <p className="text-base font-semibold text-[var(--color-ink)]">
-                  지금 조건에 딱 맞는 목적지가 없어요.
-                </p>
-                <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-                  아래에서 한 가지만 풀어도 바로 다시 볼 수 있어요.
-                </p>
+                <p className="text-base font-semibold text-[var(--color-funnel-text)]">지금 조건에 딱 맞는 목적지가 없어요.</p>
+                <p className="mt-2 text-sm leading-6 text-[var(--color-funnel-text-soft)]">아래에서 한 가지만 풀어도 바로 다시 볼 수 있어요.</p>
                 <div data-testid={testIds.result.relaxableFilters} className="mt-3 grid gap-2.5 sm:grid-cols-2">
                   {emptyStateActions.map((action, index) => (
                     <button
@@ -1101,66 +1250,76 @@ export function HomeExperience() {
                         void applyRelaxation(action.nextQuery);
                       }}
                       disabled={isSubmitting}
-                      className="compass-selection-chip rounded-[calc(var(--radius-card)-10px)] px-4 py-3.5 text-left disabled:cursor-not-allowed disabled:opacity-60"
+                      className="rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-3.5 text-left disabled:cursor-not-allowed disabled:opacity-60"
                     >
-                      <span className="block text-xs font-semibold tracking-[0.04em] text-[var(--color-sand-deep)]">
-                        바로 완화하기
-                      </span>
-                      <span className="mt-2.5 block text-sm font-semibold text-[var(--color-ink)]">
-                        {action.label}
-                      </span>
-                      <span className="mt-2 block text-xs leading-5 text-[var(--color-ink-soft)]">
-                        {action.description}
-                      </span>
+                      <span className="block text-xs font-semibold tracking-[0.04em] text-[var(--color-funnel-text-soft)]">바로 완화하기</span>
+                      <span className="mt-2.5 block text-sm font-semibold text-[var(--color-funnel-text)]">{action.label}</span>
+                      <span className="mt-2 block text-xs leading-5 text-[var(--color-funnel-text-soft)]">{action.description}</span>
                     </button>
                   ))}
                 </div>
               </div>
             ) : null}
-
-            {visibleCards.length > 0 ? (
-              <div data-testid={testIds.result.topList} className="grid gap-2.5">
-                {visibleCards.map((card, index) => (
-                  <CompactRecommendationCard
-                    key={card.destination.id}
-                    card={card}
-                    index={index}
-                    query={results?.query ?? currentQuery}
-                    saveState={saveStates[card.destination.id] ?? { status: "idle" }}
-                    onSave={(selectedCard) => {
-                      void saveCard(selectedCard);
-                    }}
-                    onCopy={(shareUrl) => {
-                      if (shareUrl) {
-                        void copyShareUrl(shareUrl);
-                      }
-                    }}
-                  />
-                ))}
+          </>
+        }
+        resultsSlot={
+          secondaryCards.length > 0 ? (
+            <div className="space-y-4">
+              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
+                    다른 후보
+                  </p>
+                  <p className="mt-1.5 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
+                    대표 추천 아래에서 바로 저장하거나 비교 후보로 골라 보세요.
+                  </p>
+                </div>
+                {filteredCards.length > 4 ? (
+                  <button
+                    type="button"
+                    data-testid={testIds.result.showMoreResults}
+                    onClick={() => setShowAllResults((currentValue) => !currentValue)}
+                    className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-3 text-sm font-semibold tracking-[0.04em] text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+                  >
+                    {showAllResults ? "상위 결과만 보기" : `후보 ${filteredCards.length - 4}곳 더 보기`}
+                  </button>
+                ) : null}
               </div>
-            ) : null}
 
-            {cards.length > 3 ? (
-              <button
-                type="button"
-                data-testid={testIds.result.showMoreResults}
-                onClick={() => setShowAllResults((currentValue) => !currentValue)}
-                className="compass-action-secondary rounded-full px-4 py-3 text-sm font-semibold tracking-[0.04em]"
-              >
-                {showAllResults ? "상위 3개만 보기" : `후보 ${cards.length - 3}곳 더 보기`}
-              </button>
-            ) : null}
+              <div data-testid={testIds.result.topList} className="grid gap-3">
+                {secondaryCards.map((card, index) => {
+                  const cardIndex = index + 1;
+                  const saveState = saveStates[card.destination.id] ?? { status: "idle" };
 
+                  return (
+                    <CompactRecommendationItem
+                      key={card.destination.id}
+                      card={card}
+                      index={cardIndex}
+                      query={results?.query ?? currentQuery}
+                      saveState={saveState}
+                      onSave={(nextCard) => {
+                        void saveCard(nextCard);
+                      }}
+                      onCopy={(shareUrl) => {
+                        void copyShareUrl(shareUrl);
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            </div>
+          ) : null
+        }
+        savedSlot={
+          <>
             {savedSnapshots.length > 0 ? (
-              <article
-                id="saved-snapshots-section"
-                className="compass-sheet rounded-[var(--radius-card)] px-3.5 py-3.5 sm:px-4 sm:py-4"
-              >
+              <article id="saved-snapshots-section" className="rounded-[var(--radius-card)] border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-3.5 sm:px-4 sm:py-4">
                 <div className="flex flex-col gap-3 border-b border-[color:var(--color-stage-divider)] pb-3.5 sm:flex-row sm:items-start sm:justify-between">
                   <div>
-                    <p className="compass-editorial-kicker">저장한 카드</p>
+                    <p className="compass-editorial-kicker">내 일정 후보</p>
                     <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-                      마음에 드는 곳만 모아 비교 보드로 넘겨 보세요.
+                      마음에 드는 여행만 모아 비교 보드로 넘기면 마지막 결정이 더 쉬워져요.
                     </p>
                     <div
                       data-testid={testIds.snapshot.compareSelectionCount}
@@ -1177,7 +1336,7 @@ export function HomeExperience() {
                       void createCompareSnapshot();
                     }}
                     disabled={!canCreateCompare || compareLoading}
-                    className="compass-action-primary compass-soft-press rounded-full px-4 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
+                    className="rounded-full bg-[var(--color-funnel-text)] px-4 py-3 text-sm font-semibold tracking-[0.04em] text-white disabled:cursor-not-allowed disabled:opacity-60"
                   >
                     {compareButtonLabel}
                   </button>
@@ -1205,49 +1364,65 @@ export function HomeExperience() {
                 ) : null}
               </article>
             ) : null}
-          </section>
-        ) : null}
 
-        {savedSnapshots.length > 0 ? (
-          <div className="pointer-events-none fixed inset-x-4 bottom-4 z-30 md:hidden">
-            <article
-              data-testid={testIds.snapshot.stickyCompareTray}
-              className="compass-sheet compass-sticky-tray pointer-events-auto rounded-[calc(var(--radius-card)-6px)] px-4 py-3.5"
-            >
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="compass-editorial-kicker">비교 트레이</p>
-                  <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">
-                    {compareTrayDestinations || `${savedSnapshots.length}개 저장 카드`}
-                  </p>
-                  <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">
-                    저장 {savedSnapshots.length}개 · 선택 {selectedCompareIds.length}개
-                  </p>
-                </div>
-
-                <button
-                  type="button"
-                  onClick={() => scrollToElementById("saved-snapshots-section")}
-                  className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-[11px] font-semibold tracking-[0.04em]"
+            {savedSnapshots.length > 0 ? (
+              <div className="pointer-events-none fixed inset-x-4 bottom-4 z-30 md:hidden">
+                <article
+                  data-testid={testIds.snapshot.stickyCompareTray}
+                  className="pointer-events-auto rounded-[calc(var(--radius-card)-6px)] border border-[color:var(--color-funnel-border)] bg-white px-4 py-3.5 shadow-[var(--shadow-funnel-card)]"
                 >
-                  카드 보기
-                </button>
-              </div>
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <p className="compass-editorial-kicker">비교 트레이</p>
+                      <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">
+                        {compareTrayDestinations || `${savedSnapshots.length}개 저장 여행`}
+                      </p>
+                      <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">
+                        저장 {savedSnapshots.length}개 · 선택 {selectedCompareIds.length}개
+                      </p>
+                    </div>
 
-              <button
-                type="button"
-                data-testid={testIds.snapshot.stickyCompareAction}
-                onClick={() => {
-                  void createCompareSnapshot();
-                }}
-                disabled={!canCreateCompare || compareLoading}
-                className="compass-action-primary compass-soft-press mt-3 w-full rounded-full px-4 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {compareButtonLabel}
-              </button>
-            </article>
+                    <button
+                      type="button"
+                      onClick={() => scrollToElementById("saved-snapshots-section")}
+                      className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-[11px] font-semibold tracking-[0.04em]"
+                    >
+                      카드 보기
+                    </button>
+                  </div>
+
+                  <button
+                    type="button"
+                    data-testid={testIds.snapshot.stickyCompareAction}
+                    onClick={() => {
+                      void createCompareSnapshot();
+                    }}
+                    disabled={!canCreateCompare || compareLoading}
+                    className="compass-action-primary compass-soft-press mt-3 w-full rounded-full px-4 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {compareButtonLabel}
+                  </button>
+                </article>
+              </div>
+            ) : null}
+          </>
+        }
+      />
+    </div>
+  );
+
+  return (
+    <ExperienceShell eyebrow="" title="" intro="" capsule="" hideHeader hideTopbar bareBody>
+      <div
+        className={`-mx-3 min-h-screen bg-white sm:-mx-4 ${savedSnapshots.length > 0 && stage === "result" ? "pb-28 md:pb-0" : ""}`}
+      >
+        <AnimatePresence mode="wait" initial={false}>
+          <div key={stage} className="space-y-4">
+            {stage === "landing" ? landingStage : null}
+            {stage === "question" ? questionStage : null}
+            {stage === "result" ? resultStage : null}
           </div>
-        ) : null}
+        </AnimatePresence>
       </div>
     </ExperienceShell>
   );

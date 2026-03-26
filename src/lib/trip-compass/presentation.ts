@@ -62,6 +62,27 @@ export type RecommendationEvidenceLeadView = {
   sourceUrl: string | null;
 };
 
+export type RecommendationDayFlowStepView = {
+  id: "day-1" | "day-2" | "day-3";
+  label: "Day 1" | "Day 2" | "Day 3";
+  title: string;
+  detail: string;
+};
+
+export type RecommendationSceneView = {
+  eyebrow: string;
+  headline: string;
+  atmosphere: string;
+  supportingLabel: string;
+};
+
+export type RecommendationDecisionFactView = {
+  id: "best-months" | "budget" | "flight";
+  label: string;
+  value: string;
+  detail: string;
+};
+
 const destinationIndex = new Map(launchCatalog.map((destination) => [destination.id, destination]));
 
 const monthLabels = [
@@ -485,6 +506,151 @@ export function buildRecommendationEvidenceLead(
     sourceLabel: primaryEvidence.sourceLabel,
     sourceUrl: primaryEvidence.sourceUrl,
   };
+}
+
+/**
+ * 추천 카드를 3일 기준의 compact day-flow 블록으로 변환한다.
+ * @param card 추천 카드 뷰 모델
+ * @param query 현재 추천 질의
+ * @returns Day 1/2/3 순서의 카드용 day-flow 뷰
+ */
+export function buildRecommendationDayFlow(
+  card: RecommendationCardView,
+  query?: RecommendationQuery,
+): RecommendationDayFlowStepView[] {
+  const leadVibe = query?.vibes[0] ?? card.destination.vibeTags[0] ?? "city";
+  const leadPace = query?.pace ?? card.destination.paceTags[0] ?? "balanced";
+  const leadReason = card.recommendation.reasons[0] ?? card.recommendation.whyThisFits;
+  const secondReason = card.recommendation.reasons[1] ?? card.destination.summary;
+  const watchOut =
+    card.recommendation.watchOuts[0] ??
+    card.destination.watchOuts[0] ??
+    "상세 정보에서 체크할 점을 먼저 확인해 보세요.";
+  const arrivalLine = query
+    ? `${formatDepartureAirport(query.departureAirport)} · ${formatFlightTolerance(query.flightTolerance)} 기준으로 시작이 가벼워요.`
+    : `${formatFlightBand(card.destination.flightBand)} 비행 거리라 첫날 부담이 적어요.`;
+
+  let dayTwoTitle = "핵심 동선을 균형 있게 묶기";
+  let dayTwoDetail = "대표 스폿과 식사 흐름을 반반 섞기 좋아요.";
+
+  if (leadPace === "slow") {
+    dayTwoTitle = "한 구역에 오래 머무르기";
+    dayTwoDetail = "카페와 산책 포인트를 길게 잇는 편이 잘 맞아요.";
+  }
+
+  if (leadPace === "packed") {
+    dayTwoTitle = "낮과 밤 포인트를 촘촘히 담기";
+    dayTwoDetail = "짧은 시간에 밀도 있게 채우는 흐름이 자연스러워요.";
+  }
+
+  const dayThreeTitle =
+    query && query.tripLengthDays > 3 ? "남은 일정까지 무드 유지하기" : "저장 전 마지막 체크하기";
+  const dayThreeDetail =
+    query && query.tripLengthDays > 3
+      ? `${watchOut} 괜찮다면 남은 일정도 ${formatVibeLabel(leadVibe)} 흐름으로 이어 가기 좋아요.`
+      : `${watchOut} 괜찮다면 저장하거나 상세로 넘겨 보세요.`;
+
+  return [
+    {
+      id: "day-1",
+      label: "Day 1",
+      title: `${formatVibeLabel(leadVibe)} 첫인상부터 맞춰 보기`,
+      detail: `${arrivalLine} ${leadReason}`,
+    },
+    {
+      id: "day-2",
+      label: "Day 2",
+      title: dayTwoTitle,
+      detail: `${secondReason} ${dayTwoDetail}`,
+    },
+    {
+      id: "day-3",
+      label: "Day 3",
+      title: dayThreeTitle,
+      detail: dayThreeDetail,
+    },
+  ];
+}
+
+/**
+ * 추천 카드를 감성적인 한 줄 장면과 결정용 보조 문구로 정리한다.
+ * @param card 추천 카드 뷰 모델
+ * @param query 현재 추천 질의
+ * @returns 카드 상단 비주얼 카피 세트
+ */
+export function buildRecommendationSceneCopy(
+  card: RecommendationCardView,
+  query?: RecommendationQuery,
+): RecommendationSceneView {
+  const leadVibe = query?.vibes[0] ?? card.destination.vibeTags[0] ?? "city";
+  const leadMonth = query?.travelMonth ?? card.destination.bestMonths[0] ?? 10;
+  const supportingLabel = query
+    ? `${formatPartyType(query.partyType)} · ${formatPaceLabel(query.pace)}`
+    : `${formatMonthList(card.destination.bestMonths)} 추천`;
+
+  if (leadVibe === "romance") {
+    return {
+      eyebrow: "감정이 먼저 오는 목적지",
+      headline: `${card.destination.nameKo}에서 둘만의 장면을 천천히 만들기 좋아요.`,
+      atmosphere: `${formatTravelMonth(leadMonth)} 기준, ${formatFlightBand(card.destination.flightBand)} 비행으로 ${formatBudgetBand(card.destination.budgetBand)} 감각을 맞추기 쉬워요.`,
+      supportingLabel,
+    };
+  }
+
+  if (leadVibe === "food") {
+    return {
+      eyebrow: "동선보다 식사가 기억에 남는 쪽",
+      headline: `${card.destination.nameKo}는 하루를 미식 동선으로 채우기 좋은 목적지예요.`,
+      atmosphere: `${formatTravelMonth(leadMonth)}에 가면 먹고 쉬는 리듬이 자연스럽고, ${formatBudgetBand(card.destination.budgetBand)} 예산 감각으로도 계획하기 좋아요.`,
+      supportingLabel,
+    };
+  }
+
+  if (leadVibe === "nature" || leadVibe === "beach") {
+    return {
+      eyebrow: "쉬는 시간이 바로 그려지는 목적지",
+      headline: `${card.destination.nameKo}는 바깥 풍경과 느린 시간으로 설득되는 후보예요.`,
+      atmosphere: `${formatTravelMonth(leadMonth)} 기준으로는 ${formatFlightBand(card.destination.flightBand)} 비행 이후에도 무드 전환이 빠른 편이에요.`,
+      supportingLabel,
+    };
+  }
+
+  return {
+    eyebrow: "바로 움직이고 싶은 도시 리듬",
+    headline: `${card.destination.nameKo}는 골목, 쇼핑, 야간 동선을 촘촘하게 즐기기 좋아요.`,
+    atmosphere: `${formatTravelMonth(leadMonth)}에 맞춰 보면 ${formatBudgetBand(card.destination.budgetBand)} 예산과 ${formatFlightBand(card.destination.flightBand)} 비행 부담의 균형이 좋아요.`,
+    supportingLabel,
+  };
+}
+
+/**
+ * 카드와 상세 첫 fold에서 바로 읽는 결정용 핵심 팩트를 만든다.
+ * @param destination 목적지 프로필
+ * @returns 추천 시기, 예산 감각, 비행 거리 팩트
+ */
+export function buildRecommendationDecisionFacts(
+  destination: DestinationProfile,
+): RecommendationDecisionFactView[] {
+  return [
+    {
+      id: "best-months",
+      label: "추천 시기",
+      value: formatMonthList(destination.bestMonths),
+      detail: "날씨와 현지 흐름이 가장 안정적인 시즌이에요.",
+    },
+    {
+      id: "budget",
+      label: "예산 감각",
+      value: formatBudgetBand(destination.budgetBand),
+      detail: "숙소와 이동 체감이 이 예산대에서 가장 자연스러워요.",
+    },
+    {
+      id: "flight",
+      label: "비행 거리",
+      value: formatFlightBand(destination.flightBand),
+      detail: "출발 피로와 첫날 리듬을 가늠할 때 먼저 보는 축이에요.",
+    },
+  ];
 }
 
 /**

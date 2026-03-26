@@ -48,10 +48,14 @@ describe("recommendationQuerySchema", () => {
   });
 
   it("exports stable selectors for the rebuilt flow and result shell", () => {
+    expect(testIds.shell.header).toBe("app-header");
     expect(testIds.home.question).toBe("home-step-question");
+    expect(testIds.home.searchEntry).toBe("home-search-entry");
     expect(testIds.home.choice0).toBe("home-step-choice-0");
     expect(testIds.query.submitRecommendation).toBe("submit-recommendation");
     expect(testIds.result.card0).toBe("result-card-0");
+    expect(testIds.result.filterBar).toBe("result-filter-bar");
+    expect(testIds.result.filterChip0).toBe("result-filter-chip-0");
     expect(testIds.result.instagramVibe0).toBe("instagram-vibe-0");
     expect(testIds.detail.tasteSubmit).toBe("destination-taste-submit");
     expect(testIds.account.root).toBe("my-taste-root");

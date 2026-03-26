@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { authClient } from "@/lib/auth-client";
+import { buildApiUrl } from "@/lib/runtime/url";
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import type {
   ExplorationPreference,
@@ -129,10 +130,11 @@ export function AccountExperience({
     setError(null);
 
     try {
-      const response = await fetch("/api/me/preferences", {
+      const response = await fetch(buildApiUrl("/api/me/preferences"), {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ explorationPreference }),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -153,10 +155,11 @@ export function AccountExperience({
     setError(null);
 
     try {
-      const response = await fetch("/api/me/history", {
+      const response = await fetch(buildApiUrl("/api/me/history"), {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify(buildHistoryBody(draft)),
+        credentials: "include",
       });
 
       if (!response.ok) {
@@ -176,7 +179,10 @@ export function AccountExperience({
     setError(null);
 
     try {
-      const response = await fetch(`/api/me/history/${historyId}`, { method: "DELETE" });
+      const response = await fetch(buildApiUrl(`/api/me/history/${historyId}`), {
+        method: "DELETE",
+        credentials: "include",
+      });
 
       if (!response.ok) {
         throw new Error("history-delete-failed");
@@ -197,14 +203,14 @@ export function AccountExperience({
   return (
     <ExperienceShell
       eyebrow="내 취향"
-      title="다음 추천이 더 빨라지도록 내 여행 취향만 짧게 쌓아 두세요."
-      intro="탐색 모드와 방문 기록만 정리해도 다음 추천 결과가 훨씬 또렷해져요."
-      capsule="탐색 모드 · 방문 기록 · 별점 · 해시태그"
+      title="좋아했던 여행의 결을 쌓아 두면 다음 추천이 더 나답게 좁혀져요."
+      intro="내 페이지는 설정 화면보다 가깝게, 취향과 방문 기록을 누적하는 공간이에요. 탐색 모드와 다녀온 곳만 정리해도 다음 추천 결과가 훨씬 또렷해져요."
+      capsule="탐색 모드 · 방문 기록 · 별점 · 해시태그 · 재방문 의사"
       headerAside={
         <div className="compass-sheet rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
           <p className="compass-editorial-kicker">{userName}님의 취향 기록</p>
           <p className="mt-2.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-            지금은 {profile.explorationPreference} 모드예요. 남긴 기록 {historyEntries.length}개가 다음 추천의 방향을 정리해 줘요.
+            지금은 {profile.explorationPreference} 모드예요. 남긴 기록 {historyEntries.length}개가 다음 추천의 출발점을 정리해 줘요.
           </p>
           <div className="mt-3 flex flex-wrap gap-2">
             <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
@@ -240,7 +246,7 @@ export function AccountExperience({
             <div className="flex flex-col gap-2.5 border-b border-[color:var(--color-frame-soft)] pb-4">
               <p className="compass-editorial-kicker">취향 요약</p>
               <h2 className="font-display text-[1.16rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.34rem]">
-                여행 취향이 쌓일수록 다음 추천이 더 빨라져요.
+                취향이 쌓일수록 홈에서 바로 좁혀지는 후보가 더 또렷해져요.
               </h2>
             </div>
 
@@ -272,7 +278,7 @@ export function AccountExperience({
             <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
               <p className="compass-editorial-kicker">탐색 모드</p>
               <h2 className="mt-1.5 font-display text-[1.12rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.28rem]">
-                익숙함과 새로움의 비율을 직접 정해 보세요.
+                익숙한 추천을 더 볼지, 새로운 추천을 더 넓힐지 정해 보세요.
               </h2>
             </div>
 
@@ -439,7 +445,7 @@ export function AccountExperience({
             <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
               <p className="compass-editorial-kicker">방문 기록</p>
               <h2 className="mt-1.5 font-display text-[1.16rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.34rem]">
-                다녀온 여행지의 감각이 다음 후보를 좁히는 기준이 돼요.
+                다녀온 여행지의 감각이 다음 후보를 더 정확하게 좁히는 기준이 돼요.
               </h2>
             </div>
 

@@ -19,33 +19,30 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
   it("maps a representative simplified answer set to the existing API contract", () => {
     const query = deriveRecommendationQueryFromHomeStepAnswers({
       whoWith: "friends",
-      budgetFeel: "budget",
       travelWindow: 7,
       tripRhythm: "quick-reset",
       mainVibe: "city",
-      extraVibe: "food",
       departureChoice: "GMP",
     });
 
     expect(recommendationQuerySchema.parse(query)).toEqual({
       partyType: "friends",
       partySize: 4,
-      budgetBand: "budget",
+      budgetBand: "mid",
       tripLengthDays: 3,
       departureAirport: "GMP",
       travelMonth: 7,
       pace: "balanced",
       flightTolerance: "short",
-      vibes: ["city", "food"],
+      vibes: ["city"],
     });
   });
 
-  it("keeps omitted fields on defaults and removes duplicate extra vibes", () => {
+  it("keeps omitted fields on defaults for unanswered questions", () => {
     const query = deriveRecommendationQueryFromHomeStepAnswers({
       whoWith: "family",
       tripRhythm: "slow-reset",
       mainVibe: "nature",
-      extraVibe: "nature",
     });
 
     expect(recommendationQuerySchema.parse(query)).toEqual({
@@ -59,6 +56,18 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
       flightTolerance: "medium",
       vibes: ["nature"],
     });
+  });
+
+  it("keeps the default answer snapshot aligned to the strict question flow", () => {
+    expect(defaultHomeStepAnswers).toMatchObject({
+      whoWith: "couple",
+      travelWindow: 10,
+      tripRhythm: "steady-highlights",
+      mainVibe: "romance",
+      departureChoice: "ICN",
+      budgetFeel: "mid",
+    });
+    expect(defaultHomeStepAnswers).not.toHaveProperty("extraVibe");
   });
 
   it("defines four deterministic trip rhythm presets for the future step flow", () => {

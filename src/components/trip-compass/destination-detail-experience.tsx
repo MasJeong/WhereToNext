@@ -9,16 +9,15 @@ import type {
   RecommendationQuery,
   TrendEvidenceSnapshot,
 } from "@/lib/domain/contracts";
+import { buildApiUrl } from "@/lib/runtime/url";
 import {
   buildDestinationDetailPath,
   buildQueryNarrative,
+  buildRecommendationDayFlow,
+  buildRecommendationDecisionFacts,
+  buildRecommendationSceneCopy,
   describeSourceBadge,
-  formatBudgetBand,
-  formatDestinationKind,
-  formatFlightBand,
   formatFreshnessState,
-  formatMonthList,
-  formatPaceList,
   formatVibeList,
   type RecommendationCardView,
 } from "@/lib/trip-compass/presentation";
@@ -52,28 +51,35 @@ type TasteLogState = {
 
 type LinkCopyState = "idle" | "copied" | "error";
 
-function buildFallbackFitLine(destination: DestinationProfile): string {
-  const leadVibes = formatVibeList(destination.vibeTags.slice(0, 2));
-  return `${leadVibes} 분위기를 찾고, ${formatFlightBand(destination.flightBand)} 비행과 ${formatBudgetBand(destination.budgetBand)} 감각을 원하는 여행에서 먼저 보기 좋아요.`;
-}
-
-function buildDefaultReasonList(destination: DestinationProfile): string[] {
+function buildFallbackReasonList(destination: DestinationProfile): string[] {
   return [
-    `${formatMonthList(destination.bestMonths)} 시즌 감각이 안정적이에요.`,
-    `${formatPaceList(destination.paceTags)} 일정과 잘 어울려요.`,
-    `${formatVibeList(destination.vibeTags.slice(0, 3))} 포인트를 같이 보기 좋아요.`,
+    `${formatVibeList(destination.vibeTags.slice(0, 2))} 결이 또렷한 편이에요.`,
+    `${destination.summary}`,
+    `${destination.watchOuts[0] ?? "체크할 점을 먼저 보고 판단하면 돼요."}`,
   ];
 }
 
-function buildContextLine(
-  destination: DestinationProfile,
-  query?: RecommendationQuery | null,
-): string {
-  if (query) {
-    return buildQueryNarrative(query);
-  }
-
-  return `${destination.summary} 흐름이 맞는지 핵심 정보부터 먼저 확인해 보세요.`;
+function buildFallbackDayFlow(destination: DestinationProfile) {
+  return [
+    {
+      id: "day-1" as const,
+      label: "Day 1" as const,
+      title: "도착 후 핵심 무드 먼저 보기",
+      detail: `${destination.summary}`,
+    },
+    {
+      id: "day-2" as const,
+      label: "Day 2" as const,
+      title: "대표 동선에 오래 머무르기",
+      detail: `${formatVibeList(destination.vibeTags.slice(0, 2))} 결을 중심으로 일정을 묶어 보세요.`,
+    },
+    {
+      id: "day-3" as const,
+      label: "Day 3" as const,
+      title: "내 일정에 남길지 결정하기",
+      detail: `${destination.watchOuts[0] ?? "체크할 점"}만 괜찮다면 저장해 둘 만해요.`,
+    },
+  ];
 }
 
 function resolveSharePath(detailPath: string, saveState: SaveState, snapshotId?: string | null): string {
@@ -101,50 +107,32 @@ export function DestinationDetailExperience({
   });
   const [tasteStatus, setTasteStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [linkCopyState, setLinkCopyState] = useState<LinkCopyState>("idle");
+  const [copyFallbackUrl, setCopyFallbackUrl] = useState<string | null>(null);
+
   const canSave = Boolean(allowSave && card && query && scoringVersionId);
-  const reasons = card?.recommendation.reasons.slice(0, 3) ?? buildDefaultReasonList(destination);
-  const fitLine = card?.recommendation.whyThisFits ?? buildFallbackFitLine(destination);
-  const evidenceItems = (card?.recommendation.trendEvidence.length ? card.recommendation.trendEvidence : evidence)
-    .slice(0, 2);
-  const watchOuts = (card?.recommendation.watchOuts.length ? card.recommendation.watchOuts : destination.watchOuts)
-    .slice(0, 3);
+  const reasons = card?.recommendation.reasons.slice(0, 3) ?? buildFallbackReasonList(destination);
+  const sceneCopy = card ? buildRecommendationSceneCopy(card, query ?? undefined) : null;
+  const decisionFacts = buildRecommendationDecisionFacts(destination);
+  const dayFlow = card ? buildRecommendationDayFlow(card, query ?? undefined) : buildFallbackDayFlow(destination);
+  const evidenceItems = (card?.recommendation.trendEvidence.length ? card.recommendation.trendEvidence : evidence).slice(0, 2);
+  const watchOuts = (card?.recommendation.watchOuts.length ? card.recommendation.watchOuts : destination.watchOuts).slice(0, 3);
   const detailPath = buildDestinationDetailPath(destination, query ?? undefined, snapshotId ?? undefined);
   const sharePath = resolveSharePath(detailPath, saveState, snapshotId);
-  const contextLine = buildContextLine(destination, query);
-  const detailFacts = [
-    {
-      id: "best-months",
-      label: "추천 시기",
-      value: formatMonthList(destination.bestMonths),
-      detail: "한국 출발 기준으로 보기 편한 시즌이에요.",
-    },
-    {
-      id: "budget",
-      label: "예산 감각",
-      value: formatBudgetBand(destination.budgetBand),
-      detail: "숙소와 이동 체감이 이 정도예요.",
-    },
-    {
-      id: "flight",
-      label: "비행 거리",
-      value: formatFlightBand(destination.flightBand),
-      detail: "연차 길이와 첫날 피로를 함께 봐요.",
-    },
-    {
-      id: "pace",
-      label: "일정 리듬",
-      value: formatPaceList(destination.paceTags),
-      detail: "현지에서 움직이는 속도를 가늠해요.",
-    },
-  ];
+  const contextLine = query
+    ? buildQueryNarrative(query)
+    : "이 목적지가 내 일정에 맞는지 핵심 정보부터 먼저 확인해 보세요.";
 
   async function copyAbsoluteUrl(path: string) {
+    const shareUrl = `${window.location.origin}${path}`;
+
     try {
-      await navigator.clipboard.writeText(`${window.location.origin}${path}`);
+      await navigator.clipboard.writeText(shareUrl);
       setLinkCopyState("copied");
+      setCopyFallbackUrl(null);
       return true;
     } catch {
       setLinkCopyState("error");
+      setCopyFallbackUrl(shareUrl);
       return false;
     }
   }
@@ -158,7 +146,7 @@ export function DestinationDetailExperience({
     setLinkCopyState("idle");
 
     try {
-      const response = await fetch("/api/snapshots", {
+      const response = await fetch(buildApiUrl("/api/snapshots"), {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -192,7 +180,7 @@ export function DestinationDetailExperience({
     setTasteStatus("saving");
 
     try {
-      const response = await fetch("/api/me/history", {
+      const response = await fetch(buildApiUrl("/api/me/history"), {
         method: "POST",
         headers: {
           "content-type": "application/json",
@@ -238,153 +226,175 @@ export function DestinationDetailExperience({
   }
 
   return (
-    <div data-testid={rootTestId ?? testIds.detail.root} className="space-y-3.5 text-[var(--color-ink)]">
-      <section className="compass-top-summary rounded-[var(--radius-card)] px-3.5 py-3.5 sm:px-4 sm:py-4">
-        <div className="flex flex-col gap-3 border-b border-[color:var(--color-frame-soft)] pb-3.5">
+    <div data-testid={rootTestId ?? testIds.detail.root} className="space-y-4 text-[var(--color-ink)]">
+      <section className="compass-top-summary rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
+        <div className="flex flex-col gap-3 border-b border-[color:var(--color-frame-soft)] pb-4">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-              목적지 상세
-            </span>
-            <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-              {destination.countryCode}
-            </span>
-            <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-              {formatDestinationKind(destination.kind)}
-            </span>
-            {card ? (
+            <span className="compass-editorial-kicker">{destination.nameEn}</span>
+            {sceneCopy ? (
               <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-                {card.recommendation.scoreBreakdown.total}점
-              </span>
-            ) : null}
-            {snapshotId ? (
-              <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-                저장된 추천
+                {sceneCopy.supportingLabel}
               </span>
             ) : null}
           </div>
 
           <div className="space-y-2">
-            <p className="compass-editorial-kicker">{destination.nameEn}</p>
-            <h2 className="font-display text-[1.36rem] leading-[0.96] tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.64rem]">
+            <h2 className="font-display text-[1.5rem] leading-[0.94] tracking-[-0.05em] text-[var(--color-ink)] sm:text-[1.88rem]">
               {destination.nameKo}
             </h2>
-            <p className="text-sm leading-6 text-[var(--color-ink)]">{fitLine}</p>
-            <p className="text-sm leading-6 text-[var(--color-ink-soft)]">{destination.summary}</p>
-          </div>
-
-          <div className="flex flex-wrap gap-2">
-            {destination.vibeTags.slice(0, 3).map((tag) => (
-              <span key={tag} className="compass-selection-chip rounded-full px-3 py-1.5 text-xs font-semibold">
-                {formatVibeList([tag])}
-              </span>
-            ))}
-          </div>
-        </div>
-
-        <div data-testid={testIds.detail.coreFacts} className="compass-fact-grid-compact mt-3.5 sm:grid-cols-2">
-          {detailFacts.map((fact) => (
-            <article
-              key={fact.id}
-              className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3.5"
-            >
-              <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
-                {fact.label}
-              </p>
-              <p className="mt-1.5 text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)] sm:text-[0.96rem]">
-                {fact.value}
-              </p>
-              <p className="mt-1 text-[11px] leading-5 text-[var(--color-ink-soft)]">{fact.detail}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section data-testid={testIds.detail.fitReason} className="compass-desk rounded-[var(--radius-card)] px-3.5 py-3.5 sm:px-4 sm:py-4">
-        <div className="flex flex-col gap-2.5 border-b border-[color:var(--color-frame-soft)] pb-3.5">
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="compass-editorial-kicker">추천 이유</span>
-            {card ? (
-              <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-                일치도 {card.recommendation.confidence}%
-              </span>
-            ) : null}
-          </div>
-          <p className="text-sm leading-6 text-[var(--color-ink-soft)]">{contextLine}</p>
-        </div>
-
-        <div className="mt-3.5 grid gap-2.5">
-          {reasons.map((reason) => (
-            <article key={reason} className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-4 py-3.5">
-              <p className="text-sm leading-6 text-[var(--color-ink)]">{reason}</p>
-            </article>
-          ))}
-        </div>
-      </section>
-
-      <section className="grid gap-3.5 xl:grid-cols-[minmax(0,1.08fr)_minmax(17rem,0.92fr)]">
-        <article
-          data-testid={evidenceTestId ?? testIds.detail.evidence}
-          className="compass-sheet rounded-[var(--radius-card)] px-3.5 py-3.5 sm:px-4 sm:py-4"
-        >
-          <div className="border-b border-[color:var(--color-frame-soft)] pb-3.5">
-            <p className="compass-editorial-kicker">분위기 근거</p>
-            <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-              추천 점수와 별개로, 현지 분위기를 짧게 확인하는 용도예요.
+            <p className="text-base font-semibold leading-6 tracking-[-0.02em] text-[var(--color-ink)]">
+              {sceneCopy?.headline ?? destination.summary}
+            </p>
+            <p className="text-sm leading-6 text-[var(--color-ink-soft)]">
+              {sceneCopy?.atmosphere ?? contextLine}
             </p>
           </div>
+        </div>
 
-          {evidenceItems.length > 0 ? (
-            <div className="mt-3.5 grid gap-2.5">
-              {evidenceItems.map((item) => (
-                <article
-                  key={item.id}
-                  className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-4 py-4"
-                >
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-                      {describeSourceBadge(item)}
-                    </span>
-                    <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-soft)]">
-                      {formatFreshnessState(item.freshnessState)}
-                    </span>
-                  </div>
-                  <p className="mt-3 text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">
-                    {item.sourceLabel}
-                  </p>
-                  <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">{item.summary}</p>
-                  <a
-                    href={item.sourceUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="compass-action-secondary mt-4 inline-flex rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
-                  >
-                    원문 보기
-                  </a>
+        <div data-testid={testIds.detail.coreFacts} className="mt-4 grid gap-2.5 sm:grid-cols-3">
+          {decisionFacts.map((fact) => (
+            <article key={fact.id} className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3.5">
+              <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">{fact.label}</p>
+              <p className="mt-1.5 text-sm font-semibold tracking-[-0.02em] text-[var(--color-ink)]">{fact.value}</p>
+              <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{fact.detail}</p>
+            </article>
+          ))}
+        </div>
+
+        <div className="mt-4 flex flex-wrap gap-2">
+          <button
+            data-testid={testIds.detail.itineraryCta}
+            type="button"
+            onClick={() => {
+              void handleSave();
+            }}
+            disabled={!canSave || saveState.status === "saving"}
+            className="compass-action-primary compass-soft-press rounded-full px-4 py-2.5 text-xs font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saveState.status === "saving"
+              ? "내 일정에 담는 중..."
+              : saveState.status === "saved"
+                ? "내 일정에 담았어요"
+                : "내 일정에 담기"}
+          </button>
+          {(saveState.sharePath ?? snapshotId) ? (
+            <Link
+              href={saveState.sharePath ?? `/s/${snapshotId}`}
+              className="compass-action-secondary compass-soft-press rounded-full px-4 py-2.5 text-xs font-semibold tracking-[0.04em]"
+            >
+              저장한 여행 보기
+            </Link>
+          ) : null}
+        </div>
+
+        {saveState.status === "saved" ? (
+          <p className="compass-open-info mt-3 rounded-[calc(var(--radius-card)-12px)] px-4 py-3.5 text-sm leading-6 text-[var(--color-ink-soft)]">
+            내 일정에 담았어요. 저장 링크는 그대로 유지되고, 비교 보드나 공유 페이지로 이어갈 수 있어요.
+          </p>
+        ) : null}
+
+        {saveState.status === "error" ? (
+          <p className="compass-warning-card mt-3 rounded-[calc(var(--radius-card)-12px)] px-4 py-3 text-sm leading-6">
+            저장에 실패했어요. 잠시 후 다시 시도해 주세요.
+          </p>
+        ) : null}
+      </section>
+
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.04fr)_minmax(17rem,0.96fr)] xl:items-start">
+        <article data-testid={testIds.detail.fitReason} className="compass-sheet rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
+          <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
+            <p className="compass-editorial-kicker">왜 잘 맞는지</p>
+            <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">{contextLine}</p>
+          </div>
+
+          <div className="mt-4 grid gap-2.5">
+            {reasons.map((reason, index) => (
+              <article key={reason} className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3.5">
+                <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
+                  이유 {String(index + 1).padStart(2, "0")}
+                </p>
+                <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink)]">{reason}</p>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-4">
+            <p className="compass-editorial-kicker">Day-flow</p>
+            <div className="mt-3 grid gap-2.5 sm:grid-cols-3">
+              {dayFlow.map((step) => (
+                <article key={step.id} className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3.5">
+                  <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">{step.label}</p>
+                  <p className="mt-1.5 text-sm font-semibold leading-5 text-[var(--color-ink)]">{step.title}</p>
+                  <p className="mt-1.5 text-xs leading-5 text-[var(--color-ink-soft)]">{step.detail}</p>
                 </article>
               ))}
             </div>
-          ) : (
-            <p className="compass-open-info mt-3.5 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
-              지금은 추가 분위기 근거가 많지 않아요. 핵심 정보와 체크할 점을 먼저 보고 판단해 보세요.
-            </p>
-          )}
-        </article>
-
-        <article data-testid={testIds.detail.watchOuts} className="compass-warning-card rounded-[var(--radius-card)] px-3.5 py-3.5 sm:px-4 sm:py-4">
-          <p className="compass-editorial-kicker text-[var(--color-warning-text)]">체크할 점</p>
-          <div className="mt-2.5 grid gap-2">
-            {watchOuts.map((watchOut) => (
-              <p key={watchOut} className="text-sm leading-6 text-[var(--color-warning-text)]">
-                {watchOut}
-              </p>
-            ))}
           </div>
         </article>
+
+        <div className="space-y-4">
+          <article
+            data-testid={evidenceTestId ?? testIds.detail.evidence}
+            className="compass-open-info rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5"
+          >
+            <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
+              <p className="compass-editorial-kicker">분위기 근거</p>
+              <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
+                추천 점수와 별개로, 현지 분위기를 짧게 확인하는 용도예요.
+              </p>
+            </div>
+
+            <div className="mt-4 grid gap-3">
+              {evidenceItems.length > 0 ? (
+                evidenceItems.map((item) => (
+                  <article key={item.id} className="rounded-[calc(var(--radius-card)-12px)] border border-[color:var(--color-stage-divider)] bg-white/60 px-3.5 py-3.5">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
+                        {describeSourceBadge(item)}
+                      </span>
+                      <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-soft)]">
+                        {formatFreshnessState(item.freshnessState)}
+                      </span>
+                    </div>
+                    <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">{item.sourceLabel}</p>
+                    <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">{item.summary}</p>
+                    <a
+                      href={item.sourceUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-2.5 inline-flex text-xs font-semibold tracking-[0.04em] text-[var(--color-sand-deep)] underline decoration-[color:var(--color-frame-strong)] underline-offset-4"
+                    >
+                      원문 보기
+                    </a>
+                  </article>
+                ))
+              ) : (
+                <p className="text-sm leading-6 text-[var(--color-ink-soft)]">
+                  지금은 추가 분위기 근거가 많지 않아요. 핵심 정보와 체크할 점을 먼저 보고 판단해 보세요.
+                </p>
+              )}
+            </div>
+          </article>
+
+          <article
+            data-testid={testIds.detail.watchOuts}
+            className="compass-warning-card rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5"
+          >
+            <p className="compass-editorial-kicker text-[var(--color-warning-text)]">체크할 점</p>
+            <div className="mt-3 grid gap-2.5">
+              {watchOuts.map((watchOut) => (
+                <p key={watchOut} className="rounded-[calc(var(--radius-card)-12px)] border border-[color:var(--color-warning-border)] bg-white/22 px-3.5 py-3 text-sm leading-6 text-[var(--color-warning-text)]">
+                  {watchOut}
+                </p>
+              ))}
+            </div>
+          </article>
+        </div>
       </section>
 
-      <section className="grid gap-3.5 xl:grid-cols-[minmax(0,1.02fr)_minmax(18rem,0.98fr)]">
-        <article data-testid={testIds.detail.tasteLogger} className="compass-desk rounded-[var(--radius-card)] px-3.5 py-3.5 sm:px-4 sm:py-4">
-          <div className="border-b border-[color:var(--color-frame-soft)] pb-3.5">
+      <section className="grid gap-4 xl:grid-cols-[minmax(0,1.02fr)_minmax(18rem,0.98fr)]">
+        <article data-testid={testIds.detail.tasteLogger} className="compass-sheet rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
+          <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
             <p className="compass-editorial-kicker">취향 기록</p>
             <h3 className="mt-1.5 font-display text-[1.08rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.22rem]">
               다녀온 곳이면 짧게 남겨 두세요.
@@ -395,11 +405,9 @@ export function DestinationDetailExperience({
           </div>
 
           {session.isPending ? (
-            <div className="compass-open-info mt-3.5 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
-              로그인 상태를 확인하는 중이에요.
-            </div>
+            <p className="mt-4 text-sm leading-6 text-[var(--color-ink-soft)]">로그인 상태를 확인하는 중이에요.</p>
           ) : session.data?.user ? (
-            <div className="mt-3.5 space-y-3.5">
+            <div className="mt-4 space-y-4">
               <div>
                 <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">별점</p>
                 <div data-testid={testIds.detail.tasteRating} className="mt-2 flex flex-wrap gap-2">
@@ -408,7 +416,9 @@ export function DestinationDetailExperience({
                       key={rating}
                       type="button"
                       onClick={() => setTasteState((currentState) => ({ ...currentState, rating }))}
-                      className={`rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] ${tasteState.rating === rating ? "compass-selected" : "compass-selection-chip"}`}
+                      className={`rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] ${
+                        tasteState.rating === rating ? "compass-selected" : "compass-selection-chip"
+                      }`}
                     >
                       {rating}점
                     </button>
@@ -428,7 +438,9 @@ export function DestinationDetailExperience({
                         type="button"
                         data-testid={getDestinationTasteTagTestId(index)}
                         onClick={() => toggleTasteTag(tag)}
-                        className={`rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] ${active ? "compass-selected" : "compass-selection-chip"}`}
+                        className={`rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] ${
+                          active ? "compass-selected" : "compass-selection-chip"
+                        }`}
                       >
                         #{formatVibeList([tag])}
                       </button>
@@ -494,8 +506,10 @@ export function DestinationDetailExperience({
               ) : null}
             </div>
           ) : (
-            <div className="compass-open-info mt-3.5 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
-              읽기와 저장은 로그인 없이 가능하고, 여행 기록만 로그인 후 남길 수 있어요.
+            <div className="mt-4">
+              <p className="text-sm leading-6 text-[var(--color-ink-soft)]">
+                읽기와 저장은 로그인 없이 가능하고, 여행 기록만 로그인 후 남길 수 있어요.
+              </p>
               <div className="mt-3">
                 <Link
                   data-testid={testIds.detail.tasteLoginCta}
@@ -509,41 +523,24 @@ export function DestinationDetailExperience({
           )}
         </article>
 
-        <article className="compass-sheet rounded-[var(--radius-card)] px-3.5 py-3.5 sm:px-4 sm:py-4">
-          <div className="border-b border-[color:var(--color-frame-soft)] pb-3.5">
-            <p className="compass-editorial-kicker">저장·공유</p>
+        <article className="compass-note rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
+          <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
+            <p className="compass-editorial-kicker">다음으로 이어가기</p>
             <h3 className="mt-1.5 font-display text-[1.08rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.22rem]">
-              다음 단계로 넘길 링크만 남겨도 충분해요.
+              결정이 끝나면 저장 링크와 내 취향 루프로 이어지면 돼요.
             </h3>
             <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-              저장해서 공유 페이지로 넘기거나, 지금 상세 링크만 복사해 두세요.
+              저장한 여행 다시 보기, 링크 복사, 내 취향 보기, 홈으로 돌아가 새 추천 찾기로 이어질 수 있어요.
             </p>
           </div>
 
-          <div className="mt-3.5 flex flex-wrap gap-2">
-            {canSave ? (
-              <button
-                type="button"
-                onClick={() => {
-                  void handleSave();
-                }}
-                disabled={saveState.status === "saving"}
-                className="compass-action-primary compass-soft-press rounded-full px-4 py-2.5 text-xs font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {saveState.status === "saving"
-                  ? "저장 중..."
-                  : saveState.status === "saved"
-                    ? "저장 완료"
-                    : "이 추천 저장"}
-              </button>
-            ) : null}
-
+          <div className="mt-4 flex flex-wrap gap-2">
             {(saveState.sharePath ?? snapshotId) ? (
               <Link
                 href={saveState.sharePath ?? `/s/${snapshotId}`}
                 className="compass-action-secondary compass-soft-press rounded-full px-4 py-2.5 text-xs font-semibold tracking-[0.04em]"
               >
-                공유 페이지 보기
+                저장한 여행 다시 보기
               </Link>
             ) : null}
 
@@ -554,7 +551,7 @@ export function DestinationDetailExperience({
               }}
               className="compass-action-secondary compass-soft-press rounded-full px-4 py-2.5 text-xs font-semibold tracking-[0.04em]"
             >
-              {(saveState.sharePath ?? snapshotId) ? "링크 복사" : "상세 링크 복사"}
+              {(saveState.sharePath ?? snapshotId) ? "내 일정 링크 복사" : "상세 링크 복사"}
             </button>
 
             <Link
@@ -572,28 +569,46 @@ export function DestinationDetailExperience({
             </Link>
           </div>
 
-          {saveState.status === "saved" ? (
-            <p className="compass-open-info mt-3.5 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
-              저장을 마쳤어요. 공유 페이지 보기나 compare 전 단계로 이어가 보세요.
-            </p>
-          ) : null}
-
           {linkCopyState === "copied" ? (
-            <p className="compass-open-info mt-3.5 rounded-[calc(var(--radius-card)-12px)] px-4 py-4 text-sm leading-6 text-[var(--color-ink-soft)]">
+            <p className="compass-open-info mt-3 rounded-[calc(var(--radius-card)-12px)] px-4 py-3.5 text-sm leading-6 text-[var(--color-ink-soft)]">
               링크를 복사했어요.
             </p>
           ) : null}
 
           {linkCopyState === "error" ? (
-            <p className="compass-warning-card mt-4 rounded-[calc(var(--radius-card)-12px)] px-4 py-3 text-sm leading-6">
-              링크를 복사하지 못했어요. 잠시 후 다시 시도해 주세요.
-            </p>
-          ) : null}
-
-          {saveState.status === "error" ? (
-            <p className="compass-warning-card mt-4 rounded-[calc(var(--radius-card)-12px)] px-4 py-3 text-sm leading-6">
-              저장에 실패했어요. 잠시 후 다시 시도해 주세요.
-            </p>
+            <div className="compass-warning-card mt-3 rounded-[calc(var(--radius-card)-12px)] px-4 py-3 text-sm leading-6">
+              <p>링크를 복사하지 못했어요. 아래 링크를 길게 눌러 복사해 주세요.</p>
+              {copyFallbackUrl ? (
+                <input
+                  type="text"
+                  readOnly
+                  value={copyFallbackUrl}
+                  onFocus={(event) => event.currentTarget.select()}
+                  className="mt-2 w-full rounded-[calc(var(--radius-card)-12px)] border border-[color:var(--color-frame-soft)] bg-[var(--color-stage-soft)] px-3 py-2.5 text-xs font-semibold text-[var(--color-ink)]"
+                />
+              ) : null}
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    void copyAbsoluteUrl(sharePath);
+                  }}
+                  className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em]"
+                >
+                  다시 시도
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLinkCopyState("idle");
+                    setCopyFallbackUrl(null);
+                  }}
+                  className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em]"
+                >
+                  닫기
+                </button>
+              </div>
+            </div>
           ) : null}
         </article>
       </section>

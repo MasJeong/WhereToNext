@@ -62,7 +62,6 @@ export function AuthExperience() {
       }
 
       router.push("/account");
-      router.refresh();
     } catch {
       setError(
         mode === "sign-up"
@@ -80,16 +79,16 @@ export function AuthExperience() {
         <aside className="order-2 compass-desk rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5 xl:order-1 lg:px-6 lg:py-6">
           <p className="compass-editorial-kicker">가벼운 로그인</p>
           <h1 className="mt-2 font-display text-[1.3rem] leading-[0.96] tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.62rem]">
-            추천은 로그인 없이도 충분하고, 계정은 취향 기록이 필요할 때만 쓰면 돼요.
+            추천과 저장은 로그인 없이 충분하고, 계정은 취향 기록이 필요할 때만 쓰면 돼요.
           </h1>
           <p className="mt-2.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-            핵심 흐름은 탐색, 추천, 저장, 비교예요. 계정은 다녀온 여행 기록과 취향 모드를 남겨 다음 추천을 더 나답게 만드는 보조 루프예요.
+            핵심 흐름은 탐색, 추천, 내 일정 저장, 비교예요. 계정은 다녀온 여행 기록과 취향 모드를 남겨 다음 추천을 더 나답게 만드는 보조 루프예요.
           </p>
 
           <div className="mt-3.5 grid gap-2.5 sm:grid-cols-3 xl:grid-cols-1">
             <div className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
               <p className="text-[0.66rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">로그인 없이</p>
-              <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">탐색 · 추천 · 저장 · 비교</p>
+              <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">탐색 · 추천 · 내 일정 저장 · 비교</p>
             </div>
             <div className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
               <p className="text-[0.66rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">로그인 후</p>
