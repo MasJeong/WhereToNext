@@ -17,7 +17,7 @@ export function ProgressBar({ current, total, testId }: ProgressBarProps) {
       </div>
       <div className="h-1.5 overflow-hidden rounded-full bg-[var(--color-funnel-accent-subtle)]">
         <motion.div
-          className="h-full rounded-full bg-[var(--color-funnel-text)] transition-[width] duration-200"
+          className="h-full rounded-full bg-[linear-gradient(90deg,var(--color-action-primary),var(--color-action-primary-strong))] transition-[width] duration-200"
           animate={{ width: `${percent}%` }}
           initial={false}
           transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.2, ease: "easeOut" }}

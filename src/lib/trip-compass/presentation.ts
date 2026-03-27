@@ -133,7 +133,7 @@ export const partyOptions: QueryOption<RecommendationQuery["partyType"]>[] = [
   {
     value: "solo",
     label: "혼자",
-    description: "내 취향대로 움직이되 동선이 복잡하지 않은 여행이에요.",
+    description: "내 리듬대로 움직이되 동선이 복잡하지 않은 여행이에요.",
   },
 ];
 

@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { brandDisplayName } from "@/lib/brand";
 import { isIosShellMode } from "@/lib/runtime/shell";
 import { testIds } from "@/lib/test-ids";
 
@@ -47,38 +48,22 @@ export function ExperienceShell({
           >
             <div className="flex min-h-[3.25rem] flex-wrap items-center justify-between gap-2.5">
               <Link href="/" className="compass-shell-brand inline-flex min-w-0 items-center gap-2.5 text-[var(--color-ink)]">
-                <span className="compass-shell-brand-mark inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold">
-                  SG
-                </span>
+                <span className="compass-shell-brand-mark inline-flex h-2.5 w-2.5 shrink-0 rounded-full" />
                 <span className="min-w-0">
-                  <span className="flex flex-wrap items-center gap-1.5 text-[0.52rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
-                    <span>한국 출발 여행 추천</span>
-                    <span
-                      data-testid={testIds.shell.identityCard}
-                      className="compass-shell-identity rounded-full px-2.5 py-0.5 text-[0.54rem] font-semibold tracking-[0.12em] normal-case"
-                    >
-                      추천 우선
-                    </span>
-                    {eyebrow ? (
-                      <span className="compass-shell-route-note rounded-full px-2.5 py-0.5 text-[0.54rem] font-semibold tracking-[0.08em] normal-case">
-                        {eyebrow}
-                      </span>
-                    ) : null}
-                  </span>
-                  <span className="mt-0.5 block font-display text-[1rem] leading-none tracking-[-0.045em] sm:text-[1.06rem]">
-                    SooGo
+                  <span className="mt-0.5 block font-display text-[1.06rem] leading-none tracking-[-0.045em] sm:text-[1.12rem]">
+                    {brandDisplayName}
                   </span>
                 </span>
               </Link>
 
               {hideAuthNavigation ? null : (
-                <nav className="flex flex-wrap items-center gap-2" aria-label="빠른 이동">
+                <nav className="flex flex-wrap items-center gap-3" aria-label="빠른 이동">
                   <Link
                     href="/account"
                     data-testid={testIds.shell.accountLink}
-                    className="compass-action-secondary compass-soft-press inline-flex min-h-[2.75rem] items-center rounded-full px-3.5 py-2 text-[11px] font-semibold tracking-[0.04em]"
+                    className="compass-shell-nav-link inline-flex min-h-[2.75rem] items-center px-1 py-2 text-[12px] font-semibold tracking-[0.02em]"
                   >
-                    내 취향
+                    여행 기록
                   </Link>
                   <Link
                     href="/auth"
