@@ -15,12 +15,11 @@ type ResultPageProps = {
   leadVisual: ReactNode;
   leadTags: string[];
   leadFacts: RecommendationDecisionFactView[];
+  leadSupportSlot?: ReactNode;
   leadDetails: ReactNode;
   resultMeta?: ReactNode;
   personalized: boolean;
   briefItems: WorkspaceBriefItemView[];
-  onRestart: () => void;
-  onReopenQuestions: () => void;
   filtersSlot: ReactNode;
   statusSlot: ReactNode;
   resultsSlot: ReactNode;
@@ -35,12 +34,11 @@ export function ResultPage({
   leadVisual,
   leadTags,
   leadFacts,
+  leadSupportSlot,
   leadDetails,
   resultMeta,
   personalized,
   briefItems,
-  onRestart,
-  onReopenQuestions,
   filtersSlot,
   statusSlot,
   resultsSlot,
@@ -50,7 +48,7 @@ export function ResultPage({
 
   return (
     <motion.section
-      className="mx-auto max-w-5xl space-y-8 px-6 py-8 sm:px-8 sm:py-10"
+      className="mx-auto max-w-5xl space-y-6 px-6 py-8 sm:px-8 sm:py-10"
       data-testid={testId}
       initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
@@ -61,7 +59,7 @@ export function ResultPage({
         data-testid={testIds.home.topSummary}
         className="overflow-hidden rounded-[2rem] border border-[color:var(--color-funnel-border)] bg-white"
       >
-        <div className="grid gap-0 lg:grid-cols-[minmax(0,1.08fr)_minmax(21rem,0.92fr)]">
+        <div className="grid gap-0 lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,0.9fr)]">
           <div className="border-b border-[color:var(--color-funnel-border)] p-4 sm:p-5 lg:border-b-0 lg:border-r">
             {leadVisual}
           </div>
@@ -74,11 +72,11 @@ export function ResultPage({
               {resultMeta}
             </div>
 
-            <h2 className="mt-4 text-[2.5rem] font-semibold leading-[0.92] tracking-[-0.07em] text-[var(--color-funnel-text)] sm:text-[3.6rem]">
+            <h2 className="mt-4 text-[2.2rem] font-semibold leading-[0.94] tracking-[-0.06em] text-[var(--color-funnel-text)] sm:text-[3.2rem]">
               {leadTitle}
             </h2>
-            <p className="mt-3 text-base font-semibold leading-7 text-[var(--color-funnel-text)]">{leadReason}</p>
-            <p className="mt-2 text-sm leading-6 text-[var(--color-funnel-text-soft)] sm:text-base sm:leading-7">
+            <p className="mt-3 text-[1rem] font-semibold leading-7 text-[var(--color-funnel-text)]">{leadReason}</p>
+            <p className="mt-2 text-[0.95rem] leading-6 text-[var(--color-funnel-text-soft)] sm:text-[1rem] sm:leading-7">
               {leadDescription}
             </p>
 
@@ -99,60 +97,25 @@ export function ResultPage({
               {leadFacts.map((fact) => (
                 <article
                   key={fact.id}
-                  className="rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-4"
+                  className="rounded-[1.15rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-3.5"
                 >
                   <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
                     {fact.label}
                   </p>
-                  <p className="mt-2 text-base font-semibold tracking-[-0.03em] text-[var(--color-funnel-text)]">
+                  <p className="mt-2 text-[0.98rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
                     {fact.value}
                   </p>
-                  <p className="mt-1.5 text-xs leading-5 text-[var(--color-funnel-text-soft)]">{fact.detail}</p>
+                  <p className="mt-1 text-xs leading-5 text-[var(--color-funnel-text-soft)]">{fact.detail}</p>
                 </article>
               ))}
             </div>
 
-            <div className="mt-7 flex flex-wrap gap-2">
-              <button
-                type="button"
-                onClick={onReopenQuestions}
-                className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
-              >
-                질문 다시 보기
-              </button>
-              <button
-                type="button"
-                onClick={onRestart}
-                className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
-              >
-                처음부터 다시 하기
-              </button>
-            </div>
+            {leadSupportSlot ? <div className="mt-4">{leadSupportSlot}</div> : null}
           </div>
         </div>
 
         <div data-testid={testIds.result.card0} className="border-t border-[color:var(--color-funnel-border)] px-5 py-5 sm:px-6 lg:px-7">
           {leadDetails}
-        </div>
-
-        <div
-          data-testid={testIds.result.querySummary}
-          className="grid gap-2 border-t border-[color:var(--color-funnel-border)] px-5 py-4 sm:grid-cols-2 sm:px-6 lg:grid-cols-4 lg:px-7"
-        >
-          {briefItems.map((item) => (
-            <article
-              key={item.id}
-              className="rounded-[1.15rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3.5"
-            >
-              <p className="text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                {item.label}
-              </p>
-              <p className="mt-2 text-sm font-semibold leading-5 tracking-[-0.02em] text-[var(--color-funnel-text)]">
-                {item.value}
-              </p>
-              <p className="mt-1.5 text-xs leading-5 text-[var(--color-funnel-text-soft)]">{item.detail}</p>
-            </article>
-          ))}
         </div>
 
         {personalized ? (
@@ -164,6 +127,25 @@ export function ResultPage({
           </p>
         ) : null}
       </article>
+
+      <div
+        data-testid={testIds.result.querySummary}
+        className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        {briefItems.map((item) => (
+          <article
+            key={item.id}
+            className="rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-3"
+          >
+            <p className="text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+              {item.label}
+            </p>
+            <p className="mt-1.5 text-sm font-semibold leading-5 tracking-[-0.02em] text-[var(--color-funnel-text)]">
+              {item.value}
+            </p>
+          </article>
+        ))}
+      </div>
 
       {filtersSlot}
       {statusSlot}

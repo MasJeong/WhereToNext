@@ -6,6 +6,7 @@ import { useState } from "react";
 import { authClient } from "@/lib/auth-client";
 import type {
   DestinationProfile,
+  DestinationTravelSupplement,
   RecommendationQuery,
   TrendEvidenceSnapshot,
 } from "@/lib/domain/contracts";
@@ -24,11 +25,14 @@ import {
 import { buildRecommendationSnapshotPayload } from "@/lib/trip-compass/snapshot-payload";
 import { getDestinationTasteTagTestId, testIds } from "@/lib/test-ids";
 
+import { TravelSupportPanel } from "./travel-support-panel";
+
 type DestinationDetailExperienceProps = {
   destination: DestinationProfile;
   card?: RecommendationCardView | null;
   query?: RecommendationQuery | null;
   evidence: TrendEvidenceSnapshot[];
+  supplement?: DestinationTravelSupplement | null;
   scoringVersionId?: string | null;
   snapshotId?: string | null;
   allowSave?: boolean;
@@ -91,6 +95,7 @@ export function DestinationDetailExperience({
   card,
   query,
   evidence,
+  supplement,
   scoringVersionId,
   snapshotId,
   allowSave = true,
@@ -260,6 +265,13 @@ export function DestinationDetailExperience({
             </article>
           ))}
         </div>
+
+        <TravelSupportPanel
+          supplement={supplement}
+          destinationName={destination.nameKo}
+          heroMode="hero"
+          rootClassName="mt-4"
+        />
 
         <div className="mt-4 flex flex-wrap gap-2">
           <button

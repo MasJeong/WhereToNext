@@ -1,6 +1,7 @@
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import type {
   DestinationProfile,
+  DestinationTravelSupplement,
   RecommendationQuery,
   RecommendationResult,
   TrendEvidenceSnapshot,
@@ -28,6 +29,7 @@ export type RecommendationApiResponse = {
     evidenceCount: number;
     tiers: string[];
   };
+  leadSupplement?: DestinationTravelSupplement | null;
 };
 
 export type RecommendationCardView = {

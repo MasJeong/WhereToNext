@@ -35,6 +35,7 @@ export default async function DestinationDetailPage({
         card={pageData.card}
         query={pageData.query}
         evidence={pageData.evidence}
+        supplement={pageData.supplement}
         scoringVersionId={pageData.scoringVersionId}
         snapshotId={pageData.snapshotId}
       />

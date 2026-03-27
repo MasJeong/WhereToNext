@@ -61,31 +61,32 @@ export function StepQuestion({
           </button>
 
           <ProgressBar current={current} total={total} testId={progressTestId} />
-
-          <button
-            type="button"
-            onClick={onReset}
-            className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
-          >
-            처음으로
-          </button>
+          <div className="min-w-[4rem] text-right">
+            <button
+              type="button"
+              onClick={onReset}
+              className="text-sm font-medium text-[var(--color-funnel-text-soft)] transition-colors duration-200 hover:text-[var(--color-funnel-text)]"
+            >
+              처음으로
+            </button>
+          </div>
         </div>
 
         <div className="mx-auto flex min-h-[calc(100vh-10rem)] max-w-3xl flex-col items-center justify-center py-8 text-center sm:py-10">
           <h2
             data-testid={questionTestId}
-            className="max-w-2xl text-[2.4rem] font-semibold leading-[0.94] tracking-[-0.07em] text-[var(--color-funnel-text)] sm:text-[4rem]"
+            className="max-w-2xl text-[2rem] font-semibold leading-[0.98] tracking-[-0.055em] text-[var(--color-funnel-text)] sm:text-[3.15rem]"
           >
             {question}
           </h2>
           <p
             data-testid={helperTestId}
-            className="mt-4 max-w-xl text-sm leading-6 text-[var(--color-funnel-text-soft)] sm:text-base sm:leading-7"
+            className="mt-3 max-w-lg text-[0.95rem] leading-6 text-[var(--color-funnel-text-soft)] sm:text-[1rem] sm:leading-7"
           >
             {helper}
           </p>
 
-          <div className="mt-12 grid w-full gap-3 sm:grid-cols-2">
+          <div className="mt-10 grid w-full gap-3 sm:grid-cols-2">
             {options.map((option) => (
               <button
                 key={option.id}
@@ -94,16 +95,16 @@ export function StepQuestion({
                 aria-pressed={option.selected}
                 disabled={isSubmitting}
                 onClick={option.onSelect}
-                className={`min-h-[7.25rem] rounded-[1.5rem] border px-5 py-5 text-left transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60 ${
+                className={`min-h-[6.5rem] rounded-[1.35rem] border px-5 py-4.5 text-left transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60 ${
                   option.selected
-                    ? "border-[color:var(--color-funnel-text)] bg-[var(--color-funnel-muted)]"
+                    ? "border-[color:var(--color-action-primary)] bg-[var(--color-selected)]"
                     : "border-[color:var(--color-funnel-border)] bg-white hover:bg-[var(--color-funnel-muted)]"
                 }`}
               >
-                <span className="block text-lg font-semibold tracking-[-0.03em] text-[var(--color-funnel-text)]">
+                <span className="block text-[1rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
                   {option.label}
                 </span>
-                <span className="mt-2 block text-sm leading-6 text-[var(--color-funnel-text-soft)]">
+                <span className="mt-1.5 block text-[0.92rem] leading-6 text-[var(--color-funnel-text-soft)]">
                   {option.description}
                 </span>
               </button>

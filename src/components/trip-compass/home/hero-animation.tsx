@@ -16,15 +16,8 @@ export function HeroAnimation({ testId }: HeroAnimationProps) {
       animate={{ opacity: 1, y: 0 }}
       transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.28, ease: "easeOut" }}
     >
-      <motion.div
-        className="absolute inset-x-0 top-0 h-[48%] bg-[var(--color-funnel-accent-subtle)]"
-        animate={prefersReducedMotion ? undefined : { opacity: [1, 0.92, 1] }}
-        transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-      />
+      <div className="absolute inset-x-0 top-0 h-[48%] bg-[var(--color-funnel-accent-subtle)]" />
       <div className="absolute inset-x-0 bottom-0 h-[34%] bg-white" />
-      <div className="absolute left-6 top-6 inline-flex items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1 text-[0.64rem] font-semibold tracking-[0.08em] text-[var(--color-funnel-text-soft)]">
-        한 화면씩 바로 선택
-      </div>
       <div className="absolute right-7 top-7 h-14 w-14 rounded-full border border-[color:var(--color-funnel-border)] bg-white" />
       <div className="absolute left-1/2 top-[24%] h-16 w-16 -translate-x-1/2 rounded-full border border-[color:var(--color-funnel-border)] bg-white" />
 

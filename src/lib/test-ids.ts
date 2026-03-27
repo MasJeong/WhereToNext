@@ -53,6 +53,7 @@ export const testIds = {
   detail: {
     root: "destination-detail-root",
     coreFacts: "destination-core-facts",
+    travelSupport: "destination-travel-support",
     fitReason: "destination-fit-reason",
     evidence: "destination-evidence",
     watchOuts: "destination-watch-outs",

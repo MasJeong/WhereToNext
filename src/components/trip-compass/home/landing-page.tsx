@@ -23,27 +23,27 @@ export function LandingPage({ testId, heroTestId, onStart }: LandingPageProps) {
     >
       <div className="w-full max-w-2xl text-center">
         <h1
-          aria-label="지금 맞는 여행지, 바로 좁혀 드려요."
-          className="text-[2.6rem] font-semibold leading-[0.92] tracking-[-0.07em] text-[var(--color-funnel-text)] sm:text-[4.4rem]"
+          aria-label="여행지, 바로 추천받기"
+          className="text-[2.15rem] font-semibold leading-[0.96] tracking-[-0.06em] text-[var(--color-funnel-text)] sm:text-[3.5rem]"
         >
-          지금 맞는 여행지,
-          <br className="hidden sm:block" /> 바로 좁혀 드려요.
+          여행지,
+          <br className="hidden sm:block" /> 바로 추천받기
         </h1>
-        <p className="mx-auto mt-5 max-w-lg text-sm leading-6 text-[var(--color-funnel-text-soft)] sm:text-base sm:leading-7">
-          질문 다섯 개만 고르면 가장 잘 맞는 목적지를 먼저 보여드려요.
+        <p className="mx-auto mt-4 max-w-md text-[0.95rem] leading-6 text-[var(--color-funnel-text-soft)] sm:text-[1rem] sm:leading-7">
+          몇 가지 선택만 하면 지금의 여행 취향에 맞는 곳을 바로 보여드려요.
         </p>
 
-        <div className="mt-12 flex justify-center">
+        <div className="mt-10 flex justify-center">
           <HeroAnimation testId={heroTestId} />
         </div>
 
-        <div className="mt-12 flex justify-center">
+        <div className="mt-10 flex justify-center">
           <button
             type="button"
             data-testid={testIds.home.cta}
             onClick={onStart}
             aria-label="추천 여정 시작하기"
-            className="inline-flex min-h-[3.5rem] items-center justify-center rounded-full bg-[var(--color-funnel-text)] px-8 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-funnel-text-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-funnel-text)]"
+            className="inline-flex min-h-[3.5rem] items-center justify-center rounded-full bg-[var(--color-action-primary)] px-8 py-3 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-action-primary)]"
           >
             추천 시작
           </button>

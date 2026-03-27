@@ -18,7 +18,7 @@ describe("Home", () => {
 
     expect(
       landingScope.getByRole("heading", {
-        name: /여행지,감으로 시작해도결과는 또렷하게\./,
+        name: /여행지, 바로 추천받기/,
       }),
     ).toBeInTheDocument();
     expect(landingScope.getByTestId("home-hero-visual")).toBeInTheDocument();

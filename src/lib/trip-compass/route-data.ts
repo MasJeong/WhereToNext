@@ -4,12 +4,14 @@ import { activeScoringVersion } from "@/lib/catalog/scoring-version";
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import { getDestinationEvidence, buildEvidenceMap } from "@/lib/evidence/service";
 import type {
+  DestinationTravelSupplement,
   RecommendationQuery,
   TrendEvidenceSnapshot,
 } from "@/lib/domain/contracts";
 import { rankDestinations } from "@/lib/recommendation/engine";
 import { parseRecommendationQuery } from "@/lib/security/validation";
 import { readSnapshot } from "@/lib/snapshots/service";
+import { getDestinationTravelSupplement } from "@/lib/travel-support/service";
 
 import {
   buildQueryNarrative,
@@ -39,6 +41,7 @@ export type SnapshotRestorePageData =
       card: RecommendationCardView;
       query: RecommendationQuery;
       evidence: TrendEvidenceSnapshot[];
+      supplement: DestinationTravelSupplement | null;
     };
 
 export type CompareRestorePageData =
@@ -56,6 +59,7 @@ export type DestinationDetailPageData = {
   card: RecommendationCardView | null;
   query: RecommendationQuery | null;
   evidence: TrendEvidenceSnapshot[];
+  supplement: DestinationTravelSupplement | null;
   scoringVersionId: string | null;
   snapshotId: string | null;
 };
@@ -128,6 +132,7 @@ export async function resolveSnapshotRestorePageData(
       card: restored.primaryCard,
       query: restored.query,
       evidence: restored.primaryCard.recommendation.trendEvidence,
+      supplement: await getDestinationTravelSupplement(restored.primaryCard.destination),
     };
   } catch {
     return {
@@ -235,9 +240,10 @@ export async function resolveDestinationDetailPageData(
     }
   }
 
-  const [evidenceResult, recommendationContext] = await Promise.all([
+  const [evidenceResult, recommendationContext, supplement] = await Promise.all([
     getDestinationEvidence(destination),
     resolveRecommendationContext(),
+    getDestinationTravelSupplement(destination),
   ]);
 
   return {
@@ -245,6 +251,7 @@ export async function resolveDestinationDetailPageData(
     card: recommendationContext.card,
     query: recommendationContext.query,
     evidence: evidenceResult.snapshots,
+    supplement,
     scoringVersionId: recommendationContext.scoringVersionId,
     snapshotId: recommendationContext.snapshotId,
   };

@@ -16,12 +16,14 @@
 2. `npx vitest run tests/unit/trip-compass/step-answer-adapter.spec.ts`
 3. `npm run build`
 4. `npx playwright test tests/e2e/recommendation-flow.spec.ts`
+5. `npm run lint` after prompt-alignment and type-scale refinement
 
 ## Results
 - `npm run lint` ✅
 - `tests/unit/trip-compass/step-answer-adapter.spec.ts` ✅
 - `npm run build` ✅
 - `tests/e2e/recommendation-flow.spec.ts` ✅ across Chromium, WebKit, and Mobile Safari
+- Follow-up `npm run lint` after the latest funnel/type-scale refinement: pending in current session
 
 ## Debugging history during verification
 - Initial Playwright run failed because port `4010` was already occupied by another local Node process.

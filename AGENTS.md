@@ -15,6 +15,7 @@ Scope: entire repository.
 - For major or important work, create a visible audit trail under `memory/` so the user can inspect what was planned, changed, and verified without relying on hidden agent scratch files.
 - Treat `.sisyphus/` as internal agent planning/scratch space only; it must not be the only record for major work.
 - Use `memory/YYYY-MM-DD-short-slug/` for each major work item and keep at least `plan.md`, `changes.md`, and `verification.md` inside that folder.
+- Write Markdown documentation in Korean by default when practical so repo-local audit notes and status documents stay easy for the user to review later.
 - Do not put secrets, credentials, or bulky generated artifacts in `memory/`.
 
 ## 2) Active Rule Files and Overrides

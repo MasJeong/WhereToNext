@@ -1,14 +1,18 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
 import { useMemo, useRef, useState } from "react";
 
-import type { ComparisonSnapshot, RecommendationQuery } from "@/lib/domain/contracts";
+import type {
+  ComparisonSnapshot,
+  DestinationTravelSupplement,
+  RecommendationQuery,
+} from "@/lib/domain/contracts";
 import {
   buildDestinationDetailPath,
-  buildRecommendationDayFlow,
   buildQueryNarrative,
   buildRecommendationDecisionFacts,
   buildRecommendationEvidenceLead,
@@ -51,6 +55,7 @@ import { ExperienceShell } from "./experience-shell";
 import { LandingPage } from "./home/landing-page";
 import { ResultPage } from "./home/result-page";
 import { StepQuestion } from "./home/step-question";
+import { TravelSupportPanel } from "./travel-support-panel";
 
 type FunnelStage = "landing" | "question" | "result";
 
@@ -104,6 +109,7 @@ type SavedSnapshotCompactItemProps = {
 type LeadDestinationVisualProps = {
   card: RecommendationCardView;
   query: RecommendationQuery;
+  supplement?: DestinationTravelSupplement | null;
 };
 
 type CompactRecommendationItemProps = {
@@ -309,36 +315,51 @@ function SavedSnapshotCompactItem({
   );
 }
 
-function LeadDestinationVisual({ card, query }: LeadDestinationVisualProps) {
+function LeadDestinationVisual({ card, query, supplement }: LeadDestinationVisualProps) {
   const primaryVibe = card.destination.vibeTags[0] ?? "city";
   const isRest = primaryVibe === "beach" || primaryVibe === "nature";
   const isRomance = primaryVibe === "romance" || primaryVibe === "culture";
 
   return (
     <div className="relative aspect-[5/6] overflow-hidden rounded-[1.75rem] border border-[color:var(--color-funnel-border)] bg-white">
-      <div className="absolute inset-x-0 top-0 h-[46%] bg-[var(--color-funnel-accent-subtle)]" />
-      <div className="absolute inset-x-0 bottom-0 h-[34%] bg-white" />
+      {supplement?.heroImage ? (
+        <>
+          <Image
+            src={supplement.heroImage.url}
+            alt={supplement.heroImage.alt}
+            fill
+            sizes="(max-width: 1024px) 100vw, 40vw"
+            className="absolute inset-0 object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-black/25" />
+        </>
+      ) : (
+        <>
+          <div className="absolute inset-x-0 top-0 h-[46%] bg-[var(--color-funnel-accent-subtle)]" />
+          <div className="absolute inset-x-0 bottom-0 h-[34%] bg-white" />
+        </>
+      )}
       <div className="absolute left-5 top-5 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
         {card.destination.nameEn}
       </div>
-      <div className="absolute right-5 top-5 rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1 text-[0.64rem] font-semibold text-[var(--color-funnel-text-soft)]">
+      <div className="absolute right-5 top-5 rounded-full border border-[color:var(--color-funnel-border)] bg-white/95 px-3 py-1 text-[0.64rem] font-semibold text-[var(--color-funnel-text-soft)] backdrop-blur-sm">
         {formatDepartureAirport(query.departureAirport)} 출발
       </div>
 
-      {isRest ? (
+      {!supplement?.heroImage && isRest ? (
         <>
           <div className="absolute left-8 top-20 h-16 w-16 rounded-full bg-white" />
           <div className="absolute bottom-20 left-6 right-6 h-10 rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-accent-soft)]" />
           <div className="absolute bottom-28 left-10 h-24 w-28 rounded-t-[3rem] bg-[var(--color-funnel-accent-muted)]" />
           <div className="absolute bottom-28 right-10 h-32 w-40 rounded-t-[4rem] bg-[var(--color-funnel-text)]" />
         </>
-      ) : isRomance ? (
+      ) : !supplement?.heroImage && isRomance ? (
         <>
           <div className="absolute bottom-32 left-1/2 h-28 w-28 -translate-x-1/2 rounded-t-full border-[14px] border-b-0 border-[color:var(--color-funnel-text)]" />
           <div className="absolute bottom-24 left-1/2 h-10 w-40 -translate-x-1/2 rounded-t-full border border-[color:var(--color-funnel-border-strong)] bg-[var(--color-funnel-accent-soft)]" />
           <div className="absolute bottom-0 left-8 right-8 h-28 rounded-t-[2rem] bg-[var(--color-funnel-text)]" />
         </>
-      ) : (
+      ) : !supplement?.heroImage ? (
         <>
           <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between px-7">
             <span className="h-24 w-12 rounded-t-[1rem] bg-[var(--color-funnel-accent-soft)]" />
@@ -348,7 +369,7 @@ function LeadDestinationVisual({ card, query }: LeadDestinationVisualProps) {
             <span className="h-20 w-10 rounded-t-[0.9rem] bg-[var(--color-funnel-accent-soft)]" />
           </div>
         </>
-      )}
+      ) : null}
 
       <div className="absolute inset-x-5 bottom-5 rounded-[1.5rem] border border-[color:var(--color-funnel-border)] bg-white px-5 py-4">
         <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
@@ -356,11 +377,16 @@ function LeadDestinationVisual({ card, query }: LeadDestinationVisualProps) {
         </p>
         <p
           data-testid={getResultTopItemTestId(0)}
-          className="mt-2 text-[1.9rem] font-semibold leading-none tracking-[-0.06em] text-[var(--color-funnel-text)] sm:text-[2.4rem]"
+          className="mt-2 text-[1.55rem] font-semibold leading-none tracking-[-0.05em] text-[var(--color-funnel-text)] sm:text-[2rem]"
         >
           {card.destination.nameKo}
         </p>
         <p className="mt-2 text-sm leading-6 text-[var(--color-funnel-text-soft)]">{formatMonthList(card.destination.bestMonths)}</p>
+        {supplement?.heroImage ? (
+          <p className="mt-1 text-[11px] leading-5 text-[var(--color-funnel-text-soft)]">
+            사진 · {supplement.heroImage.sourceLabel} / {supplement.heroImage.photographerName}
+          </p>
+        ) : null}
       </div>
     </div>
   );
@@ -382,109 +408,79 @@ function CompactRecommendationItem({
   return (
     <article
       data-testid={getResultCardTestId(index)}
-      className="rounded-[1.5rem] border border-[color:var(--color-funnel-border)] bg-white p-4 sm:p-5"
+      className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-3"
     >
-      <div className="grid gap-4 md:grid-cols-[12rem_minmax(0,1fr)]">
-        <div className="relative aspect-[5/4] overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)]">
-          <div className="absolute inset-x-0 top-0 h-[48%] bg-[var(--color-funnel-accent-subtle)]" />
-          <div className="absolute inset-x-0 bottom-0 h-[34%] bg-white" />
-          <div className="absolute left-4 top-4 text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-funnel-text-soft)]">
-            {card.destination.nameEn}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+              추천 {index + 1}
+            </p>
+            <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)]">
+              {decisionFacts[0]?.value}
+            </span>
+            <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)]">
+              {decisionFacts[1]?.value}
+            </span>
           </div>
-          <div className="absolute right-4 top-4 rounded-full border border-[color:var(--color-funnel-border)] bg-white px-2.5 py-1 text-[0.58rem] font-semibold text-[var(--color-funnel-text-soft)]">
-            {formatDepartureAirport(query.departureAirport)} 출발
+          <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+            <h3
+              data-testid={getResultTopItemTestId(index)}
+              className="text-[1rem] font-semibold leading-none tracking-[-0.02em] text-[var(--color-funnel-text)]"
+            >
+              {card.destination.nameKo}
+            </h3>
+            <span className="text-[0.78rem] text-[var(--color-funnel-text-soft)]">
+              {formatDepartureAirport(query.departureAirport)} 출발
+            </span>
           </div>
-          <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between px-4">
-            <span className="h-14 w-8 rounded-t-[0.9rem] bg-[var(--color-funnel-accent-soft)]" />
-            <span className="h-20 w-11 rounded-t-[0.9rem] bg-[var(--color-funnel-text)]" />
-            <span className="h-11 w-8 rounded-t-[0.8rem] bg-[var(--color-funnel-accent-muted)]" />
-            <span className="h-16 w-10 rounded-t-[0.9rem] bg-[var(--color-funnel-text)]" />
-            <span className="h-10 w-7 rounded-t-[0.8rem] bg-[var(--color-funnel-accent-soft)]" />
-          </div>
-          <div className="absolute inset-x-4 bottom-4 rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-3">
-            <p className="text-[0.58rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-funnel-text-soft)]">후보</p>
-            <p className="mt-1 text-base font-semibold tracking-[-0.04em] text-[var(--color-funnel-text)]">{card.destination.nameKo}</p>
-          </div>
-        </div>
-
-        <div className="min-w-0">
-          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-            추천 {index + 1}
+          <p className="mt-1.5 line-clamp-1 text-[0.88rem] font-semibold leading-6 text-[var(--color-funnel-text)]">
+            {leadReason}
           </p>
-          <h3
-            data-testid={getResultTopItemTestId(index)}
-            className="mt-2 text-[1.65rem] font-semibold leading-none tracking-[-0.05em] text-[var(--color-funnel-text)]"
-          >
-            {card.destination.nameKo}
-          </h3>
-          <p className="mt-1 text-sm text-[var(--color-funnel-text-soft)]">{card.destination.nameEn}</p>
-          <p className="mt-3 text-sm font-semibold leading-6 text-[var(--color-funnel-text)]">{leadReason}</p>
-          <p className="mt-1.5 text-sm leading-6 text-[var(--color-funnel-text-soft)]">{card.recommendation.whyThisFits}</p>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            {tags.map((tag) => (
+          <div className="mt-1.5 flex flex-wrap gap-1.5">
+            {tags.slice(0, 2).map((tag) => (
               <span
                 key={`${card.destination.id}-${tag}`}
-                className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1.5 text-xs font-semibold text-[var(--color-funnel-text-soft)]"
+                className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)]"
               >
                 #{tag}
               </span>
             ))}
           </div>
+        </div>
 
-          <div className="mt-4 grid gap-2 sm:grid-cols-3">
-            {decisionFacts.map((fact) => (
-              <div key={fact.id} className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3">
-                <p className="text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-funnel-text-soft)]">
-                  {fact.label}
-                </p>
-                <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">{fact.value}</p>
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link
-              href={detailPath}
-              className="inline-flex min-h-[2.75rem] items-center rounded-full bg-[var(--color-funnel-text)] px-4 py-2.5 text-xs font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-funnel-text-strong)]"
-            >
-              상세 보기
-            </Link>
+        <div className="flex flex-wrap gap-2 sm:justify-end">
+          <Link
+            href={detailPath}
+            className="inline-flex min-h-[2.25rem] items-center rounded-full bg-[var(--color-action-primary)] px-3 py-2 text-[0.72rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
+          >
+            상세 보기
+          </Link>
+          <button
+            type="button"
+            data-testid={getSaveSnapshotTestId(index)}
+            onClick={() => onSave(card)}
+            disabled={saveState.status === "saving"}
+            className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {saveState.status === "saving"
+              ? "저장 중..."
+              : saveState.status === "saved"
+                ? "담김"
+                : "저장"}
+          </button>
+          {saveState.shareUrl ? (
             <button
               type="button"
-              data-testid={getSaveSnapshotTestId(index)}
-              onClick={() => onSave(card)}
-              disabled={saveState.status === "saving"}
-              className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-xs font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+              data-testid={testIds.snapshot.copyShareLink}
+              onClick={() => {
+                void onCopy(saveState.shareUrl ?? "");
+              }}
+              className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
             >
-              {saveState.status === "saving"
-                ? "저장 중..."
-                : saveState.status === "saved"
-                  ? "내 일정에 담았어요"
-                  : "내 일정에 담기"}
+              링크 복사
             </button>
-            {saveState.shareUrl ? (
-              <>
-                <Link
-                  data-testid={testIds.snapshot.shareLink}
-                  href={`/s/${saveState.snapshotId ?? ""}`}
-                  className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-xs font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
-                >
-                  공유 페이지 보기
-                </Link>
-                <button
-                  type="button"
-                  data-testid={testIds.snapshot.copyShareLink}
-                  onClick={() => {
-                    void onCopy(saveState.shareUrl ?? "");
-                  }}
-                  className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-xs font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
-                >
-                  링크 복사
-                </button>
-              </>
-            ) : null}
-          </div>
+          ) : null}
         </div>
       </div>
     </article>
@@ -984,107 +980,108 @@ export function HomeExperience() {
         leadReason={leadCard?.recommendation.reasons[0] ?? "결과가 나오면 가장 먼저 볼 목적지를 짧게 정리해 드릴게요."}
         leadDescription={leadCard ? leadCard.recommendation.whyThisFits : queryNarrative}
         leadVisual={
-          leadCard ? <LeadDestinationVisual card={leadCard} query={resultQuery} /> : <div className="aspect-[4/5] rounded-[1.75rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)]" />
+          leadCard ? (
+            <LeadDestinationVisual
+              card={leadCard}
+              query={resultQuery}
+              supplement={results?.leadSupplement}
+            />
+          ) : (
+            <div className="aspect-[4/5] rounded-[1.75rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)]" />
+          )
         }
         leadTags={leadCard ? leadCard.destination.vibeTags.slice(0, 3).map((tag) => formatVibeLabel(tag)) : []}
         leadFacts={leadCard ? buildRecommendationDecisionFacts(leadCard.destination) : []}
+        leadSupportSlot={
+          leadCard ? (
+            <TravelSupportPanel
+              supplement={results?.leadSupplement}
+              destinationName={leadCard.destination.nameKo}
+              heroMode="compact"
+              rootClassName="p-0 border-0"
+            />
+          ) : null
+        }
         leadDetails={
           leadCard ? (
             (() => {
               const saveState = saveStates[leadCard.destination.id] ?? { status: "idle" };
               const detailPath = buildDestinationDetailPath(leadCard.destination, results?.query ?? currentQuery, saveState.snapshotId);
-              const dayFlow = buildRecommendationDayFlow(leadCard, results?.query ?? currentQuery);
               const evidenceLead = buildRecommendationEvidenceLead(leadCard);
 
               return (
-                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(17rem,0.9fr)]">
-                  <div className="space-y-4">
-                    <section className="rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-4">
-                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                        추천 이유
-                      </p>
-                      <p className="mt-2 text-base font-semibold leading-6 text-[var(--color-funnel-text)]">
-                        {leadCard.recommendation.reasons[0] ?? leadCard.recommendation.whyThisFits}
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-                        {leadCard.recommendation.whyThisFits}
-                      </p>
-                    </section>
+                <div className="space-y-4">
+                  <section
+                    data-testid={getInstagramVibeTestId(0)}
+                    className="rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-4"
+                  >
+                    <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                      추천 메모
+                    </p>
+                    <p className="mt-2 text-base font-semibold leading-6 text-[var(--color-funnel-text)]">
+                      {leadCard.recommendation.reasons[0] ?? leadCard.recommendation.whyThisFits}
+                    </p>
+                    <p className="mt-2 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
+                      {evidenceLead.detail}
+                    </p>
+                  </section>
 
-                    <section
-                      data-testid={getInstagramVibeTestId(0)}
-                      className="rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-4"
+                  <div className="flex flex-wrap gap-2">
+                    <Link
+                      href={detailPath}
+                      className="inline-flex min-h-[2.9rem] items-center rounded-full bg-[var(--color-action-primary)] px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
                     >
-                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                        분위기 근거
-                      </p>
-                      <p className="mt-2 text-sm font-semibold text-[var(--color-funnel-text)]">{evidenceLead.label}</p>
-                      <p className="mt-1.5 text-xs leading-5 text-[var(--color-funnel-text-soft)]">{evidenceLead.detail}</p>
-                    </section>
+                      상세 보기
+                    </Link>
+                    <button
+                      type="button"
+                      data-testid={getSaveSnapshotTestId(0)}
+                      onClick={() => {
+                        void saveCard(leadCard);
+                      }}
+                      disabled={saveState.status === "saving"}
+                      className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {saveState.status === "saving"
+                        ? "저장 중..."
+                        : saveState.status === "saved"
+                          ? "내 일정에 담았어요"
+                          : "내 일정에 담기"}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={reopenQuestionFlow}
+                      className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+                    >
+                      질문 다시 보기
+                    </button>
                   </div>
 
-                  <div className="space-y-4">
-                    <section className="rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-4">
-                      <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                        Day-flow
-                      </p>
-                      <div className="mt-3 space-y-3">
-                        {dayFlow.map((step) => (
-                          <article key={step.id} className="border-t border-[color:var(--color-funnel-border)] pt-3 first:border-t-0 first:pt-0">
-                            <p className="text-[0.64rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-funnel-text-soft)]">
-                              {step.label}
-                            </p>
-                            <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">{step.title}</p>
-                            <p className="mt-1 text-xs leading-5 text-[var(--color-funnel-text-soft)]">{step.detail}</p>
-                          </article>
-                        ))}
-                      </div>
-                    </section>
-
-                    <div className="flex flex-wrap gap-2">
-                      <Link
-                        href={detailPath}
-                        className="inline-flex min-h-[2.9rem] items-center rounded-full bg-[var(--color-funnel-text)] px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-funnel-text-strong)]"
-                      >
-                        상세 보기
-                      </Link>
-                      <button
-                        type="button"
-                        data-testid={getSaveSnapshotTestId(0)}
-                        onClick={() => {
-                          void saveCard(leadCard);
-                        }}
-                        disabled={saveState.status === "saving"}
-                        className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {saveState.status === "saving"
-                          ? "저장 중..."
-                          : saveState.status === "saved"
-                            ? "내 일정에 담았어요"
-                            : "내 일정에 담기"}
-                      </button>
-                      {saveState.shareUrl ? (
-                        <>
-                          <Link
-                            data-testid={testIds.snapshot.shareLink}
-                            href={`/s/${saveState.snapshotId ?? ""}`}
-                            className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
-                          >
-                            공유 페이지 보기
-                          </Link>
-                          <button
-                            type="button"
-                            data-testid={testIds.snapshot.copyShareLink}
-                            onClick={() => {
-                              void copyShareUrl(saveState.shareUrl ?? "");
-                            }}
-                            className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
-                          >
-                            링크 복사
-                          </button>
-                        </>
-                      ) : null}
-                    </div>
+                  <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--color-funnel-text-soft)]">
+                    <button type="button" onClick={resetFunnel} className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]">
+                      처음부터 다시 하기
+                    </button>
+                    {saveState.shareUrl ? (
+                      <>
+                        <Link
+                          data-testid={testIds.snapshot.shareLink}
+                          href={`/s/${saveState.snapshotId ?? ""}`}
+                          className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]"
+                        >
+                          공유 페이지 보기
+                        </Link>
+                        <button
+                          type="button"
+                          data-testid={testIds.snapshot.copyShareLink}
+                          onClick={() => {
+                            void copyShareUrl(saveState.shareUrl ?? "");
+                          }}
+                          className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]"
+                        >
+                          링크 복사
+                        </button>
+                      </>
+                    ) : null}
                   </div>
                 </div>
               );
@@ -1107,8 +1104,6 @@ export function HomeExperience() {
         }
         personalized={Boolean(results?.meta.personalized)}
         briefItems={briefItems}
-        onRestart={resetFunnel}
-        onReopenQuestions={reopenQuestionFlow}
         filtersSlot={
           <article
             data-testid={testIds.result.filterBar}
@@ -1120,7 +1115,7 @@ export function HomeExperience() {
                   결과 조정
                 </p>
                 <p className="mt-1.5 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-                  대표 추천을 먼저 보고, 아래 목록만 가볍게 좁혀 보세요.
+                  대표 추천을 먼저 보고, 아래 후보만 짧게 비교해 보세요.
                 </p>
               </div>
 

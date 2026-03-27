@@ -92,6 +92,7 @@ export function SnapshotRestoreView({ data }: SnapshotRestoreViewProps) {
           card={data.card}
           query={data.query}
           evidence={data.evidence}
+          supplement={data.supplement}
           scoringVersionId={data.scoringVersionId}
           snapshotId={data.snapshotId}
           allowSave={false}

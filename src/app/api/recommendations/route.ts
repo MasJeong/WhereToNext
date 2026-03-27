@@ -13,6 +13,7 @@ import { rankDestinations } from "@/lib/recommendation/engine";
 import { applyAcquisitionCorsHeaders } from "@/lib/security/cors";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 import { parseRecommendationQuery } from "@/lib/security/validation";
+import { getDestinationTravelSupplement } from "@/lib/travel-support/service";
 
 const RATE_LIMIT_WINDOW_MS = 60_000;
 const RATE_LIMIT_PER_WINDOW = 30;
@@ -77,6 +78,14 @@ export async function GET(request: Request) {
         }
       : undefined;
     const recommendations = rankDestinations(query, launchCatalog, evidenceMap, personalization);
+    const leadRecommendation = recommendations[0] ?? null;
+    const leadDestination =
+      leadRecommendation
+        ? launchCatalog.find((destination) => destination.id === leadRecommendation.destinationId) ?? null
+        : null;
+    const leadSupplement = leadDestination
+      ? await getDestinationTravelSupplement(leadDestination)
+      : null;
 
     return applyAcquisitionCorsHeaders(
       request,
@@ -90,6 +99,7 @@ export async function GET(request: Request) {
             personalized: Boolean(personalization),
           },
           sourceSummary: buildSourceSummary(recommendations),
+          leadSupplement,
         },
         {
           headers: {
