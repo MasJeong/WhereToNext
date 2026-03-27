@@ -1407,7 +1407,7 @@ export function HomeExperience() {
   );
 
   return (
-    <ExperienceShell eyebrow="" title="" intro="" capsule="" hideHeader hideTopbar bareBody>
+    <ExperienceShell eyebrow="" title="" intro="" capsule="" hideHeader bareBody>
       <div
         className={`-mx-3 min-h-screen bg-white sm:-mx-4 ${savedSnapshots.length > 0 && stage === "result" ? "pb-28 md:pb-0" : ""}`}
       >
