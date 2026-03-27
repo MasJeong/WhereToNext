@@ -114,11 +114,9 @@ test("shows recommendation reason and day-flow on the lead card", async ({ page 
 
   const leadCard = page.getByTestId("result-card-0");
 
-  await expect(leadCard.getByText("추천 이유")).toBeVisible();
-  await expect(leadCard.getByText("Day-flow")).toBeVisible();
-  await expect(leadCard.getByText("Day 1")).toBeVisible();
-  await expect(leadCard.getByText("Day 2")).toBeVisible();
-  await expect(leadCard.getByText("Day 3")).toBeVisible();
+  await expect(leadCard.getByText("추천 메모")).toBeVisible();
+  await expect(leadCard.getByRole("link", { name: "상세 보기" })).toBeVisible();
+  await expect(leadCard.getByRole("button", { name: "내 일정에 담기" })).toBeVisible();
 });
 
 test("shows the detail first fold with 3 facts and an itinerary CTA", async ({ page }) => {

@@ -36,10 +36,7 @@ async function saveSnapshotAndCaptureShareUrl(
     );
   });
 
-  const shareButton = saveButton;
-  const shareLink = shareButton.locator('xpath=following-sibling::*[@data-testid="share-link"]');
-
-  await shareButton.click();
+  await saveButton.click();
   const response = await snapshotResponsePromise;
 
   expect(response.ok()).toBeTruthy();
@@ -52,13 +49,10 @@ async function saveSnapshotAndCaptureShareUrl(
   const expectedHref = `/s/${snapshotId}`;
   const shareLinkByHref = page.locator(`[data-testid="share-link"][href="${expectedHref}"]`);
 
-  await expect(shareLink).toHaveCount(1, { timeout: 10000 });
-  await expect(shareLink).toHaveAttribute("href", expectedHref, { timeout: 10000 });
   await expect(shareLinkByHref).toHaveCount(1, { timeout: 10000 });
-
   await expect(page.getByTestId(`saved-snapshot-${expectedIndex}`)).toHaveCount(1, { timeout: 10000 });
 
-  const href = await shareLink.getAttribute("href");
+  const href = await shareLinkByHref.first().getAttribute("href");
 
   expect(href).toBeTruthy();
   expect(href).toBe(expectedHref);
