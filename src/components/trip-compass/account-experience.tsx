@@ -202,13 +202,13 @@ export function AccountExperience({
 
   return (
     <ExperienceShell
-      eyebrow="내 취향"
+      eyebrow="여행 기록"
       title="좋아했던 여행의 결을 쌓아 두면 다음 추천이 더 나답게 좁혀져요."
       intro="내 페이지는 설정 화면보다 가깝게, 취향과 방문 기록을 누적하는 공간이에요. 탐색 모드와 다녀온 곳만 정리해도 다음 추천 결과가 훨씬 또렷해져요."
       capsule="탐색 모드 · 방문 기록 · 별점 · 해시태그 · 재방문 의사"
       headerAside={
         <div className="compass-sheet rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-          <p className="compass-editorial-kicker">{userName}님의 취향 기록</p>
+          <p className="compass-editorial-kicker">{userName}님의 여행 기록</p>
           <p className="mt-2.5 text-sm leading-6 text-[var(--color-ink-soft)]">
             지금은 {profile.explorationPreference} 모드예요. 남긴 기록 {historyEntries.length}개가 다음 추천의 출발점을 정리해 줘요.
           </p>
@@ -427,7 +427,7 @@ export function AccountExperience({
                   }}
                   className="compass-action-primary compass-soft-press rounded-full px-5 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
                 >
-                  {isCreatingHistory ? "저장 중..." : "내 취향에 기록 저장"}
+                  {isCreatingHistory ? "저장 중..." : "여행 기록에 저장"}
                 </button>
               </div>
             </div>

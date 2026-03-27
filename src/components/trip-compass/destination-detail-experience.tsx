@@ -508,7 +508,7 @@ export function DestinationDetailExperience({
                   ? "기록 저장 중..."
                   : tasteStatus === "saved"
                     ? "취향 기록 완료"
-                    : "내 취향에 기록하기"}
+                    : "여행 기록에 남기기"}
               </button>
 
               {tasteStatus === "error" ? (
@@ -539,10 +539,10 @@ export function DestinationDetailExperience({
           <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
             <p className="compass-editorial-kicker">다음으로 이어가기</p>
             <h3 className="mt-1.5 font-display text-[1.08rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.22rem]">
-              결정이 끝나면 저장 링크와 내 취향 루프로 이어지면 돼요.
+              결정이 끝나면 저장 링크와 여행 기록 루프로 이어지면 돼요.
             </h3>
             <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-              저장한 여행 다시 보기, 링크 복사, 내 취향 보기, 홈으로 돌아가 새 추천 찾기로 이어질 수 있어요.
+              저장한 여행 다시 보기, 링크 복사, 여행 기록 보기, 홈으로 돌아가 새 추천 찾기로 이어질 수 있어요.
             </p>
           </div>
 
@@ -570,7 +570,7 @@ export function DestinationDetailExperience({
               href="/account"
               className="compass-action-secondary compass-soft-press rounded-full px-4 py-2.5 text-xs font-semibold tracking-[0.04em]"
             >
-              내 취향 보기
+              여행 기록 보기
             </Link>
 
             <Link
