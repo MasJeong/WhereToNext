@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { applyAcquisitionCorsHeaders } from "@/lib/security/cors";
 import { readSnapshot } from "@/lib/snapshots/service";
 
 /**
@@ -9,18 +10,21 @@ import { readSnapshot } from "@/lib/snapshots/service";
  * @returns 스냅샷 payload 또는 404 응답
  */
 export async function GET(
-  _request: Request,
+  request: Request,
   context: { params: Promise<{ snapshotId: string }> },
 ) {
   const { snapshotId } = await context.params;
   const snapshot = await readSnapshot(snapshotId);
 
   if (!snapshot) {
-    return NextResponse.json(
-      { code: "SNAPSHOT_NOT_FOUND", error: "저장된 결과를 찾을 수 없습니다." },
-      { status: 404 },
+    return applyAcquisitionCorsHeaders(
+      request,
+      NextResponse.json(
+        { code: "SNAPSHOT_NOT_FOUND", error: "저장된 결과를 찾을 수 없습니다." },
+        { status: 404 },
+      ),
     );
   }
 
-  return NextResponse.json(snapshot);
+  return applyAcquisitionCorsHeaders(request, NextResponse.json(snapshot));
 }

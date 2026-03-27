@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 
+import type { RecommendationQuery } from "@/lib/domain/contracts";
 import { createSnapshot, readSnapshot } from "@/lib/snapshots/service";
 import { resolveComparisonMatrix } from "@/lib/compare/service";
 import { rankDestinations } from "@/lib/recommendation/engine";
@@ -29,16 +30,16 @@ function buildRecommendationPayload(query: Parameters<typeof rankDestinations>[0
 
 describe("snapshot service", () => {
   it("creates and restores a recommendation snapshot", async () => {
-    const query = {
-      partyType: "couple" as const,
+    const query: RecommendationQuery = {
+      partyType: "couple",
       partySize: 2,
-      budgetBand: "mid" as const,
+      budgetBand: "mid",
       tripLengthDays: 5,
-      departureAirport: "ICN" as const,
+      departureAirport: "ICN",
       travelMonth: 10,
-      pace: "balanced" as const,
-      flightTolerance: "medium" as const,
-      vibes: ["romance", "food"] as const,
+      pace: "balanced",
+      flightTolerance: "medium",
+      vibes: ["romance", "food"],
     };
     const created = await createSnapshot({
       kind: "recommendation",
@@ -49,7 +50,12 @@ describe("snapshot service", () => {
 
     expect(restored?.kind).toBe("recommendation");
     expect(restored?.payload.kind).toBe("recommendation");
-    expect(restored?.payload.results).toHaveLength(1);
+
+    if (!restored || restored.kind !== "recommendation") {
+      throw new Error("TEST_RECOMMENDATION_SNAPSHOT_NOT_FOUND");
+    }
+
+    expect(restored.payload.results).toHaveLength(1);
     expect(restored?.destinationIds).toEqual(restored?.payload.destinationIds);
   });
 

@@ -1,9 +1,29 @@
 export const testIds = {
   shell: {
+    header: "app-header",
     identityCard: "identity-card",
     authCta: "auth-cta",
     accountLink: "account-link",
     personalizedNote: "personalized-note",
+  },
+  home: {
+    landing: "home-landing",
+    searchEntry: "home-search-entry",
+    cta: "home-cta",
+    heroVisual: "home-hero-visual",
+    resultPage: "home-result-page",
+    progress: "home-step-progress",
+    question: "home-step-question",
+    helper: "home-step-helper",
+    browseStrip: "home-browse-strip",
+    searchTrigger: "home-search-trigger",
+    choice0: "home-step-choice-0",
+    choice1: "home-step-choice-1",
+    choice2: "home-step-choice-2",
+    choice3: "home-step-choice-3",
+    next: "home-step-next",
+    previous: "home-step-prev",
+    topSummary: "home-top-summary",
   },
   auth: {
     modeSignIn: "auth-mode-sign-in",
@@ -15,40 +35,43 @@ export const testIds = {
     error: "auth-error",
   },
   query: {
-    partyTypeCouple: "party-type-couple",
-    partyTypeFriends: "party-type-friends",
-    partyTypeFamily: "party-type-family",
-    budgetMid: "budget-mid",
-    budgetBudget: "budget-budget",
-    budgetPremium: "budget-premium",
-    tripLength3: "trip-length-3",
-    tripLength5: "trip-length-5",
-    tripLength8: "trip-length-8",
-    travelMonth7: "travel-month-7",
-    travelMonth10: "travel-month-10",
-    vibeRomance: "vibe-romance",
-    vibeFood: "vibe-food",
-    vibeNature: "vibe-nature",
-    departureAirportICN: "departure-airport-ICN",
-    flightToleranceShort: "flight-tolerance-short",
-    flightToleranceMedium: "flight-tolerance-medium",
-    paceBalanced: "pace-balanced",
     submitRecommendation: "submit-recommendation",
   },
   result: {
     card0: "result-card-0",
+    filterBar: "result-filter-bar",
+    filterChip0: "result-filter-chip-0",
     instagramVibe0: "instagram-vibe-0",
     emptyState: "empty-state",
     querySummary: "query-summary",
+    topList: "result-top-list",
+    topItem0: "result-top-item-0",
     showMoreResults: "show-more-results",
     relaxableFilters: "relaxable-filters",
     relaxFilterAction0: "relax-filter-action-0",
+  },
+  detail: {
+    root: "destination-detail-root",
+    coreFacts: "destination-core-facts",
+    travelSupport: "destination-travel-support",
+    fitReason: "destination-fit-reason",
+    evidence: "destination-evidence",
+    watchOuts: "destination-watch-outs",
+    itineraryCta: "destination-itinerary-cta",
+    tasteLogger: "destination-taste-logger",
+    tasteRating: "destination-taste-rating",
+    tasteTag0: "destination-taste-tag-0",
+    tasteRevisit: "destination-taste-revisit",
+    tasteDate: "destination-taste-date",
+    tasteSubmit: "destination-taste-submit",
+    tasteLoginCta: "destination-taste-login-cta",
   },
   snapshot: {
     saveSnapshot: "save-snapshot",
     compareSnapshot: "compare-snapshot",
     shareLink: "share-link",
     copyShareLink: "copy-share-link",
+    restoreBrief: "restore-brief",
     savedSnapshot0: "saved-snapshot-0",
     compareSelectionCount: "compare-selection-count",
     stickyCompareTray: "sticky-compare-tray",
@@ -56,9 +79,17 @@ export const testIds = {
   },
   compare: {
     column0: "compare-column-0",
+    summary: "compare-summary",
     restoreError: "restore-error",
+    differencesToggle: "compare-differences-toggle",
+    mobilePrev: "compare-mobile-prev",
+    mobileNext: "compare-mobile-next",
+    verdictRow: "compare-verdict-row",
   },
   account: {
+    root: "my-taste-root",
+    tasteMode: "my-taste-mode",
+    tasteSummary: "my-taste-summary",
     preferenceRepeat: "preference-repeat",
     preferenceBalanced: "preference-balanced",
     preferenceDiscover: "preference-discover",
@@ -70,6 +101,10 @@ export const testIds = {
     historyDelete0: "history-delete-0",
   },
 } as const;
+
+export function getHomeChoiceTestId(index: number): string {
+  return `home-step-choice-${index}`;
+}
 
 /**
  * Returns a stable result card selector for a given index.
@@ -125,6 +160,14 @@ export function getRelaxFilterActionTestId(index: number): string {
   return index === 0 ? testIds.result.relaxFilterAction0 : `relax-filter-action-${index}`;
 }
 
+export function getResultTopItemTestId(index: number): string {
+  return index === 0 ? testIds.result.topItem0 : `result-top-item-${index}`;
+}
+
+export function getResultFilterChipTestId(index: number): string {
+  return index === 0 ? testIds.result.filterChip0 : `result-filter-chip-${index}`;
+}
+
 /**
  * Returns a stable account history card selector for a given index.
  * @param index History entry index
@@ -150,4 +193,8 @@ export function getAccountHistorySaveTestId(index: number): string {
  */
 export function getAccountHistoryDeleteTestId(index: number): string {
   return index === 0 ? testIds.account.historyDelete0 : `history-delete-${index}`;
+}
+
+export function getDestinationTasteTagTestId(index: number): string {
+  return index === 0 ? testIds.detail.tasteTag0 : `destination-taste-tag-${index}`;
 }

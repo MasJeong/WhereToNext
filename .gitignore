@@ -18,6 +18,8 @@
 # next.js
 /.next/
 /out/
+/apps/ios-shell/.next/
+/apps/ios-shell/out/
 
 # production
 /build
@@ -26,6 +28,8 @@
 .DS_Store
 *.pem
 /.data
+.sisyphus/
+/apps/ios-shell/node_modules/
 .sisyphus/evidence/*.log
 
 # debug
