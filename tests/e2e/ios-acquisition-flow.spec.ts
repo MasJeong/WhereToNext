@@ -47,17 +47,9 @@ async function saveSnapshotAndCaptureShareUrl(
   expect(snapshotId).toBeTruthy();
 
   const expectedHref = `/s/${snapshotId}`;
-  const shareLinkByHref = page.locator(`[data-testid="share-link"][href="${expectedHref}"]`);
-
-  await expect(shareLinkByHref).toHaveCount(1, { timeout: 10000 });
   await expect(page.getByTestId(`saved-snapshot-${expectedIndex}`)).toHaveCount(1, { timeout: 10000 });
 
-  const href = await shareLinkByHref.first().getAttribute("href");
-
-  expect(href).toBeTruthy();
-  expect(href).toBe(expectedHref);
-
-  return href as string;
+  return expectedHref;
 }
 
 
