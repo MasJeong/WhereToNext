@@ -2,6 +2,8 @@
 
 import { useEffect, useState } from "react";
 
+import { buildApiUrl } from "@/lib/runtime/url";
+
 type SessionPayload = {
   user: {
     id: string;
@@ -31,7 +33,10 @@ function useSession() {
 
     async function loadSession() {
       try {
-        const response = await fetch("/api/auth/session", { cache: "no-store" });
+        const response = await fetch(buildApiUrl("/api/auth/session"), {
+          cache: "no-store",
+          credentials: "same-origin",
+        });
         const payload = (await response.json()) as AuthResponse;
 
         if (cancelled) {
@@ -72,9 +77,10 @@ export const authClient = {
   useSession,
   signIn: {
     email: async (input: { email: string; password: string }) => {
-      const response = await fetch("/api/auth/sign-in", {
+      const response = await fetch(buildApiUrl("/api/auth/sign-in"), {
         method: "POST",
         headers: { "content-type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify(input),
       });
 
@@ -83,9 +89,10 @@ export const authClient = {
   },
   signUp: {
     email: async (input: { name: string; email: string; password: string }) => {
-      const response = await fetch("/api/auth/sign-up", {
+      const response = await fetch(buildApiUrl("/api/auth/sign-up"), {
         method: "POST",
         headers: { "content-type": "application/json" },
+        credentials: "same-origin",
         body: JSON.stringify(input),
       });
 
@@ -93,8 +100,9 @@ export const authClient = {
     },
   },
   signOut: async () => {
-    const response = await fetch("/api/auth/sign-out", {
+    const response = await fetch(buildApiUrl("/api/auth/sign-out"), {
       method: "POST",
+      credentials: "same-origin",
     });
 
     return (await response.json()) as AuthResponse;

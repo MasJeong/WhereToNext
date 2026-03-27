@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     request.headers.get("x-forwarded-for"),
     request.headers.get("x-real-ip"),
   );
-  const rateLimit = checkRateLimit(clientIp, { limit: 10, windowMs: 60_000 });
+  const rateLimit = checkRateLimit(`auth:sign-in:${clientIp}`, { limit: 10, windowMs: 60_000 });
 
   if (!rateLimit.allowed) {
     return NextResponse.json(
@@ -38,12 +38,12 @@ export async function POST(request: Request) {
 
     if (result.error || !result.data || !result.token) {
       const response = NextResponse.json(result, { status: 400 });
-      clearSessionCookie(response);
+      clearSessionCookie(response, request);
       return response;
     }
 
     const response = NextResponse.json({ data: result.data });
-    setSessionCookie(response, result.token);
+    setSessionCookie(response, result.token, request);
     return response;
   } catch (error) {
     if (error instanceof z.ZodError) {

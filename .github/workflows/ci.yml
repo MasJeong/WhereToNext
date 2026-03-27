@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - dev
   pull_request:
 
 jobs:
@@ -54,7 +55,10 @@ jobs:
         run: npm ci
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        run: npx playwright install --with-deps chromium webkit
+
+      - name: Run production build
+        run: npm run build
 
       - name: Run end-to-end tests
         run: npm run test:e2e

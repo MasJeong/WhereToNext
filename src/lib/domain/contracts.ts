@@ -130,6 +130,62 @@ export const recommendationResultSchema = z.object({
   trendEvidence: z.array(trendEvidenceSnapshotSchema),
 });
 
+export const destinationTravelLocationSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  countryCode: z.string().length(2),
+  countryName: z.string().min(1),
+  currencyCode: z.string().length(3),
+});
+
+export const destinationHeroImageSchema = z.object({
+  url: z.url(),
+  alt: z.string().min(1),
+  photographerName: z.string().min(1),
+  photographerUrl: z.url(),
+  sourceLabel: z.literal("Unsplash"),
+});
+
+export const destinationWeatherSnapshotSchema = z.object({
+  summary: z.string().min(1),
+  temperatureC: z.number(),
+  apparentTemperatureC: z.number(),
+  minTemperatureC: z.number(),
+  maxTemperatureC: z.number(),
+  precipitationProbability: z.number().min(0).max(100),
+  observedAt: z.string().datetime(),
+});
+
+export const destinationNearbyPlaceSchema = z.object({
+  id: z.string().min(1),
+  name: z.string().min(1),
+  shortAddress: z.string().min(1),
+  googleMapsUrl: z.url(),
+});
+
+export const destinationMapEmbedSchema = z.object({
+  src: z.url(),
+  title: z.string().min(1),
+});
+
+export const destinationExchangeRateSchema = z.object({
+  baseCurrency: z.string().length(3),
+  quoteCurrency: z.string().length(3),
+  quote: z.number().positive(),
+  summary: z.string().min(1),
+  observedAt: z.string().datetime(),
+});
+
+export const destinationTravelSupplementSchema = z.object({
+  location: destinationTravelLocationSchema,
+  heroImage: destinationHeroImageSchema.optional(),
+  weather: destinationWeatherSnapshotSchema.optional(),
+  nearbyPlaces: z.array(destinationNearbyPlaceSchema).max(5).optional(),
+  mapEmbed: destinationMapEmbedSchema.optional(),
+  exchangeRate: destinationExchangeRateSchema.optional(),
+  fetchedAt: z.string().datetime(),
+});
+
 export const recommendationSnapshotSchema = z.object({
   v: z.literal(1),
   kind: z.literal("recommendation"),
@@ -185,6 +241,7 @@ export type DestinationProfile = z.infer<typeof destinationProfileSchema>;
 export type RecommendationQuery = z.infer<typeof recommendationQuerySchema>;
 export type RecommendationResult = z.infer<typeof recommendationResultSchema>;
 export type TrendEvidenceSnapshot = z.infer<typeof trendEvidenceSnapshotSchema>;
+export type DestinationTravelSupplement = z.infer<typeof destinationTravelSupplementSchema>;
 export type RecommendationSnapshot = z.infer<typeof recommendationSnapshotSchema>;
 export type ComparisonSnapshot = z.infer<typeof comparisonSnapshotSchema>;
 export type ScoringVersion = z.infer<typeof scoringVersionSchema>;

@@ -6,6 +6,7 @@ import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import { readRecommendationSnapshots } from "@/lib/snapshots/service";
 
 import {
+  buildSnapshotPath,
   createRecommendationCards,
   type RecommendationCardView,
 } from "./presentation";
@@ -14,6 +15,7 @@ export type RestoredRecommendationView = {
   cards: RecommendationCardView[];
   query: RecommendationSnapshot["query"];
   scoringVersionId: string;
+  primaryCard: RecommendationCardView | null;
 };
 
 export type ComparisonColumnView = {
@@ -21,6 +23,10 @@ export type ComparisonColumnView = {
   sharePath: string;
   card: RecommendationCardView;
 };
+
+function buildSavedRecommendationPath(snapshotId: string): string {
+  return buildSnapshotPath(snapshotId, "recommendation");
+}
 
 /**
  * 저장된 추천 결과를 카드 뷰로 변환하고 누락 여부를 검사한다.
@@ -55,10 +61,13 @@ function restoreCardsFromSnapshot(snapshot: RecommendationSnapshot): Recommendat
 export async function hydrateRecommendationSnapshot(
   snapshot: RecommendationSnapshot,
 ): Promise<RestoredRecommendationView> {
+  const cards = restoreCardsFromSnapshot(snapshot);
+
   return {
-    cards: restoreCardsFromSnapshot(snapshot),
+    cards,
     query: snapshot.query,
     scoringVersionId: snapshot.scoringVersionId,
+    primaryCard: cards[0] ?? null,
   };
 }
 
@@ -87,7 +96,7 @@ export async function hydrateComparisonSnapshot(
 
     return {
       snapshotId,
-      sharePath: `/s/${snapshotId}`,
+      sharePath: buildSavedRecommendationPath(snapshotId),
       card: primaryCard,
     } satisfies ComparisonColumnView;
   });

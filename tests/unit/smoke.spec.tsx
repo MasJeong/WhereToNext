@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import Home from "@/app/page";
@@ -10,14 +10,22 @@ vi.mock("next/navigation", () => ({
 }));
 
 describe("Home", () => {
-  it("renders the Trip Compass smoke shell", () => {
+  it("renders a landing-first funnel and hides results until the journey starts", () => {
     render(<Home />);
 
+    const landing = screen.getByTestId("home-landing");
+    const landingScope = within(landing);
+
     expect(
-      screen.getByRole("heading", {
-        name: "한국에서 떠나는 해외여행, 취향에 맞는 목적지를 빠르게 골라보세요.",
+      landingScope.getByRole("heading", {
+        name: /여행지, 바로 추천받기/,
       }),
     ).toBeInTheDocument();
-    expect(screen.getByText("Trip Compass")).toBeInTheDocument();
+    expect(landingScope.getByTestId("home-hero-visual")).toBeInTheDocument();
+    expect(landingScope.getByRole("button", { name: "추천 여정 시작하기" })).toBeInTheDocument();
+
+    expect(screen.queryByTestId("home-step-question")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("home-result-page")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("result-card-0")).not.toBeInTheDocument();
   });
 });

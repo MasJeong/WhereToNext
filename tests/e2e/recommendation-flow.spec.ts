@@ -1,24 +1,49 @@
 import { expect, test } from "@playwright/test";
 
-/**
- * 추천 흐름의 핵심 선택값을 채운다.
- * @param page Playwright 페이지 객체
- * @returns 없음
- */
-async function submitGuidedRecommendation(page: import("@playwright/test").Page) {
+async function submitQuickRecommendation(page: import("@playwright/test").Page) {
   await page.goto("/");
-  await page.getByTestId("party-type-couple").click();
-  await page.getByTestId("budget-mid").click();
-  await page.getByTestId("trip-length-5").click();
-  await page.getByTestId("travel-month-10").click();
-  await page.getByTestId("vibe-romance").click();
-  await page.getByTestId("departure-airport-ICN").click();
-  await page.getByTestId("submit-recommendation").click();
-  await expect(page.getByTestId("result-card-0")).toBeVisible();
+  await expect(page.getByTestId("home-landing")).toBeVisible();
+  await page.getByTestId("home-cta").click();
+  await expect(page.getByTestId("home-step-question")).toBeVisible();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-choice-1").click();
+  await page.getByTestId("home-step-choice-1").click();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-choice-0").click();
+  await expect(page.getByTestId("home-top-summary")).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId("result-filter-bar")).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 10000 });
 }
 
-test("restores a saved recommendation snapshot", async ({ page }) => {
+async function submitGuidedRecommendation(page: import("@playwright/test").Page) {
+  await page.goto("/");
+  await expect(page.getByTestId("home-landing")).toBeVisible();
+  await expect(page.getByTestId("home-step-question")).toHaveCount(0);
+  await page.getByTestId("home-cta").click();
+  await expect(page.getByTestId("home-step-question")).toBeVisible();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-choice-2").click();
+  await page.getByTestId("home-step-prev").click();
+  await expect(page.getByTestId("home-step-question")).toContainText("언제쯤 떠나고 싶으세요?");
+  await page.getByTestId("home-step-choice-2").click();
+  await page.getByTestId("home-step-choice-1").click();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-choice-0").click();
+  await expect(page.getByTestId("home-top-summary")).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 10000 });
+}
+
+test("starts on a landing page and reaches results through the funnel", async ({ page }) => {
+  await submitQuickRecommendation(page);
+});
+
+test("supports back navigation during the one-question-per-screen funnel", async ({ page }) => {
   await submitGuidedRecommendation(page);
+  await expect(page.getByTestId("home-step-question")).toHaveCount(0);
+});
+
+test("restores a saved recommendation snapshot", async ({ page }) => {
+  await submitQuickRecommendation(page);
 
   await page.getByTestId("save-snapshot").click();
   await expect(page.getByTestId("saved-snapshot-0")).toBeVisible();
@@ -31,12 +56,14 @@ test("restores a saved recommendation snapshot", async ({ page }) => {
 
   await page.goto(href!);
   await expect(page).toHaveURL(/\/s\//);
+  await expect(page.getByText("저장 당시 조건")).toBeVisible();
+  await expect(page.getByTestId("restore-brief")).toBeVisible();
   await expect(page.getByTestId("result-card-0")).toBeVisible();
   await expect(page.getByTestId("instagram-vibe-0")).toBeVisible();
 });
 
 test("builds a compare board from two saved picks", async ({ page }) => {
-  await submitGuidedRecommendation(page);
+  await submitQuickRecommendation(page);
 
   await page.getByTestId("save-snapshot").click();
   await expect(page.getByTestId("saved-snapshot-0")).toBeVisible();
@@ -48,12 +75,14 @@ test("builds a compare board from two saved picks", async ({ page }) => {
   await page.getByTestId("compare-snapshot").click();
 
   await expect(page).toHaveURL(/\/compare\//);
+  await expect(page.getByTestId("compare-summary")).toBeVisible();
   await expect(page.getByTestId("compare-column-0")).toBeVisible();
+  await expect(page.locator('[data-testid="compare-verdict-row"]:visible').first()).toBeVisible();
 });
 
 test("shows a sticky compare tray on mobile after saving a card", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
-  await submitGuidedRecommendation(page);
+  await submitQuickRecommendation(page);
 
   await page.getByTestId("save-snapshot").click();
   await expect(page.getByTestId("sticky-compare-tray")).toBeVisible();
@@ -71,22 +100,36 @@ test("allows sign-up, trip history save, and personalized recommendations", asyn
   await page.getByTestId("auth-submit").click();
 
   await expect(page).toHaveURL(/\/account/);
-  await page.getByTestId("preference-discover").click();
+  await expect(page.getByTestId("new-history-submit")).toBeVisible();
   await page.getByTestId("new-history-submit").click();
   await expect(page.getByTestId("history-entry-0")).toBeVisible();
 
   await page.goto("/");
-  await submitGuidedRecommendation(page);
+  await submitQuickRecommendation(page);
   await expect(page.getByTestId("personalized-note")).toBeVisible();
 });
 
-test("shows trust-first recommendation signals on the lead card", async ({ page }) => {
-  await submitGuidedRecommendation(page);
+test("shows recommendation reason and day-flow on the lead card", async ({ page }) => {
+  await submitQuickRecommendation(page);
 
   const leadCard = page.getByTestId("result-card-0");
 
-  await expect(leadCard.getByText("먼저 확인할 신뢰 신호")).toBeVisible();
-  await expect(leadCard.getByText("신뢰 요약")).toBeVisible();
+  await expect(leadCard.getByText("추천 메모")).toBeVisible();
+  await expect(leadCard.getByRole("link", { name: "상세 보기" })).toBeVisible();
+  await expect(leadCard.getByRole("button", { name: "내 일정에 담기" })).toBeVisible();
+});
+
+test("shows the detail first fold with 3 facts and an itinerary CTA", async ({ page }) => {
+  await submitQuickRecommendation(page);
+
+  const leadCard = page.getByTestId("result-card-0");
+  await leadCard.getByRole("link", { name: "상세 보기" }).click();
+
+  const coreFacts = page.getByTestId("destination-core-facts");
+  await expect(coreFacts).toBeVisible();
+  await expect(coreFacts.locator("article")).toHaveCount(3);
+  await expect(page.getByTestId("destination-itinerary-cta")).toBeVisible();
+  await expect(page.getByTestId("destination-itinerary-cta")).toHaveText("내 일정에 담기");
 });
 
 test("recovers from the empty state through a relaxation action", async ({ page }) => {
@@ -130,15 +173,77 @@ test("recovers from the empty state through a relaxation action", async ({ page 
   });
 
   await page.goto("/");
-  await page.getByTestId("party-type-couple").click();
-  await page.getByTestId("budget-mid").click();
-  await page.getByTestId("trip-length-5").click();
-  await page.getByTestId("travel-month-10").click();
-  await page.getByTestId("vibe-romance").click();
-  await page.getByTestId("departure-airport-ICN").click();
-  await page.getByTestId("submit-recommendation").click();
+  await page.getByTestId("home-cta").click();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-choice-1").click();
+  await page.getByTestId("home-step-choice-1").click();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-choice-0").click();
   await expect(page.getByTestId("empty-state")).toBeVisible();
 
   await page.getByTestId("relax-filter-action-0").click();
   await expect(page.getByTestId("result-card-0")).toBeVisible();
+});
+
+test("shows a retry path when recommendation loading fails", async ({ page }) => {
+  let shouldFailOnce = true;
+
+  await page.route("**/api/recommendations*", async (route) => {
+    if (shouldFailOnce) {
+      shouldFailOnce = false;
+      await route.fulfill({
+        status: 500,
+        contentType: "application/json",
+        body: JSON.stringify({ code: "INTERNAL_ERROR" }),
+      });
+      return;
+    }
+
+    await route.fallback();
+  });
+
+  await page.goto("/");
+  await page.getByTestId("home-cta").click();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-choice-1").click();
+  await page.getByTestId("home-step-choice-1").click();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-choice-0").click();
+
+  await expect(page.getByText("지금은 추천 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.")).toBeVisible();
+  await expect(page.getByRole("button", { name: "다시 시도" })).toBeVisible();
+
+  await page.getByRole("button", { name: "다시 시도" }).click();
+  await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 10000 });
+});
+
+test("shows a manual-copy fallback when snapshot clipboard copy fails", async ({ page }) => {
+  await submitQuickRecommendation(page);
+
+  await page.evaluate(() => {
+    navigator.clipboard.writeText = async () => {
+      throw new Error("clipboard-blocked");
+    };
+  });
+
+  await page.getByTestId("save-snapshot").click();
+
+  await expect(page.getByText("링크 복사가 실패했어요.")).toBeVisible();
+  await expect(page.locator('input[readonly][value*="/s/"]')).toBeVisible();
+});
+
+test("shows a manual-copy fallback when detail clipboard copy fails", async ({ page }) => {
+  await submitQuickRecommendation(page);
+  await page.getByTestId("result-card-0").getByRole("link", { name: "상세 보기" }).click();
+
+  await page.evaluate(() => {
+    navigator.clipboard.writeText = async () => {
+      throw new Error("clipboard-blocked");
+    };
+  });
+
+  await page.getByRole("button", { name: "상세 링크 복사" }).click();
+
+  await expect(page.getByText("링크를 복사하지 못했어요. 아래 링크를 길게 눌러 복사해 주세요.")).toBeVisible();
+  await expect(page.locator('input[readonly][value*="/destinations/"]')).toBeVisible();
 });
