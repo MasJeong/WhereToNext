@@ -1,6 +1,6 @@
 # iOS Release Preflight
 
-이 문서는 SooGo의 iOS 출시 준비 상태를 점검하는 체크리스트다.
+이 문서는 떠나볼래의 iOS 출시 준비 상태를 점검하는 체크리스트다.
 현재 기준으로는 **모바일 웹/PWA + shell-safe 웹 계약 정리**까지 완료했고, **실제 Capacitor native shell 생성과 Universal Links 구성은 아직 차단 상태**다.
 
 ## 1. 현재 완료된 기반
