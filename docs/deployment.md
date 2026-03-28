@@ -1,4 +1,4 @@
-# SooGo Deployment Guide
+# WhereToNext Deployment Guide
 
 ## 대상 환경
 
@@ -42,7 +42,8 @@ npm run test:e2e
 
 ### 1. GitHub 저장소 Import
 
-- Repository: `MasJeong/SooGo`
+- Repository name target: `WhereToNext`
+- Current remote slug: `MasJeong/WhereToNext`
 - Framework Preset: Next.js
 - Root Directory: repo root
 
