@@ -5,6 +5,8 @@ import {
   comparisonSnapshotSchema,
   recommendationQuerySchema,
   recommendationSnapshotSchema,
+  snapshotVisibilitySchema,
+  socialVideoRequestSchema,
   userDestinationHistoryInputSchema,
   userPreferenceProfileUpdateSchema,
 } from "@/lib/domain/contracts";
@@ -13,11 +15,13 @@ const destinationIdSet = new Set(launchCatalog.map((destination) => destination.
 
 export const createRecommendationSnapshotBodySchema = z.object({
   kind: z.literal("recommendation"),
+  visibility: snapshotVisibilitySchema.optional(),
   payload: recommendationSnapshotSchema,
 });
 
 export const createComparisonSnapshotBodySchema = z.object({
   kind: z.literal("comparison"),
+  visibility: snapshotVisibilitySchema.optional(),
   payload: comparisonSnapshotSchema,
 });
 
@@ -30,6 +34,20 @@ export type RecommendationQuery = z.infer<typeof recommendationQuerySchema>;
 export type CreateSnapshotBody = z.infer<typeof createSnapshotBodySchema>;
 export type UserDestinationHistoryInput = z.infer<typeof userDestinationHistoryInputSchema>;
 export type UserPreferenceProfileUpdate = z.infer<typeof userPreferenceProfileUpdateSchema>;
+export type SocialVideoRequest = z.infer<typeof socialVideoRequestSchema>;
+export type SocialVideoQuery = z.infer<typeof socialVideoRequestSchema>;
+
+const defaultSocialVideoQuery: RecommendationQuery = {
+  partyType: "couple",
+  partySize: 2,
+  budgetBand: "mid",
+  tripLengthDays: 5,
+  departureAirport: "ICN",
+  travelMonth: 10,
+  pace: "balanced",
+  flightTolerance: "medium",
+  vibes: ["romance"],
+};
 
 /**
  * 추천 API 쿼리 문자열을 스키마로 검증한다.
@@ -63,6 +81,64 @@ export function parseRecommendationQuery(params: URLSearchParams): Recommendatio
  */
 export function parseCreateSnapshotBody(body: unknown): CreateSnapshotBody {
   return createSnapshotBodySchema.parse(body);
+}
+
+/**
+ * 소셜 비디오 API 쿼리 문자열을 스키마로 검증한다.
+ * @param params URL 검색 파라미터
+ * @returns 검증된 소셜 비디오 질의
+ */
+export function parseSocialVideoQuery(params: URLSearchParams): SocialVideoRequest {
+  const destinationId = params.get("destinationId")?.trim() ?? "";
+  const leadText = params.get("leadText")?.trim();
+  const leadEvidenceLabel = params.get("leadEvidenceLabel")?.trim();
+  const leadEvidenceDetail = params.get("leadEvidenceDetail")?.trim();
+  const leadEvidenceSourceLabel = params.get("leadEvidenceSourceLabel")?.trim();
+  const leadEvidenceSourceUrl = params.get("leadEvidenceSourceUrl")?.trim();
+  const vibes = params
+    .get("vibes")
+    ?.split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+
+  return socialVideoRequestSchema
+    .refine((value) => destinationIdSet.has(value.destinationId), {
+      message: "UNKNOWN_DESTINATION",
+      path: ["destinationId"],
+    })
+    .parse({
+      destinationId,
+      query: recommendationQuerySchema.parse({
+        partyType: (params.get("partyType") ?? defaultSocialVideoQuery.partyType) as RecommendationQuery["partyType"],
+        partySize: Number(params.get("partySize") ?? defaultSocialVideoQuery.partySize),
+        budgetBand: (params.get("budgetBand") ?? defaultSocialVideoQuery.budgetBand) as RecommendationQuery["budgetBand"],
+        tripLengthDays: Number(params.get("tripLengthDays") ?? defaultSocialVideoQuery.tripLengthDays),
+        departureAirport: (params.get("departureAirport") ?? defaultSocialVideoQuery.departureAirport) as RecommendationQuery["departureAirport"],
+        travelMonth: Number(params.get("travelMonth") ?? defaultSocialVideoQuery.travelMonth),
+        pace: (params.get("pace") ?? defaultSocialVideoQuery.pace) as RecommendationQuery["pace"],
+        flightTolerance: (params.get("flightTolerance") ?? defaultSocialVideoQuery.flightTolerance) as RecommendationQuery["flightTolerance"],
+        vibes:
+          vibes && vibes.length > 0
+            ? vibes
+            : defaultSocialVideoQuery.vibes,
+      }),
+      leadEvidence:
+        leadEvidenceLabel && leadEvidenceDetail && leadEvidenceSourceLabel
+          ? {
+              label: leadEvidenceLabel,
+              detail: leadEvidenceDetail,
+              sourceLabel: leadEvidenceSourceLabel,
+              sourceUrl: leadEvidenceSourceUrl || null,
+            }
+          : leadText
+            ? {
+                label: leadText,
+                detail: leadText,
+                sourceLabel: "추천 메모",
+                sourceUrl: null,
+              }
+          : undefined,
+    });
 }
 
 /**

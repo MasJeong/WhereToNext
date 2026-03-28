@@ -479,11 +479,11 @@ export function buildRecommendationTrustSignals(
     },
     {
       id: "evidence-trust",
-      label: "근거",
-      value: primaryEvidence ? describeSourceBadge(primaryEvidence) : "근거 준비 중",
+      label: "참고 정보",
+      value: primaryEvidence ? describeSourceBadge(primaryEvidence) : "참고 정보 준비 중",
       detail: primaryEvidence
         ? `${primaryEvidence.sourceLabel} · ${formatFreshnessState(primaryEvidence.freshnessState)}`
-        : "아직 대표 근거가 많지 않아 핵심 정보와 체크할 점을 먼저 보세요.",
+        : "아직 대표 참고 정보가 많지 않아 핵심 정보와 체크할 점을 먼저 보세요.",
     },
   ];
 }
@@ -495,9 +495,9 @@ export function buildRecommendationEvidenceLead(
 
   if (!primaryEvidence) {
     return {
-      label: "근거 준비 중",
-      detail: "아직 대표 근거가 충분하지 않아 핵심 정보와 체크할 점을 먼저 보여줘요.",
-      sourceLabel: "추가 근거 수집 중",
+      label: "메모 준비 중",
+      detail: "아직 대표 메모가 충분하지 않아 핵심 정보와 체크할 점을 먼저 보여줘요.",
+      sourceLabel: "추가 참고 정리 중",
       sourceUrl: null,
     };
   }

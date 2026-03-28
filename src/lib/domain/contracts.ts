@@ -29,6 +29,7 @@ export const evidenceSourceTypeValues = [
 ] as const;
 export const freshnessStateValues = ["fresh", "aging", "stale"] as const;
 export const snapshotKindValues = ["recommendation", "comparison"] as const;
+export const snapshotVisibilityValues = ["public", "private"] as const;
 export const explorationPreferenceValues = ["repeat", "balanced", "discover"] as const;
 
 export const destinationKindSchema = z.enum(destinationKindValues);
@@ -43,6 +44,7 @@ export const evidenceTierSchema = z.enum(evidenceTierValues);
 export const evidenceSourceTypeSchema = z.enum(evidenceSourceTypeValues);
 export const freshnessStateSchema = z.enum(freshnessStateValues);
 export const snapshotKindSchema = z.enum(snapshotKindValues);
+export const snapshotVisibilitySchema = z.enum(snapshotVisibilityValues);
 export const explorationPreferenceSchema = z.enum(explorationPreferenceValues);
 
 export const scoringWeightsSchema = z.object({
@@ -186,6 +188,42 @@ export const destinationTravelSupplementSchema = z.object({
   fetchedAt: z.string().datetime(),
 });
 
+export const socialVideoLeadEvidenceSchema = z.object({
+  label: z.string().min(1),
+  detail: z.string().min(1),
+  sourceLabel: z.string().min(1),
+  sourceUrl: z.url().nullable().optional(),
+});
+
+export const socialVideoRequestSchema = z.object({
+  destinationId: z.string().min(1),
+  query: recommendationQuerySchema,
+  leadEvidence: socialVideoLeadEvidenceSchema.optional(),
+});
+
+export const socialVideoItemSchema = z.object({
+  provider: z.literal("youtube"),
+  videoId: z.string().min(1),
+  title: z.string().min(1),
+  channelTitle: z.string().min(1),
+  channelUrl: z.url(),
+  videoUrl: z.url(),
+  thumbnailUrl: z.url(),
+  publishedAt: z.string().datetime(),
+  durationSeconds: z.number().int().positive(),
+});
+
+export const socialVideoResponseSchema = z.discriminatedUnion("status", [
+  z.object({
+    status: z.literal("ok"),
+    item: socialVideoItemSchema,
+  }),
+  z.object({
+    status: z.literal("empty"),
+    item: z.null(),
+  }),
+]);
+
 export const recommendationSnapshotSchema = z.object({
   v: z.literal(1),
   kind: z.literal("recommendation"),
@@ -242,11 +280,16 @@ export type RecommendationQuery = z.infer<typeof recommendationQuerySchema>;
 export type RecommendationResult = z.infer<typeof recommendationResultSchema>;
 export type TrendEvidenceSnapshot = z.infer<typeof trendEvidenceSnapshotSchema>;
 export type DestinationTravelSupplement = z.infer<typeof destinationTravelSupplementSchema>;
+export type SocialVideoLeadEvidence = z.infer<typeof socialVideoLeadEvidenceSchema>;
+export type SocialVideoRequest = z.infer<typeof socialVideoRequestSchema>;
+export type SocialVideoItem = z.infer<typeof socialVideoItemSchema>;
+export type SocialVideoResponse = z.infer<typeof socialVideoResponseSchema>;
 export type RecommendationSnapshot = z.infer<typeof recommendationSnapshotSchema>;
 export type ComparisonSnapshot = z.infer<typeof comparisonSnapshotSchema>;
 export type ScoringVersion = z.infer<typeof scoringVersionSchema>;
 export type EvidenceTier = z.infer<typeof evidenceTierSchema>;
 export type EvidenceSourceType = z.infer<typeof evidenceSourceTypeSchema>;
+export type SnapshotVisibility = z.infer<typeof snapshotVisibilitySchema>;
 export type ExplorationPreference = z.infer<typeof explorationPreferenceSchema>;
 export type UserPreferenceProfile = z.infer<typeof userPreferenceProfileSchema>;
 export type UserPreferenceProfileUpdate = z.infer<typeof userPreferenceProfileUpdateSchema>;

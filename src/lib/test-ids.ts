@@ -33,6 +33,11 @@ export const testIds = {
     passwordInput: "auth-password-input",
     submit: "auth-submit",
     error: "auth-error",
+    providerKakao: "auth-provider-kakao",
+    providerGoogle: "auth-provider-google",
+    providerApple: "auth-provider-apple",
+    returnBanner: "auth-return-banner",
+    collisionError: "auth-collision-error",
   },
   query: {
     submitRecommendation: "submit-recommendation",
@@ -49,6 +54,12 @@ export const testIds = {
     showMoreResults: "show-more-results",
     relaxableFilters: "relaxable-filters",
     relaxFilterAction0: "relax-filter-action-0",
+  },
+  socialVideo: {
+    block: "social-video-block",
+    thumbnail: "social-video-thumbnail",
+    title: "social-video-title",
+    link: "social-video-link",
   },
   detail: {
     root: "destination-detail-root",

@@ -1,34 +1,36 @@
 "use client";
-
-import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type {
   ComparisonSnapshot,
-  DestinationTravelSupplement,
   RecommendationQuery,
 } from "@/lib/domain/contracts";
 import {
   buildDestinationDetailPath,
   buildQueryNarrative,
   buildRecommendationDecisionFacts,
-  buildRecommendationEvidenceLead,
   buildRecommendationSearchParams,
   buildStructuredTripBrief,
   createRecommendationCards,
   formatDepartureAirport,
   formatEvidenceMode,
-  formatMonthList,
   formatTravelMonth,
   formatVibeLabel,
   type RecommendationApiResponse,
   type RecommendationCardView,
 } from "@/lib/trip-compass/presentation";
 import { buildRecommendationSnapshotPayload } from "@/lib/trip-compass/snapshot-payload";
+import { authClient } from "@/lib/auth-client";
+import {
+  buildCurrentRoute,
+  consumeMatchingPostAuthIntent,
+  savePostAuthIntent,
+} from "@/lib/post-auth-intent";
 import { buildApiUrl } from "@/lib/runtime/url";
+import { parseRecommendationQuery } from "@/lib/security/validation";
 import {
   defaultHomeStepAnswers,
   deriveRecommendationQueryFromHomeStepAnswers,
@@ -55,6 +57,7 @@ import { ExperienceShell } from "./experience-shell";
 import { LandingPage } from "./home/landing-page";
 import { ResultPage } from "./home/result-page";
 import { StepQuestion } from "./home/step-question";
+import { LeadSocialVideoPanel } from "./social-video-panel";
 import { TravelSupportPanel } from "./travel-support-panel";
 
 type FunnelStage = "landing" | "question" | "result";
@@ -104,12 +107,6 @@ type SavedSnapshotCompactItemProps = {
   selected: boolean;
   onToggle: (snapshotId: string) => void;
   onCopy: (shareUrl: string) => void;
-};
-
-type LeadDestinationVisualProps = {
-  card: RecommendationCardView;
-  query: RecommendationQuery;
-  supplement?: DestinationTravelSupplement | null;
 };
 
 type CompactRecommendationItemProps = {
@@ -315,83 +312,6 @@ function SavedSnapshotCompactItem({
   );
 }
 
-function LeadDestinationVisual({ card, query, supplement }: LeadDestinationVisualProps) {
-  const primaryVibe = card.destination.vibeTags[0] ?? "city";
-  const isRest = primaryVibe === "beach" || primaryVibe === "nature";
-  const isRomance = primaryVibe === "romance" || primaryVibe === "culture";
-
-  return (
-    <div className="relative aspect-[5/6] overflow-hidden rounded-[1.75rem] border border-[color:var(--color-funnel-border)] bg-white">
-      {supplement?.heroImage ? (
-        <>
-          <Image
-            src={supplement.heroImage.url}
-            alt={supplement.heroImage.alt}
-            fill
-            sizes="(max-width: 1024px) 100vw, 40vw"
-            className="absolute inset-0 object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-black/25" />
-        </>
-      ) : (
-        <>
-          <div className="absolute inset-x-0 top-0 h-[46%] bg-[var(--color-funnel-accent-subtle)]" />
-          <div className="absolute inset-x-0 bottom-0 h-[34%] bg-white" />
-        </>
-      )}
-      <div className="absolute left-5 top-5 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-        {card.destination.nameEn}
-      </div>
-      <div className="absolute right-5 top-5 rounded-full border border-[color:var(--color-funnel-border)] bg-white/95 px-3 py-1 text-[0.64rem] font-semibold text-[var(--color-funnel-text-soft)] backdrop-blur-sm">
-        {formatDepartureAirport(query.departureAirport)} 출발
-      </div>
-
-      {!supplement?.heroImage && isRest ? (
-        <>
-          <div className="absolute left-8 top-20 h-16 w-16 rounded-full bg-white" />
-          <div className="absolute bottom-20 left-6 right-6 h-10 rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-accent-soft)]" />
-          <div className="absolute bottom-28 left-10 h-24 w-28 rounded-t-[3rem] bg-[var(--color-funnel-accent-muted)]" />
-          <div className="absolute bottom-28 right-10 h-32 w-40 rounded-t-[4rem] bg-[var(--color-funnel-text)]" />
-        </>
-      ) : !supplement?.heroImage && isRomance ? (
-        <>
-          <div className="absolute bottom-32 left-1/2 h-28 w-28 -translate-x-1/2 rounded-t-full border-[14px] border-b-0 border-[color:var(--color-funnel-text)]" />
-          <div className="absolute bottom-24 left-1/2 h-10 w-40 -translate-x-1/2 rounded-t-full border border-[color:var(--color-funnel-border-strong)] bg-[var(--color-funnel-accent-soft)]" />
-          <div className="absolute bottom-0 left-8 right-8 h-28 rounded-t-[2rem] bg-[var(--color-funnel-text)]" />
-        </>
-      ) : !supplement?.heroImage ? (
-        <>
-          <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between px-7">
-            <span className="h-24 w-12 rounded-t-[1rem] bg-[var(--color-funnel-accent-soft)]" />
-            <span className="h-32 w-16 rounded-t-[1rem] bg-[var(--color-funnel-text)]" />
-            <span className="h-[5.25rem] w-11 rounded-t-[0.9rem] bg-[var(--color-funnel-accent-muted)]" />
-            <span className="h-28 w-14 rounded-t-[1rem] bg-[var(--color-funnel-text)]" />
-            <span className="h-20 w-10 rounded-t-[0.9rem] bg-[var(--color-funnel-accent-soft)]" />
-          </div>
-        </>
-      ) : null}
-
-      <div className="absolute inset-x-5 bottom-5 rounded-[1.5rem] border border-[color:var(--color-funnel-border)] bg-white px-5 py-4">
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-          대표 추천
-        </p>
-        <p
-          data-testid={getResultTopItemTestId(0)}
-          className="mt-2 text-[1.55rem] font-semibold leading-none tracking-[-0.05em] text-[var(--color-funnel-text)] sm:text-[2rem]"
-        >
-          {card.destination.nameKo}
-        </p>
-        <p className="mt-2 text-sm leading-6 text-[var(--color-funnel-text-soft)]">{formatMonthList(card.destination.bestMonths)}</p>
-        {supplement?.heroImage ? (
-          <p className="mt-1 text-[11px] leading-5 text-[var(--color-funnel-text-soft)]">
-            사진 · {supplement.heroImage.sourceLabel} / {supplement.heroImage.photographerName}
-          </p>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
 function CompactRecommendationItem({
   card,
   index,
@@ -408,7 +328,7 @@ function CompactRecommendationItem({
   return (
     <article
       data-testid={getResultCardTestId(index)}
-      className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-3"
+      className="rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.04)]"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
@@ -426,7 +346,7 @@ function CompactRecommendationItem({
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
             <h3
               data-testid={getResultTopItemTestId(index)}
-              className="text-[1rem] font-semibold leading-none tracking-[-0.02em] text-[var(--color-funnel-text)]"
+              className="text-[1.05rem] font-semibold leading-none tracking-[-0.02em] text-[var(--color-funnel-text)]"
             >
               {card.destination.nameKo}
             </h3>
@@ -434,7 +354,7 @@ function CompactRecommendationItem({
               {formatDepartureAirport(query.departureAirport)} 출발
             </span>
           </div>
-          <p className="mt-1.5 line-clamp-1 text-[0.88rem] font-semibold leading-6 text-[var(--color-funnel-text)]">
+          <p className="mt-2 line-clamp-2 text-[0.9rem] font-semibold leading-6 text-[var(--color-funnel-text)]">
             {leadReason}
           </p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -489,6 +409,8 @@ function CompactRecommendationItem({
 
 export function HomeExperience() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const session = authClient.useSession();
   const [stage, setStage] = useState<FunnelStage>("landing");
   const [answers, setAnswers] = useState<Partial<HomeStepAnswers>>(defaultAnswers);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -506,6 +428,7 @@ export function HomeExperience() {
   const [compareError, setCompareError] = useState<string | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
   const activeRecommendationRequestRef = useRef(0);
+  const replayedIntentRef = useRef<string | null>(null);
 
   const currentQuery = useMemo(() => deriveRecommendationQueryFromHomeStepAnswers(answers), [answers]);
   const resultQuery = results?.query ?? currentQuery;
@@ -672,6 +595,23 @@ export function HomeExperience() {
       ? `${selectedCompareIds.length}곳 비교 보드 만들기`
       : "2개부터 선택하면 비교돼요";
 
+  useEffect(() => {
+    if (stage !== "landing" || results || isSubmitting) {
+      return;
+    }
+
+    const nextSearchParams = new URLSearchParams(searchParams.toString());
+    if (nextSearchParams.size === 0) {
+      return;
+    }
+
+    try {
+      const query = parseRecommendationQuery(nextSearchParams);
+      void requestRecommendations(query);
+    } catch {
+    }
+  }, [isSubmitting, results, searchParams, stage]);
+
   function resetFunnel() {
     activeRecommendationRequestRef.current += 1;
     setStage("landing");
@@ -702,7 +642,7 @@ export function HomeExperience() {
     setCopyFallbackUrl(null);
   }
 
-  async function copyShareUrl(shareUrl: string) {
+  const copyShareUrl = useCallback(async (shareUrl: string) => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopyFallbackUrl(null);
@@ -711,10 +651,24 @@ export function HomeExperience() {
       setCopyFallbackUrl(shareUrl);
       return false;
     }
-  }
+  }, []);
 
-  async function saveCard(card: RecommendationCardView) {
+  const saveCard = useCallback(async (card: RecommendationCardView) => {
     if (!results) {
+      return;
+    }
+
+    if (!session.data?.user) {
+      const currentRoute = buildCurrentRoute(
+        "/",
+        buildRecommendationSearchParams(results.query),
+      );
+      savePostAuthIntent({
+        kind: "save-home-card",
+        route: currentRoute,
+        destinationId: card.destination.id,
+      });
+      router.push(`/auth?next=${encodeURIComponent(currentRoute)}&intent=save`);
       return;
     }
 
@@ -743,7 +697,14 @@ export function HomeExperience() {
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify(buildRecommendationSnapshotPayload(results.query, card, results.meta.scoringVersion)),
+        body: JSON.stringify(
+          buildRecommendationSnapshotPayload(
+            results.query,
+            card,
+            results.meta.scoringVersion,
+            "private",
+          ),
+        ),
       });
 
       if (!response.ok) {
@@ -780,7 +741,7 @@ export function HomeExperience() {
         [card.destination.id]: { status: "error" },
       }));
     }
-  }
+  }, [copyShareUrl, results, router, savedSnapshots, session.data?.user]);
 
   function toggleCompareSelection(snapshotId: string) {
     setCompareError(null);
@@ -798,7 +759,20 @@ export function HomeExperience() {
     });
   }
 
-  async function createCompareSnapshot() {
+  const createCompareSnapshot = useCallback(async () => {
+    if (!session.data?.user) {
+      const currentRoute = buildCurrentRoute(
+        "/",
+        results ? buildRecommendationSearchParams(results.query) : new URLSearchParams(window.location.search),
+      );
+      savePostAuthIntent({
+        kind: "create-compare",
+        route: currentRoute,
+      });
+      router.push(`/auth?next=${encodeURIComponent(currentRoute)}&intent=share`);
+      return;
+    }
+
     const selectedSnapshots = savedSnapshots.filter((snapshot) => selectedCompareIds.includes(snapshot.snapshotId));
 
     if (selectedSnapshots.length < 2 || selectedSnapshots.length > 4) {
@@ -815,7 +789,10 @@ export function HomeExperience() {
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify(buildComparisonSnapshotPayload(selectedSnapshots)),
+        body: JSON.stringify({
+          ...buildComparisonSnapshotPayload(selectedSnapshots),
+          visibility: "public",
+        }),
       });
 
       if (!response.ok) {
@@ -829,7 +806,39 @@ export function HomeExperience() {
     } finally {
       setCompareLoading(false);
     }
-  }
+  }, [results, router, savedSnapshots, selectedCompareIds, session.data?.user]);
+
+  useEffect(() => {
+    if (session.isPending || !session.data?.user || !results) {
+      return;
+    }
+
+    const currentRoute = buildCurrentRoute(window.location.pathname, new URLSearchParams(window.location.search));
+    const intent = consumeMatchingPostAuthIntent(currentRoute);
+
+    if (!intent) {
+      return;
+    }
+
+    const intentKey = `${intent.kind}:${intent.route}`;
+    if (replayedIntentRef.current === intentKey) {
+      return;
+    }
+
+    replayedIntentRef.current = intentKey;
+
+    if (intent.kind === "save-home-card") {
+      const targetCard = cards.find((card) => card.destination.id === intent.destinationId);
+      if (targetCard) {
+        void saveCard(targetCard);
+      }
+      return;
+    }
+
+    if (intent.kind === "create-compare") {
+      void createCompareSnapshot();
+    }
+  }, [cards, createCompareSnapshot, results, saveCard, session.data?.user, session.isPending]);
 
   async function requestRecommendations(nextQuery: RecommendationQuery) {
     const requestId = activeRecommendationRequestRef.current + 1;
@@ -979,26 +988,16 @@ export function HomeExperience() {
         leadTitle={leadCard ? leadCard.destination.nameKo : isSubmitting ? "추천 결과를 정리하고 있어요." : "다시 맞는 후보를 찾고 있어요."}
         leadReason={leadCard?.recommendation.reasons[0] ?? "결과가 나오면 가장 먼저 볼 목적지를 짧게 정리해 드릴게요."}
         leadDescription={leadCard ? leadCard.recommendation.whyThisFits : queryNarrative}
-        leadVisual={
-          leadCard ? (
-            <LeadDestinationVisual
-              card={leadCard}
-              query={resultQuery}
-              supplement={results?.leadSupplement}
-            />
-          ) : (
-            <div className="aspect-[4/5] rounded-[1.75rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)]" />
-          )
-        }
         leadTags={leadCard ? leadCard.destination.vibeTags.slice(0, 3).map((tag) => formatVibeLabel(tag)) : []}
         leadFacts={leadCard ? buildRecommendationDecisionFacts(leadCard.destination) : []}
         leadSupportSlot={
           leadCard ? (
-            <TravelSupportPanel
-              supplement={results?.leadSupplement}
+            <LeadSocialVideoPanel
+              key={`${leadCard.destination.id}-${resultQuery.partyType}-${resultQuery.partySize}-${resultQuery.budgetBand}-${resultQuery.tripLengthDays}-${resultQuery.departureAirport}-${resultQuery.travelMonth}-${resultQuery.pace}-${resultQuery.flightTolerance}-${resultQuery.vibes.join(",")}`}
+              destinationId={leadCard.destination.id}
               destinationName={leadCard.destination.nameKo}
-              heroMode="compact"
-              rootClassName="p-0 border-0"
+              leadReason={leadCard.recommendation.reasons[0] ?? leadCard.recommendation.whyThisFits}
+              query={resultQuery}
             />
           ) : null
         }
@@ -1007,55 +1006,44 @@ export function HomeExperience() {
             (() => {
               const saveState = saveStates[leadCard.destination.id] ?? { status: "idle" };
               const detailPath = buildDestinationDetailPath(leadCard.destination, results?.query ?? currentQuery, saveState.snapshotId);
-              const evidenceLead = buildRecommendationEvidenceLead(leadCard);
 
               return (
                 <div className="space-y-4">
-                  <section
-                    data-testid={getInstagramVibeTestId(0)}
-                    className="rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-4"
-                  >
-                    <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                      추천 메모
+                  <section data-testid={getInstagramVibeTestId(0)} className="space-y-3">
+                    <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
+                      바로 움직이기
                     </p>
-                    <p className="mt-2 text-base font-semibold leading-6 text-[var(--color-funnel-text)]">
-                      {leadCard.recommendation.reasons[0] ?? leadCard.recommendation.whyThisFits}
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-                      {evidenceLead.detail}
-                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      <Link
+                        href={detailPath}
+                        className="inline-flex min-h-[2.9rem] items-center rounded-full bg-[var(--color-action-primary)] px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
+                      >
+                        상세 보기
+                      </Link>
+                      <button
+                        type="button"
+                        data-testid={getSaveSnapshotTestId(0)}
+                        onClick={() => {
+                          void saveCard(leadCard);
+                        }}
+                        disabled={saveState.status === "saving"}
+                        className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {saveState.status === "saving"
+                          ? "저장 중..."
+                          : saveState.status === "saved"
+                            ? "내 일정에 담았어요"
+                            : "내 일정에 담기"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={reopenQuestionFlow}
+                        className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+                      >
+                        질문 다시 보기
+                      </button>
+                    </div>
                   </section>
-
-                  <div className="flex flex-wrap gap-2">
-                    <Link
-                      href={detailPath}
-                      className="inline-flex min-h-[2.9rem] items-center rounded-full bg-[var(--color-action-primary)] px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
-                    >
-                      상세 보기
-                    </Link>
-                    <button
-                      type="button"
-                      data-testid={getSaveSnapshotTestId(0)}
-                      onClick={() => {
-                        void saveCard(leadCard);
-                      }}
-                      disabled={saveState.status === "saving"}
-                      className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {saveState.status === "saving"
-                        ? "저장 중..."
-                        : saveState.status === "saved"
-                          ? "내 일정에 담았어요"
-                          : "내 일정에 담기"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={reopenQuestionFlow}
-                      className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
-                    >
-                      질문 다시 보기
-                    </button>
-                  </div>
 
                   <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--color-funnel-text-soft)]">
                     <button type="button" onClick={resetFunnel} className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]">
@@ -1096,7 +1084,7 @@ export function HomeExperience() {
                   결과 {results.meta.resultCount}곳
                 </span>
                 <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[10px] font-semibold text-[var(--color-funnel-text-soft)]">
-                  {formatEvidenceMode(results.sourceSummary.mode)} 근거
+                  {formatEvidenceMode(results.sourceSummary.mode)} 참고
                 </span>
               </>
             ) : null}
@@ -1154,6 +1142,14 @@ export function HomeExperience() {
         }
         statusSlot={
           <>
+            {leadCard && results?.leadSupplement ? (
+              <TravelSupportPanel
+                supplement={results.leadSupplement}
+                destinationName={leadCard.destination.nameKo}
+                heroMode="compact"
+              />
+            ) : null}
+
             {submitError ? (
               <div className="rounded-[1.5rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-funnel-text)]">
                 <p>{submitError}</p>
@@ -1259,14 +1255,14 @@ export function HomeExperience() {
         }
         resultsSlot={
           secondaryCards.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-3.5">
               <div className="flex flex-col gap-2.5 sm:flex-row sm:items-end sm:justify-between">
                 <div>
                   <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
                     다른 후보
                   </p>
-                  <p className="mt-1.5 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-                    대표 추천 아래에서 바로 저장하거나 비교 후보로 골라 보세요.
+                  <p className="mt-1 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
+                    핵심만 간단히 비교하고 바로 저장하거나 비교 보드로 넘겨 보세요.
                   </p>
                 </div>
                 {filteredCards.length > 4 ? (
@@ -1281,7 +1277,7 @@ export function HomeExperience() {
                 ) : null}
               </div>
 
-              <div data-testid={testIds.result.topList} className="grid gap-3">
+              <div data-testid={testIds.result.topList} className="grid gap-2.5">
                 {secondaryCards.map((card, index) => {
                   const cardIndex = index + 1;
                   const saveState = saveStates[card.destination.id] ?? { status: "idle" };
