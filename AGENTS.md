@@ -1,169 +1,166 @@
 # AGENTS.md
-Agent guide for the `SooGo` repository.
-Scope: entire repository.
 
-## 1) Working Contract
-- Follow this order: user request > system/developer instructions > this file.
-- Verify behavior against real files, scripts, and configs before acting.
-- Keep changes minimal, local, and consistent with nearby code.
-- Do not invent routes, schema shapes, commands, or workflows.
-- Prefer existing helpers and service layers over parallel abstractions.
-- Read `docs/tech-stack.md` for stack questions before inferring from memory.
-- Read `docs/korean-copy-guidelines.md` before changing user-facing Korean copy.
-- Read `docs/issue-resolution-log.md` before debugging recurring or recent issues.
-- After resolving a non-trivial issue, append a short verified note to `docs/issue-resolution-log.md`.
-- For major or important work, create a visible audit trail under `memory/` so the user can inspect what was planned, changed, and verified without relying on hidden agent scratch files.
-- Treat `.sisyphus/` as internal agent planning/scratch space only; it must not be the only record for major work.
-- Use `memory/YYYY-MM-DD-short-slug/` for each major work item and keep at least `plan.md`, `changes.md`, and `verification.md` inside that folder.
-- Write Markdown documentation in Korean by default when practical so repo-local audit notes and status documents stay easy for the user to review later.
-- Do not put secrets, credentials, or bulky generated artifacts in `memory/`.
+`WhereToNext` 저장소용 에이전트 작업 가이드입니다.
+적용 범위는 저장소 전체입니다.
 
-## 2) Active Rule Files and Overrides
-- Active local instruction source today: root `AGENTS.md` only.
-- Checked and currently absent: `.cursorrules`, `.cursor/rules/`, `.github/copilot-instructions.md`, nested `AGENTS.md`.
-- If any of those appear later, follow them and update this file to reflect the new instruction stack.
+## 1) 우선순위와 기본 원칙
+- 우선순위는 `사용자 요청 > 시스템/개발자 지침 > 이 파일` 순서입니다.
+- 실제 파일, 스크립트, 설정을 읽고 확인한 뒤 행동합니다.
+- 라우트, 스키마, 명령어, 워크플로를 추측으로 만들지 않습니다.
+- 변경은 작고 국소적으로 유지하고, 주변 패턴과 맞춥니다.
+- 기존 helper, service layer, parser를 재사용하고 병렬 추상화를 새로 만들지 않습니다.
+- 스택 질문은 먼저 `docs/tech-stack.md`를 읽고 판단합니다.
+- 사용자-facing 한국어 문구를 바꾸기 전 `docs/korean-copy-guidelines.md`를 읽습니다.
+- 반복 이슈나 최근 회귀를 디버깅할 때는 `docs/issue-resolution-log.md`를 먼저 읽습니다.
+- 비사소한 문제를 해결했다면 `docs/issue-resolution-log.md`에 검증된 짧은 기록을 남깁니다.
 
-## 3) Repository Snapshot
-- Framework: `Next.js 16 App Router`, `React 19`.
-- Language: `TypeScript 5` with `strict: true` in `tsconfig.json`.
-- Styling: `Tailwind CSS 4`.
-- Validation: `Zod`.
-- Data: `Drizzle ORM` with `Postgres` when `DATABASE_URL` exists and `PGlite` fallback otherwise.
-- Testing: `Vitest` for unit tests, `Playwright` for e2e.
-- Linting: `ESLint 9` via `eslint.config.mjs`.
+## 2) 규칙 파일 스택
+- 현재 활성 로컬 규칙 소스는 루트 `AGENTS.md` 하나입니다.
+- 현재 확인 기준 `.cursorrules`, `.cursor/rules/`, `.github/copilot-instructions.md`, 중첩 `AGENTS.md`는 발견되지 않았습니다.
+- 나중에 위 파일이 생기면 해당 내용을 따르고 이 문서의 규칙 스택 섹션도 갱신합니다.
 
-## 4) Important Paths
-- App routes: `src/app/`
-- API routes: `src/app/api/**/route.ts`
-- Shared UI: `src/components/trip-compass/`
-- Business/domain logic: `src/lib/`
-- Visible work audit trail: `memory/`
-- Domain contracts: `src/lib/domain/contracts.ts`
-- DB runtime/schema: `src/lib/db/runtime.ts`, `src/lib/db/schema.ts`
-- Validation: `src/lib/security/validation.ts`
-- Recommendation engine: `src/lib/recommendation/engine.ts`
-- Route orchestration/restore: `src/lib/trip-compass/route-data.ts`, `src/lib/trip-compass/restore.ts`
-- Test selectors: `src/lib/test-ids.ts`
-- Styles and middleware: `src/app/globals.css`, `middleware.ts`
+## 3) 저장소 개요
+- 프레임워크: `Next.js 16 App Router`, `React 19`
+- 언어: `TypeScript 5`, `strict: true`
+- 스타일링: `Tailwind CSS 4`
+- 검증: `Zod`
+- 데이터: `Drizzle ORM`, `Postgres`, `PGlite` fallback
+- 테스트: `Vitest`, `Playwright`
+- 린트: `ESLint 9`
 
-## 5) Branch and Command Sources
-- Treat `main` as production and `dev` as integration; prefer `feature/*` branches for work.
-- Treat `package.json` as the canonical source for scripts.
-- Treat `vitest.config.ts` as the source of truth for unit-test runner behavior.
-- Treat `playwright.config.ts` as the source of truth for e2e runner behavior.
-- Use `README.md`, `docs/deployment.md`, and `docs/ios-release-preflight.md` as supporting docs, not as substitutes for config files.
+## 4) 중요한 경로
+- 앱 라우트: `src/app/`
+- API 라우트: `src/app/api/**/route.ts`
+- 주요 UI: `src/components/trip-compass/`
+- 도메인/비즈니스 로직: `src/lib/`
+- 계약 정의: `src/lib/domain/contracts.ts`
+- 검증 파서: `src/lib/security/validation.ts`
+- 추천 엔진: `src/lib/recommendation/engine.ts`
+- 복원/라우트 조립: `src/lib/trip-compass/route-data.ts`, `src/lib/trip-compass/restore.ts`
+- 테스트 ID: `src/lib/test-ids.ts`
+- 전역 스타일/미들웨어: `src/app/globals.css`, `middleware.ts`
 
-## 6) Build, Lint, and Test Commands
-- Install dependencies: `npm install`
-- Dev server: `npm run dev`
-- Production build: `npm run build`
-- Start production server locally: `npm run start`
-- Lint entire repo: `npm run lint`
-- Generate DB artifacts: `npm run db:generate`
-- Seed DB: `npm run db:seed`
-- Run all unit tests: `npm run test:unit`
-- Run all e2e tests: `npm run test:e2e`
-- Run smoke verification: `npm run test:smoke`
+## 5) `.sisyphus/`와 `memory/`의 역할
+- `.sisyphus/`는 내부 계획/스크래치 공간입니다. 공개 기록을 대신하면 안 됩니다.
+- 정식 내부 계획 문서는 `.sisyphus/plans/`에 둡니다.
+- 작업 초안은 `.sisyphus/drafts/`, 주제별 메모는 `.sisyphus/notepads/`를 사용합니다.
+- `.sisyphus/boulder.json`은 active plan, 세션 정보 같은 상태 메타데이터입니다.
+- 중요한 작업은 `memory/YYYY-MM-DD-short-slug/`에 공개 audit trail을 남깁니다.
+- `memory/`에는 최소 `plan.md`, `changes.md`, `verification.md`를 둡니다.
+- `memory/`에는 비밀번호, 토큰, 대용량 생성물, 숨김 scratch 정보를 남기지 않습니다.
+- Markdown 문서는 가능하면 한국어로 작성하고 맨 위에 `한눈에 보기` 요약을 둡니다.
 
-## 7) Single-Test Commands
-- Run one Vitest file: `npx vitest run tests/unit/snapshots/service.spec.ts`
-- Run one Vitest test by name: `npx vitest run tests/unit/recommendation/golden-cases.spec.ts -t "keeps the top recommendations stable"`
-- Run one Playwright file: `npx playwright test tests/e2e/recommendation-flow.spec.ts`
-- Run one Playwright test by title: `npx playwright test -g "restores a saved recommendation snapshot"`
-- Run one iOS/WebKit e2e file: `npx playwright test tests/e2e/ios-acquisition-flow.spec.ts --project=webkit`
-- Run one Mobile Safari e2e file: `npx playwright test tests/e2e/ios-acquisition-flow.spec.ts --project="Mobile Safari"`
+## 6) 브랜치와 명령어 소스
+- `main`은 production, `dev`는 integration으로 취급합니다.
+- 새 작업은 가능하면 `feature/*` 브랜치에서 진행합니다.
+- `dev`에서 작업을 시작했다면 사용자가 직접 원하지 않는 한 `feature/*`로 분기 후 커밋합니다.
+- 실행 가능한 명령의 기준은 `package.json`입니다.
+- unit test 러너 동작은 `vitest.config.ts`, e2e 동작은 `playwright.config.ts`를 기준으로 봅니다.
 
-## 8) Test Runner Notes
-- Vitest is scoped to `tests/unit/**/*.spec.ts` and `tests/unit/**/*.spec.tsx` via `vitest.config.ts`.
-- Playwright is scoped to `tests/e2e` via `playwright.config.ts`.
-- Playwright uses `npm run start` on port `4010` through `webServer`; e2e assumes a production build exists.
-- If you run e2e outside CI, prefer `npm run build && npm run test:e2e`.
-- Playwright is configured with `workers: 1` and `fullyParallel: false`; do not assume high test parallelism.
-- `test:smoke` already runs lint, one smoke unit test, and a full build.
+## 7) 기본 실행 명령
+- 의존성 설치: `npm install`
+- 개발 서버: `npm run dev`
+- 프로덕션 빌드: `npm run build`
+- 프로덕션 서버 실행: `npm run start`
+- 전체 린트: `npm run lint`
+- DB artifact 생성: `npm run db:generate`
+- 시드 실행: `npm run db:seed`
+- 전체 unit test: `npm run test:unit`
+- 전체 e2e test: `npm run test:e2e`
+- 스모크 검증: `npm run test:smoke`
+- iOS shell build: `npm run shell:build`
 
-## 9) Required Verification Before Finishing
-- Minimum for code changes: `npm run lint && npm run test:unit && npm run build`.
-- Run `npm run test:e2e` when the change affects user-visible flows, routing, or browser behavior.
-- When touching a specific domain module, run the closest single-file or named test first, then the broader suite.
+## 8) 단일 테스트 실행 명령
+- Vitest 파일 1개: `npx vitest run tests/unit/snapshots/service.spec.ts`
+- Vitest 이름 1개: `npx vitest run tests/unit/recommendation/golden-cases.spec.ts -t "keeps the top recommendations stable"`
+- Playwright 파일 1개: `npx playwright test tests/e2e/recommendation-flow.spec.ts`
+- Playwright 제목 1개: `npx playwright test -g "restores a saved recommendation snapshot"`
+- WebKit 1개 파일: `npx playwright test tests/e2e/ios-acquisition-flow.spec.ts --project=webkit`
+- Mobile Safari 1개 파일: `npx playwright test tests/e2e/ios-acquisition-flow.spec.ts --project="Mobile Safari"`
 
-## 10) Formatting and General Style
-- Follow existing ESLint + Next formatting; do not assume Prettier is active.
-- Match the current style: double quotes, semicolons, trailing commas, and 2-space indentation.
-- Keep diffs focused; avoid drive-by refactors during bug fixes.
-- Prefer small pure helpers for domain logic and thin route handlers for transport concerns.
-- Add concise JSDoc to every new or materially changed function.
-- Match surrounding documentation language: core/business files often use Korean JSDoc, UI files often use English JSDoc.
+## 9) 테스트 러너 메모
+- Vitest include 범위는 `tests/unit/**/*.spec.ts`, `tests/unit/**/*.spec.tsx`입니다.
+- Playwright testDir는 `tests/e2e`입니다.
+- Playwright는 `http://localhost:4010`을 기준으로 `npm run start`를 webServer로 띄웁니다.
+- Playwright는 `workers: 1`, `fullyParallel: false`라 병렬 실행을 가정하지 않습니다.
+- e2e를 로컬에서 돌릴 때는 보통 `npm run build && npm run test:e2e`가 가장 안전합니다.
+- `test:smoke`는 `npm run lint`, `vitest run tests/unit/smoke.spec.tsx`, `npm run build`를 묶어서 실행합니다.
 
-## 11) Imports and Module Boundaries
-- Use `@/*` alias imports for internal modules.
-- Group imports in this order: framework/third-party, internal `@/`, then relative local imports.
-- Prefer `import type` for type-only imports.
-- Reuse helpers from `src/lib/` instead of re-implementing logic in routes or components.
-- Keep route handlers thin; push business logic into `src/lib/`.
+## 10) 작업 완료 전 최소 검증
+- 코드 변경의 최소 기준은 `npm run lint && npm run test:unit && npm run build`입니다.
+- 사용자-visible 플로우, 라우팅, 브라우저 동작을 건드렸다면 `npm run test:e2e`도 실행합니다.
+- 특정 모듈을 수정했다면 먼저 가장 가까운 단일 테스트를 돌리고, 그 다음 전체 범위 검증으로 넓힙니다.
 
-## 12) TypeScript and Data Contracts
-- Preserve strict typing from `tsconfig.json`.
-- Do not use `any`, `as any`, `@ts-ignore`, or `@ts-expect-error`.
-- Prefer schema-driven types from `src/lib/domain/contracts.ts` and `z.infer`-based request typing.
-- Keep runtime validation and static types aligned.
-- When payload shapes change, update schema, service logic, API contract, and tests together.
-- Preserve discriminated unions such as snapshot `kind` values and route-data `kind` branches.
-- `allowJs` exists, but new repo code should still default to `.ts`/`.tsx`.
+## 11) 포맷과 문서 스타일
+- 이 저장소는 ESLint + Next 스타일을 따르며 Prettier를 전제로 가정하지 않습니다.
+- 실제 코드 스타일은 double quote, semicolon, trailing comma, 2-space indent입니다.
+- 버그 수정 시 드라이브바이 리팩터링을 하지 말고 diff를 작게 유지합니다.
+- 새 함수나 크게 수정한 함수에는 짧은 JSDoc을 붙입니다.
+- 코어/도메인 파일은 한국어 JSDoc이 많고, UI 파일은 영어 JSDoc이 섞여 있으므로 주변 스타일을 맞춥니다.
 
-## 13) Naming Conventions
-- React component exports: PascalCase.
-- Functions, variables, hooks, and local helpers: camelCase.
-- Constants: UPPER_SNAKE_CASE only for real constants.
-- Component and utility filenames are usually kebab-case.
-- Keep type aliases descriptive and local when they serve a single component or module.
+## 12) import와 모듈 경계
+- 내부 모듈은 `@/*` alias import를 사용합니다.
+- import 순서는 보통 `프레임워크/서드파티 -> @/ 내부 모듈 -> 상대 경로`입니다.
+- 타입만 쓰는 import는 `import type`을 우선합니다.
+- Node built-in은 필요 시 `node:` prefix를 사용합니다.
+- 라우트나 컴포넌트에서 비즈니스 로직을 새로 구현하지 말고 `src/lib/`의 helper를 재사용합니다.
+- API route는 transport 계층으로 얇게 유지하고 실제 로직은 `src/lib/`로 밀어냅니다.
 
-## 14) Next.js and React Conventions
-- Default to Server Components in `src/app/`.
-- Add `"use client"` only when browser APIs, hooks, or interactivity are required.
-- Client-heavy screens live in `src/components/trip-compass/` and are composed from server routes.
-- Keep API handlers in `src/app/api/**/route.ts`.
-- Follow the existing async params pattern for dynamic App Router pages and route handlers.
-- Page example: `params: Promise<{ snapshotId: string }>`.
-- Where needed, also match async `searchParams: Promise<...>` patterns in dynamic pages.
+## 13) 타입, 스키마, 계약 규칙
+- `strict` 타입 안전성을 유지합니다.
+- `any`, `as any`, `@ts-ignore`, `@ts-expect-error`는 사용하지 않습니다.
+- 스키마는 `src/lib/domain/contracts.ts`를 기준으로 두고 `z.infer` 기반 타입을 선호합니다.
+- 런타임 검증과 정적 타입은 항상 같은 계약을 가리켜야 합니다.
+- payload shape를 바꾸면 schema, parser, service, API response, test를 함께 갱신합니다.
+- snapshot `kind` 같은 discriminated union은 깨지지 않게 유지합니다.
+- `allowJs`가 켜져 있어도 새 코드는 기본적으로 `.ts`/`.tsx`를 사용합니다.
 
-## 15) Validation, Errors, and API Behavior
-- Validate all external input with Zod; prefer shared parsers in `src/lib/security/validation.ts`.
-- Return structured JSON errors from API routes.
-- Preserve stable error `code` values where a route already defines them.
-- Keep user-facing errors safe and generic; never leak stack traces or internal details.
-- Preserve rate-limit headers where already used.
-- Catch blocks must end in an intentional fallback, null state, boolean failure, or safe user message.
-- In route handlers, prefer early returns for auth, validation, and rate-limit failures.
+## 14) 명명 규칙
+- React 컴포넌트 export는 `PascalCase`를 사용합니다.
+- 함수, 변수, hook, local helper는 `camelCase`를 사용합니다.
+- 상수는 진짜 상수일 때만 `UPPER_SNAKE_CASE`를 사용합니다.
+- 파일명은 주로 kebab-case를 따릅니다.
+- 타입 이름은 설명적이어야 하며, 한 파일에만 의미가 있으면 로컬 타입으로 둡니다.
 
-## 16) Security, Persistence, and Recommendation Rules
-- Treat query params, request bodies, headers, cookies, and snapshot IDs as untrusted.
-- Preserve security headers and API `X-Robots-Tag` behavior in `middleware.ts`.
-- Keep anonymous-first behavior intact unless the task explicitly changes auth flows.
-- Use `src/lib/db/runtime.ts` instead of creating ad hoc DB clients.
-- Respect the runtime split: `Postgres` with `DATABASE_URL`, `PGlite` fallback otherwise.
-- Snapshot restore must fail closed; do not silently re-calculate or partially hydrate missing saved data.
-- Keep recommendation logic deterministic and explainable.
-- Do not replace ranking with opaque AI heuristics.
-- Evidence can enrich results but must not override hard filters.
+## 15) Next.js / React 패턴
+- `src/app/` 아래는 기본적으로 Server Component로 둡니다.
+- 브라우저 API, hook, 상호작용이 필요할 때만 `"use client"`를 추가합니다.
+- client-heavy 화면은 `src/components/trip-compass/`에 두고 route는 이를 조합합니다.
+- API handler는 `src/app/api/**/route.ts`에 둡니다.
+- 동적 App Router 페이지와 route handler는 현재 패턴대로 async `params: Promise<{...}>` 형태를 맞춥니다.
+- 필요하면 `searchParams: Promise<...>` 패턴도 동일하게 맞춥니다.
 
-## 17) UI, Tests, and Documentation
-- Reuse shared visual primitives and token classes from `src/app/globals.css`.
-- Existing UI language is editorial, warm, and summary-first; keep new UI aligned with that direction.
-- Prefer Tailwind utilities plus shared classes such as `compass-*` and `instagram-card`.
-- Reuse existing shell/layout primitives such as `ExperienceShell` before adding new wrappers.
-- Update or add tests when contracts, recommendation weights, snapshots, selectors, or restore behavior change.
-- For interactive UI changes, add or reuse stable selectors from `src/lib/test-ids.ts`.
-- Do not scatter raw `data-testid` strings when a helper or centralized ID already exists.
-- Update `README.md`, `AGENTS.md`, or `.env.example` when commands, conventions, or environment variables change.
-- For major work, also add a concise visible record under `memory/` and keep it focused on the plan, concrete file changes, and actual verification commands/results.
-- Repo-local task-specific skills live in `.claude/skills/`; installed UI skill: `.claude/skills/ui-ux-pro-max/`.
-- Current persisted design system output lives at `design-system/soogo/MASTER.md`.
+## 16) 검증, 에러 처리, 보안
+- 외부 입력은 모두 Zod로 검증하고 가능하면 `src/lib/security/validation.ts`의 parser를 재사용합니다.
+- API는 구조화된 JSON 에러를 반환하고, 기존 `code` 값이 있으면 유지합니다.
+- 사용자-facing 에러는 안전하고 일반적인 메시지로 제한하며 stack trace를 노출하지 않습니다.
+- catch 블록은 빈 블록으로 두지 말고 의도된 fallback, null, boolean failure, 안전한 메시지로 끝내야 합니다.
+- auth, validation, rate limit 실패는 route handler 초반에 early return하는 패턴을 선호합니다.
+- query, body, header, cookie, snapshot ID는 모두 untrusted input으로 취급합니다.
+- `middleware.ts`의 보안 헤더와 API `X-Robots-Tag` 동작을 유지합니다.
 
-## 18) Finish Checklist
-- Did I use only real scripts and installed tools?
-- Did I preserve strict typing and avoid suppression shortcuts?
-- Did I validate external input through existing schema patterns?
-- Did I preserve anonymous-first behavior and security headers?
-- Did I update tests and selectors when behavior changed?
-- Did I run `npm run lint`, `npm run test:unit`, and `npm run build`?
-- Did I run `npm run test:e2e` if the change affects user-visible flows?
+## 17) 데이터, 추천, 영속성 규칙
+- DB 접근은 ad hoc client를 만들지 말고 `src/lib/db/runtime.ts`를 사용합니다.
+- `DATABASE_URL`이 있으면 Postgres, 없으면 `PGlite` fallback 규칙을 유지합니다.
+- snapshot restore는 fail closed 해야 하며, 저장 데이터가 없을 때 조용히 재계산하거나 부분 hydrate 하지 않습니다.
+- 추천 로직은 결정적이고 설명 가능해야 합니다.
+- 하드 필터를 opaque AI 점수로 덮어쓰지 않습니다.
+- 증거 레이어는 결과를 풍부하게 만들 수 있지만 core ranking을 임의로 뒤집으면 안 됩니다.
+
+## 18) UI, 테스트, 문서화 규칙
+- 공통 시각 토큰과 클래스는 `src/app/globals.css`를 우선 재사용합니다.
+- Tailwind utility와 공용 클래스(`compass-*`, `instagram-card`)를 우선 사용합니다.
+- 새 wrapper를 만들기 전에 `ExperienceShell` 같은 기존 shell/layout primitive를 먼저 확인합니다.
+- 인터랙티브 UI 변경 시 `src/lib/test-ids.ts`의 selector를 재사용하거나 추가합니다.
+- raw `data-testid` 문자열을 임의로 흩뿌리지 않습니다.
+- 계약, recommendation weight, snapshot, selector, restore 동작을 바꾸면 테스트도 같이 갱신합니다.
+- 명령, 환경 변수, 규칙이 바뀌면 `README.md`, `AGENTS.md`, `.env.example`도 함께 갱신합니다.
+- 로컬 참조 이미지가 주어졌다면 UI 작업 전에 반드시 확인하고 시각 기준으로 삼습니다.
+
+## 19) 마무리 체크리스트
+- 실제 존재하는 스크립트와 도구만 사용했는가?
+- 타입 안전성과 기존 계약을 유지했는가?
+- 외부 입력 검증과 보안 헤더를 보존했는가?
+- 변경된 동작에 맞춰 테스트와 selector를 갱신했는가?
+- `npm run lint`, `npm run test:unit`, `npm run build`를 실행했는가?
+- 브라우저 동작 변경이면 `npm run test:e2e`까지 실행했는가?
