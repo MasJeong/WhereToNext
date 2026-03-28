@@ -2,14 +2,14 @@
 
 > Repository name: `WhereToNext`
 
-[![CI](https://github.com/MasJeong/SooGo/actions/workflows/ci.yml/badge.svg)](https://github.com/MasJeong/SooGo/actions/workflows/ci.yml)
+[![CI](https://github.com/MasJeong/WhereToNext/actions/workflows/ci.yml/badge.svg)](https://github.com/MasJeong/WhereToNext/actions/workflows/ci.yml)
 
 떠나볼래는 로그인 없이 바로 사용하는 해외 여행지 추천 플랫폼입니다.
 사용자가 동행, 예산, 일정, 여행 시기, 분위기를 선택하면 설명 가능한 추천 엔진이 목적지를 제안하고,
 각 결과 카드에는 Instagram vibe 근거와 저장/공유/비교 흐름이 함께 붙습니다.
 대표 추천 1곳에는 외부 여행 보조 데이터와 함께 YouTube 기반 소셜 비디오 증거 블록이 붙을 수 있습니다.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MasJeong/SooGo)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MasJeong/WhereToNext)
 
 ## 핵심 특징
 
@@ -54,7 +54,7 @@ APPLE_CLIENT_SECRET=
 MOCK_OAUTH_PROVIDER=false
 ```
 
-> 참고: 저장소의 목표 이름은 `WhereToNext`이지만, GitHub 원격 slug와 Vercel clone URL은 실제 변경 전까지 현재 값(`MasJeong/SooGo`)을 그대로 사용합니다.
+> 참고: 현재 GitHub 원격 저장소 slug는 `MasJeong/WhereToNext`입니다.
 
 `DATABASE_URL`이 없으면 `PGlite` fallback을 사용합니다.
 로컬 개발에서 `PGLITE_DATA_DIR`가 설정되어 있으면 해당 디렉터리에 데이터를 유지하고, 테스트에서는 메모리 기반 `PGlite`를 사용합니다.
