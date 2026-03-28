@@ -1,8 +1,8 @@
-# SooGo Korean Copy Guidelines
+# 떠나볼래 Korean Copy Guidelines
 
 ## Purpose
 
-SooGo is a Korean-first outbound travel recommendation product. Write every user-facing string for Korean travelers departing from Korea, not for a global English audience.
+떠나볼래 is a Korean-first outbound travel recommendation product. Write every user-facing string for Korean travelers departing from Korea, not for a global English audience.
 
 ## Product Voice
 
