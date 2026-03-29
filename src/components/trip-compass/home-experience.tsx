@@ -7,6 +7,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ComparisonSnapshot,
   RecommendationQuery,
+  UserFutureTrip,
 } from "@/lib/domain/contracts";
 import {
   buildDestinationDetailPath,
@@ -43,6 +44,7 @@ import {
   type HomeStepTravelStyle,
 } from "@/lib/trip-compass/step-answer-adapter";
 import {
+  getFutureTripCtaTestId,
   getHomeChoiceTestId,
   getInstagramVibeTestId,
   getRelaxFilterActionTestId,
@@ -67,6 +69,12 @@ type SaveState = {
   status: "idle" | "saving" | "saved" | "error";
   snapshotId?: string;
   shareUrl?: string;
+};
+
+type FutureTripState = {
+  status: "idle" | "saving" | "saved" | "error";
+  futureTripId?: string;
+  sourceSnapshotId?: string;
 };
 
 type SavedSnapshotCard = {
@@ -117,8 +125,11 @@ type CompactRecommendationItemProps = {
   card: RecommendationCardView;
   index: number;
   query: RecommendationQuery;
+  showFutureTripCta: boolean;
   saveState: SaveState;
+  futureTripState: FutureTripState;
   onSave: (card: RecommendationCardView) => void;
+  onRegisterFutureTrip: (card: RecommendationCardView) => void;
   onCopy: (shareUrl: string) => void;
 };
 
@@ -320,8 +331,11 @@ function CompactRecommendationItem({
   card,
   index,
   query,
+  showFutureTripCta,
   saveState,
+  futureTripState,
   onSave,
+  onRegisterFutureTrip,
   onCopy,
 }: CompactRecommendationItemProps) {
   const detailPath = buildDestinationDetailPath(card.destination, query, saveState.snapshotId);
@@ -380,6 +394,21 @@ function CompactRecommendationItem({
           >
             상세 보기
           </Link>
+          {showFutureTripCta ? (
+            <button
+              type="button"
+              data-testid={getFutureTripCtaTestId(index)}
+              onClick={() => onRegisterFutureTrip(card)}
+              disabled={futureTripState.status === "saving" || futureTripState.status === "saved"}
+              className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {futureTripState.status === "saving"
+                ? "담는 중..."
+                : futureTripState.status === "saved"
+                  ? "다음 여행 담음"
+                  : "다음 여행 담기"}
+            </button>
+          ) : null}
           <button
             type="button"
             data-testid={getSaveSnapshotTestId(index)}
@@ -426,6 +455,8 @@ export function HomeExperience() {
   const [resultFilter, setResultFilter] = useState<ResultFilterKey>("all");
   const [resultSort, setResultSort] = useState<ResultSortKey>("fit");
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
+  const [futureTripStates, setFutureTripStates] = useState<Record<string, FutureTripState>>({});
+  const [snapshotReferences, setSnapshotReferences] = useState<Record<string, SavedSnapshotCard>>({});
   const [savedSnapshots, setSavedSnapshots] = useState<SavedSnapshotCard[]>([]);
   const [copyFallbackUrl, setCopyFallbackUrl] = useState<string | null>(null);
   const [selectedCompareIds, setSelectedCompareIds] = useState<string[]>([]);
@@ -557,7 +588,7 @@ export function HomeExperience() {
     {
       id: "travel-style",
       question: "이번 여행에서는 뭐가 더 중요해요?",
-      helper: "최대 2개까지 고를 수 있어요. 실제로 여행에서 먼저 챙기고 싶은 스타일을 골라 주세요.",
+      helper: "최대 3개까지 고를 수 있어요. 실제로 여행에서 먼저 챙기고 싶은 스타일을 골라 주세요.",
       selectedValue: answers.travelStyle ?? [],
       options: homeStepTravelStyleOptions.map((option) => ({
         id: `travel-style-${option.value}`,
@@ -602,6 +633,16 @@ export function HomeExperience() {
     : canCreateCompare
       ? `${selectedCompareIds.length}곳 비교 보드 만들기`
       : "2개부터 선택하면 비교돼요";
+
+  useEffect(() => {
+    if (stage !== "landing" || isSubmitting || results) {
+      return;
+    }
+
+    if (searchParams.get("start") === "1") {
+      startFunnel();
+    }
+  }, [isSubmitting, results, searchParams, stage]);
 
   useEffect(() => {
     if (stage !== "landing" || results || isSubmitting) {
@@ -661,6 +702,92 @@ export function HomeExperience() {
     }
   }, []);
 
+  const createSnapshotReference = useCallback(async (card: RecommendationCardView) => {
+    if (!results) {
+      return null;
+    }
+
+    const existingReference = snapshotReferences[card.destination.id];
+    if (existingReference) {
+      return existingReference;
+    }
+
+    const existingSavedSnapshot = savedSnapshots.find((savedSnapshot) => savedSnapshot.destinationId === card.destination.id);
+    if (existingSavedSnapshot) {
+      setSnapshotReferences((currentReferences) => ({
+        ...currentReferences,
+        [card.destination.id]: existingSavedSnapshot,
+      }));
+      return existingSavedSnapshot;
+    }
+
+    const response = await fetch(buildApiUrl("/api/snapshots"), {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(
+        buildRecommendationSnapshotPayload(
+          results.query,
+          card,
+          results.meta.scoringVersion,
+          "private",
+        ),
+      ),
+    });
+
+    if (!response.ok) {
+      throw new Error("save-failed");
+    }
+
+    const payload = (await response.json()) as { snapshotId: string };
+    const sharePath = `/s/${payload.snapshotId}`;
+    const shareUrl = buildAbsoluteShareUrl(sharePath);
+    const snapshotReference: SavedSnapshotCard = {
+      snapshotId: payload.snapshotId,
+      destinationId: card.destination.id,
+      destinationName: card.destination.nameKo,
+      sharePath,
+      shareUrl,
+    };
+
+    setSnapshotReferences((currentReferences) => ({
+      ...currentReferences,
+      [card.destination.id]: snapshotReference,
+    }));
+
+    return snapshotReference;
+  }, [results, savedSnapshots, snapshotReferences]);
+
+  const promoteSavedSnapshot = useCallback(
+    async (card: RecommendationCardView, snapshotReference: SavedSnapshotCard) => {
+      setSnapshotReferences((currentReferences) => ({
+        ...currentReferences,
+        [card.destination.id]: snapshotReference,
+      }));
+      setSaveStates((currentState) => ({
+        ...currentState,
+        [card.destination.id]: {
+          status: "saved",
+          snapshotId: snapshotReference.snapshotId,
+          shareUrl: snapshotReference.shareUrl,
+        },
+      }));
+      setSavedSnapshots((currentSnapshots) =>
+        currentSnapshots.some((item) => item.snapshotId === snapshotReference.snapshotId)
+          ? currentSnapshots
+          : [...currentSnapshots, snapshotReference],
+      );
+      setSelectedCompareIds((currentSelection) =>
+        currentSelection.includes(snapshotReference.snapshotId) || currentSelection.length >= 4
+          ? currentSelection
+          : [...currentSelection, snapshotReference.snapshotId],
+      );
+      await copyShareUrl(snapshotReference.shareUrl);
+    },
+    [copyShareUrl],
+  );
+
   const saveCard = useCallback(async (card: RecommendationCardView) => {
     if (!results) {
       return;
@@ -694,62 +821,96 @@ export function HomeExperience() {
       return;
     }
 
+    const snapshotReference = snapshotReferences[card.destination.id];
+    if (snapshotReference) {
+      await promoteSavedSnapshot(card, snapshotReference);
+      return;
+    }
+
     setSaveStates((currentState) => ({
       ...currentState,
       [card.destination.id]: { status: "saving" },
     }));
 
     try {
-      const response = await fetch(buildApiUrl("/api/snapshots"), {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(
-          buildRecommendationSnapshotPayload(
-            results.query,
-            card,
-            results.meta.scoringVersion,
-            "private",
-          ),
-        ),
-      });
-
-      if (!response.ok) {
+      const nextSnapshotReference = await createSnapshotReference(card);
+      if (!nextSnapshotReference) {
         throw new Error("save-failed");
       }
 
-      const payload = (await response.json()) as { snapshotId: string };
-      const sharePath = `/s/${payload.snapshotId}`;
-      const shareUrl = buildAbsoluteShareUrl(sharePath);
-      const savedSnapshot: SavedSnapshotCard = {
-        snapshotId: payload.snapshotId,
-        destinationId: card.destination.id,
-        destinationName: card.destination.nameKo,
-        sharePath,
-        shareUrl,
-      };
-
-      setSaveStates((currentState) => ({
-        ...currentState,
-        [card.destination.id]: {
-          status: "saved",
-          snapshotId: payload.snapshotId,
-          shareUrl,
-        },
-      }));
-      setSavedSnapshots((currentSnapshots) => [...currentSnapshots, savedSnapshot]);
-      setSelectedCompareIds((currentSelection) =>
-        currentSelection.length >= 4 ? currentSelection : [...currentSelection, payload.snapshotId],
-      );
-      await copyShareUrl(shareUrl);
+      await promoteSavedSnapshot(card, nextSnapshotReference);
     } catch {
       setSaveStates((currentState) => ({
         ...currentState,
         [card.destination.id]: { status: "error" },
       }));
     }
-  }, [copyShareUrl, results, router, savedSnapshots, session.data?.user]);
+  }, [createSnapshotReference, promoteSavedSnapshot, results, router, savedSnapshots, session.data?.user, snapshotReferences]);
+
+  const registerFutureTrip = useCallback(async (card: RecommendationCardView) => {
+    if (!session.data?.user) {
+      return;
+    }
+
+    const currentState = futureTripStates[card.destination.id];
+    if (currentState?.status === "saved") {
+      return;
+    }
+
+    setFutureTripStates((currentStates) => ({
+      ...currentStates,
+      [card.destination.id]: {
+        ...currentStates[card.destination.id],
+        status: "saving",
+      },
+    }));
+
+    try {
+      const sourceSnapshot =
+        savedSnapshots.find((savedSnapshot) => savedSnapshot.destinationId === card.destination.id) ??
+        snapshotReferences[card.destination.id] ??
+        (await createSnapshotReference(card));
+
+      if (!sourceSnapshot) {
+        throw new Error("source-snapshot-missing");
+      }
+
+      const response = await fetch(buildApiUrl("/api/me/future-trips"), {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          destinationId: card.destination.id,
+          sourceSnapshotId: sourceSnapshot.snapshotId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("future-trip-create-failed");
+      }
+
+      const payload = (await response.json()) as { futureTrip: UserFutureTrip };
+
+      setFutureTripStates((currentStates) => ({
+        ...currentStates,
+        [card.destination.id]: {
+          status: "saved",
+          futureTripId: payload.futureTrip.id,
+          sourceSnapshotId: payload.futureTrip.sourceSnapshotId,
+        },
+      }));
+    } catch {
+      setFutureTripStates((currentStates) => ({
+        ...currentStates,
+        [card.destination.id]: {
+          ...currentStates[card.destination.id],
+          status: "error",
+        },
+      }));
+    }
+  }, [createSnapshotReference, futureTripStates, savedSnapshots, session.data?.user, snapshotReferences]);
 
   function toggleCompareSelection(snapshotId: string) {
     setCompareError(null);
@@ -932,7 +1093,7 @@ export function HomeExperience() {
       return currentStyles.filter((style) => style !== nextStyle);
     }
 
-    if (currentStyles.length >= 2) {
+    if (currentStyles.length >= 3) {
       return [...currentStyles.slice(1), nextStyle];
     }
 
@@ -1051,6 +1212,7 @@ export function HomeExperience() {
           leadCard ? (
             (() => {
               const saveState = saveStates[leadCard.destination.id] ?? { status: "idle" };
+              const futureTripState = futureTripStates[leadCard.destination.id] ?? { status: "idle" };
               const detailPath = buildDestinationDetailPath(leadCard.destination, results?.query ?? currentQuery, saveState.snapshotId);
 
               return (
@@ -1063,6 +1225,23 @@ export function HomeExperience() {
                       >
                         상세 보기
                       </Link>
+                      {session.data?.user ? (
+                        <button
+                          type="button"
+                          data-testid={getFutureTripCtaTestId(0)}
+                          onClick={() => {
+                            void registerFutureTrip(leadCard);
+                          }}
+                          disabled={futureTripState.status === "saving" || futureTripState.status === "saved"}
+                          className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {futureTripState.status === "saving"
+                            ? "담는 중..."
+                            : futureTripState.status === "saved"
+                              ? "다음 여행 담음"
+                              : "다음 여행 담기"}
+                        </button>
+                      ) : null}
                       <button
                         type="button"
                         data-testid={getSaveSnapshotTestId(0)}
@@ -1135,6 +1314,16 @@ export function HomeExperience() {
         }
         personalized={Boolean(results?.meta.personalized)}
         briefItems={briefItems}
+        leadWeatherSlot={
+          leadCard ? (
+            <TravelSupportPanel
+              supplement={results?.leadSupplement}
+              destinationName={leadCard.destination.nameKo}
+              travelMonth={results?.query.travelMonth}
+              layout="summary"
+            />
+          ) : null
+        }
         filtersSlot={
           <article
             data-testid={testIds.result.filterBar}
@@ -1185,14 +1374,6 @@ export function HomeExperience() {
         }
         statusSlot={
           <>
-            {leadCard && results?.leadSupplement ? (
-              <TravelSupportPanel
-                supplement={results.leadSupplement}
-                destinationName={leadCard.destination.nameKo}
-                heroMode="compact"
-              />
-            ) : null}
-
             {submitError ? (
               <div className="rounded-[1.5rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-4 text-sm leading-6 text-[var(--color-funnel-text)]">
                 <p>{submitError}</p>
@@ -1331,12 +1512,17 @@ export function HomeExperience() {
                       card={card}
                       index={cardIndex}
                       query={results?.query ?? currentQuery}
+                      showFutureTripCta={Boolean(session.data?.user)}
                       saveState={saveState}
                       onSave={(nextCard) => {
                         void saveCard(nextCard);
                       }}
                       onCopy={(shareUrl) => {
                         void copyShareUrl(shareUrl);
+                      }}
+                      futureTripState={futureTripStates[card.destination.id] ?? { status: "idle" }}
+                      onRegisterFutureTrip={(nextCard) => {
+                        void registerFutureTrip(nextCard);
                       }}
                     />
                   );
@@ -1395,7 +1581,7 @@ export function HomeExperience() {
                   <p className="compass-warning-card mt-3 rounded-[calc(var(--radius-card)-10px)] px-4 py-3 text-sm leading-6">
                     {compareError}
                   </p>
-                ) : null}
+      ) : null}
               </article>
             ) : null}
 

@@ -21,7 +21,7 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
       whoWith: "friends",
       travelWindow: 7,
       tripLength: 3,
-      travelStyle: ["sns-hotplace", "shopping"],
+      travelStyle: ["sns-hotplace", "shopping", "foodie"],
       flightPreference: "short",
     });
 
@@ -34,7 +34,7 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
       travelMonth: 7,
       pace: "packed",
       flightTolerance: "short",
-      vibes: ["city", "shopping"],
+      vibes: ["city", "shopping", "food"],
     });
   });
 

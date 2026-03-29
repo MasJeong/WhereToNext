@@ -14,7 +14,7 @@ describe("recommendationQuerySchema", () => {
       travelMonth: 10,
       pace: "balanced",
       flightTolerance: "medium",
-      vibes: ["romance", "food"],
+      vibes: ["romance", "food", "nature"],
       ignoredField: "should strip",
     });
 
@@ -27,7 +27,7 @@ describe("recommendationQuerySchema", () => {
       travelMonth: 10,
       pace: "balanced",
       flightTolerance: "medium",
-      vibes: ["romance", "food"],
+      vibes: ["romance", "food", "nature"],
     });
   });
 
@@ -41,7 +41,7 @@ describe("recommendationQuerySchema", () => {
       travelMonth: 13,
       pace: "balanced",
       flightTolerance: "medium",
-      vibes: ["romance", "food", "nature"],
+      vibes: ["romance", "food", "nature", "city"],
     });
 
     expect(result.success).toBe(false);

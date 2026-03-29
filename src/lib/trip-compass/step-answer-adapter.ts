@@ -79,7 +79,7 @@ function deriveVibesFromTravelStyles(styles: HomeStepTravelStyle[]): Recommendat
   const uniqueVibes = styles
     .map((style) => travelStyleToVibeMap[style])
     .filter((vibe, index, source) => source.indexOf(vibe) === index)
-    .slice(0, 2);
+    .slice(0, 3);
 
   return uniqueVibes.length > 0 ? uniqueVibes : [defaultRecommendationQuery.vibes[0]];
 }
@@ -180,7 +180,7 @@ export function deriveRecommendationQueryFromHomeStepAnswers(
     ...answers,
   };
   const travelStyles = mergedAnswers.travelStyle.length > 0
-    ? mergedAnswers.travelStyle.slice(0, 2)
+    ? mergedAnswers.travelStyle.slice(0, 3)
     : fallbackTravelStyles;
 
   return {

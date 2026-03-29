@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import { getAccountHistoryDestinationResultTestId, testIds } from "@/lib/test-ids";
+
 async function signInWithMockGoogle(page: import("@playwright/test").Page, next?: string) {
   await page.goto(next ? `/auth?next=${encodeURIComponent(next)}` : "/auth");
   await page.getByTestId("auth-provider-google").click();
@@ -199,13 +201,15 @@ test("allows social sign-in, trip history save, and personalized recommendations
   await signInWithMockGoogle(page);
 
   await expect(page).toHaveURL(/\/account/);
-  await page.getByTestId("add-history-cta").click();
+  await page.getByTestId(testIds.account.addHistoryCta).click();
   await expect(page).toHaveURL(/\/account\/history\/new/);
-  await page.getByTestId("new-history-next").click();
-  await page.getByTestId("new-history-next").click();
-  await page.getByTestId("new-history-next").click();
-  await page.getByTestId("new-history-next").click();
-  await page.getByTestId("new-history-image-input").setInputFiles({
+  await page.getByTestId(testIds.account.newHistoryDestinationSearch).fill("taipei");
+  await page.getByTestId(getAccountHistoryDestinationResultTestId(0)).click();
+  await expect(page.getByTestId(testIds.account.newHistoryStep)).toContainText("언제 다녀왔나요?");
+  await page.getByTestId(testIds.account.newHistoryNext).click();
+  await page.getByTestId(testIds.account.newHistoryNext).click();
+  await page.getByTestId(testIds.account.newHistoryNext).click();
+  await page.getByTestId(testIds.account.newHistoryImageInput).setInputFiles({
     name: "trip-note.png",
     mimeType: "image/png",
     buffer: Buffer.from(
@@ -213,12 +217,12 @@ test("allows social sign-in, trip history save, and personalized recommendations
       "base64",
     ),
   });
-  await page.getByTestId("new-history-next").click();
-  await page.getByTestId("new-history-memo").fill("골목 산책과 야시장 분위기가 특히 좋았어요.");
-  await expect(page.getByTestId("new-history-submit")).toBeVisible();
-  await page.getByTestId("new-history-submit").click();
+  await page.getByTestId(testIds.account.newHistoryNext).click();
+  await page.getByTestId(testIds.account.newHistoryMemo).fill("골목 산책과 야시장 분위기가 특히 좋았어요.");
+  await expect(page.getByTestId(testIds.account.newHistorySubmit)).toBeVisible();
+  await page.getByTestId(testIds.account.newHistorySubmit).click();
   await expect(page).toHaveURL(/\/account\?tab=history/);
-  await expect(page.getByTestId("history-entry-0")).toBeVisible();
+  await expect(page.getByTestId(testIds.account.historyEntry0)).toBeVisible();
 
   await page.goto("/");
   await submitQuickRecommendation(page);
@@ -239,32 +243,54 @@ test("shows saved recommendations in a separate account tab", async ({ page }) =
   await expect(page.getByTestId("saved-snapshot-0")).toBeVisible();
 });
 
+test("keeps signed-in users on results while registering a future trip from the lead card", async ({ page }) => {
+  await signInWithMockGoogle(page);
+  await expect(page).toHaveURL(/\/account/);
+
+  await submitQuickRecommendation(page);
+
+  const futureTripCta = page.getByTestId("future-trip-cta-0");
+  await expect(futureTripCta).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId("save-snapshot")).toHaveText("일정 담기");
+
+  await futureTripCta.click();
+
+  await expect(page.getByTestId("result-card-0")).toBeVisible();
+  await expect(page.getByTestId("home-result-page")).toBeVisible();
+  await expect(futureTripCta).toHaveText("다음 여행 담음");
+  await expect(futureTripCta).toBeDisabled();
+  await expect(page.getByTestId("save-snapshot")).toHaveText("일정 담기");
+});
+
 test("lets users edit an existing trip history entry from the list", async ({ page }) => {
   await signInWithMockGoogle(page);
   await expect(page).toHaveURL(/\/account/);
-  await page.getByTestId("add-history-cta").click();
-  await page.getByTestId("new-history-next").click();
-  await page.getByTestId("new-history-next").click();
-  await page.getByTestId("new-history-next").click();
-  await page.getByTestId("new-history-next").click();
-  await page.getByTestId("new-history-next").click();
-  await page.getByTestId("new-history-submit").click();
-  const firstHistoryCard = page.getByTestId("history-entry-0");
+  await page.getByTestId(testIds.account.addHistoryCta).click();
+  await page.getByTestId(testIds.account.newHistoryDestinationSearch).fill("tokyo");
+  await page.getByTestId(getAccountHistoryDestinationResultTestId(0)).click();
+  await page.getByTestId(testIds.account.newHistoryNext).click();
+  await page.getByTestId(testIds.account.newHistoryNext).click();
+  await page.getByTestId(testIds.account.newHistoryNext).click();
+  await page.getByTestId(testIds.account.newHistoryNext).click();
+  await page.getByTestId(testIds.account.newHistorySubmit).click();
+  const firstHistoryCard = page.getByTestId(testIds.account.historyEntry0);
   await expect(firstHistoryCard).toBeVisible();
   await expect(firstHistoryCard.getByRole("button", { name: "수정" })).toBeVisible();
 
   await firstHistoryCard.getByRole("button", { name: "수정" }).click();
   await expect(page).toHaveURL(/\/account\/history\/.*\/edit/);
-  await page.getByTestId("new-history-next").click();
-  await page.getByTestId("new-history-next").click();
-  await page.getByTestId("new-history-next").click();
-  await page.getByTestId("new-history-next").click();
-  await page.getByTestId("new-history-next").click();
-  await page.getByTestId("new-history-memo").fill("수정 후에는 메모를 더 짧게 다시 정리했어요.");
-  await page.getByTestId("new-history-submit").click();
+  await page.getByTestId(testIds.account.newHistoryDestinationSearch).fill("pari");
+  await page.getByTestId(getAccountHistoryDestinationResultTestId(0)).click();
+  await page.getByTestId(testIds.account.newHistoryNext).click();
+  await page.getByTestId(testIds.account.newHistoryNext).click();
+  await page.getByTestId(testIds.account.newHistoryNext).click();
+  await page.getByTestId(testIds.account.newHistoryNext).click();
+  await page.getByTestId(testIds.account.newHistoryMemo).fill("수정 후에는 메모를 더 짧게 다시 정리했어요.");
+  await page.getByTestId(testIds.account.newHistorySubmit).click();
 
   await expect(page).toHaveURL(/\/account\?tab=history/);
-  await expect(page.getByTestId("history-entry-0")).toContainText("수정 후에는 메모를 더 짧게 다시 정리했어요.");
+  await expect(page.getByTestId(testIds.account.historyEntry0)).toContainText("파리");
+  await expect(page.getByTestId(testIds.account.historyEntry0)).toContainText("수정 후에는 메모를 더 짧게 다시 정리했어요.");
 });
 
 test("shows the lead summary and primary actions on the lead card", async ({ page }) => {
