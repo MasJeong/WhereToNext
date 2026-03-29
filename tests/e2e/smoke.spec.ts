@@ -22,9 +22,13 @@ test("shows the 떠나볼래 smoke shell and immediate search entry", async ({ p
 test("shows the home header with auth and account shortcuts", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByTestId("app-header")).toBeVisible();
+  await expect(page.getByRole("link", { name: "추천 받기" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "추천 방식" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "여행 기록" })).toBeVisible();
   await expect(page.getByTestId("account-link")).toBeVisible();
+  await expect(page.getByTestId("account-link")).toHaveText("내 여행");
   await expect(page.getByTestId("auth-cta")).toBeVisible();
+  await expect(page.getByTestId("auth-cta")).toHaveText("로그인");
 });
 
 test("hides auth and account navigation in ios shell mode", async ({ page }) => {
@@ -40,7 +44,6 @@ test("hides auth and account navigation in ios shell mode", async ({ page }) => 
 test("shows a social-only auth entry that keeps browsing optional", async ({ page }) => {
   await page.goto("/auth?next=%2Fresults&intent=save");
 
-  await expect(page.getByTestId("auth-return-banner")).toBeVisible();
   await expect(page.getByTestId("auth-provider-kakao")).toBeVisible();
   await expect(page.getByTestId("auth-provider-google")).toBeVisible();
   await expect(page.getByTestId("auth-provider-apple")).toBeVisible();

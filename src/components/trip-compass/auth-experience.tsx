@@ -43,12 +43,11 @@ function normalizeIntent(value: string | null): AuthIntent {
   return "default";
 }
 
-function buildAuthHeading(intent: AuthIntent): { title: string; intro: string; banner: string | null } {
+function buildAuthHeading(intent: AuthIntent): { title: string; intro: string } {
   if (intent === "save") {
     return {
       title: "저장한 여행 흐름을 계정에 이어 둘까요?",
       intro: "로그인하면 방금 고른 추천 결과를 내 기록에 남기고, 다음에도 같은 감각으로 다시 꺼내볼 수 있어요.",
-      banner: "로그인 후에는 방금 보던 결과로 돌아가 저장을 이어드려요.",
     };
   }
 
@@ -56,7 +55,6 @@ function buildAuthHeading(intent: AuthIntent): { title: string; intro: string; b
     return {
       title: "공유할 여행 카드를 이어서 만들어요",
       intro: "로그인하면 저장한 카드와 공유 흐름을 한 계정에서 차분하게 이어갈 수 있어요.",
-      banner: "로그인 후에는 방금 보던 결과로 돌아가 공유 흐름을 이어드려요.",
     };
   }
 
@@ -64,14 +62,12 @@ function buildAuthHeading(intent: AuthIntent): { title: string; intro: string; b
     return {
       title: "내 여행 기록을 이어 보려면 로그인이 필요해요",
       intro: "로그인하면 저장한 추천 결과와 취향 기록을 한곳에서 이어볼 수 있어요.",
-      banner: "로그인 후에는 원래 보려던 내 기록 화면으로 바로 돌아가요.",
     };
   }
 
   return {
     title: "여행 기록을 가볍게 이어 두는 로그인",
-    intro: "로그인은 저장, 공유, 계정 연속성을 위한 선택 단계예요. 추천을 둘러보는 것 자체는 로그인 없이도 계속할 수 있어요.",
-    banner: null,
+    intro: "로그인하면 저장과 공유, 내 기록을 한 계정에서 이어갈 수 있어요. 추천은 로그인 없이도 받을 수 있어요.",
   };
 }
 
@@ -181,7 +177,6 @@ export function AuthExperience() {
   const collisionError = getCollisionErrorMessage(errorCode);
   const authError = getSafeAuthErrorMessage(errorCode);
   const heading = buildAuthHeading(intent);
-  const shouldShowReturnBanner = Boolean(next || heading.banner);
 
   return (
     <ExperienceShell eyebrow="" title="" intro="" capsule="" hideHeader bareBody>
@@ -206,20 +201,6 @@ export function AuthExperience() {
             <p className="mx-auto mt-3 max-w-sm text-[0.93rem] leading-6 text-[var(--color-ink-soft)]">{heading.intro}</p>
           </div>
 
-          {shouldShowReturnBanner ? (
-            <div
-              data-testid={testIds.auth.returnBanner}
-              className="compass-note mt-6 rounded-[1.15rem] px-4 py-3.5 text-left"
-            >
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-sand-deep)]">
-                이어서 돌아가기
-              </p>
-              <p className="mt-2 text-sm leading-6 text-[var(--color-ink)]">
-                {heading.banner ?? "로그인 후에는 방금 보던 흐름으로 다시 돌아가 이어서 진행할 수 있어요."}
-              </p>
-            </div>
-          ) : null}
-
           {collisionError ? (
             <p
               data-testid={testIds.auth.collisionError}
@@ -239,16 +220,25 @@ export function AuthExperience() {
                 key={provider.id}
                 href={buildProviderHref(provider.id, next, intent, mockCase)}
                 data-testid={provider.testId}
-                className="compass-panel compass-soft-press block rounded-[1.3rem] px-4 py-4"
+                className="compass-panel compass-soft-press block rounded-[1.3rem] px-4 py-4.5"
               >
-                <div className="flex items-start gap-3.5">
+                <div className="flex items-center gap-3.5">
                   <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-frame-soft)] bg-white shadow-[var(--shadow-paper)]">
                     <ProviderIcon provider={provider.id} />
                   </span>
-                  <span className="min-w-0 flex-1">
-                    <span className="flex items-center justify-between gap-3">
-                      <span className="text-sm font-semibold tracking-[-0.01em] text-[var(--color-ink)]">{provider.label}</span>
+                  <span className="min-w-0 flex-1 self-center">
+                    <span className="block text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)]">
+                      {provider.id}
                     </span>
+                    <span className="mt-1 block text-[1rem] font-semibold leading-6 tracking-[-0.02em] text-[var(--color-ink)] sm:text-[1.04rem]">
+                      {provider.label}
+                    </span>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="shrink-0 self-center text-[0.95rem] font-semibold text-[var(--color-ink-soft)]"
+                  >
+                    →
                   </span>
                 </div>
               </Link>

@@ -32,15 +32,15 @@ export function ShellAuthNav() {
   }
 
   return (
-    <nav className="flex flex-wrap items-center gap-3" aria-label="빠른 이동">
+    <nav className="compass-shell-auth-nav" aria-label="계정 메뉴">
       {user ? (
         <>
           <Link
             href="/account"
             data-testid={testIds.shell.identityCard}
-            className="compass-soft-press inline-flex min-h-[2.75rem] items-center gap-2.5 rounded-full border border-[color:var(--color-frame-soft)] bg-white/92 px-2.5 py-2 text-[var(--color-ink)] shadow-[0_12px_28px_rgba(15,23,42,0.08)]"
+            className="compass-shell-identity compass-soft-press inline-flex min-h-[2.75rem] items-center gap-2.5 rounded-full px-2.5 py-2 text-[var(--color-ink)]"
           >
-            <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-[var(--color-brand-primary)] text-xs font-semibold text-white">
+            <span className="compass-shell-identity-badge inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-white">
               {getInitial(user.name)}
             </span>
             <span className="min-w-0">
@@ -48,7 +48,7 @@ export function ShellAuthNav() {
                 {user.name}
               </span>
               <span className="block text-[10px] leading-4 text-[var(--color-ink-soft)]">
-                로그인됨
+                로그인됨 · 내 여행
               </span>
             </span>
           </Link>
@@ -59,30 +59,30 @@ export function ShellAuthNav() {
             onClick={() => {
               void handleSignOut();
             }}
-            className="compass-action-secondary compass-soft-press inline-flex min-h-[2.75rem] items-center rounded-full px-3.5 py-2 text-[11px] font-semibold tracking-[0.04em]"
+            className="compass-shell-auth-text-action compass-soft-press inline-flex min-h-[2.75rem] items-center px-1 py-2 text-[12px] font-semibold tracking-[0.02em]"
           >
             로그아웃
           </button>
         </>
       ) : session.isPending ? (
-        <span className="inline-flex min-h-[2.75rem] items-center rounded-full px-3.5 py-2 text-[11px] font-semibold tracking-[0.04em] text-[var(--color-ink-soft)]">
+        <span className="inline-flex min-h-[2.75rem] items-center px-1 py-2 text-[12px] font-semibold tracking-[0.02em] text-[var(--color-ink-soft)]">
           확인 중
         </span>
       ) : (
         <>
           <Link
-            href="/account"
-            data-testid={testIds.shell.accountLink}
-            className="compass-shell-nav-link inline-flex min-h-[2.75rem] items-center px-1 py-2 text-[12px] font-semibold tracking-[0.02em]"
-          >
-            여행 기록
-          </Link>
-          <Link
             href="/auth"
             data-testid={testIds.shell.authCta}
-            className="compass-action-primary compass-soft-press inline-flex min-h-[2.75rem] items-center rounded-full px-3.5 py-2 text-[11px] font-semibold tracking-[0.04em]"
+            className="compass-shell-auth-text-link inline-flex min-h-[2.75rem] items-center px-1 py-2 text-[12px] font-semibold tracking-[0.02em]"
           >
             로그인
+          </Link>
+          <Link
+            href="/account"
+            data-testid={testIds.shell.accountLink}
+            className="compass-shell-auth-pill compass-soft-press inline-flex min-h-[2.75rem] items-center rounded-full px-3.5 py-2 text-[12px] font-semibold tracking-[0.02em]"
+          >
+            내 여행
           </Link>
         </>
       )}

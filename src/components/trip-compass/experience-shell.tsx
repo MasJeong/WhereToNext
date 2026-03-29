@@ -7,6 +7,12 @@ import { testIds } from "@/lib/test-ids";
 
 import { ShellAuthNav } from "./shell-auth-nav";
 
+const primaryNavItems = [
+  { label: "추천 받기", href: "/" },
+  { label: "추천 방식", href: "/#home-question-flow" },
+  { label: "여행 기록", href: "/account" },
+] as const;
+
 type ExperienceShellProps = {
   eyebrow: string;
   title: string;
@@ -48,7 +54,7 @@ export function ExperienceShell({
             data-testid={testIds.shell.header}
             className="compass-shell-topbar compass-stage-reveal compass-stage-reveal-fast rounded-[calc(var(--radius-card)-16px)] px-3.5 py-2.5 sm:px-4"
           >
-            <div className="flex min-h-[3.25rem] flex-wrap items-center justify-between gap-2.5">
+            <div className="compass-shell-topbar-layout min-h-[3.25rem]">
               <Link href="/" className="compass-shell-brand inline-flex min-w-0 items-center gap-2.5 text-[var(--color-ink)]">
                 <span className="compass-shell-brand-mark inline-flex h-2.5 w-2.5 shrink-0 rounded-full" />
                 <span className="min-w-0">
@@ -57,6 +63,18 @@ export function ExperienceShell({
                   </span>
                 </span>
               </Link>
+
+              <nav aria-label="주요 메뉴" className="compass-shell-primary-nav">
+                {primaryNavItems.map((item) => (
+                  <Link
+                    key={item.label}
+                    href={item.href}
+                    className="compass-shell-nav-link"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
 
               {hideAuthNavigation ? null : <ShellAuthNav />}
             </div>

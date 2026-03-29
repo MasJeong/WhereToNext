@@ -2,6 +2,7 @@ import { render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 
 import { AuthExperience } from "@/components/trip-compass/auth-experience";
+import { testIds } from "@/lib/test-ids";
 
 const mockSearchParamsGet = vi.fn<(key: string) => string | null>();
 
@@ -14,6 +15,16 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => ({
     get: mockSearchParamsGet,
   }),
+}));
+
+vi.mock("@/lib/auth-client", () => ({
+  authClient: {
+    useSession: () => ({
+      data: null,
+      isPending: false,
+    }),
+    signOut: vi.fn(),
+  },
 }));
 
 describe("AuthExperience", () => {
@@ -30,12 +41,12 @@ describe("AuthExperience", () => {
 
     render(<AuthExperience />);
 
-    expect(screen.getByTestId("auth-return-banner")).toBeInTheDocument();
-    expect(screen.getByTestId("auth-provider-kakao")).toBeInTheDocument();
-    expect(screen.getByTestId("auth-provider-google")).toBeInTheDocument();
-    expect(screen.getByTestId("auth-provider-apple")).toBeInTheDocument();
-    expect(screen.queryByTestId("auth-email-input")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("auth-password-input")).not.toBeInTheDocument();
+    expect(screen.getByText("저장한 여행 흐름을 계정에 이어 둘까요?")).toBeInTheDocument();
+    expect(screen.getByTestId(testIds.auth.providerKakao)).toBeInTheDocument();
+    expect(screen.getByTestId(testIds.auth.providerGoogle)).toBeInTheDocument();
+    expect(screen.getByTestId(testIds.auth.providerApple)).toBeInTheDocument();
+    expect(screen.queryByTestId(testIds.auth.emailInput)).not.toBeInTheDocument();
+    expect(screen.queryByTestId(testIds.auth.passwordInput)).not.toBeInTheDocument();
     expect(screen.getByText("로그인 없이 계속 보기")).toBeInTheDocument();
   });
 
@@ -49,7 +60,7 @@ describe("AuthExperience", () => {
 
     render(<AuthExperience />);
 
-    expect(screen.getByTestId("auth-collision-error")).toHaveTextContent(
+    expect(screen.getByTestId(testIds.auth.collisionError)).toHaveTextContent(
       "이미 다른 로그인 방식으로 이어진 계정이에요. 이전에 쓰던 방식으로 다시 로그인해 주세요.",
     );
   });
