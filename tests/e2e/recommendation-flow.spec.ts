@@ -45,23 +45,52 @@ async function submitGuidedRecommendation(page: import("@playwright/test").Page)
 
 async function mockSocialVideoOk(page: import("@playwright/test").Page) {
   await page.route("**/api/social-video*", async (route) => {
+    const items = [
+      {
+        provider: "youtube",
+        videoId: "tokyo-social-video",
+        title: "도쿄 골목과 야경을 빠르게 보는 여행 브이로그",
+        channelTitle: "서울 여행자",
+        channelUrl: "https://www.youtube.com/channel/seoul-traveler",
+        videoUrl: "https://www.youtube.com/watch?v=tokyo-social-video",
+        thumbnailUrl:
+          "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'%3E%3Crect width='1280' height='720' fill='%230b63ce'/%3E%3Ccircle cx='640' cy='360' r='120' fill='white' fill-opacity='0.18'/%3E%3Cpolygon points='600,305 600,415 715,360' fill='white'/%3E%3C/svg%3E",
+        publishedAt: "2026-03-24T09:00:00.000Z",
+        durationSeconds: 342,
+      },
+      {
+        provider: "youtube",
+        videoId: "tokyo-social-video-2",
+        title: "도쿄 쇼핑 스폿 60초 요약",
+        channelTitle: "여행 압축본",
+        channelUrl: "https://www.youtube.com/channel/travel-shortcut",
+        videoUrl: "https://www.youtube.com/watch?v=tokyo-social-video-2",
+        thumbnailUrl:
+          "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'%3E%3Crect width='1280' height='720' fill='%23f59e0b'/%3E%3Ccircle cx='640' cy='360' r='120' fill='white' fill-opacity='0.18'/%3E%3Cpolygon points='600,305 600,415 715,360' fill='white'/%3E%3C/svg%3E",
+        publishedAt: "2026-03-28T09:00:00.000Z",
+        durationSeconds: 60,
+      },
+      {
+        provider: "youtube",
+        videoId: "tokyo-social-video-3",
+        title: "도쿄 야시장과 카페 최근 분위기",
+        channelTitle: "요즘 여행",
+        channelUrl: "https://www.youtube.com/channel/trending-trip",
+        videoUrl: "https://www.youtube.com/watch?v=tokyo-social-video-3",
+        thumbnailUrl:
+          "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'%3E%3Crect width='1280' height='720' fill='%231f2937'/%3E%3Ccircle cx='640' cy='360' r='120' fill='white' fill-opacity='0.18'/%3E%3Cpolygon points='600,305 600,415 715,360' fill='white'/%3E%3C/svg%3E",
+        publishedAt: "2026-03-29T09:00:00.000Z",
+        durationSeconds: 74,
+      },
+    ];
+
     await route.fulfill({
       status: 200,
       contentType: "application/json",
       body: JSON.stringify({
         status: "ok",
-        item: {
-          provider: "youtube",
-          videoId: "tokyo-social-video",
-          title: "도쿄 골목과 야경을 빠르게 보는 여행 브이로그",
-          channelTitle: "서울 여행자",
-          channelUrl: "https://www.youtube.com/channel/seoul-traveler",
-          videoUrl: "https://www.youtube.com/watch?v=tokyo-social-video",
-          thumbnailUrl:
-            "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'%3E%3Crect width='1280' height='720' fill='%230b63ce'/%3E%3Ccircle cx='640' cy='360' r='120' fill='white' fill-opacity='0.18'/%3E%3Cpolygon points='600,305 600,415 715,360' fill='white'/%3E%3C/svg%3E",
-          publishedAt: "2026-03-24T09:00:00.000Z",
-          durationSeconds: 342,
-        },
+        item: items[0],
+        items,
       }),
     });
   });
@@ -75,6 +104,7 @@ async function mockSocialVideoEmpty(page: import("@playwright/test").Page) {
       body: JSON.stringify({
         status: "empty",
         item: null,
+        items: [],
       }),
     });
   });
@@ -257,13 +287,16 @@ test("shows a social video block only for the lead recommendation", async ({ pag
     "href",
     "https://www.youtube.com/watch?v=tokyo-social-video",
   );
+  await expect(page.getByText("도쿄 쇼핑 스폿 60초 요약")).toBeVisible();
+  await expect(page.getByText("도쿄 야시장과 카페 최근 분위기")).toBeVisible();
 });
 
 test("keeps recommendation results visible when social video is unavailable", async ({ page }) => {
   await mockSocialVideoEmpty(page);
   await submitQuickRecommendation(page);
 
-  await expect(page.getByTestId("social-video-block")).toHaveCount(0);
+  await expect(page.getByTestId("social-video-block")).toHaveCount(1);
+  await expect(page.getByText("영상 없음").first()).toBeVisible();
   await expect(page.getByTestId("result-card-0")).toBeVisible();
 });
 

@@ -157,8 +157,8 @@ export function ResultPage({
         ))}
       </div>
 
-      {filtersSlot}
       {statusSlot}
+      {filtersSlot}
       {resultsSlot}
       {savedSlot}
     </motion.section>

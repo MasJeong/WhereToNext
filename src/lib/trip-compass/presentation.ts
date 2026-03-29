@@ -420,7 +420,7 @@ export function buildStructuredTripBrief(
   return [
     {
       id: "travel-window",
-      label: "여행 창",
+      label: "출발 시기",
       value: `${formatTravelMonth(query.travelMonth)} · ${query.tripLengthDays}일`,
       detail: `${formatPartyType(query.partyType)} 일정 기준으로 현실적인 여행 길이를 먼저 맞추고 있어요.`,
     },
