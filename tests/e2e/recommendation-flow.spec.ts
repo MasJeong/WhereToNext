@@ -14,6 +14,7 @@ async function submitQuickRecommendation(page: import("@playwright/test").Page) 
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-next").click();
   await page.getByTestId("home-step-choice-0").click();
   await expect(page.getByTestId("home-top-summary")).toBeVisible({ timeout: 10000 });
   await expect(page.getByTestId("result-filter-bar")).toBeVisible({ timeout: 10000 });
@@ -31,8 +32,12 @@ async function submitGuidedRecommendation(page: import("@playwright/test").Page)
   await page.getByTestId("home-step-prev").click();
   await expect(page.getByTestId("home-step-question")).toContainText("언제쯤 떠나고 싶으세요?");
   await page.getByTestId("home-step-choice-2").click();
+  await expect(page.getByTestId("home-step-question")).toContainText("며칠 정도 생각하고 있나요?");
   await page.getByTestId("home-step-choice-1").click();
+  await expect(page.getByTestId("home-step-question")).toContainText("이번 여행에서는 뭐가 더 중요해요?");
   await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-choice-8").click();
+  await page.getByTestId("home-step-next").click();
   await page.getByTestId("home-step-choice-0").click();
   await expect(page.getByTestId("home-top-summary")).toBeVisible({ timeout: 10000 });
   await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 10000 });
@@ -84,6 +89,55 @@ test("supports back navigation during the one-question-per-screen funnel", async
   await expect(page.getByTestId("home-step-question")).toHaveCount(0);
 });
 
+test("asks realistic travel conditions instead of romance-first and departure-airport questions", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("home-cta").click();
+
+  await expect(page.getByTestId("home-step-question")).toContainText("누구와 가세요?");
+  await page.getByTestId("home-step-choice-0").click();
+
+  await expect(page.getByTestId("home-step-question")).toContainText("언제쯤 떠나고 싶으세요?");
+  await page.getByTestId("home-step-choice-1").click();
+
+  await expect(page.getByTestId("home-step-question")).toContainText("며칠 정도 생각하고 있나요?");
+  await page.getByTestId("home-step-choice-1").click();
+
+  await expect(page.getByTestId("home-step-question")).toContainText("이번 여행에서는 뭐가 더 중요해요?");
+  await expect(page.getByText("체험·액티비티")).toBeVisible();
+  await expect(page.getByText("SNS 핫플레이스")).toBeVisible();
+  await expect(page.getByText("관광보다 먹방")).toBeVisible();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-choice-8").click();
+  await page.getByTestId("home-step-next").click();
+
+  await expect(page.getByTestId("home-step-question")).toContainText("비행이나 이동 부담은 어느 정도 괜찮아요?");
+  await expect(page.getByText("가까운 곳 위주")).toBeVisible();
+  await expect(page.getByText("중거리까지 괜찮아요")).toBeVisible();
+  await expect(page.getByText("멀어도 괜찮아요")).toBeVisible();
+
+  await expect(page.getByText("가장 먼저 챙기고 싶은 분위기는요?")).toHaveCount(0);
+  await expect(page.getByText("출발은 어디 기준으로 볼까요?")).toHaveCount(0);
+});
+
+test("reflects the selected practical conditions in the result summary", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("home-cta").click();
+
+  await page.getByTestId("home-step-choice-2").click();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-choice-2").click();
+  await page.getByTestId("home-step-choice-1").click();
+  await page.getByTestId("home-step-choice-7").click();
+  await page.getByTestId("home-step-next").click();
+  await page.getByTestId("home-step-choice-2").click();
+
+  await expect(page.getByTestId("home-top-summary")).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId("query-summary")).toContainText("7월 · 8일");
+  await expect(page.getByTestId("query-summary")).toContainText("장거리도 가능");
+  await expect(page.getByTestId("query-summary")).toContainText("도시");
+  await expect(page.getByTestId("query-summary")).toContainText("쇼핑");
+});
+
 test("redirects signed-out save actions to the social auth gate", async ({ page }) => {
   await submitQuickRecommendation(page);
 
@@ -115,13 +169,72 @@ test("allows social sign-in, trip history save, and personalized recommendations
   await signInWithMockGoogle(page);
 
   await expect(page).toHaveURL(/\/account/);
+  await page.getByTestId("add-history-cta").click();
+  await expect(page).toHaveURL(/\/account\/history\/new/);
+  await page.getByTestId("new-history-next").click();
+  await page.getByTestId("new-history-next").click();
+  await page.getByTestId("new-history-next").click();
+  await page.getByTestId("new-history-next").click();
+  await page.getByTestId("new-history-image-input").setInputFiles({
+    name: "trip-note.png",
+    mimeType: "image/png",
+    buffer: Buffer.from(
+      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAusB9Wn4xWQAAAAASUVORK5CYII=",
+      "base64",
+    ),
+  });
+  await page.getByTestId("new-history-next").click();
+  await page.getByTestId("new-history-memo").fill("골목 산책과 야시장 분위기가 특히 좋았어요.");
   await expect(page.getByTestId("new-history-submit")).toBeVisible();
   await page.getByTestId("new-history-submit").click();
+  await expect(page).toHaveURL(/\/account\?tab=history/);
   await expect(page.getByTestId("history-entry-0")).toBeVisible();
 
   await page.goto("/");
   await submitQuickRecommendation(page);
   await expect(page.getByTestId("personalized-note")).toBeVisible();
+});
+
+test("shows saved recommendations in a separate account tab", async ({ page }) => {
+  await signInWithMockGoogle(page);
+  await expect(page).toHaveURL(/\/account/);
+  await page.goto("/");
+  await expect(page.getByTestId("home-landing")).toBeVisible();
+  await submitQuickRecommendation(page);
+  await page.getByTestId("save-snapshot").click();
+  await expect(page.getByTestId("saved-snapshot-0")).toBeVisible();
+
+  await page.goto("/account?tab=saved");
+  await expect(page.getByTestId("account-tab-saved")).toBeVisible();
+  await expect(page.getByTestId("saved-snapshot-0")).toBeVisible();
+});
+
+test("lets users edit an existing trip history entry from the list", async ({ page }) => {
+  await signInWithMockGoogle(page);
+  await expect(page).toHaveURL(/\/account/);
+  await page.getByTestId("add-history-cta").click();
+  await page.getByTestId("new-history-next").click();
+  await page.getByTestId("new-history-next").click();
+  await page.getByTestId("new-history-next").click();
+  await page.getByTestId("new-history-next").click();
+  await page.getByTestId("new-history-next").click();
+  await page.getByTestId("new-history-submit").click();
+  const firstHistoryCard = page.getByTestId("history-entry-0");
+  await expect(firstHistoryCard).toBeVisible();
+  await expect(firstHistoryCard.getByRole("button", { name: "수정" })).toBeVisible();
+
+  await firstHistoryCard.getByRole("button", { name: "수정" }).click();
+  await expect(page).toHaveURL(/\/account\/history\/.*\/edit/);
+  await page.getByTestId("new-history-next").click();
+  await page.getByTestId("new-history-next").click();
+  await page.getByTestId("new-history-next").click();
+  await page.getByTestId("new-history-next").click();
+  await page.getByTestId("new-history-next").click();
+  await page.getByTestId("new-history-memo").fill("수정 후에는 메모를 더 짧게 다시 정리했어요.");
+  await page.getByTestId("new-history-submit").click();
+
+  await expect(page).toHaveURL(/\/account\?tab=history/);
+  await expect(page.getByTestId("history-entry-0")).toContainText("수정 후에는 메모를 더 짧게 다시 정리했어요.");
 });
 
 test("shows the lead summary and primary actions on the lead card", async ({ page }) => {
@@ -213,6 +326,7 @@ test("recovers from the empty state through a relaxation action", async ({ page 
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-next").click();
   await page.getByTestId("home-step-choice-0").click();
   await expect(page.getByTestId("empty-state")).toBeVisible();
 
@@ -243,6 +357,7 @@ test("shows a retry path when recommendation loading fails", async ({ page }) =>
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-next").click();
   await page.getByTestId("home-step-choice-0").click();
 
   await expect(page.getByText("지금은 추천 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.")).toBeVisible();

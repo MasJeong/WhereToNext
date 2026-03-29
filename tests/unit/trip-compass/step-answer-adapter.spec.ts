@@ -4,7 +4,7 @@ import { recommendationQuerySchema } from "@/lib/domain/contracts";
 import {
   defaultHomeStepAnswers,
   deriveRecommendationQueryFromHomeStepAnswers,
-  homeStepTripRhythmOptions,
+  homeStepTravelStyleOptions,
 } from "@/lib/trip-compass/step-answer-adapter";
 import { defaultRecommendationQuery } from "@/lib/trip-compass/presentation";
 
@@ -13,16 +13,16 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
     const query = deriveRecommendationQueryFromHomeStepAnswers();
 
     expect(recommendationQuerySchema.parse(query)).toEqual(defaultRecommendationQuery);
-    expect(defaultHomeStepAnswers.tripRhythm).toBe("steady-highlights");
+    expect(defaultHomeStepAnswers.travelStyle).toEqual([]);
   });
 
   it("maps a representative simplified answer set to the existing API contract", () => {
     const query = deriveRecommendationQueryFromHomeStepAnswers({
       whoWith: "friends",
       travelWindow: 7,
-      tripRhythm: "quick-reset",
-      mainVibe: "city",
-      departureChoice: "GMP",
+      tripLength: 3,
+      travelStyle: ["sns-hotplace", "shopping"],
+      flightPreference: "short",
     });
 
     expect(recommendationQuerySchema.parse(query)).toEqual({
@@ -30,19 +30,19 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
       partySize: 4,
       budgetBand: "mid",
       tripLengthDays: 3,
-      departureAirport: "GMP",
+      departureAirport: "ICN",
       travelMonth: 7,
-      pace: "balanced",
+      pace: "packed",
       flightTolerance: "short",
-      vibes: ["city"],
+      vibes: ["city", "shopping"],
     });
   });
 
   it("keeps omitted fields on defaults for unanswered questions", () => {
     const query = deriveRecommendationQueryFromHomeStepAnswers({
       whoWith: "family",
-      tripRhythm: "slow-reset",
-      mainVibe: "nature",
+      tripLength: 5,
+      travelStyle: ["nature"],
     });
 
     expect(recommendationQuerySchema.parse(query)).toEqual({
@@ -62,20 +62,25 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
     expect(defaultHomeStepAnswers).toMatchObject({
       whoWith: "couple",
       travelWindow: 10,
-      tripRhythm: "steady-highlights",
-      mainVibe: "romance",
-      departureChoice: "ICN",
+      tripLength: 5,
+      travelStyle: [],
+      flightPreference: "medium",
       budgetFeel: "mid",
     });
-    expect(defaultHomeStepAnswers).not.toHaveProperty("extraVibe");
+    expect(defaultHomeStepAnswers).not.toHaveProperty("departureChoice");
   });
 
-  it("defines four deterministic trip rhythm presets for the future step flow", () => {
-    expect(homeStepTripRhythmOptions.map((option) => option.value)).toEqual([
-      "quick-reset",
-      "steady-highlights",
-      "slow-reset",
-      "far-and-full",
+  it("defines travel-style options based on concrete travel behaviors", () => {
+    expect(homeStepTravelStyleOptions.map((option) => option.value)).toEqual([
+      "activity",
+      "sns-hotplace",
+      "nature",
+      "must-see",
+      "healing",
+      "culture-history",
+      "local-atmosphere",
+      "shopping",
+      "foodie",
     ]);
   });
 });
