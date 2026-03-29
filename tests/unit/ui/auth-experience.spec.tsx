@@ -6,6 +6,11 @@ import { AuthExperience } from "@/components/trip-compass/auth-experience";
 const mockSearchParamsGet = vi.fn<(key: string) => string | null>();
 
 vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    prefetch: vi.fn(),
+  }),
   useSearchParams: () => ({
     get: mockSearchParamsGet,
   }),
@@ -31,7 +36,7 @@ describe("AuthExperience", () => {
     expect(screen.getByTestId("auth-provider-apple")).toBeInTheDocument();
     expect(screen.queryByTestId("auth-email-input")).not.toBeInTheDocument();
     expect(screen.queryByTestId("auth-password-input")).not.toBeInTheDocument();
-    expect(screen.getByText(/로그인 없이도 계속할 수 있어요/i)).toBeInTheDocument();
+    expect(screen.getByText("로그인 없이 계속 보기")).toBeInTheDocument();
   });
 
   it("maps collision errors to safe Korean copy", () => {

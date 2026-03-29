@@ -7,6 +7,7 @@ async function submitQuickRecommendation(page: import("@playwright/test").Page) 
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-next").click();
   await page.getByTestId("home-step-choice-0").click();
   await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 10000 });
 }
@@ -27,6 +28,10 @@ test("mock google login redirects to account", async ({ page }) => {
 
   await expect(page).toHaveURL(/\/account/);
   await expect(page.getByTestId("my-taste-root")).toBeVisible();
+  await expect(page.getByTestId("auth-cta")).toHaveText("로그아웃");
+  await expect(page.getByTestId("account-link")).toHaveCount(0);
+  await expect(page.getByTestId("identity-card")).toBeVisible();
+  await expect(page.getByTestId("identity-card")).toContainText("로그인됨");
 });
 
 test("mock social login resumes saving after auth", async ({ page }) => {
