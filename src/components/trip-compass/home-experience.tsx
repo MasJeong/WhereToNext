@@ -17,8 +17,8 @@ import {
   createRecommendationCards,
   formatDepartureAirport,
   formatEvidenceMode,
+  formatResultVibeLabel,
   formatTravelMonth,
-  formatVibeLabel,
   type RecommendationApiResponse,
   type RecommendationCardView,
 } from "@/lib/trip-compass/presentation";
@@ -136,7 +136,7 @@ const resultFilterOptions: Array<{ key: ResultFilterKey; label: string; descript
   { key: "all", label: "전체", description: "지금 조건과 맞는 순서대로 봐요." },
   { key: "short-flight", label: "가까운 비행", description: "비행 부담이 낮은 곳부터 볼게요." },
   { key: "city", label: "도시 리듬", description: "도시 동선이 살아 있는 후보만 봐요." },
-  { key: "rest", label: "쉬는 흐름", description: "휴양·자연 쪽을 먼저 볼게요." },
+  { key: "rest", label: "아웃도어", description: "해변·풍경 쪽 후보를 먼저 볼게요." },
   { key: "balanced-budget", label: "예산 균형", description: "균형 예산 감각을 먼저 볼게요." },
 ];
 
@@ -323,7 +323,7 @@ function CompactRecommendationItem({
   const detailPath = buildDestinationDetailPath(card.destination, query, saveState.snapshotId);
   const leadReason = card.recommendation.reasons[0] ?? card.recommendation.whyThisFits;
   const decisionFacts = buildRecommendationDecisionFacts(card.destination);
-  const tags = card.destination.vibeTags.slice(0, 3).map((tag) => formatVibeLabel(tag));
+  const tags = card.destination.vibeTags.slice(0, 3).map((tag) => formatResultVibeLabel(tag));
 
   return (
     <article
@@ -988,7 +988,7 @@ export function HomeExperience() {
         leadTitle={leadCard ? leadCard.destination.nameKo : isSubmitting ? "추천 결과를 정리하고 있어요." : "다시 맞는 후보를 찾고 있어요."}
         leadReason={leadCard?.recommendation.reasons[0] ?? "결과가 나오면 가장 먼저 볼 목적지를 짧게 정리해 드릴게요."}
         leadDescription={leadCard ? leadCard.recommendation.whyThisFits : queryNarrative}
-        leadTags={leadCard ? leadCard.destination.vibeTags.slice(0, 3).map((tag) => formatVibeLabel(tag)) : []}
+        leadTags={leadCard ? leadCard.destination.vibeTags.slice(0, 3).map((tag) => formatResultVibeLabel(tag)) : []}
         leadFacts={leadCard ? buildRecommendationDecisionFacts(leadCard.destination) : []}
         leadSupportSlot={
           leadCard ? (
@@ -1009,10 +1009,7 @@ export function HomeExperience() {
 
               return (
                 <div className="space-y-4">
-                  <section data-testid={getInstagramVibeTestId(0)} className="space-y-3">
-                    <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
-                      바로 움직이기
-                    </p>
+                  <section data-testid={getInstagramVibeTestId(0)} className="space-y-2.5">
                     <div className="flex flex-wrap gap-2">
                       <Link
                         href={detailPath}
@@ -1030,22 +1027,22 @@ export function HomeExperience() {
                         className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {saveState.status === "saving"
-                          ? "저장 중..."
+                          ? "담는 중..."
                           : saveState.status === "saved"
-                            ? "내 일정에 담았어요"
-                            : "내 일정에 담기"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={reopenQuestionFlow}
-                        className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
-                      >
-                        질문 다시 보기
+                            ? "일정에 담김"
+                            : "일정 담기"}
                       </button>
                     </div>
                   </section>
 
                   <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--color-funnel-text-soft)]">
+                    <button
+                      type="button"
+                      onClick={reopenQuestionFlow}
+                      className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]"
+                    >
+                      다시 고르기
+                    </button>
                     <button type="button" onClick={resetFunnel} className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]">
                       처음부터 다시 하기
                     </button>

@@ -9,7 +9,7 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "npm run start",
+    command: "MOCK_OAUTH_PROVIDER=true npm run start",
     url: "http://localhost:4010",
     reuseExistingServer: false,
   },

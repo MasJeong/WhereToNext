@@ -6,6 +6,7 @@ import {
   pgTable,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -19,6 +20,7 @@ import {
   freshnessStateValues,
   paceValues,
   snapshotKindValues,
+  snapshotVisibilityValues,
   vibeValues,
   type ComparisonSnapshot,
   type DestinationProfile,
@@ -37,6 +39,7 @@ export const evidenceTierEnum = pgEnum("evidence_tier", evidenceTierValues);
 export const evidenceSourceTypeEnum = pgEnum("evidence_source_type", evidenceSourceTypeValues);
 export const freshnessStateEnum = pgEnum("freshness_state", freshnessStateValues);
 export const snapshotKindEnum = pgEnum("snapshot_kind", snapshotKindValues);
+export const snapshotVisibilityEnum = pgEnum("snapshot_visibility", snapshotVisibilityValues);
 export const explorationPreferenceEnum = pgEnum(
   "exploration_preference",
   explorationPreferenceValues,
@@ -45,7 +48,7 @@ export const explorationPreferenceEnum = pgEnum(
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
-  email: text("email").notNull().unique(),
+  email: text("email").unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
@@ -65,23 +68,36 @@ export const session = pgTable("session", {
     .references(() => user.id, { onDelete: "cascade" }),
 });
 
-export const account = pgTable("account", {
-  id: text("id").primaryKey(),
-  accountId: text("account_id").notNull(),
-  providerId: text("provider_id").notNull(),
-  userId: text("user_id")
-    .notNull()
-    .references(() => user.id, { onDelete: "cascade" }),
-  accessToken: text("access_token"),
-  refreshToken: text("refresh_token"),
-  idToken: text("id_token"),
-  accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
-  refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
-  scope: text("scope"),
-  password: text("password"),
-  createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
-  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
-});
+export const account = pgTable(
+  "account",
+  {
+    id: text("id").primaryKey(),
+    accountId: text("account_id").notNull(),
+    providerId: text("provider_id").notNull(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    accessToken: text("access_token"),
+    refreshToken: text("refresh_token"),
+    idToken: text("id_token"),
+    accessTokenExpiresAt: timestamp("access_token_expires_at", { withTimezone: true }),
+    refreshTokenExpiresAt: timestamp("refresh_token_expires_at", { withTimezone: true }),
+    scope: text("scope"),
+    password: text("password"),
+    providerEmail: text("provider_email"),
+    providerEmailVerified: boolean("provider_email_verified").notNull().default(false),
+    lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
+  },
+  (table) => ({
+    providerAccountUnique: uniqueIndex("account_provider_account_unique").on(
+      table.providerId,
+      table.accountId,
+    ),
+    userProviderUnique: uniqueIndex("account_user_provider_unique").on(table.userId, table.providerId),
+  }),
+);
 
 export const verification = pgTable("verification", {
   id: text("id").primaryKey(),
@@ -139,6 +155,8 @@ export const scoringVersions = pgTable("scoring_versions", {
 export const recommendationSnapshots = pgTable("recommendation_snapshots", {
   id: uuid("id").defaultRandom().primaryKey(),
   kind: snapshotKindEnum("kind").notNull(),
+  visibility: snapshotVisibilityEnum("visibility").notNull().default("public"),
+  ownerUserId: text("owner_user_id").references(() => user.id, { onDelete: "set null" }),
   snapshotVersion: integer("snapshot_version").notNull().default(1),
   query: jsonb("query").$type<RecommendationQuery | null>(),
   payload: jsonb("payload").$type<RecommendationSnapshot | ComparisonSnapshot>().notNull(),

@@ -36,3 +36,15 @@ test("hides auth and account navigation in ios shell mode", async ({ page }) => 
   await expect(page.getByTestId("auth-cta")).toHaveCount(0);
   await expect(page.getByTestId("home-cta")).toBeVisible();
 });
+
+test("shows a social-only auth entry that keeps browsing optional", async ({ page }) => {
+  await page.goto("/auth?next=%2Fresults&intent=save");
+
+  await expect(page.getByTestId("auth-return-banner")).toBeVisible();
+  await expect(page.getByTestId("auth-provider-kakao")).toBeVisible();
+  await expect(page.getByTestId("auth-provider-google")).toBeVisible();
+  await expect(page.getByTestId("auth-provider-apple")).toBeVisible();
+  await expect(page.locator('input[type="email"]')).toHaveCount(0);
+  await expect(page.locator('input[type="password"]')).toHaveCount(0);
+  await expect(page.getByText("로그인 없이 계속 보기")).toBeVisible();
+});

@@ -1,9 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { authClient } from "@/lib/auth-client";
+import {
+  buildCurrentRoute,
+  consumeMatchingPostAuthIntent,
+  savePostAuthIntent,
+} from "@/lib/post-auth-intent";
 import type {
   DestinationProfile,
   DestinationTravelSupplement,
@@ -113,6 +118,7 @@ export function DestinationDetailExperience({
   const [tasteStatus, setTasteStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
   const [linkCopyState, setLinkCopyState] = useState<LinkCopyState>("idle");
   const [copyFallbackUrl, setCopyFallbackUrl] = useState<string | null>(null);
+  const replayedIntentRef = useRef<string | null>(null);
 
   const canSave = Boolean(allowSave && card && query && scoringVersionId);
   const reasons = card?.recommendation.reasons.slice(0, 3) ?? buildFallbackReasonList(destination);
@@ -142,8 +148,19 @@ export function DestinationDetailExperience({
     }
   }
 
-  async function handleSave() {
+  const handleSave = useCallback(async () => {
     if (!card || !query || !scoringVersionId) {
+      return;
+    }
+
+    if (!session.data?.user) {
+      const currentRoute = buildCurrentRoute(window.location.pathname, new URLSearchParams(window.location.search));
+      savePostAuthIntent({
+        kind: "save-detail-card",
+        route: currentRoute,
+        destinationId: destination.id,
+      });
+      window.location.assign(`/auth?next=${encodeURIComponent(currentRoute)}&intent=save`);
       return;
     }
 
@@ -156,7 +173,7 @@ export function DestinationDetailExperience({
         headers: {
           "content-type": "application/json",
         },
-        body: JSON.stringify(buildRecommendationSnapshotPayload(query, card, scoringVersionId)),
+        body: JSON.stringify(buildRecommendationSnapshotPayload(query, card, scoringVersionId, "private")),
       });
 
       if (!response.ok) {
@@ -175,7 +192,28 @@ export function DestinationDetailExperience({
     } catch {
       setSaveState({ status: "error" });
     }
-  }
+  }, [card, destination.id, query, scoringVersionId, session.data?.user]);
+
+  useEffect(() => {
+    if (session.isPending || !session.data?.user || !card || !query || !scoringVersionId) {
+      return;
+    }
+
+    const currentRoute = buildCurrentRoute(window.location.pathname, new URLSearchParams(window.location.search));
+    const intent = consumeMatchingPostAuthIntent(currentRoute);
+
+    if (!intent || intent.kind !== "save-detail-card" || intent.destinationId !== destination.id) {
+      return;
+    }
+
+    const intentKey = `${intent.kind}:${intent.route}:${intent.destinationId}`;
+    if (replayedIntentRef.current === intentKey) {
+      return;
+    }
+
+    replayedIntentRef.current = intentKey;
+    void handleSave();
+  }, [card, destination.id, handleSave, query, scoringVersionId, session.data?.user, session.isPending]);
 
   async function handleTasteSave() {
     if (!session.data?.user) {

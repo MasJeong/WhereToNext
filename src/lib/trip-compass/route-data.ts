@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { activeScoringVersion } from "@/lib/catalog/scoring-version";
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
+import { getSessionOrNull } from "@/lib/auth-session";
 import { getDestinationEvidence, buildEvidenceMap } from "@/lib/evidence/service";
 import type {
   DestinationTravelSupplement,
@@ -103,7 +104,8 @@ function getFirstValue(value: string | string[] | undefined): string | null {
 export async function resolveSnapshotRestorePageData(
   snapshotId: string,
 ): Promise<SnapshotRestorePageData> {
-  const snapshot = await readSnapshot(snapshotId);
+  const session = await getSessionOrNull();
+  const snapshot = await readSnapshot(snapshotId, session?.user.id ?? null);
 
   if (!snapshot || snapshot.kind !== "recommendation") {
     return {
@@ -150,7 +152,8 @@ export async function resolveSnapshotRestorePageData(
 export async function resolveCompareRestorePageData(
   snapshotId: string,
 ): Promise<CompareRestorePageData> {
-  const snapshot = await readSnapshot(snapshotId);
+  const session = await getSessionOrNull();
+  const snapshot = await readSnapshot(snapshotId, session?.user.id ?? null);
 
   if (!snapshot || snapshot.kind !== "comparison") {
     return {
@@ -162,7 +165,7 @@ export async function resolveCompareRestorePageData(
   try {
     return {
       kind: "ready",
-      columns: await hydrateComparisonSnapshot(snapshot.payload),
+      columns: await hydrateComparisonSnapshot(snapshot.payload, session?.user.id ?? null),
     };
   } catch {
     return {
@@ -190,9 +193,10 @@ export async function resolveDestinationDetailPageData(
 
   async function resolveRecommendationContext() {
     const snapshotId = getFirstValue(rawSearchParams.snapshotId);
+    const session = await getSessionOrNull();
 
     if (snapshotId) {
-      const snapshot = await readSnapshot(snapshotId);
+      const snapshot = await readSnapshot(snapshotId, session?.user.id ?? null);
 
       if (snapshot?.kind === "recommendation") {
         try {

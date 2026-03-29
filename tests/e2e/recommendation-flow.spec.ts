@@ -129,10 +129,9 @@ test("shows the lead summary and primary actions on the lead card", async ({ pag
 
   const leadCard = page.getByTestId("result-card-0");
 
-  await expect(leadCard.getByText("대표 여행지")).toBeVisible();
-  await expect(leadCard.getByText("바로 움직이기")).toBeVisible();
   await expect(leadCard.getByRole("link", { name: "상세 보기" })).toBeVisible();
-  await expect(leadCard.getByRole("button", { name: "내 일정에 담기" })).toBeVisible();
+  await expect(leadCard.getByRole("button", { name: "일정 담기" })).toBeVisible();
+  await expect(leadCard.getByText("추천 시기")).toBeVisible();
 });
 
 test("shows a social video block only for the lead recommendation", async ({ page }) => {

@@ -8,12 +8,13 @@ import { authClient } from "@/lib/auth-client";
 import { buildApiUrl } from "@/lib/runtime/url";
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import type {
+  RecommendationSnapshot,
   ExplorationPreference,
   UserDestinationHistory,
   UserPreferenceProfile,
 } from "@/lib/domain/contracts";
 import { formatVibeList } from "@/lib/trip-compass/presentation";
-import { getAccountHistoryDeleteTestId, getAccountHistoryEntryTestId, testIds } from "@/lib/test-ids";
+import { getAccountHistoryDeleteTestId, getAccountHistoryEntryTestId, getSavedSnapshotTestId, testIds } from "@/lib/test-ids";
 
 import { ExperienceShell } from "./experience-shell";
 
@@ -21,6 +22,11 @@ type AccountExperienceProps = {
   userName: string;
   initialProfile: UserPreferenceProfile;
   initialHistory: UserDestinationHistory[];
+  initialSavedSnapshots: Array<{
+    id: string;
+    createdAt: string;
+    payload: RecommendationSnapshot;
+  }>;
 };
 
 type HistoryDraft = {
@@ -75,10 +81,12 @@ export function AccountExperience({
   userName,
   initialProfile,
   initialHistory,
+  initialSavedSnapshots,
 }: AccountExperienceProps) {
   const router = useRouter();
   const [profile, setProfile] = useState(initialProfile);
   const [historyEntries, setHistoryEntries] = useState(initialHistory);
+  const [savedSnapshots] = useState(initialSavedSnapshots);
   const [draft, setDraft] = useState<HistoryDraft>({
     destinationId: launchCatalog[0]?.id ?? "tokyo",
     rating: 5,
@@ -440,6 +448,57 @@ export function AccountExperience({
               {error}
             </p>
           ) : null}
+
+          <article className="compass-desk rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
+            <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
+              <p className="compass-editorial-kicker">저장한 추천</p>
+              <h2 className="mt-1.5 font-display text-[1.16rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.34rem]">
+                로그인 뒤 따로 저장해 둔 추천만 여기에서 다시 열 수 있어요.
+              </h2>
+            </div>
+
+            <div className="mt-3.5 grid gap-3">
+              {savedSnapshots.length > 0 ? (
+                savedSnapshots.map((snapshot, index) => {
+                  const destinationId = snapshot.payload.destinationIds[0];
+                  const destination = launchCatalog.find((item) => item.id === destinationId);
+
+                  return (
+                    <article
+                      key={snapshot.id}
+                      data-testid={getSavedSnapshotTestId(index)}
+                      className="compass-sheet rounded-[calc(var(--radius-card)-10px)] px-4 py-4"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <p className="compass-editorial-kicker">{destination?.nameKo ?? destinationId}</p>
+                          <p className="mt-1.5 font-display text-[1rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
+                            {destination?.nameEn ?? destinationId}
+                          </p>
+                          <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
+                            저장일 {snapshot.createdAt.slice(0, 10)} · 내 계정에만 보이는 추천이에요.
+                          </p>
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                          <Link
+                            href={`/s/${snapshot.id}`}
+                            className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
+                          >
+                            다시 보기
+                          </Link>
+                        </div>
+                      </div>
+                    </article>
+                  );
+                })
+              ) : (
+                <div className="compass-note rounded-[calc(var(--radius-card)-10px)] p-4 text-sm leading-6 text-[var(--color-ink-soft)]">
+                  아직 로그인 후 저장한 추천이 없어요. 결과 화면에서 마음에 드는 여행을 저장하면 여기로 모여요.
+                </div>
+              )}
+            </div>
+          </article>
 
           <article className="compass-desk rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
             <div className="border-b border-[color:var(--color-frame-soft)] pb-4">

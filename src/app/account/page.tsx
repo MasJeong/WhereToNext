@@ -4,6 +4,7 @@ import {
   getOrCreateUserPreferenceProfile,
   listUserDestinationHistory,
 } from "@/lib/profile/service";
+import { listOwnedRecommendationSnapshots } from "@/lib/snapshots/service";
 
 export const dynamic = "force-dynamic";
 
@@ -13,9 +14,10 @@ export const dynamic = "force-dynamic";
  */
 export default async function AccountPage() {
   const session = await requireSession();
-  const [profile, history] = await Promise.all([
+  const [profile, history, savedSnapshots] = await Promise.all([
     getOrCreateUserPreferenceProfile(session.user.id),
     listUserDestinationHistory(session.user.id),
+    listOwnedRecommendationSnapshots(session.user.id),
   ]);
 
   return (
@@ -23,6 +25,7 @@ export default async function AccountPage() {
       userName={session.user.name}
       initialProfile={profile}
       initialHistory={history}
+      initialSavedSnapshots={savedSnapshots}
     />
   );
 }

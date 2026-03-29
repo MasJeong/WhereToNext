@@ -86,25 +86,22 @@ export function ResultPage({
           </div>
 
           <div data-testid={testIds.result.card0} className="flex flex-col p-5 sm:p-6 lg:p-7">
-            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
-              대표 여행지
-            </p>
-            <h2 className="mt-3 text-[2.3rem] font-semibold leading-[0.92] tracking-[-0.06em] text-[var(--color-funnel-text)] sm:text-[3.45rem]">
+            <h2 className="text-[2.15rem] font-semibold leading-[0.96] tracking-[-0.05em] text-[var(--color-funnel-text)] sm:text-[3rem]">
               {leadTitle}
             </h2>
-            <p className="mt-4 text-[1.02rem] font-semibold leading-7 text-[var(--color-funnel-text)] sm:text-[1.08rem]">
+            <p className="mt-3 text-[0.98rem] font-semibold leading-7 text-[var(--color-funnel-text)] sm:text-[1.02rem]">
               {leadReason}
             </p>
-            <p className="mt-2 text-[0.94rem] leading-6 text-[var(--color-funnel-text-soft)] sm:text-[0.98rem] sm:leading-7">
+            <p className="mt-1.5 line-clamp-2 text-[0.9rem] leading-6 text-[var(--color-funnel-text-soft)] sm:text-[0.95rem]">
               {leadDescription}
             </p>
 
             {leadTags.length > 0 ? (
-              <div className="mt-5 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-1.5">
                 {leadTags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1.5 text-[0.76rem] font-semibold text-[var(--color-funnel-text-soft)]"
+                    className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)]"
                   >
                     #{tag}
                   </span>
@@ -112,24 +109,22 @@ export function ResultPage({
               </div>
             ) : null}
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            <div className="mt-5 divide-y divide-[color:var(--color-funnel-border)] rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)]">
               {leadFacts.map((fact) => (
-                <article
-                  key={fact.id}
-                  className="rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-3.5"
-                >
-                  <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                    {fact.label}
-                  </p>
-                  <p className="mt-2 text-[0.98rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
+                <article key={fact.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                      {fact.label}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-[0.95rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
                     {fact.value}
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-[var(--color-funnel-text-soft)]">{fact.detail}</p>
                 </article>
               ))}
             </div>
 
-            <div className="mt-6">{leadDetails}</div>
+            <div className="mt-5">{leadDetails}</div>
           </div>
         </div>
 

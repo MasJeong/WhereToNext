@@ -4,6 +4,7 @@ import type { RecommendationCardView } from "./presentation";
 
 export type SavedRecommendationSnapshotRequest = {
   kind: "recommendation";
+  visibility?: "public" | "private";
   payload: {
     v: 1;
     kind: "recommendation";
@@ -26,9 +27,11 @@ export function buildRecommendationSnapshotPayload(
   query: RecommendationQuery,
   card: RecommendationCardView,
   scoringVersionId: string,
+  visibility: "public" | "private" = "public",
 ): SavedRecommendationSnapshotRequest {
   return {
     kind: "recommendation" as const,
+    visibility,
     payload: {
       v: 1 as const,
       kind: "recommendation" as const,

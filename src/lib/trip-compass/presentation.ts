@@ -439,7 +439,7 @@ export function buildStructuredTripBrief(
     {
       id: "vibes",
       label: "핵심 분위기",
-      value: formatVibeList(query.vibes),
+      value: formatResultVibeList(query.vibes),
       detail: query.vibes[1]
         ? "대표 분위기와 보조 분위기를 함께 맞춰 설명 가능한 후보만 남겨요."
         : "대표 분위기 하나로 먼저 넓게 보고, 저장 후 비교 단계에서 더 좁혀요.",
@@ -714,7 +714,7 @@ export function buildRecommendationPriorityBadge(totalScore: number): string {
  * @returns Human-readable query summary
  */
 export function buildQueryNarrative(query: RecommendationQuery): string {
-  return `${formatDepartureAirport(query.departureAirport)}에서 ${formatTravelMonth(query.travelMonth)}에 떠나는 ${query.tripLengthDays}일 ${formatPartyType(query.partyType)} 일정이에요. 예산은 ${formatBudgetBand(query.budgetBand)}, 분위기는 ${formatVibeList(query.vibes)} 중심으로 맞췄어요.`;
+  return `${formatDepartureAirport(query.departureAirport)}에서 ${formatTravelMonth(query.travelMonth)}에 떠나는 ${query.tripLengthDays}일 ${formatPartyType(query.partyType)} 일정이에요. 예산은 ${formatBudgetBand(query.budgetBand)}, 분위기는 ${formatResultVibeList(query.vibes)} 중심으로 맞췄어요.`;
 }
 
 /**
@@ -880,6 +880,19 @@ export function formatVibeLabel(vibe: string): string {
 }
 
 /**
+ * 결과 페이지에서 쓰는 vibe 라벨을 더 구매/행동 친화적인 표현으로 변환한다.
+ * @param vibe Destination or query vibe
+ * @returns Result-page friendly vibe label
+ */
+export function formatResultVibeLabel(vibe: string): string {
+  if (vibe === "nature") {
+    return "아웃도어";
+  }
+
+  return formatVibeLabel(vibe);
+}
+
+/**
  * 일정 밀도 값을 한국어 라벨로 변환한다.
  * @param pace 일정 밀도 값
  * @returns 한국어 라벨
@@ -912,6 +925,15 @@ export function formatPaceList(paces: RecommendationQuery["pace"][]): string {
  */
 export function formatVibeList(vibes: string[]): string {
   return vibes.map((vibe) => formatVibeLabel(vibe)).join(" + ");
+}
+
+/**
+ * 결과 페이지용 vibe 목록을 합친다.
+ * @param vibes Destination or query vibes
+ * @returns Joined result-page vibe label string
+ */
+export function formatResultVibeList(vibes: string[]): string {
+  return vibes.map((vibe) => formatResultVibeLabel(vibe)).join(" + ");
 }
 
 /**

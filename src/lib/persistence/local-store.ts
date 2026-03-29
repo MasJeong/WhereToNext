@@ -14,6 +14,8 @@ import type {
 export type LocalSnapshotRecord = {
   id: string;
   kind: "recommendation" | "comparison";
+  visibility: "public" | "private";
+  ownerUserId: string | null;
   createdAt: string;
   payload: RecommendationSnapshot | ComparisonSnapshot;
   scoringVersionId: string | null;
@@ -21,9 +23,19 @@ export type LocalSnapshotRecord = {
 };
 
 type LocalStoreData = {
-  users: Record<string, { id: string; name: string; email: string; emailVerified: boolean; image: string | null }>;
-  accounts: Record<string, { id: string; userId: string; providerId: string; accountId: string; password: string | null }>;
+  users: Record<string, { id: string; name: string; email: string | null; emailVerified: boolean; image: string | null }>;
+  accounts: Record<string, {
+    id: string;
+    userId: string;
+    providerId: string;
+    accountId: string;
+    password: string | null;
+    providerEmail: string | null;
+    providerEmailVerified: boolean;
+    lastLoginAt: string | null;
+  }>;
   sessions: Record<string, { id: string; userId: string; token: string; expiresAt: string; ipAddress: string | null; userAgent: string | null }>;
+  oauthTransactions: Record<string, { state: string; codeVerifier: string; nonce: string; provider: string; next: string; intent: string; expiresAt: string }>;
   preferences: Record<string, UserPreferenceProfile>;
   history: Record<string, UserDestinationHistory>;
   trendSnapshots: Record<string, TrendEvidenceSnapshot>;
@@ -52,10 +64,35 @@ function createDefaultStore(): LocalStoreData {
     users: {},
     accounts: {},
     sessions: {},
+    oauthTransactions: {},
     preferences: {},
     history: {},
     trendSnapshots: {},
     snapshots: {},
+  };
+}
+
+function normalizeLocalStore(store: Partial<LocalStoreData>): LocalStoreData {
+  const defaults = createDefaultStore();
+
+  return {
+    users: store.users ?? defaults.users,
+    accounts: store.accounts ?? defaults.accounts,
+    sessions: store.sessions ?? defaults.sessions,
+    oauthTransactions: store.oauthTransactions ?? defaults.oauthTransactions,
+    preferences: store.preferences ?? defaults.preferences,
+    history: store.history ?? defaults.history,
+    trendSnapshots: store.trendSnapshots ?? defaults.trendSnapshots,
+    snapshots: Object.fromEntries(
+      Object.entries(store.snapshots ?? defaults.snapshots).map(([snapshotId, snapshot]) => [
+        snapshotId,
+        {
+          ...snapshot,
+          visibility: snapshot.visibility ?? "public",
+          ownerUserId: snapshot.ownerUserId ?? null,
+        },
+      ]),
+    ) as LocalStoreData["snapshots"],
   };
 }
 
@@ -84,7 +121,7 @@ export async function readLocalStore(): Promise<LocalStoreData> {
     }
 
     try {
-      return JSON.parse(content) as LocalStoreData;
+      return normalizeLocalStore(JSON.parse(content) as Partial<LocalStoreData>);
     } catch {
       await sleep(20);
     }

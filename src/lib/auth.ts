@@ -18,7 +18,7 @@ const useLocalFileStore = !usePersistentDatabase && process.env.NODE_ENV !== "te
 type AuthUser = {
   id: string;
   name: string;
-  email: string;
+  email: string | null;
 };
 
 type AuthSession = {
@@ -78,7 +78,7 @@ async function getSessionByToken(token: string | null): Promise<AuthSession | nu
         user: {
           id: localUser.id,
           name: localUser.name,
-          email: localUser.email,
+          email: localUser.email ?? "",
         },
         session: {
           id: localSession.id,
@@ -134,6 +134,40 @@ async function getSessionByToken(token: string | null): Promise<AuthSession | nu
   }
 
   return buildAuthSession(userRow, sessionRow);
+}
+
+async function deleteSessionByToken(token: string | null): Promise<void> {
+  if (!token) {
+    return;
+  }
+
+  const tokenHash = hashSessionToken(token);
+
+  if (!usePersistentDatabase) {
+    if (useLocalFileStore) {
+      const store = await readLocalStore();
+
+      for (const [sessionId, localSession] of Object.entries(store.sessions)) {
+        if (localSession.token === tokenHash) {
+          delete store.sessions[sessionId];
+        }
+      }
+
+      await writeLocalStore(store);
+      return;
+    }
+
+    for (const [sessionId, memorySession] of memoryStore.sessions.entries()) {
+      if (memorySession.token === tokenHash) {
+        memoryStore.sessions.delete(sessionId);
+      }
+    }
+
+    return;
+  }
+
+  const { db } = await getRuntimeDatabase();
+  await db.delete(session).where(eq(session.token, tokenHash));
 }
 
 type AuthResult = {
@@ -210,7 +244,7 @@ function buildAuthSession(
     user: {
       id: userRow.id,
       name: userRow.name,
-      email: userRow.email,
+      email: userRow.email ?? "",
     },
     session: {
       id: sessionRow.id,
@@ -318,12 +352,16 @@ export async function signUpWithEmailPassword(input: {
         emailVerified: false,
         image: null,
       };
-      store.accounts[userId] = {
-        id: randomUUID(),
+      const nextAccountId = randomUUID();
+      store.accounts[nextAccountId] = {
+        id: nextAccountId,
         userId,
         providerId: "credentials",
         accountId: email,
         password: hashPassword(input.password),
+        providerEmail: email,
+        providerEmailVerified: false,
+        lastLoginAt: now.toISOString(),
       };
       store.sessions[sessionId] = {
         id: sessionId,
@@ -370,12 +408,16 @@ export async function signUpWithEmailPassword(input: {
       emailVerified: false,
       image: null,
     });
-    memoryStore.accounts.set(userId, {
-      id: randomUUID(),
+    const nextAccountId = randomUUID();
+    memoryStore.accounts.set(nextAccountId, {
+      id: nextAccountId,
       userId,
       providerId: "credentials",
       accountId: email,
       password: hashPassword(input.password),
+      providerEmail: email,
+      providerEmailVerified: false,
+      lastLoginAt: now.toISOString(),
     });
     memoryStore.sessions.set(sessionId, {
       id: sessionId,
@@ -446,6 +488,9 @@ export async function signUpWithEmailPassword(input: {
         refreshTokenExpiresAt: null,
         scope: null,
         password: hashPassword(input.password),
+        providerEmail: email,
+        providerEmailVerified: false,
+        lastLoginAt: now,
         createdAt: now,
         updatedAt: now,
       });
@@ -503,7 +548,11 @@ export async function signInWithEmailPassword(input: {
     if (useLocalFileStore) {
       const store = await readLocalStore();
       const localUser = Object.values(store.users).find((entry) => entry.email === email);
-      const localAccount = localUser ? store.accounts[localUser.id] : null;
+      const localAccount = localUser
+        ? Object.values(store.accounts).find(
+            (entry) => entry.userId === localUser.id && entry.providerId === "credentials",
+          )
+        : null;
 
       if (!localUser || !localAccount?.password || !verifyPassword(input.password, localAccount.password)) {
         return {
@@ -531,7 +580,7 @@ export async function signInWithEmailPassword(input: {
           user: {
             id: localUser.id,
             name: localUser.name,
-            email: localUser.email,
+            email: localUser.email ?? "",
           },
           session: {
             id: nextSessionId,
@@ -543,7 +592,11 @@ export async function signInWithEmailPassword(input: {
     }
 
     const memoryUser = [...memoryStore.users.values()].find((entry) => entry.email === email);
-    const memoryAccount = memoryUser ? memoryStore.accounts.get(memoryUser.id) : null;
+    const memoryAccount = memoryUser
+      ? [...memoryStore.accounts.values()].find(
+          (entry) => entry.userId === memoryUser.id && entry.providerId === "credentials",
+        )
+      : null;
 
     if (!memoryUser || !memoryAccount?.password || !verifyPassword(input.password, memoryAccount.password)) {
       return {
@@ -668,36 +721,69 @@ export async function requireSession() {
  */
 export async function deleteCurrentSession(): Promise<void> {
   const token = (await cookies()).get(SESSION_COOKIE_NAME)?.value;
+  await deleteSessionByToken(token ?? null);
+}
 
-  if (!token) {
-    return;
-  }
+export async function rotateSessionForUser(input: {
+  user: AuthUser;
+  requestHeaders?: Headers;
+  ipAddress?: string | null;
+  userAgent?: string | null;
+}): Promise<AuthSession & { token: string }> {
+  const currentToken = input.requestHeaders
+    ? getSessionTokenFromCookieHeader(input.requestHeaders.get("cookie"))
+    : null;
 
-  const tokenHash = hashSessionToken(token);
+  await deleteSessionByToken(currentToken);
+
+  const now = new Date();
+  const sessionId = randomUUID();
+  const sessionToken = randomBytes(32).toString("hex");
+  const sessionTokenHash = hashSessionToken(sessionToken);
+  const expiresAt = new Date(now.getTime() + SESSION_MAX_AGE_MS);
 
   if (!usePersistentDatabase) {
     if (useLocalFileStore) {
       const store = await readLocalStore();
-
-      for (const [sessionId, localSession] of Object.entries(store.sessions)) {
-        if (localSession.token === tokenHash) {
-          delete store.sessions[sessionId];
-        }
-      }
-
+      store.sessions[sessionId] = {
+        id: sessionId,
+        userId: input.user.id,
+        token: sessionTokenHash,
+        expiresAt: expiresAt.toISOString(),
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
+      };
       await writeLocalStore(store);
-      return;
+    } else {
+      memoryStore.sessions.set(sessionId, {
+        id: sessionId,
+        userId: input.user.id,
+        token: sessionTokenHash,
+        expiresAt: expiresAt.toISOString(),
+        ipAddress: input.ipAddress ?? null,
+        userAgent: input.userAgent ?? null,
+      });
     }
-
-    for (const [sessionId, memorySession] of memoryStore.sessions.entries()) {
-      if (memorySession.token === tokenHash) {
-        memoryStore.sessions.delete(sessionId);
-      }
-    }
-
-    return;
+  } else {
+    const { db } = await getRuntimeDatabase();
+    await db.insert(session).values({
+      id: sessionId,
+      userId: input.user.id,
+      token: sessionTokenHash,
+      expiresAt,
+      createdAt: now,
+      updatedAt: now,
+      ipAddress: input.ipAddress ?? null,
+      userAgent: input.userAgent ?? null,
+    });
   }
 
-  const { db } = await getRuntimeDatabase();
-  await db.delete(session).where(eq(session.token, tokenHash));
+  return {
+    user: input.user,
+    session: {
+      id: sessionId,
+      expiresAt: expiresAt.toISOString(),
+    },
+    token: sessionToken,
+  };
 }

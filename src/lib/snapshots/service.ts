@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { desc, eq, inArray } from "drizzle-orm";
+import { and, desc, eq, inArray } from "drizzle-orm";
 
 import { getRuntimeDatabase } from "@/lib/db/runtime";
 import { recommendationSnapshots, trendSnapshots } from "@/lib/db/schema";
@@ -9,6 +9,7 @@ import {
   recommendationSnapshotSchema,
   type ComparisonSnapshot,
   type RecommendationSnapshot,
+  type SnapshotVisibility,
   type TrendEvidenceSnapshot,
 } from "@/lib/domain/contracts";
 import {
@@ -25,6 +26,8 @@ const useLocalFileStore = !usePersistentDatabase && process.env.NODE_ENV !== "te
 type RecommendationStoredSnapshot = {
   id: string;
   kind: "recommendation";
+  visibility: SnapshotVisibility;
+  ownerUserId: string | null;
   createdAt: string;
   payload: RecommendationSnapshot;
   scoringVersionId: string | null;
@@ -34,6 +37,8 @@ type RecommendationStoredSnapshot = {
 type ComparisonStoredSnapshot = {
   id: string;
   kind: "comparison";
+  visibility: SnapshotVisibility;
+  ownerUserId: string | null;
   createdAt: string;
   payload: ComparisonSnapshot;
   scoringVersionId: string | null;
@@ -41,6 +46,14 @@ type ComparisonStoredSnapshot = {
 };
 
 type StoredSnapshot = RecommendationStoredSnapshot | ComparisonStoredSnapshot;
+
+function canReadSnapshot(snapshot: StoredSnapshot, viewerUserId?: string | null): boolean {
+  if (snapshot.visibility === "public") {
+    return true;
+  }
+
+  return Boolean(viewerUserId && snapshot.ownerUserId === viewerUserId);
+}
 
 /**
  * 추천 스냅샷에 포함된 증거 스냅샷을 평탄화한다.
@@ -116,8 +129,17 @@ function normalizeSnapshotInput(body: CreateSnapshotBody) {
  * @param body 검증된 스냅샷 입력
  * @returns 저장된 스냅샷 메타데이터
  */
-export async function createSnapshot(body: CreateSnapshotBody): Promise<StoredSnapshot> {
+export async function createSnapshot(
+  body: CreateSnapshotBody,
+  options?: { visibility?: SnapshotVisibility; ownerUserId?: string | null },
+): Promise<StoredSnapshot> {
   const input = normalizeSnapshotInput(body);
+  const visibility = options?.visibility ?? "public";
+  const ownerUserId = options?.ownerUserId ?? null;
+
+  if (visibility === "private" && !ownerUserId) {
+    throw new Error("PRIVATE_SNAPSHOT_OWNER_REQUIRED");
+  }
 
   if (!usePersistentDatabase) {
     if (useLocalFileStore) {
@@ -133,6 +155,8 @@ export async function createSnapshot(body: CreateSnapshotBody): Promise<StoredSn
           ? {
               id: randomUUID(),
               kind: "recommendation",
+              visibility,
+              ownerUserId,
               createdAt,
               payload: input.payload,
               scoringVersionId: input.scoringVersionId,
@@ -141,6 +165,8 @@ export async function createSnapshot(body: CreateSnapshotBody): Promise<StoredSn
           : {
               id: randomUUID(),
               kind: "comparison",
+              visibility,
+              ownerUserId,
               createdAt,
               payload: input.payload,
               scoringVersionId: input.scoringVersionId,
@@ -161,6 +187,8 @@ export async function createSnapshot(body: CreateSnapshotBody): Promise<StoredSn
     const snapshotRecord: StoredSnapshot = {
       id: randomUUID(),
       kind: input.kind,
+      visibility,
+      ownerUserId,
       createdAt,
       payload: input.payload,
       scoringVersionId: input.scoringVersionId,
@@ -181,6 +209,8 @@ export async function createSnapshot(body: CreateSnapshotBody): Promise<StoredSn
     .insert(recommendationSnapshots)
     .values({
       kind: input.kind,
+      visibility,
+      ownerUserId,
       query: input.query,
       payload: input.payload,
       scoringVersionId: input.scoringVersionId,
@@ -193,6 +223,8 @@ export async function createSnapshot(body: CreateSnapshotBody): Promise<StoredSn
     return {
       id: created.id,
       kind: "recommendation",
+      visibility: created.visibility,
+      ownerUserId: created.ownerUserId,
       createdAt: created.createdAt.toISOString(),
       payload: recommendationSnapshotSchema.parse(created.payload),
       scoringVersionId: created.scoringVersionId,
@@ -203,6 +235,8 @@ export async function createSnapshot(body: CreateSnapshotBody): Promise<StoredSn
   return {
     id: created.id,
     kind: "comparison",
+    visibility: created.visibility,
+    ownerUserId: created.ownerUserId,
     createdAt: created.createdAt.toISOString(),
     payload: comparisonSnapshotSchema.parse(created.payload),
     scoringVersionId: created.scoringVersionId,
@@ -215,16 +249,28 @@ export async function createSnapshot(body: CreateSnapshotBody): Promise<StoredSn
  * @param snapshotId 스냅샷 식별자
  * @returns 저장된 스냅샷 또는 null
  */
-export async function readSnapshot(snapshotId: string): Promise<StoredSnapshot | null> {
+export async function readSnapshot(snapshotId: string, viewerUserId?: string | null): Promise<StoredSnapshot | null> {
   if (!usePersistentDatabase) {
     if (useLocalFileStore) {
       const store = await readLocalStore();
       const snapshot = store.snapshots[snapshotId];
-      return (snapshot as StoredSnapshot | undefined) ?? null;
+      if (!snapshot) {
+        return null;
+      }
+
+      return canReadSnapshot(snapshot as StoredSnapshot, viewerUserId)
+        ? (snapshot as StoredSnapshot)
+        : null;
     }
 
     const snapshot = memoryStore.snapshots.get(snapshotId);
-    return (snapshot as StoredSnapshot | undefined) ?? null;
+    if (!snapshot) {
+      return null;
+    }
+
+    return canReadSnapshot(snapshot as StoredSnapshot, viewerUserId)
+      ? (snapshot as StoredSnapshot)
+      : null;
   }
 
   const { db } = await getRuntimeDatabase();
@@ -237,24 +283,32 @@ export async function readSnapshot(snapshotId: string): Promise<StoredSnapshot |
   }
 
   if (hit.kind === "recommendation") {
-    return {
+    const snapshot = {
       id: hit.id,
       kind: "recommendation",
+      visibility: hit.visibility,
+      ownerUserId: hit.ownerUserId,
       createdAt: hit.createdAt.toISOString(),
       payload: recommendationSnapshotSchema.parse(hit.payload),
       scoringVersionId: hit.scoringVersionId,
       destinationIds: hit.destinationIds,
-    };
+    } satisfies RecommendationStoredSnapshot;
+
+    return canReadSnapshot(snapshot, viewerUserId) ? snapshot : null;
   }
 
-  return {
+  const snapshot = {
     id: hit.id,
     kind: "comparison",
+    visibility: hit.visibility,
+    ownerUserId: hit.ownerUserId,
     createdAt: hit.createdAt.toISOString(),
     payload: comparisonSnapshotSchema.parse(hit.payload),
     scoringVersionId: hit.scoringVersionId,
     destinationIds: hit.destinationIds,
-  };
+  } satisfies ComparisonStoredSnapshot;
+
+  return canReadSnapshot(snapshot, viewerUserId) ? snapshot : null;
 }
 
 /**
@@ -262,7 +316,7 @@ export async function readSnapshot(snapshotId: string): Promise<StoredSnapshot |
  * @param snapshotIds 조회할 스냅샷 ID 목록
  * @returns 생성일 내림차순 추천 스냅샷 목록
  */
-export async function readRecommendationSnapshots(snapshotIds: string[]) {
+export async function readRecommendationSnapshots(snapshotIds: string[], viewerUserId?: string | null) {
   if (!usePersistentDatabase) {
     if (useLocalFileStore) {
       const store = await readLocalStore();
@@ -271,13 +325,24 @@ export async function readRecommendationSnapshots(snapshotIds: string[]) {
         .map((snapshotId) => store.snapshots[snapshotId])
         .filter(
           (snapshot): snapshot is RecommendationStoredSnapshot =>
-            Boolean(snapshot && snapshot.kind === "recommendation"),
+            Boolean(
+              snapshot &&
+                snapshot.kind === "recommendation" &&
+                canReadSnapshot(snapshot as RecommendationStoredSnapshot, viewerUserId),
+            ),
         );
     }
 
     return snapshotIds
       .map((snapshotId) => memoryStore.snapshots.get(snapshotId))
-      .filter((snapshot): snapshot is RecommendationStoredSnapshot => Boolean(snapshot && snapshot.kind === "recommendation"));
+      .filter(
+        (snapshot): snapshot is RecommendationStoredSnapshot =>
+          Boolean(
+            snapshot &&
+              snapshot.kind === "recommendation" &&
+              canReadSnapshot(snapshot as RecommendationStoredSnapshot, viewerUserId),
+          ),
+      );
   }
 
   const { db } = await getRuntimeDatabase();
@@ -289,12 +354,67 @@ export async function readRecommendationSnapshots(snapshotIds: string[]) {
 
   return hits
     .filter((snapshot) => snapshot.kind === "recommendation")
-    .map((snapshot) => ({
-      id: snapshot.id,
-      kind: snapshot.kind,
-      createdAt: snapshot.createdAt.toISOString(),
-      payload: recommendationSnapshotSchema.parse(snapshot.payload),
-      scoringVersionId: snapshot.scoringVersionId,
-      destinationIds: snapshot.destinationIds,
-    }));
+    .map(
+      (snapshot) =>
+        ({
+          id: snapshot.id,
+          kind: "recommendation",
+          visibility: snapshot.visibility,
+          ownerUserId: snapshot.ownerUserId,
+          createdAt: snapshot.createdAt.toISOString(),
+          payload: recommendationSnapshotSchema.parse(snapshot.payload),
+          scoringVersionId: snapshot.scoringVersionId,
+          destinationIds: snapshot.destinationIds,
+        }) satisfies RecommendationStoredSnapshot,
+    )
+    .filter((snapshot) => canReadSnapshot(snapshot, viewerUserId));
+}
+
+export async function listOwnedRecommendationSnapshots(userId: string) {
+  if (!usePersistentDatabase) {
+    if (useLocalFileStore) {
+      const store = await readLocalStore();
+      return Object.values(store.snapshots)
+        .filter(
+          (snapshot): snapshot is RecommendationStoredSnapshot =>
+            snapshot.kind === "recommendation" &&
+            snapshot.visibility === "private" &&
+            snapshot.ownerUserId === userId,
+        )
+        .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+    }
+
+    return [...memoryStore.snapshots.values()]
+      .filter(
+        (snapshot): snapshot is RecommendationStoredSnapshot =>
+          snapshot.kind === "recommendation" &&
+          snapshot.visibility === "private" &&
+          snapshot.ownerUserId === userId,
+      )
+      .sort((left, right) => right.createdAt.localeCompare(left.createdAt));
+  }
+
+  const { db } = await getRuntimeDatabase();
+  const hits = await db.query.recommendationSnapshots.findMany({
+    where: and(
+      eq(recommendationSnapshots.kind, "recommendation"),
+      eq(recommendationSnapshots.visibility, "private"),
+      eq(recommendationSnapshots.ownerUserId, userId),
+    ),
+    orderBy: desc(recommendationSnapshots.createdAt),
+  });
+
+  return hits.map(
+    (snapshot) =>
+      ({
+        id: snapshot.id,
+        kind: "recommendation",
+        visibility: snapshot.visibility,
+        ownerUserId: snapshot.ownerUserId,
+        createdAt: snapshot.createdAt.toISOString(),
+        payload: recommendationSnapshotSchema.parse(snapshot.payload),
+        scoringVersionId: snapshot.scoringVersionId,
+        destinationIds: snapshot.destinationIds,
+      }) satisfies RecommendationStoredSnapshot,
+  );
 }
