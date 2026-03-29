@@ -1,0 +1,86 @@
+<svg width="1440" height="1024" viewBox="0 0 1440 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="nightB" x1="720" y1="0" x2="720" y2="1024" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EEF7FF"/>
+      <stop offset="0.22" stop-color="#B7DEFF"/>
+      <stop offset="0.48" stop-color="#2D96ED"/>
+      <stop offset="0.78" stop-color="#0B63CE"/>
+      <stop offset="1" stop-color="#083F88"/>
+    </linearGradient>
+    <radialGradient id="moonB" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1184 210) rotate(90) scale(126)">
+      <stop stop-color="#FFFFFF" stop-opacity="0.88"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cityB" x1="822" y1="632" x2="1326" y2="940" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#7FD0FF"/>
+      <stop offset="0.54" stop-color="#1E88E5"/>
+      <stop offset="1" stop-color="#0A4CA9"/>
+    </linearGradient>
+    <linearGradient id="ctaB" x1="0" y1="0" x2="220" y2="84" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E8F5FF"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1440" height="1024" fill="url(#nightB)"/>
+  <circle cx="1184" cy="210" r="126" fill="url(#moonB)"/>
+  <circle cx="1184" cy="210" r="52" fill="#FFFFFF" fill-opacity="0.64"/>
+
+  <path d="M0 486C168 456 296 470 434 516C562 558 664 634 788 642C912 650 1038 584 1138 502C1242 418 1322 380 1440 396V0H0V486Z" fill="#FFFFFF" fill-opacity="0.16"/>
+  <path d="M0 594C146 574 272 596 386 642C514 694 628 766 760 776C910 788 1040 726 1158 632C1268 544 1348 504 1440 516V1024H0V594Z" fill="#FFFFFF" fill-opacity="0.08"/>
+
+  <path d="M0 820C182 770 338 768 500 806C654 842 782 894 940 892C1110 890 1240 830 1360 772C1392 756 1420 748 1440 744V1024H0V820Z" fill="#0A4CA9" fill-opacity="0.34"/>
+  <path d="M0 874C206 822 370 830 554 874C718 914 836 950 974 944C1118 938 1244 894 1366 838C1398 824 1424 816 1440 814V1024H0V874Z" fill="url(#cityB)"/>
+
+  <path d="M778 598L842 510L906 598H778Z" fill="#FFFFFF" fill-opacity="0.18"/>
+  <path d="M872 626L958 500L1044 626H872Z" fill="#FFFFFF" fill-opacity="0.16"/>
+  <path d="M982 652L1092 486L1202 652H982Z" fill="#FFFFFF" fill-opacity="0.14"/>
+  <path d="M1122 680L1242 500L1362 680H1122Z" fill="#FFFFFF" fill-opacity="0.1"/>
+
+  <path d="M838 504C922 444 1008 432 1088 458C1168 484 1234 548 1286 620" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-dasharray="11 13" opacity="0.84"/>
+  <path d="M832 506L866 496L844 528" fill="#FFFFFF"/>
+
+  <g opacity="0.88">
+    <rect x="820" y="714" width="12" height="176" fill="#DFF1FF" fill-opacity="0.56"/>
+    <rect x="846" y="668" width="18" height="222" fill="#EAF6FF" fill-opacity="0.62"/>
+    <rect x="880" y="744" width="10" height="146" fill="#D8EEFF" fill-opacity="0.54"/>
+    <rect x="912" y="698" width="20" height="192" fill="#EFF8FF" fill-opacity="0.66"/>
+    <rect x="952" y="728" width="14" height="162" fill="#DDF1FF" fill-opacity="0.56"/>
+    <rect x="986" y="642" width="24" height="248" fill="#FFFFFF" fill-opacity="0.72"/>
+    <rect x="1028" y="702" width="14" height="188" fill="#DDF1FF" fill-opacity="0.58"/>
+    <rect x="1060" y="620" width="28" height="270" fill="#FFFFFF" fill-opacity="0.76"/>
+    <rect x="1104" y="734" width="14" height="156" fill="#D8EEFF" fill-opacity="0.54"/>
+    <rect x="1134" y="658" width="22" height="232" fill="#EFF8FF" fill-opacity="0.68"/>
+    <rect x="1172" y="716" width="12" height="174" fill="#DFF1FF" fill-opacity="0.54"/>
+    <rect x="1202" y="636" width="26" height="254" fill="#FFFFFF" fill-opacity="0.74"/>
+    <rect x="1244" y="686" width="16" height="204" fill="#EAF6FF" fill-opacity="0.64"/>
+  </g>
+
+  <g fill="#FFFFFF">
+    <circle cx="72" cy="59" r="7"/>
+    <text x="94" y="67" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="28" font-weight="700" letter-spacing="-1.4" fill="#FFFFFF">떠나볼래</text>
+    <text x="980" y="66" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="18" font-weight="700" fill="#FFFFFF">추천 받기</text>
+    <text x="1094" y="66" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="18" font-weight="600" fill="#EAF6FF">추천 방식</text>
+    <text x="1218" y="66" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="18" font-weight="600" fill="#EAF6FF">여행 기록</text>
+    <text x="1330" y="66" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="18" font-weight="600" fill="#FFFFFF">로그인</text>
+  </g>
+
+  <text x="88" y="228" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="18" font-weight="700" letter-spacing="1.1" fill="#EAF6FF">해외 여행지 추천</text>
+
+  <text x="88" y="344" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="88" font-weight="700" letter-spacing="-5.2" fill="#FFFFFF">
+    <tspan x="88" dy="0">어디로 떠날지,</tspan>
+    <tspan x="88" dy="94">이번엔 더 빨리</tspan>
+    <tspan x="88" dy="94">정해보세요</tspan>
+  </text>
+
+  <text x="88" y="652" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="25" font-weight="500" fill="#F3F9FF">
+    <tspan x="88" dy="0">짧은 질문 몇 개만 고르면 지금의 일정과 분위기에 맞는</tspan>
+    <tspan x="88" dy="38">해외 목적지를 바로 추천해 드려요.</tspan>
+  </text>
+
+  <g>
+    <rect x="88" y="730" width="216" height="84" rx="42" fill="url(#ctaB)"/>
+    <text x="150" y="782" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="24" font-weight="700" fill="#0B63CE">추천 받기</text>
+  </g>
+
+</svg>

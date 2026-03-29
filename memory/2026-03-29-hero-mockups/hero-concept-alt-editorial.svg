@@ -1,0 +1,55 @@
+<svg width="1440" height="960" viewBox="0 0 1440 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgEditorial" x1="720" y1="48" x2="720" y2="912" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FBFDFF"/>
+      <stop offset="1" stop-color="#EEF7FF"/>
+    </linearGradient>
+    <linearGradient id="bottomGlow" x1="720" y1="596" x2="720" y2="872" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4AB4FF" stop-opacity="0.18"/>
+      <stop offset="1" stop-color="#1E88E5" stop-opacity="0.04"/>
+    </linearGradient>
+    <linearGradient id="ctaEditorial" x1="0" y1="0" x2="240" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E88E5"/>
+      <stop offset="1" stop-color="#1254C7"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1440" height="960" fill="#FFFFFF"/>
+  <rect x="36" y="24" width="1368" height="912" rx="34" fill="url(#bgEditorial)"/>
+
+  <rect x="632" y="86" width="176" height="42" rx="21" fill="#FFFFFF" stroke="rgba(15,23,42,0.08)"/>
+  <text x="678" y="113" fill="#1254C7" font-size="17" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="700">떠나볼래? 추천 서비스</text>
+
+  <text x="720" y="250" text-anchor="middle" fill="#0F172A" font-size="78" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="800" letter-spacing="-3.4">
+    <tspan x="720" dy="0">이번 여행,</tspan>
+    <tspan x="720" dy="88">고르는 시간부터</tspan>
+    <tspan x="720" dy="88">가볍게.</tspan>
+  </text>
+
+  <text x="720" y="532" text-anchor="middle" fill="#5F6B7A" font-size="28" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="500">
+    <tspan x="720" dy="0">한국에서 출발하는 여행자 기준으로</tspan>
+    <tspan x="720" dy="42">일정, 비행 부담, 예산 감각에 맞는 목적지를 바로 추천해 드려요.</tspan>
+  </text>
+
+  <rect x="598" y="610" width="244" height="64" rx="32" fill="url(#ctaEditorial)"/>
+  <text x="649" y="650" fill="white" font-size="22" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="800">추천 바로 받기</text>
+
+  <text x="720" y="730" text-anchor="middle" fill="#0F172A" fill-opacity="0.82" font-size="17" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="700">질문은 짧게, 결과는 이유까지</text>
+
+  <g>
+    <rect x="154" y="742" width="1132" height="126" rx="28" fill="url(#bottomGlow)"/>
+    <path d="M168 838C218 788 264 764 336 764C414 764 450 808 524 808C598 808 624 744 706 744C786 744 822 816 896 816C972 816 1008 776 1080 776C1144 776 1192 804 1272 858V868H168V838Z" fill="#D9EDFF"/>
+    <path d="M168 854C256 820 344 804 444 816C556 828 606 856 710 856C792 856 860 832 930 824C1020 814 1132 834 1272 878V892H168V854Z" fill="#7BC5FF" fill-opacity="0.44"/>
+
+    <circle cx="342" cy="790" r="12" fill="#FFFFFF"/>
+    <circle cx="342" cy="790" r="7" fill="#1E88E5"/>
+    <circle cx="1068" cy="808" r="12" fill="#FFFFFF"/>
+    <circle cx="1068" cy="808" r="7" fill="#1E88E5"/>
+    <path d="M356 790C516 722 802 720 1054 808" stroke="#1E88E5" stroke-width="4" stroke-linecap="round" stroke-dasharray="10 16"/>
+
+    <rect x="274" y="706" width="126" height="42" rx="21" fill="#FFFFFF" stroke="rgba(15,23,42,0.08)"/>
+    <text x="311" y="733" fill="#0F172A" font-size="16" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="700">서울 출발</text>
+    <rect x="1000" y="724" width="128" height="42" rx="21" fill="#FFFFFF" stroke="rgba(15,23,42,0.08)"/>
+    <text x="1037" y="751" fill="#0F172A" font-size="16" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="700">오사카 추천</text>
+  </g>
+</svg>

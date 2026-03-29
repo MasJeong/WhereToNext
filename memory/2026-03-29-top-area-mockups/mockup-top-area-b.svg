@@ -1,0 +1,63 @@
+<svg width="1440" height="1024" viewBox="0 0 1440 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="1024" fill="#EDF7FF"/>
+
+  <defs>
+    <linearGradient id="heroB" x1="720" y1="140" x2="720" y2="920" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F7FBFF"/>
+      <stop offset="0.44" stop-color="#CFE8FF"/>
+      <stop offset="1" stop-color="#0B63CE"/>
+    </linearGradient>
+    <linearGradient id="ctaB" x1="0" y1="0" x2="184" y2="72" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4AB4FF"/>
+      <stop offset="1" stop-color="#1254C7"/>
+    </linearGradient>
+    <linearGradient id="waveB" x1="380" y1="672" x2="1220" y2="928" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#37A2F3"/>
+      <stop offset="1" stop-color="#0B63CE"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="40" y="32" width="1360" height="960" rx="32" fill="#FFFFFF"/>
+  <rect x="40" y="32" width="1360" height="960" rx="32" stroke="#D7EBFF"/>
+
+  <rect x="88" y="72" width="1264" height="72" rx="24" fill="#FFFFFF" fill-opacity="0.88"/>
+  <rect x="88" y="72" width="1264" height="72" rx="24" stroke="#D9EDFF"/>
+  <circle cx="128" cy="108" r="8" fill="#1E88E5"/>
+  <text x="148" y="114" fill="#0F172A" font-size="28" font-weight="700" letter-spacing="-1.4">떠나볼래</text>
+  <text x="492" y="114" fill="#0F172A" font-size="17" font-weight="700">추천 받기</text>
+  <text x="616" y="114" fill="#5F6B7A" font-size="17" font-weight="600">추천 방식</text>
+  <text x="736" y="114" fill="#5F6B7A" font-size="17" font-weight="600">여행 기록</text>
+  <text x="1142" y="114" fill="#5F6B7A" font-size="16" font-weight="700">로그인</text>
+  <rect x="1210" y="86" width="102" height="44" rx="22" fill="#F8FBFF" stroke="#D7EBFF"/>
+  <text x="1238" y="114" fill="#0F172A" font-size="15" font-weight="700">내 여행</text>
+
+  <rect x="88" y="164" width="1264" height="760" rx="40" fill="url(#heroB)"/>
+  <circle cx="1134" cy="286" r="78" fill="#FFFFFF" fill-opacity="0.26"/>
+  <circle cx="1134" cy="286" r="44" fill="#FFFFFF" fill-opacity="0.45"/>
+  <path d="M184 738C332 650 468 632 618 686C712 720 824 736 932 712C1044 686 1148 617 1352 650V924H88V788C116 774 150 758 184 738Z" fill="url(#waveB)"/>
+  <path d="M96 760C236 694 360 690 502 748C646 806 780 816 918 772C1052 728 1172 648 1352 690" stroke="#EAF5FF" stroke-width="6" stroke-linecap="round" opacity="0.86"/>
+  <path d="M788 560C860 486 936 450 1010 454C1076 458 1138 494 1188 542" stroke="#FFFFFF" stroke-width="10" stroke-linecap="round" opacity="0.26"/>
+  <path d="M852 548C905 482 966 448 1032 452C1084 454 1134 480 1180 526" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-dasharray="10 12" opacity="0.8"/>
+  <path d="M842 552L874 540L856 570" fill="#FFFFFF"/>
+  <path d="M840 612L914 496L992 612H840Z" fill="#FFFFFF" fill-opacity="0.24"/>
+  <path d="M938 632L1040 474L1142 632H938Z" fill="#FFFFFF" fill-opacity="0.16"/>
+  <path d="M1038 648L1160 462L1278 648H1038Z" fill="#FFFFFF" fill-opacity="0.12"/>
+  <rect x="156" y="236" width="132" height="38" rx="19" fill="#FFFFFF" fill-opacity="0.86"/>
+  <text x="187" y="260" fill="#0B63CE" font-size="16" font-weight="700">로그인 없이 시작</text>
+
+  <text x="156" y="368" fill="#0F172A" font-size="76" font-weight="700" letter-spacing="-3.8">
+    <tspan x="156" dy="0">이번 여행,</tspan>
+    <tspan x="156" dy="84">어디로 가면 좋을지</tspan>
+    <tspan x="156" dy="84">바로 정리해 드려요</tspan>
+  </text>
+  <text x="156" y="638" fill="#35506B" font-size="25" font-weight="500">
+    <tspan x="156" dy="0">고민은 짧게, 선택은 분명하게.</tspan>
+    <tspan x="156" dy="38">일정과 분위기에 맞는 해외 목적지를 빠르게 추천해 드려요.</tspan>
+  </text>
+
+  <rect x="156" y="706" width="184" height="72" rx="36" fill="url(#ctaB)"/>
+  <text x="209" y="750" fill="#FFFFFF" font-size="22" font-weight="700">추천 받기</text>
+
+  <text x="156" y="828" fill="#E8F4FF" font-size="16" font-weight="700">하나의 CTA만 강조하고, 장면형 배경은 감정 흐름만 담당합니다.</text>
+  <text x="156" y="878" fill="#D9EDFF" font-size="15" font-weight="600">Direction B · 몰입감 우선 · 넓은 배경 위에 제목과 CTA를 정면 배치</text>
+</svg>
