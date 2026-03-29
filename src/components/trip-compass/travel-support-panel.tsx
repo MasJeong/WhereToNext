@@ -21,6 +21,10 @@ function formatObservedTime(isoString: string) {
   }).format(new Date(isoString));
 }
 
+function formatTravelMonth(month: number) {
+  return `${month}월`;
+}
+
 /**
  * 대표 목적지의 외부 보조 정보를 짧게 묶어 보여준다.
  * @param supplement 외부 데이터 집계 결과
@@ -39,11 +43,28 @@ export function TravelSupportPanel({
     return null;
   }
 
+  const leadTravelMonth = supplement.travelMonthWeather?.travelMonth;
+  const leadTravelWeatherSummary = supplement.travelMonthWeather?.summary;
+
   return (
     <section
       data-testid={testIds.detail.travelSupport}
       className={`space-y-3 rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white p-4 ${rootClassName}`.trim()}
     >
+      <div className="space-y-1.5 border-b border-[color:var(--color-funnel-border)] pb-3">
+        <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+          {leadTravelMonth ? `${formatTravelMonth(leadTravelMonth)} 여행 판단` : "여행 판단 메모"}
+        </p>
+        <p className="text-[1rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
+          {leadTravelWeatherSummary ?? `${destinationName}에 가기 전에 날씨와 현지 감을 먼저 확인해 보세요.`}
+        </p>
+        <p className="text-sm leading-6 text-[var(--color-funnel-text-soft)]">
+          {leadTravelMonth
+            ? `${destinationName}에서 ${formatTravelMonth(leadTravelMonth)}에 체감할 가능성이 큰 흐름을 먼저 보여드리고, 지금 날씨는 참고용으로 덧붙였어요.`
+            : `${destinationName}에 가기 전 필요한 보조 정보만 짧게 정리했어요.`}
+        </p>
+      </div>
+
       {supplement.heroImage ? (
         <div
           className={`relative overflow-hidden rounded-[1.1rem] border border-[color:var(--color-funnel-border)] ${heroMode === "hero" ? "aspect-[16/10]" : "aspect-[16/9]"}`}
@@ -73,13 +94,32 @@ export function TravelSupportPanel({
       ) : null}
 
       <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(15rem,0.9fr)]">
+        {supplement.travelMonthWeather ? (
+          <article className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3">
+            <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+              선택한 시기 평균
+            </p>
+            <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">
+              {formatTravelMonth(supplement.travelMonthWeather.travelMonth)} 평균 최고{" "}
+              {supplement.travelMonthWeather.averageMaxTemperatureC}° / 최저{" "}
+              {supplement.travelMonthWeather.averageMinTemperatureC}°
+            </p>
+            <p className="mt-1 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
+              비 오는 날 비중 약 {supplement.travelMonthWeather.rainyDayRatio}%로, 여행 중 우산을 챙길지 판단하는 기준으로 보면 돼요.
+            </p>
+            <p className="mt-1 text-[11px] leading-5 text-[var(--color-funnel-text-soft)]">
+              최근 {supplement.travelMonthWeather.basedOnYears}년 흐름 기준
+            </p>
+          </article>
+        ) : null}
+
         {supplement.weather ? (
           <article className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3">
             <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-              날씨
+              현재 참고
             </p>
             <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">
-              {supplement.weather.summary}
+              지금 {destinationName}은 {supplement.weather.summary}
             </p>
             <p className="mt-1 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
               지금 {supplement.weather.temperatureC}° · 체감 {supplement.weather.apparentTemperatureC}° · 최고{" "}
