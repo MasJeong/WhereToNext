@@ -63,6 +63,7 @@ MOCK_OAUTH_PROVIDER=false
 YouTube 소셜 비디오는 서버에서 `YOUTUBE_API_KEY`를 사용해 조회하며, 키가 없거나 후보 품질이 낮으면 블록을 숨기고 추천 결과는 그대로 유지합니다.
 소셜 로그인은 Google / Kakao / Apple 공급자를 사용하며, 각 공급자의 콜백 URL은 `/api/auth/oauth/[provider]/callback` 형식으로 맞춰야 합니다.
 Playwright 기반 소셜 로그인 E2E는 `MOCK_OAUTH_PROVIDER=true`일 때 로컬 모의 authorize 라우트를 사용합니다.
+실제 공급자 콘솔 설정과 운영 반영 방법은 `docs/social-login-setup.md`를 참고하세요.
 
 ## 주요 스크립트
 

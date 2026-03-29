@@ -16,6 +16,7 @@
 
 ## 2) 규칙 파일 스택
 - 현재 활성 로컬 규칙 소스는 루트 `AGENTS.md` 하나입니다.
+- Opencode 공식 훅 경로는 `.opencode/plugins/`로 취급합니다.
 - 현재 확인 기준으로 `.cursorrules`, `.cursor/rules/`, `.github/copilot-instructions.md`, 중첩 `AGENTS.md`는 발견되지 않았습니다.
 - 나중에 위 파일이 생기면 해당 내용을 따르고, 이 문서의 규칙 스택 섹션도 함께 갱신합니다.
 
