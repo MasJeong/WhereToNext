@@ -100,6 +100,7 @@ export const testIds = {
   account: {
     root: "my-taste-root",
     tabHistory: "account-tab-history",
+    tabFutureTrips: "account-tab-future-trips",
     tabSaved: "account-tab-saved",
     tabPreferences: "account-tab-preferences",
     tasteMode: "my-taste-mode",
@@ -121,6 +122,10 @@ export const testIds = {
     historySave0: "history-save-0",
     historyEdit0: "history-edit-0",
     historyDelete0: "history-delete-0",
+    futureTripList: "future-trip-list",
+    futureTripEntry0: "future-trip-entry-0",
+    futureTripDelete0: "future-trip-delete-0",
+    futureTripEmptyState: "future-trip-empty-state",
   },
 } as const;
 
@@ -224,6 +229,14 @@ export function getAccountHistoryDeleteTestId(index: number): string {
  */
 export function getAccountHistoryEditTestId(index: number): string {
   return index === 0 ? testIds.account.historyEdit0 : `history-edit-${index}`;
+}
+
+export function getAccountFutureTripEntryTestId(index: number): string {
+  return index === 0 ? testIds.account.futureTripEntry0 : `future-trip-entry-${index}`;
+}
+
+export function getAccountFutureTripDeleteTestId(index: number): string {
+  return index === 0 ? testIds.account.futureTripDelete0 : `future-trip-delete-${index}`;
 }
 
 export function getDestinationTasteTagTestId(index: number): string {

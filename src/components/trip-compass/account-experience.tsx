@@ -11,9 +11,12 @@ import type {
   ExplorationPreference,
   RecommendationSnapshot,
   UserDestinationHistory,
+  UserFutureTrip,
   UserPreferenceProfile,
 } from "@/lib/domain/contracts";
 import {
+  getAccountFutureTripDeleteTestId,
+  getAccountFutureTripEntryTestId,
   getAccountHistoryDeleteTestId,
   getAccountHistoryEditTestId,
   getAccountHistoryEntryTestId,
@@ -24,13 +27,14 @@ import { formatVibeList } from "@/lib/trip-compass/presentation";
 
 import { ExperienceShell } from "./experience-shell";
 
-type AccountTab = "history" | "saved" | "preferences";
+type AccountTab = "history" | "future-trips" | "saved" | "preferences";
 
 type AccountExperienceProps = {
   userName: string;
   initialTab: AccountTab;
   initialProfile: UserPreferenceProfile;
   initialHistory: UserDestinationHistory[];
+  initialFutureTrips: UserFutureTrip[];
   initialSavedSnapshots: Array<{
     id: string;
     createdAt: string;
@@ -77,6 +81,14 @@ function findDestinationCopy(destinationId: string) {
   };
 }
 
+function findFutureTripCopy(futureTrip: UserFutureTrip) {
+  const destination = launchCatalog.find((item) => item.id === futureTrip.destinationId);
+  return {
+    nameKo: destination?.nameKo ?? futureTrip.destinationNameKo,
+    nameEn: destination?.nameEn ?? futureTrip.destinationId,
+  };
+}
+
 /**
  * 날짜 문자열을 화면용으로 단순화한다.
  * @param value ISO 날짜
@@ -91,15 +103,18 @@ export function AccountExperience({
   initialTab,
   initialProfile,
   initialHistory,
+  initialFutureTrips,
   initialSavedSnapshots,
 }: AccountExperienceProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<AccountTab>(initialTab);
   const [profile, setProfile] = useState(initialProfile);
   const [historyEntries, setHistoryEntries] = useState(initialHistory);
+  const [futureTrips, setFutureTrips] = useState(initialFutureTrips);
   const [savedSnapshots] = useState(initialSavedSnapshots);
   const [error, setError] = useState<string | null>(null);
   const [isSavingPreference, setIsSavingPreference] = useState(false);
+  const [deletingFutureTripId, setDeletingFutureTripId] = useState<string | null>(null);
 
   const summary = useMemo(() => {
     const totalRating = historyEntries.reduce((sum, entry) => sum + entry.rating, 0);
@@ -171,6 +186,28 @@ export function AccountExperience({
       setHistoryEntries((currentEntries) => currentEntries.filter((entry) => entry.id !== historyId));
     } catch {
       setError("여행 기록을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.");
+    }
+  }
+
+  async function deleteFutureTripEntry(futureTripId: string) {
+    setDeletingFutureTripId(futureTripId);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/me/future-trips/${futureTripId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("future-trip-delete-failed");
+      }
+
+      setFutureTrips((currentEntries) => currentEntries.filter((entry) => entry.id !== futureTripId));
+    } catch {
+      setError("앞으로 갈 곳을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setDeletingFutureTripId((currentId) => (currentId === futureTripId ? null : currentId));
     }
   }
 
@@ -248,6 +285,16 @@ export function AccountExperience({
             }`}
           >
             여행 기록
+          </button>
+          <button
+            type="button"
+            data-testid={testIds.account.tabFutureTrips}
+            onClick={() => setActiveTab("future-trips")}
+            className={`rounded-full px-4 py-2 text-sm font-semibold ${
+              activeTab === "future-trips" ? "compass-selected" : "compass-selection-chip"
+            }`}
+          >
+            앞으로 갈 곳
           </button>
           <button
             type="button"
@@ -423,6 +470,73 @@ export function AccountExperience({
               </article>
             </aside>
           </section>
+        ) : null}
+
+        {activeTab === "future-trips" ? (
+          <article className="compass-desk rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
+            <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
+              <p className="compass-editorial-kicker">앞으로 갈 곳</p>
+              <h2 className="mt-1.5 font-display text-[1.12rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.3rem]">
+                다음에 가고 싶은 여행지만 따로 모아 가볍게 정리해 두세요.
+              </h2>
+              <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
+                저장한 추천이나 다녀온 기록과 섞지 않고, 앞으로 검토할 목적지만 따로 보여줘요.
+              </p>
+            </div>
+
+            <div data-testid={testIds.account.futureTripList} className="mt-4 grid gap-3">
+              {futureTrips.length > 0 ? (
+                futureTrips.map((futureTrip, index) => {
+                  const destination = findFutureTripCopy(futureTrip);
+                  const isDeleting = deletingFutureTripId === futureTrip.id;
+
+                  return (
+                    <article
+                      key={futureTrip.id}
+                      data-testid={getAccountFutureTripEntryTestId(index)}
+                      className="compass-sheet rounded-[calc(var(--radius-card)-10px)] px-4 py-4"
+                    >
+                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                          <div className="flex flex-wrap items-center gap-2">
+                            <p className="compass-editorial-kicker">{destination.nameKo}</p>
+                            <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold uppercase">
+                              {futureTrip.countryCode}
+                            </span>
+                          </div>
+                          <p className="mt-1 font-display text-[1rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
+                            {destination.nameEn}
+                          </p>
+                          <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
+                            최근 담은 날짜 {formatHistoryDate(futureTrip.updatedAt)} · 다음에 다시 볼 후보만 조용히 모아 둘 수 있어요.
+                          </p>
+                        </div>
+
+                        <button
+                          type="button"
+                          data-testid={getAccountFutureTripDeleteTestId(index)}
+                          disabled={isDeleting}
+                          onClick={() => {
+                            void deleteFutureTripEntry(futureTrip.id);
+                          }}
+                          className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isDeleting ? "삭제 중..." : "삭제"}
+                        </button>
+                      </div>
+                    </article>
+                  );
+                })
+              ) : (
+                <div
+                  data-testid={testIds.account.futureTripEmptyState}
+                  className="compass-note rounded-[calc(var(--radius-card)-10px)] p-4 text-sm leading-6 text-[var(--color-ink-soft)]"
+                >
+                  아직 앞으로 갈 곳이 없어요. 결과 화면에서 마음에 드는 여행지를 담아 두면 이 탭에서 따로 정리해 볼 수 있어요.
+                </div>
+              )}
+            </div>
+          </article>
         ) : null}
 
         {activeTab === "saved" ? (
