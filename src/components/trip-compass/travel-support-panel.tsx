@@ -8,7 +8,9 @@ import { testIds } from "@/lib/test-ids";
 type TravelSupportPanelProps = {
   supplement: DestinationTravelSupplement | null | undefined;
   destinationName: string;
+  travelMonth?: number;
   heroMode?: "hero" | "compact";
+  layout?: "full" | "summary";
   rootClassName?: string;
 };
 
@@ -36,15 +38,81 @@ function formatTravelMonth(month: number) {
 export function TravelSupportPanel({
   supplement,
   destinationName,
+  travelMonth,
   heroMode = "compact",
+  layout = "full",
   rootClassName = "",
 }: TravelSupportPanelProps) {
   if (!supplement) {
-    return null;
+    if (layout !== "summary" || typeof travelMonth !== "number") {
+      return null;
+    }
+
+    return (
+      <section
+        data-testid={testIds.detail.travelSupport}
+        className={`rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-4 py-3.5 ${rootClassName}`.trim()}
+      >
+        <p className="text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+          {formatTravelMonth(travelMonth)} 날씨
+        </p>
+        <p className="mt-1 text-[0.95rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
+          {formatTravelMonth(travelMonth)} 기준 날씨를 확인하고 있어요.
+        </p>
+        <p className="mt-1 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
+          외부 날씨 데이터를 불러오면 이 자리에서 평균 기온과 비 오는 날 비중까지 바로 보여드릴게요.
+        </p>
+      </section>
+    );
   }
 
   const leadTravelMonth = supplement.travelMonthWeather?.travelMonth;
   const leadTravelWeatherSummary = supplement.travelMonthWeather?.summary;
+
+  if (layout === "summary") {
+    return (
+      <section
+        data-testid={testIds.detail.travelSupport}
+        className={`rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-4 py-3.5 ${rootClassName}`.trim()}
+      >
+        <div className="flex flex-col gap-3">
+          <div className="min-w-0">
+            <p className="text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+              {leadTravelMonth ? `${formatTravelMonth(leadTravelMonth)} 날씨` : "날씨"}
+            </p>
+            <p className="mt-1 text-[0.95rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
+              {leadTravelWeatherSummary ?? `${destinationName}의 시기별 날씨를 함께 보고 결정해 보세요.`}
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2">
+            {supplement.travelMonthWeather ? (
+              <>
+                <article className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1.5">
+                  <p className="text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
+                    평균 최고 {supplement.travelMonthWeather.averageMaxTemperatureC}° / 최저 {supplement.travelMonthWeather.averageMinTemperatureC}°
+                  </p>
+                </article>
+                <article className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1.5">
+                  <p className="text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
+                    비 오는 날 비중 약 {supplement.travelMonthWeather.rainyDayRatio}%
+                  </p>
+                </article>
+              </>
+            ) : null}
+
+            {supplement.weather ? (
+              <article className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1.5">
+                <p className="text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
+                  지금 {supplement.weather.temperatureC}° · 체감 {supplement.weather.apparentTemperatureC}° · {supplement.weather.summary}
+                </p>
+              </article>
+            ) : null}
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section
