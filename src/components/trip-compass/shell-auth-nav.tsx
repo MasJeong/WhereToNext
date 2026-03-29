@@ -48,7 +48,7 @@ export function ShellAuthNav() {
                 {user.name}
               </span>
               <span className="block text-[10px] leading-4 text-[var(--color-ink-soft)]">
-                로그인됨 · 내 여행
+                내 여행
               </span>
             </span>
           </Link>

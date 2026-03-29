@@ -31,7 +31,7 @@ test("mock google login redirects to account", async ({ page }) => {
   await expect(page.getByTestId("auth-cta")).toHaveText("로그아웃");
   await expect(page.getByTestId("account-link")).toHaveCount(0);
   await expect(page.getByTestId("identity-card")).toBeVisible();
-  await expect(page.getByTestId("identity-card")).toContainText("로그인됨");
+  await expect(page.getByTestId("identity-card")).toContainText("내 여행");
 });
 
 test("mock social login resumes saving after auth", async ({ page }) => {
