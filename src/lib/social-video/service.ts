@@ -2,12 +2,14 @@ import type {
   DestinationProfile,
   RecommendationQuery,
   SocialVideoItem,
+  SocialVideoResponse,
 } from "@/lib/domain/contracts";
 
 import { getCountryMetadata } from "@/lib/travel-support/country-metadata";
 
 const SOCIAL_VIDEO_MAX_QUERIES = 8;
 const SOCIAL_VIDEO_MIN_SCORE = 40;
+const SOCIAL_VIDEO_FALLBACK_MIN_SCORE = 24;
 
 const vibeSearchLabels: Record<RecommendationQuery["vibes"][number], string> = {
   romance: "로맨틱",
@@ -110,6 +112,8 @@ export type SocialVideoSearchContext = {
   query: RecommendationQuery;
   leadEvidence?: ReadonlyArray<SocialVideoLeadEvidence>;
 };
+
+type SocialVideoFallbackReason = "api-disabled" | "request-failed" | "low-confidence" | "no-candidates";
 
 export type SocialVideoCandidate = {
   id: string;
@@ -295,8 +299,11 @@ export function buildSocialVideoSearchQueries(context: SocialVideoSearchContext)
     `${names.nameKo} 여행 쇼츠`,
     `${names.nameKo} 한국인 여행`,
     `${names.nameKo} ${primaryVibe} 여행`,
+    `${names.nameKo} 여행 가이드`,
+    `${names.nameKo} 가볼만한곳`,
     `${names.nameEn} travel vlog`,
     `${names.nameEn} travel shorts`,
+    `${names.nameEn} things to do`,
     `${names.nameEn} korean travel vlog`,
     `${names.countryName} travel guide`,
     `${names.nameKo} ${secondaryVibe} 여행`,
@@ -311,6 +318,43 @@ export function buildSocialVideoSearchQueries(context: SocialVideoSearchContext)
   }
 
   return dedupeQueries(queries).slice(0, SOCIAL_VIDEO_MAX_QUERIES);
+}
+
+export function buildSocialVideoFallbackSearches(context: SocialVideoSearchContext) {
+  const names = buildSocialVideoNameSource(context.destination);
+
+  return [
+    `${names.nameKo} 여행 브이로그`,
+    `${names.nameKo} 여행 가이드`,
+    `${names.nameEn} travel vlog`,
+    `${names.countryName} things to do`,
+  ].map((query) => ({
+    label: query,
+    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
+  }));
+}
+
+function buildFallbackMeta(context: SocialVideoSearchContext, reason: SocialVideoFallbackReason) {
+  return {
+    reason,
+    headline:
+      reason === "api-disabled"
+        ? "지금은 YouTube 연결이 꺼져 있어요"
+        : reason === "request-failed"
+          ? "지금은 영상을 바로 불러오지 못했어요"
+          : reason === "low-confidence"
+            ? "대표 영상 대신 더 넓게 찾은 후보를 보여드려요"
+            : "자동 추천 대신 바로 찾을 수 있는 링크를 준비했어요",
+    description:
+      reason === "api-disabled"
+        ? "연결이 복구되면 자동으로 대표 영상을 다시 붙여드릴게요."
+        : reason === "request-failed"
+          ? "잠시 후 다시 시도하거나 아래 검색 링크로 바로 찾아볼 수 있어요."
+          : reason === "low-confidence"
+            ? "목적지와 관련은 있지만 정확도가 조금 낮아, 직접 더 확인할 수 있는 검색 링크도 함께 보여드려요."
+            : "자동으로 붙일 만큼 확신 높은 영상을 찾지 못해 목적지 기준 YouTube 검색 링크를 대신 보여드려요.",
+    searches: buildSocialVideoFallbackSearches(context),
+  };
 }
 
 /**
@@ -662,10 +706,11 @@ function pickDiverseCandidate(
   rankedCandidates: SocialVideoScoredCandidate[],
   selectedVideoIds: Set<string>,
   selectedChannelIds: Set<string>,
+  minScore: number,
   predicate?: (candidate: SocialVideoScoredCandidate) => boolean,
 ) {
   for (const candidate of rankedCandidates) {
-    if (selectedVideoIds.has(candidate.candidate.id) || candidate.score.total < SOCIAL_VIDEO_MIN_SCORE) {
+    if (selectedVideoIds.has(candidate.candidate.id) || candidate.score.total < minScore) {
       continue;
     }
 
@@ -681,7 +726,7 @@ function pickDiverseCandidate(
   }
 
   for (const candidate of rankedCandidates) {
-    if (selectedVideoIds.has(candidate.candidate.id) || candidate.score.total < SOCIAL_VIDEO_MIN_SCORE) {
+    if (selectedVideoIds.has(candidate.candidate.id) || candidate.score.total < minScore) {
       continue;
     }
 
@@ -704,11 +749,12 @@ function pickDiverseCandidate(
 export function selectSocialVideoCandidates(
   candidates: SocialVideoCandidate[],
   context: SocialVideoSearchContext,
+  minScore = SOCIAL_VIDEO_MIN_SCORE,
 ): SocialVideoScoredCandidate[] {
   const rankedCandidates = rankSocialVideoCandidates(candidates, context);
   const primaryCandidate = rankedCandidates[0];
 
-  if (!primaryCandidate || primaryCandidate.score.total < SOCIAL_VIDEO_MIN_SCORE) {
+  if (!primaryCandidate || primaryCandidate.score.total < minScore) {
     return [];
   }
 
@@ -722,6 +768,7 @@ export function selectSocialVideoCandidates(
     rankedCandidates,
     selectedVideoIds,
     selectedChannelIds,
+    minScore,
     (candidate) => hasRecentPublishedAt(candidate.candidate),
   );
 
@@ -737,6 +784,7 @@ export function selectSocialVideoCandidates(
     rankedCandidates,
     selectedVideoIds,
     selectedChannelIds,
+    minScore,
     (candidate) => (candidate.candidate.durationSeconds ?? Number.POSITIVE_INFINITY) <= 90,
   );
 
@@ -753,6 +801,7 @@ export function selectSocialVideoCandidates(
       rankedCandidates,
       selectedVideoIds,
       selectedChannelIds,
+      minScore,
     );
 
     if (!fallbackCandidate) {
@@ -786,8 +835,6 @@ async function fetchYouTubeSearchResults(
     q: query,
     relevanceLanguage: "ko",
     safeSearch: "moderate",
-    videoEmbeddable: "true",
-    videoSyndicated: "true",
   });
 
   if (options?.publishedAfter) {
@@ -856,7 +903,7 @@ function hydrateCandidatesFromYouTube(
 
     const details = detailsMap.get(videoId);
 
-    if (details?.status?.privacyStatus === "private" || details?.status?.embeddable === false) {
+    if (details?.status?.privacyStatus === "private") {
       return [];
     }
 
@@ -957,5 +1004,99 @@ export async function getLeadSocialVideos(context: SocialVideoSearchContext): Pr
     thumbnailUrl: selected.candidate.thumbnailUrl,
     publishedAt: selected.candidate.publishedAt ?? new Date(0).toISOString(),
     durationSeconds: selected.candidate.durationSeconds ?? 1,
+    viewCount: selected.candidate.viewCount ?? undefined,
   }));
+}
+
+export async function getLeadSocialVideoResult(context: SocialVideoSearchContext): Promise<SocialVideoResponse> {
+  const apiKey = getYouTubeApiKey();
+
+  if (!apiKey) {
+    return {
+      status: "fallback",
+      item: null,
+      items: [],
+      fallback: buildFallbackMeta(context, "api-disabled"),
+    };
+  }
+
+  const strictItems = await getLeadSocialVideos(context);
+  if (strictItems.length > 0) {
+    return {
+      status: "ok",
+      item: strictItems[0]!,
+      items: strictItems,
+    };
+  }
+
+  const candidatesById = new Map<string, SocialVideoCandidate>();
+  const publishedAfter = new Date(Date.now() - (30 * 86_400_000)).toISOString();
+
+  for (const query of buildSocialVideoSearchQueries(context)) {
+    const searchPayload = await fetchYouTubeSearchResults(query, apiKey, { order: "relevance" });
+    if (!searchPayload?.items?.length) {
+      continue;
+    }
+
+    const videoIds = searchPayload.items
+      .map((item) => item.id?.videoId)
+      .filter((value): value is string => Boolean(value));
+    const detailsMap = await fetchYouTubeVideoDetails(videoIds, apiKey);
+
+    for (const candidate of hydrateCandidatesFromYouTube(searchPayload, detailsMap)) {
+      candidatesById.set(candidate.id, candidate);
+    }
+  }
+
+  for (const query of buildSocialVideoSearchQueries(context).slice(0, 4)) {
+    const searchPayload = await fetchYouTubeSearchResults(query, apiKey, {
+      order: "date",
+      publishedAfter,
+    });
+    if (!searchPayload?.items?.length) {
+      continue;
+    }
+
+    const videoIds = searchPayload.items
+      .map((item) => item.id?.videoId)
+      .filter((value): value is string => Boolean(value));
+    const detailsMap = await fetchYouTubeVideoDetails(videoIds, apiKey);
+
+    for (const candidate of hydrateCandidatesFromYouTube(searchPayload, detailsMap)) {
+      candidatesById.set(candidate.id, candidate);
+    }
+  }
+
+  const fallbackSelection = selectSocialVideoCandidates(
+    Array.from(candidatesById.values()),
+    context,
+    SOCIAL_VIDEO_FALLBACK_MIN_SCORE,
+  ).map((selected) => ({
+    provider: "youtube" as const,
+    videoId: selected.candidate.id,
+    title: selected.candidate.title,
+    channelTitle: selected.candidate.channelTitle,
+    channelUrl: formatChannelUrl(selected.candidate.channelId ?? undefined),
+    videoUrl: selected.candidate.url,
+    thumbnailUrl: selected.candidate.thumbnailUrl,
+    publishedAt: selected.candidate.publishedAt ?? new Date(0).toISOString(),
+    durationSeconds: selected.candidate.durationSeconds ?? 1,
+    viewCount: selected.candidate.viewCount ?? undefined,
+  }));
+
+  if (fallbackSelection.length > 0) {
+    return {
+      status: "fallback",
+      item: fallbackSelection[0] ?? null,
+      items: fallbackSelection,
+      fallback: buildFallbackMeta(context, "low-confidence"),
+    };
+  }
+
+  return {
+    status: "fallback",
+    item: null,
+    items: [],
+    fallback: buildFallbackMeta(context, "no-candidates"),
+  };
 }

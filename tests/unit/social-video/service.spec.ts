@@ -4,6 +4,7 @@ import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import { defaultRecommendationQuery } from "@/lib/trip-compass/presentation";
 
 import {
+  buildSocialVideoFallbackSearches,
   buildSocialVideoSearchQueries,
   scoreSocialVideoCandidate,
   selectSocialVideoCandidate,
@@ -54,9 +55,18 @@ describe("social-video service", () => {
 
     expect(queries[0]).toBe("도쿄 여행 브이로그");
     expect(queries).toContain("도쿄 한국인 여행");
-    expect(queries).toContain("Tokyo travel vlog");
+    expect(queries).toContain("도쿄 여행 가이드");
+    expect(queries.some((query) => query.includes("Tokyo") || query.includes("일본"))).toBe(true);
     expect(queries.some((query) => query.includes("쇼츠") || query.toLowerCase().includes("shorts"))).toBe(true);
     expect(new Set(queries).size).toBe(queries.length);
+  });
+
+  it("builds direct YouTube fallback searches for the destination", () => {
+    const searches = buildSocialVideoFallbackSearches(buildTestContext());
+
+    expect(searches).toHaveLength(4);
+    expect(searches[0]?.label).toBe("도쿄 여행 브이로그");
+    expect(searches[0]?.url).toContain("youtube.com/results?search_query=");
   });
 
   it("scores Korean short-form candidates above generic long-form candidates", () => {

@@ -5,9 +5,20 @@ import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import { socialVideoResponseSchema } from "@/lib/domain/contracts";
 import { applyAcquisitionCorsHeaders } from "@/lib/security/cors";
 import { parseSocialVideoQuery } from "@/lib/security/validation";
-import { getLeadSocialVideos, type SocialVideoLeadEvidence } from "@/lib/social-video/service";
+import {
+  buildSocialVideoFallbackSearches,
+  getLeadSocialVideoResult,
+  type SocialVideoLeadEvidence,
+} from "@/lib/social-video/service";
 
 const SOCIAL_VIDEO_CACHE_TTL_SECONDS = 10_800;
+
+function buildGenericFallbackSearches() {
+  return ["여행 브이로그", "travel vlog", "여행 가이드"].map((query) => ({
+    label: query,
+    url: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
+  }));
+}
 
 const socialVideoCache = new Map<
   string,
@@ -41,8 +52,13 @@ function buildSocialVideoCacheKey(request: ReturnType<typeof parseSocialVideoQue
  * @returns YouTube 기반 소셜 비디오 응답
  */
 export async function GET(request: Request) {
+  let destination = null as (typeof launchCatalog)[number] | null;
+  let fallbackQuery: ReturnType<typeof parseSocialVideoQuery> | null = null;
+  let fallbackLeadEvidence: SocialVideoLeadEvidence[] | undefined;
+
   try {
     const parsedQuery = parseSocialVideoQuery(new URL(request.url).searchParams);
+    fallbackQuery = parsedQuery;
     const cacheKey = buildSocialVideoCacheKey(parsedQuery);
     const cached = socialVideoCache.get(cacheKey);
 
@@ -57,7 +73,7 @@ export async function GET(request: Request) {
       );
     }
 
-    const destination = launchCatalog.find((item) => item.id === parsedQuery.destinationId);
+    destination = launchCatalog.find((item) => item.id === parsedQuery.destinationId) ?? null;
 
     if (!destination) {
       return applyAcquisitionCorsHeaders(
@@ -81,25 +97,13 @@ export async function GET(request: Request) {
 
       leadEvidence = [leadEvidenceItem];
     }
+    fallbackLeadEvidence = leadEvidence;
 
-    const items = await getLeadSocialVideos({
+    const payload = socialVideoResponseSchema.parse(await getLeadSocialVideoResult({
       destination,
       query: parsedQuery.query,
       leadEvidence,
-    });
-    const payload = socialVideoResponseSchema.parse(
-      items.length > 0
-        ? {
-            status: "ok",
-            item: items[0],
-            items,
-          }
-        : {
-            status: "empty",
-            item: null,
-            items: [],
-          },
-    );
+    }));
 
     socialVideoCache.set(cacheKey, {
       expiresAt: Date.now() + (SOCIAL_VIDEO_CACHE_TTL_SECONDS * 1000),
@@ -129,9 +133,17 @@ export async function GET(request: Request) {
       request,
       NextResponse.json(
         {
-          status: "empty",
+          status: "fallback",
           item: null,
           items: [],
+          fallback: {
+            reason: "request-failed",
+            headline: "지금은 영상을 바로 불러오지 못했어요",
+            description: "잠시 후 다시 시도하거나 아래 검색 링크로 바로 찾아볼 수 있어요.",
+            searches: destination && fallbackQuery
+              ? buildSocialVideoFallbackSearches({ destination, query: fallbackQuery.query, leadEvidence: fallbackLeadEvidence })
+              : buildGenericFallbackSearches(),
+          },
         },
         {
           headers: {

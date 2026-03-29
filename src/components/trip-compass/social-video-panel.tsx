@@ -18,6 +18,13 @@ type SocialVideoPanelState = {
   requestKey: string;
   items: SocialVideoItem[];
   resolved: boolean;
+  fallback: {
+    reason: string;
+    headline: string;
+    description: string;
+    searches: Array<{ label: string; url: string }>;
+  } | null;
+  status: SocialVideoResponse["status"] | null;
 };
 
 type SocialVideoSlotProps = {
@@ -47,7 +54,8 @@ function isSocialVideoItem(value: unknown): value is SocialVideoItem {
     typeof candidate.videoUrl === "string" &&
     typeof candidate.thumbnailUrl === "string" &&
     typeof candidate.publishedAt === "string" &&
-    typeof candidate.durationSeconds === "number"
+    typeof candidate.durationSeconds === "number" &&
+    (candidate.viewCount === undefined || typeof candidate.viewCount === "number")
   );
 }
 
@@ -79,6 +87,60 @@ function extractSocialVideoItems(payload: unknown): SocialVideoItem[] {
   }
 
   return [];
+}
+
+function extractSocialVideoFallback(payload: unknown) {
+  if (!payload || typeof payload !== "object") {
+    return null;
+  }
+
+  const record = payload as Record<string, unknown>;
+  const fallback = record.fallback;
+
+  if (!fallback || typeof fallback !== "object") {
+    return null;
+  }
+
+  const candidate = fallback as Record<string, unknown>;
+
+  if (
+    typeof candidate.headline !== "string" ||
+    typeof candidate.description !== "string" ||
+    !Array.isArray(candidate.searches)
+  ) {
+    return null;
+  }
+
+  return {
+    reason: typeof candidate.reason === "string" ? candidate.reason : "no-candidates",
+    headline: candidate.headline,
+    description: candidate.description,
+    searches: candidate.searches.filter(
+      (item): item is { label: string; url: string } =>
+        Boolean(
+          item &&
+            typeof item === "object" &&
+            typeof (item as { label?: unknown }).label === "string" &&
+            typeof (item as { url?: unknown }).url === "string",
+        ),
+    ),
+  };
+}
+
+function buildClientSideFallback(destinationName: string) {
+  return {
+    reason: "request-failed",
+    headline: "지금은 영상을 바로 불러오지 못했어요",
+    description: "잠시 후 다시 시도하거나 아래 YouTube 검색 링크로 바로 확인해 보세요.",
+    searches: [
+      `${destinationName} 여행 브이로그`,
+      `${destinationName} 여행 가이드`,
+      `${destinationName} 여행 쇼츠`,
+    ].map((query) => ({
+      label: query,
+      url: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
+    })),
+  };
 }
 
 function buildSocialVideoFallbackItems(items: SocialVideoItem[]) {
@@ -128,6 +190,22 @@ function formatDurationLabel(durationSeconds: number) {
   return `${minutes}분 ${seconds.toString().padStart(2, "0")}초`;
 }
 
+function formatViewCountLabel(viewCount: number | undefined) {
+  if (typeof viewCount !== "number" || !Number.isFinite(viewCount)) {
+    return null;
+  }
+
+  if (viewCount >= 10_000) {
+    return `조회수 ${(viewCount / 10_000).toFixed(viewCount >= 100_000 ? 0 : 1).replace(/\.0$/, "")}만`;
+  }
+
+  if (viewCount >= 1_000) {
+    return `조회수 ${(viewCount / 1_000).toFixed(viewCount >= 10_000 ? 0 : 1).replace(/\.0$/, "")}천`;
+  }
+
+  return `조회수 ${viewCount}`;
+}
+
 /**
  * 하나의 영상 슬롯을 메인 또는 서브 카드로 렌더한다.
  * @param props 영상 슬롯 정보
@@ -142,6 +220,8 @@ function SocialVideoSlot({
   destinationName,
   fallbackNote,
 }: SocialVideoSlotProps) {
+  const mainViewCountLabel = isMain ? formatViewCountLabel(item?.viewCount) : null;
+
   if (!item) {
     return (
       <article
@@ -172,7 +252,7 @@ function SocialVideoSlot({
                 isMain ? "text-[1.8rem] leading-[1] sm:text-[2.35rem]" : "text-[1.05rem] leading-6",
               ].join(" ")}
             >
-              {isMain ? destinationName : title}
+              {isMain ? destinationName : destinationName}
             </p>
             <p className={isMain ? "text-[0.98rem] font-semibold leading-7 text-[var(--color-funnel-text)]" : "text-sm font-semibold leading-6 text-[var(--color-funnel-text)]"}>
               {isMain ? leadReason : fallbackNote}
@@ -181,7 +261,7 @@ function SocialVideoSlot({
               {isMain
                 ? isResolved
                   ? "지금은 메인으로 보여줄 영상이 아직 없어요. 아래 서브 슬롯은 준비되는 대로 채워집니다."
-                  : "메인 영상은 추천 결과를 가장 잘 설명하는 하나를 먼저 보여줘요."
+                  : "가장 먼저 보면 좋은 영상을 하나만 앞에 두었어요."
                 : fallbackNote}
             </p>
           </div>
@@ -240,18 +320,20 @@ function SocialVideoSlot({
               YouTube
             </span>
             <span className="rounded-full border border-white/30 bg-white/12 px-3 py-1 text-[0.62rem] font-semibold text-white backdrop-blur-sm">
-              {isMain ? "메인 영상" : "서브 영상"}
+              {isMain ? "대표 영상" : "보조 영상"}
             </span>
           </div>
           <div className="absolute inset-x-0 bottom-0 p-3 sm:p-4">
             <div className="rounded-[1rem] border border-white/18 bg-[linear-gradient(180deg,rgba(255,255,255,0.14)_0%,rgba(255,255,255,0.08)_100%)] px-3 py-3 backdrop-blur-md sm:px-4">
-              <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-white/78">
-                {title}
-              </p>
+              {title ? (
+                <p className="text-[0.62rem] font-semibold uppercase tracking-[0.16em] text-white/78">
+                  {title}
+                </p>
+              ) : null}
               <h3
                 data-testid={isMain ? testIds.socialVideo.title : undefined}
                 className={[
-                  "mt-1.5 font-semibold leading-6 text-white",
+                  `${title ? "mt-1.5" : ""} font-semibold leading-6 text-white`,
                   isMain ? "line-clamp-2 text-[1rem] sm:text-[1.12rem]" : "line-clamp-2 text-[0.94rem]",
                 ].join(" ")}
               >
@@ -262,6 +344,7 @@ function SocialVideoSlot({
                 {" · "}
                 {formatPublishedLabel(item.publishedAt)}
                 {item.durationSeconds ? ` · ${formatDurationLabel(item.durationSeconds)}` : ""}
+                {mainViewCountLabel ? ` · ${mainViewCountLabel}` : ""}
               </p>
             </div>
           </div>
@@ -334,7 +417,13 @@ function buildSocialVideoSearchParams({
 export function LeadSocialVideoPanel({ destinationId, destinationName, leadReason, query }: LeadSocialVideoPanelProps) {
   const requestIdRef = useRef(0);
   const requestKey = buildSocialVideoSearchParams({ destinationId, leadReason, query }).toString();
-  const [state, setState] = useState<SocialVideoPanelState>({ requestKey: "", items: [], resolved: false });
+  const [state, setState] = useState<SocialVideoPanelState>({
+    requestKey: "",
+    items: [],
+    resolved: false,
+    fallback: null,
+    status: null,
+  });
 
   useEffect(() => {
     const controller = new AbortController();
@@ -354,6 +443,8 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
               requestKey,
               items: [],
               resolved: true,
+              fallback: buildClientSideFallback(destinationName),
+              status: "fallback",
             });
           }
           return;
@@ -369,6 +460,8 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
           requestKey,
           items: extractSocialVideoItems(payload),
           resolved: true,
+          fallback: extractSocialVideoFallback(payload),
+          status: payload.status,
         });
       } catch {
         if (!controller.signal.aborted && requestIdRef.current === requestId) {
@@ -376,6 +469,8 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
             requestKey,
             items: [],
             resolved: true,
+            fallback: buildClientSideFallback(destinationName),
+            status: "fallback",
           });
         }
       }
@@ -391,13 +486,76 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
   const isCurrentRequest = state.requestKey === requestKey;
   const items = isCurrentRequest ? state.items : [];
   const isResolved = isCurrentRequest && state.resolved;
+  const fallback = isCurrentRequest ? state.fallback : null;
   const [mainItem, subOne, subTwo] = buildSocialVideoFallbackItems(items);
+
+  if (isResolved && fallback && items.length === 0) {
+    return (
+      <section data-testid={testIds.socialVideo.block} className="space-y-4">
+        <section
+          data-testid={testIds.socialVideo.fallbackBlock}
+          className="rounded-[1.2rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-4 sm:px-5"
+        >
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+            YouTube 대안 경로
+          </p>
+          <h3 className="mt-2 text-[1rem] font-semibold tracking-[-0.03em] text-[var(--color-funnel-text)]">
+            {fallback.headline}
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-[var(--color-funnel-text-soft)]">{fallback.description}</p>
+          <div className="mt-3 flex flex-wrap gap-2.5">
+            {fallback.searches.map((search, index) => (
+              <a
+                key={search.url}
+                data-testid={index === 0 ? testIds.socialVideo.fallbackLink0 : undefined}
+                href={search.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-[2.5rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2 text-[0.72rem] font-semibold tracking-[0.04em] text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+              >
+                {search.label}
+              </a>
+            ))}
+          </div>
+        </section>
+      </section>
+    );
+  }
 
   return (
     <section data-testid={testIds.socialVideo.block} className="space-y-4">
+      {isResolved && fallback ? (
+        <section
+          data-testid={testIds.socialVideo.fallbackBlock}
+          className="rounded-[1.2rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-4 sm:px-5"
+        >
+          <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+            YouTube 대안 경로
+          </p>
+          <h3 className="mt-2 text-[1rem] font-semibold tracking-[-0.03em] text-[var(--color-funnel-text)]">
+            {fallback.headline}
+          </h3>
+          <p className="mt-2 text-sm leading-6 text-[var(--color-funnel-text-soft)]">{fallback.description}</p>
+          <div className="mt-3 flex flex-wrap gap-2.5">
+            {fallback.searches.map((search, index) => (
+              <a
+                key={search.url}
+                data-testid={index === 0 ? testIds.socialVideo.fallbackLink0 : undefined}
+                href={search.url}
+                target="_blank"
+                rel="noreferrer"
+                className="inline-flex min-h-[2.5rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2 text-[0.72rem] font-semibold tracking-[0.04em] text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+              >
+                {search.label}
+              </a>
+            ))}
+          </div>
+        </section>
+      ) : null}
+
       <SocialVideoSlot
         item={mainItem}
-        title="대표 참고 영상"
+        title="가장 먼저 볼 영상"
         isMain
         isResolved={isResolved}
         leadReason={leadReason}
@@ -408,7 +566,7 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
       <div className="grid gap-3 lg:grid-cols-2">
         <SocialVideoSlot
           item={subOne}
-          title="서브 참고 영상 1"
+          title=""
           isResolved={isResolved}
           leadReason={leadReason}
           destinationName={destinationName}
@@ -416,7 +574,7 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
         />
         <SocialVideoSlot
           item={subTwo}
-          title="서브 참고 영상 2"
+          title=""
           isResolved={isResolved}
           leadReason={leadReason}
           destinationName={destinationName}

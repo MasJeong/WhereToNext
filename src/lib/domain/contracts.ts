@@ -95,7 +95,7 @@ export const recommendationQuerySchema = z.object({
   travelMonth: z.number().int().min(1).max(12),
   pace: paceSchema,
   flightTolerance: flightToleranceSchema,
-  vibes: z.array(vibeSchema).min(1).max(2),
+  vibes: z.array(vibeSchema).min(1).max(3),
 });
 
 export const trendEvidenceSnapshotSchema = z.object({
@@ -223,6 +223,19 @@ export const socialVideoItemSchema = z.object({
   thumbnailUrl: z.url(),
   publishedAt: z.string().datetime(),
   durationSeconds: z.number().int().positive(),
+  viewCount: z.number().int().nonnegative().optional(),
+});
+
+export const socialVideoFallbackSearchSchema = z.object({
+  label: z.string().min(1),
+  url: z.url(),
+});
+
+export const socialVideoFallbackMetaSchema = z.object({
+  reason: z.enum(["api-disabled", "request-failed", "low-confidence", "no-candidates"]),
+  headline: z.string().min(1),
+  description: z.string().min(1),
+  searches: z.array(socialVideoFallbackSearchSchema).min(1).max(4),
 });
 
 export const socialVideoResponseSchema = z.discriminatedUnion("status", [
@@ -232,9 +245,16 @@ export const socialVideoResponseSchema = z.discriminatedUnion("status", [
     items: z.array(socialVideoItemSchema).min(1).max(3),
   }),
   z.object({
+    status: z.literal("fallback"),
+    item: socialVideoItemSchema.nullable(),
+    items: z.array(socialVideoItemSchema).max(3),
+    fallback: socialVideoFallbackMetaSchema,
+  }),
+  z.object({
     status: z.literal("empty"),
     item: z.null(),
     items: z.array(socialVideoItemSchema).max(0).optional(),
+    fallback: socialVideoFallbackMetaSchema,
   }),
 ]);
 
