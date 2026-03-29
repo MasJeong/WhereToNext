@@ -250,6 +250,12 @@ export const userPreferenceProfileUpdateSchema = z.object({
   explorationPreference: explorationPreferenceSchema,
 });
 
+export const userDestinationHistoryImageSchema = z.object({
+  name: z.string().min(1).max(120),
+  contentType: z.string().min(1).max(120),
+  dataUrl: z.string().startsWith("data:image/").max(3_000_000),
+});
+
 export const userDestinationHistorySchema = z.object({
   id: z.string().uuid(),
   userId: z.string().min(1),
@@ -258,6 +264,8 @@ export const userDestinationHistorySchema = z.object({
   tags: z.array(vibeSchema).min(1).max(4),
   wouldRevisit: z.boolean(),
   visitedAt: z.string().datetime(),
+  memo: z.string().trim().max(500).nullable().optional(),
+  image: userDestinationHistoryImageSchema.nullable().optional(),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -268,6 +276,8 @@ export const userDestinationHistoryInputSchema = z.object({
   tags: z.array(vibeSchema).min(1).max(4),
   wouldRevisit: z.boolean(),
   visitedAt: z.string().datetime(),
+  memo: z.string().trim().max(500).nullish().transform((value) => value ?? null),
+  image: userDestinationHistoryImageSchema.nullish().transform((value) => value ?? null),
 });
 
 export const recommendationPersonalizationContextSchema = z.object({
@@ -293,6 +303,7 @@ export type SnapshotVisibility = z.infer<typeof snapshotVisibilitySchema>;
 export type ExplorationPreference = z.infer<typeof explorationPreferenceSchema>;
 export type UserPreferenceProfile = z.infer<typeof userPreferenceProfileSchema>;
 export type UserPreferenceProfileUpdate = z.infer<typeof userPreferenceProfileUpdateSchema>;
+export type UserDestinationHistoryImage = z.infer<typeof userDestinationHistoryImageSchema>;
 export type UserDestinationHistory = z.infer<typeof userDestinationHistorySchema>;
 export type UserDestinationHistoryInput = z.infer<typeof userDestinationHistoryInputSchema>;
 export type RecommendationPersonalizationContext = z.infer<

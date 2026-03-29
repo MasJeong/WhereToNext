@@ -166,9 +166,25 @@ export async function listUserDestinationHistory(userId: string): Promise<UserDe
     tags: row.tags,
     wouldRevisit: row.wouldRevisit,
     visitedAt: row.visitedAt.toISOString(),
+    memo: row.memo,
+    image: row.image ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   }));
+}
+
+/**
+ * 사용자의 특정 여행 이력 1건을 조회한다.
+ * @param userId 인증 사용자 ID
+ * @param historyId 여행 이력 ID
+ * @returns 여행 이력 또는 null
+ */
+export async function readUserDestinationHistory(
+  userId: string,
+  historyId: string,
+): Promise<UserDestinationHistory | null> {
+  const historyEntries = await listUserDestinationHistory(userId);
+  return historyEntries.find((entry) => entry.id === historyId) ?? null;
 }
 
 /**
@@ -193,6 +209,8 @@ export async function createUserDestinationHistory(
         tags: input.tags,
         wouldRevisit: input.wouldRevisit,
         visitedAt: input.visitedAt,
+        memo: input.memo ?? null,
+        image: input.image ?? null,
         createdAt: nowIso,
         updatedAt: nowIso,
       } satisfies UserDestinationHistory;
@@ -211,6 +229,8 @@ export async function createUserDestinationHistory(
       tags: input.tags,
       wouldRevisit: input.wouldRevisit,
       visitedAt: input.visitedAt,
+      memo: input.memo ?? null,
+      image: input.image ?? null,
       createdAt: nowIso,
       updatedAt: nowIso,
     } satisfies UserDestinationHistory;
@@ -229,6 +249,8 @@ export async function createUserDestinationHistory(
       tags: input.tags,
       wouldRevisit: input.wouldRevisit,
       visitedAt: new Date(input.visitedAt),
+      memo: input.memo ?? null,
+      image: input.image ?? null,
     })
     .returning();
 
@@ -240,6 +262,8 @@ export async function createUserDestinationHistory(
     tags: created.tags,
     wouldRevisit: created.wouldRevisit,
     visitedAt: created.visitedAt.toISOString(),
+    memo: created.memo,
+    image: created.image ?? null,
     createdAt: created.createdAt.toISOString(),
     updatedAt: created.updatedAt.toISOString(),
   };
@@ -272,6 +296,8 @@ export async function updateUserDestinationHistory(
         tags: input.tags,
         wouldRevisit: input.wouldRevisit,
         visitedAt: input.visitedAt,
+        memo: input.memo ?? null,
+        image: input.image ?? null,
         updatedAt: new Date().toISOString(),
       } satisfies UserDestinationHistory;
 
@@ -292,6 +318,8 @@ export async function updateUserDestinationHistory(
       tags: input.tags,
       wouldRevisit: input.wouldRevisit,
       visitedAt: input.visitedAt,
+      memo: input.memo ?? null,
+      image: input.image ?? null,
       updatedAt: new Date().toISOString(),
     } satisfies UserDestinationHistory;
 
@@ -308,6 +336,8 @@ export async function updateUserDestinationHistory(
       tags: input.tags,
       wouldRevisit: input.wouldRevisit,
       visitedAt: new Date(input.visitedAt),
+      memo: input.memo ?? null,
+      image: input.image ?? null,
       updatedAt: new Date(),
     })
     .where(and(eq(userDestinationHistory.id, historyId), eq(userDestinationHistory.userId, userId)))
@@ -325,6 +355,8 @@ export async function updateUserDestinationHistory(
     tags: updated.tags,
     wouldRevisit: updated.wouldRevisit,
     visitedAt: updated.visitedAt.toISOString(),
+    memo: updated.memo,
+    image: updated.image ?? null,
     createdAt: updated.createdAt.toISOString(),
     updatedAt: updated.updatedAt.toISOString(),
   };
