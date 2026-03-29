@@ -5,6 +5,8 @@ import { brandDisplayName } from "@/lib/brand";
 import { isIosShellMode } from "@/lib/runtime/shell";
 import { testIds } from "@/lib/test-ids";
 
+import { ShellAuthNav } from "./shell-auth-nav";
+
 type ExperienceShellProps = {
   eyebrow: string;
   title: string;
@@ -56,24 +58,7 @@ export function ExperienceShell({
                 </span>
               </Link>
 
-              {hideAuthNavigation ? null : (
-                <nav className="flex flex-wrap items-center gap-3" aria-label="빠른 이동">
-                  <Link
-                    href="/account"
-                    data-testid={testIds.shell.accountLink}
-                    className="compass-shell-nav-link inline-flex min-h-[2.75rem] items-center px-1 py-2 text-[12px] font-semibold tracking-[0.02em]"
-                  >
-                    여행 기록
-                  </Link>
-                  <Link
-                    href="/auth"
-                    data-testid={testIds.shell.authCta}
-                    className="compass-action-primary compass-soft-press inline-flex min-h-[2.75rem] items-center rounded-full px-3.5 py-2 text-[11px] font-semibold tracking-[0.04em]"
-                  >
-                    로그인
-                  </Link>
-                </nav>
-              )}
+              {hideAuthNavigation ? null : <ShellAuthNav />}
             </div>
           </div>
         )}
