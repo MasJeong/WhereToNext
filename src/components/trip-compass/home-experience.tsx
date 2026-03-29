@@ -35,11 +35,12 @@ import {
   defaultHomeStepAnswers,
   deriveRecommendationQueryFromHomeStepAnswers,
   homeStepCompanionOptions,
-  homeStepDepartureOptions,
-  homeStepMainVibeOptions,
+  homeStepFlightPreferenceOptions,
+  homeStepTravelStyleOptions,
+  homeStepTripLengthOptions,
   homeStepTravelWindowOptions,
-  homeStepTripRhythmOptions,
   type HomeStepAnswers,
+  type HomeStepTravelStyle,
 } from "@/lib/trip-compass/step-answer-adapter";
 import {
   getHomeChoiceTestId,
@@ -84,6 +85,7 @@ type RelaxationAction = {
 };
 
 type StepOptionValue = string | number | null;
+type StepSelectionValue = StepOptionValue | StepOptionValue[];
 
 type StepOptionView = {
   id: string;
@@ -96,9 +98,11 @@ type HomeFlowStep = {
   id: string;
   question: string;
   helper: string;
-  selectedValue?: StepOptionValue;
+  selectedValue?: StepSelectionValue;
   options: StepOptionView[];
   onSelect: (value: StepOptionValue) => void;
+  onNext?: () => void;
+  nextDisabled?: boolean;
 };
 
 type SavedSnapshotCompactItemProps = {
@@ -127,9 +131,9 @@ const travelMonthRelaxationOrder = [7, 10, 12] as const;
 const defaultAnswers: HomeStepAnswers = {
   whoWith: defaultHomeStepAnswers.whoWith,
   travelWindow: defaultHomeStepAnswers.travelWindow,
-  tripRhythm: defaultHomeStepAnswers.tripRhythm,
-  mainVibe: defaultHomeStepAnswers.mainVibe,
-  departureChoice: defaultHomeStepAnswers.departureChoice,
+  tripLength: defaultHomeStepAnswers.tripLength,
+  travelStyle: defaultHomeStepAnswers.travelStyle,
+  flightPreference: defaultHomeStepAnswers.flightPreference,
 };
 
 const resultFilterOptions: Array<{ key: ResultFilterKey; label: string; description: string }> = [
@@ -533,12 +537,12 @@ export function HomeExperience() {
       },
     },
     {
-      id: "trip-rhythm",
-      question: "이번 일정은 어떤 리듬이 좋아요?",
-      helper: "일정 길이, 밀도, 비행 부담을 한 번에 가볍게 맞춰요.",
-      selectedValue: answers.tripRhythm,
-      options: homeStepTripRhythmOptions.map((option) => ({
-        id: `trip-rhythm-${option.value}`,
+      id: "trip-length",
+      question: "며칠 정도 생각하고 있나요?",
+      helper: "일정 길이가 정해지면 갈 수 있는 후보를 훨씬 현실적으로 좁힐 수 있어요.",
+      selectedValue: answers.tripLength,
+      options: homeStepTripLengthOptions.map((option) => ({
+        id: `trip-length-${option.value}`,
         value: option.value,
         label: option.label,
         description: option.description,
@@ -546,17 +550,17 @@ export function HomeExperience() {
       onSelect: (value) => {
         setAnswers((currentState) => ({
           ...currentState,
-          tripRhythm: value as HomeStepAnswers["tripRhythm"],
+          tripLength: value as HomeStepAnswers["tripLength"],
         }));
       },
     },
     {
-      id: "main-vibe",
-      question: "가장 먼저 챙기고 싶은 분위기는요?",
-      helper: "대표 분위기 하나만 정하면 TOP 후보가 훨씬 빨리 좁혀져요.",
-      selectedValue: answers.mainVibe,
-      options: homeStepMainVibeOptions.map((option) => ({
-        id: `main-vibe-${option.value}`,
+      id: "travel-style",
+      question: "이번 여행에서는 뭐가 더 중요해요?",
+      helper: "최대 2개까지 고를 수 있어요. 실제로 여행에서 먼저 챙기고 싶은 스타일을 골라 주세요.",
+      selectedValue: answers.travelStyle ?? [],
+      options: homeStepTravelStyleOptions.map((option) => ({
+        id: `travel-style-${option.value}`,
         value: option.value,
         label: option.label,
         description: option.description,
@@ -564,17 +568,21 @@ export function HomeExperience() {
       onSelect: (value) => {
         setAnswers((currentState) => ({
           ...currentState,
-          mainVibe: value as HomeStepAnswers["mainVibe"],
+          travelStyle: toggleTravelStyleOption(currentState.travelStyle ?? [], value as HomeStepTravelStyle),
         }));
       },
+      onNext: () => {
+        setCurrentStepIndex((currentValue) => Math.min(currentValue + 1, steps.length - 1));
+      },
+      nextDisabled: (answers.travelStyle ?? []).length === 0,
     },
     {
-      id: "departure-choice",
-      question: "출발은 어디 기준으로 볼까요?",
-      helper: "한국 출발 흐름을 맞추는 마지막 질문이에요.",
-      selectedValue: answers.departureChoice,
-      options: homeStepDepartureOptions.map((option) => ({
-        id: `departure-choice-${option.value}`,
+      id: "flight-preference",
+      question: "비행이나 이동 부담은 어느 정도 괜찮아요?",
+      helper: "출발지는 기본값으로 두고, 갈 수 있는 거리 범위만 현실적으로 먼저 맞출게요.",
+      selectedValue: answers.flightPreference,
+      options: homeStepFlightPreferenceOptions.map((option) => ({
+        id: `flight-preference-${option.value}`,
         value: option.value,
         label: option.label,
         description: option.description,
@@ -582,7 +590,7 @@ export function HomeExperience() {
       onSelect: (value) => {
         setAnswers((currentState) => ({
           ...currentState,
-          departureChoice: value as HomeStepAnswers["departureChoice"],
+          flightPreference: value as HomeStepAnswers["flightPreference"],
         }));
       },
     },
@@ -896,28 +904,61 @@ export function HomeExperience() {
     await requestRecommendations(nextQuery);
   }
 
+  function resolveAnswerKey(stepId: HomeFlowStep["id"]): keyof HomeStepAnswers {
+    if (stepId === "who-with") {
+      return "whoWith";
+    }
+
+    if (stepId === "travel-window") {
+      return "travelWindow";
+    }
+
+    if (stepId === "trip-length") {
+      return "tripLength";
+    }
+
+    if (stepId === "travel-style") {
+      return "travelStyle";
+    }
+
+    return "flightPreference";
+  }
+
+  function toggleTravelStyleOption(
+    currentStyles: HomeStepAnswers["travelStyle"],
+    nextStyle: HomeStepTravelStyle,
+  ): HomeStepAnswers["travelStyle"] {
+    if (currentStyles.includes(nextStyle)) {
+      return currentStyles.filter((style) => style !== nextStyle);
+    }
+
+    if (currentStyles.length >= 2) {
+      return [...currentStyles.slice(1), nextStyle];
+    }
+
+    return [...currentStyles, nextStyle];
+  }
+
   function handleStepSelect(stepIndex: number, value: StepOptionValue) {
     if (isSubmitting) {
       return;
     }
 
     const step = steps[stepIndex];
-    step?.onSelect(value);
+    if (!step) {
+      return;
+    }
 
-    const answerKey =
-      step.id === "who-with"
-        ? "whoWith"
-        : step.id === "travel-window"
-          ? "travelWindow"
-          : step.id === "trip-rhythm"
-            ? "tripRhythm"
-            : step.id === "main-vibe"
-              ? "mainVibe"
-              : "departureChoice";
+    if (step.id === "travel-style") {
+      step.onSelect(value);
+      return;
+    }
+
+    const answerKey = resolveAnswerKey(step.id);
 
     const nextAnswers: Partial<HomeStepAnswers> = {
       ...answers,
-      [answerKey]: value,
+      [answerKey]: value as HomeStepAnswers[typeof answerKey],
     };
 
     setAnswers(nextAnswers);
@@ -969,11 +1010,16 @@ export function HomeExperience() {
         onBack={goToPreviousStep}
         onReset={resetFunnel}
         isSubmitting={isSubmitting}
+        nextLabel="다음"
+        onNext={currentStep.onNext}
+        nextDisabled={currentStep.nextDisabled}
         options={currentStep.options.map((option, index) => ({
           id: option.id,
           label: option.label,
           description: option.description,
-          selected: currentStep.selectedValue === option.value,
+          selected: Array.isArray(currentStep.selectedValue)
+            ? currentStep.selectedValue.includes(option.value)
+            : currentStep.selectedValue === option.value,
           testId: getHomeChoiceTestId(index),
           onSelect: () => handleStepSelect(currentStepIndex, option.value),
         }))}

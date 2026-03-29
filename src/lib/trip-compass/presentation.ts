@@ -111,7 +111,7 @@ export const defaultRecommendationQuery: RecommendationQuery = {
   travelMonth: 10,
   pace: "balanced",
   flightTolerance: "medium",
-  vibes: ["romance"],
+  vibes: ["food"],
 };
 
 export const partyOptions: QueryOption<RecommendationQuery["partyType"]>[] = [
@@ -422,7 +422,7 @@ export function buildStructuredTripBrief(
       id: "travel-window",
       label: "여행 창",
       value: `${formatTravelMonth(query.travelMonth)} · ${query.tripLengthDays}일`,
-      detail: `${formatDepartureAirport(query.departureAirport)} 출발 기준으로 ${formatPartyType(query.partyType)} 리듬을 잡고 있어요.`,
+      detail: `${formatPartyType(query.partyType)} 일정 기준으로 현실적인 여행 길이를 먼저 맞추고 있어요.`,
     },
     {
       id: "budget-pace",
@@ -438,11 +438,11 @@ export function buildStructuredTripBrief(
     },
     {
       id: "vibes",
-      label: "핵심 분위기",
+      label: "여행 스타일",
       value: formatResultVibeList(query.vibes),
       detail: query.vibes[1]
-        ? "대표 분위기와 보조 분위기를 함께 맞춰 설명 가능한 후보만 남겨요."
-        : "대표 분위기 하나로 먼저 넓게 보고, 저장 후 비교 단계에서 더 좁혀요.",
+        ? "핵심 여행 스타일과 보조 성향을 함께 맞춰 설명 가능한 후보만 남겨요."
+        : "실제 여행 스타일 하나를 먼저 잡고, 저장 후 비교 단계에서 더 좁혀요.",
     },
   ];
 }
@@ -714,7 +714,7 @@ export function buildRecommendationPriorityBadge(totalScore: number): string {
  * @returns Human-readable query summary
  */
 export function buildQueryNarrative(query: RecommendationQuery): string {
-  return `${formatDepartureAirport(query.departureAirport)}에서 ${formatTravelMonth(query.travelMonth)}에 떠나는 ${query.tripLengthDays}일 ${formatPartyType(query.partyType)} 일정이에요. 예산은 ${formatBudgetBand(query.budgetBand)}, 분위기는 ${formatResultVibeList(query.vibes)} 중심으로 맞췄어요.`;
+  return `${formatTravelMonth(query.travelMonth)}에 떠나는 ${query.tripLengthDays}일 ${formatPartyType(query.partyType)} 일정이에요. 예산은 ${formatBudgetBand(query.budgetBand)}, 이동 부담은 ${formatFlightTolerance(query.flightTolerance)} 기준으로 맞췄고 여행 스타일은 ${formatResultVibeList(query.vibes)} 쪽에 가깝게 잡았어요.`;
 }
 
 /**

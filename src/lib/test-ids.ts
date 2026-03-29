@@ -99,16 +99,27 @@ export const testIds = {
   },
   account: {
     root: "my-taste-root",
+    tabHistory: "account-tab-history",
+    tabSaved: "account-tab-saved",
+    tabPreferences: "account-tab-preferences",
     tasteMode: "my-taste-mode",
     tasteSummary: "my-taste-summary",
+    addHistoryCta: "add-history-cta",
     preferenceRepeat: "preference-repeat",
     preferenceBalanced: "preference-balanced",
     preferenceDiscover: "preference-discover",
     newHistoryDestination: "new-history-destination",
     newHistoryDate: "new-history-date",
+    newHistoryBack: "new-history-back",
+    newHistoryNext: "new-history-next",
+    newHistoryStep: "new-history-step",
+    newHistoryImageInput: "new-history-image-input",
+    newHistoryImagePreview: "new-history-image-preview",
+    newHistoryMemo: "new-history-memo",
     newHistorySubmit: "new-history-submit",
     historyEntry0: "history-entry-0",
     historySave0: "history-save-0",
+    historyEdit0: "history-edit-0",
     historyDelete0: "history-delete-0",
   },
 } as const;
@@ -204,6 +215,15 @@ export function getAccountHistorySaveTestId(index: number): string {
  */
 export function getAccountHistoryDeleteTestId(index: number): string {
   return index === 0 ? testIds.account.historyDelete0 : `history-delete-${index}`;
+}
+
+/**
+ * Returns a stable account history edit selector for a given index.
+ * @param index 여행 기록 카드 인덱스
+ * @returns 수정 버튼 test id
+ */
+export function getAccountHistoryEditTestId(index: number): string {
+  return index === 0 ? testIds.account.historyEdit0 : `history-edit-${index}`;
 }
 
 export function getDestinationTasteTagTestId(index: number): string {
