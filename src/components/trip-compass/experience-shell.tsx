@@ -8,8 +8,7 @@ import { testIds } from "@/lib/test-ids";
 import { ShellAuthNav } from "./shell-auth-nav";
 
 const primaryNavItems = [
-  { label: "추천 받기", href: "/" },
-  { label: "추천 방식", href: "/#home-question-flow" },
+  { label: "추천 시작", href: "/?start=1" },
   { label: "여행 기록", href: "/account" },
 ] as const;
 
