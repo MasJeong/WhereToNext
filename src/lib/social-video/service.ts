@@ -89,6 +89,11 @@ type YouTubeVideosResponse = {
       duration?: string;
       licensedContent?: boolean;
     };
+    statistics?: {
+      viewCount?: string;
+      likeCount?: string;
+      commentCount?: string;
+    };
     status?: {
       embeddable?: boolean;
       privacyStatus?: string;
@@ -118,11 +123,16 @@ export type SocialVideoCandidate = {
   publishedAt?: string | null;
   languageHint?: string | null;
   creatorCountryCode?: string | null;
+  viewCount?: number | null;
+  likeCount?: number | null;
+  commentCount?: number | null;
 };
 
 export type SocialVideoScoreBreakdown = {
   destinationRelevance: number;
   koreanSignals: number;
+  freshness: number;
+  engagementQuality: number;
   durationPreference: number;
   total: number;
 };
@@ -145,6 +155,15 @@ function parseIsoDurationToSeconds(duration: string | undefined) {
 
   const [, hours, minutes, seconds] = match;
   return (Number(hours ?? 0) * 3600) + (Number(minutes ?? 0) * 60) + Number(seconds ?? 0);
+}
+
+function parseYouTubeCount(value: string | undefined) {
+  if (!value) {
+    return null;
+  }
+
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
 }
 
 function getYouTubeApiKey() {
@@ -407,6 +426,69 @@ function scoreKoreanSignals(candidate: SocialVideoCandidate) {
 }
 
 /**
+ * 게시 시점을 바탕으로 최근성 점수를 계산한다.
+ * @param candidate 검토할 후보
+ * @returns 최근성 점수
+ */
+function scoreFreshness(candidate: SocialVideoCandidate) {
+  if (!candidate.publishedAt) {
+    return 0;
+  }
+
+  const publishedAt = new Date(candidate.publishedAt);
+
+  if (Number.isNaN(publishedAt.getTime())) {
+    return 0;
+  }
+
+  const elapsedDays = Math.max(0, (Date.now() - publishedAt.getTime()) / 86_400_000);
+
+  if (elapsedDays <= 7) {
+    return 15;
+  }
+
+  if (elapsedDays <= 30) {
+    return 12;
+  }
+
+  if (elapsedDays <= 90) {
+    return 8;
+  }
+
+  if (elapsedDays <= 180) {
+    return 4;
+  }
+
+  return 1;
+}
+
+/**
+ * 조회수 원값 대신 게시 후 반응 밀도를 보정한 점수를 계산한다.
+ * @param candidate 검토할 후보
+ * @returns 참여 품질 점수
+ */
+function scoreEngagementQuality(candidate: SocialVideoCandidate) {
+  const publishedAt = candidate.publishedAt ? new Date(candidate.publishedAt) : null;
+  const elapsedDays =
+    publishedAt && !Number.isNaN(publishedAt.getTime())
+      ? Math.max(1, (Date.now() - publishedAt.getTime()) / 86_400_000)
+      : 30;
+  const views = candidate.viewCount ?? 0;
+  const likes = candidate.likeCount ?? 0;
+  const comments = candidate.commentCount ?? 0;
+
+  if (views <= 0 && likes <= 0 && comments <= 0) {
+    return 0;
+  }
+
+  const engagementPerDay = ((likes * 2.5) + (comments * 4)) / elapsedDays;
+  const viewVelocity = Math.log10(Math.max(views / elapsedDays, 1));
+  const rawScore = (viewVelocity * 2.2) + Math.log10(Math.max(engagementPerDay, 1)) * 3.1;
+
+  return Math.max(0, Math.min(12, Math.round(rawScore)));
+}
+
+/**
  * 재생 길이와 숏폼 신호를 점수화한다.
  * @param candidate 검토할 후보
  * @returns 숏폼 선호 점수
@@ -423,31 +505,31 @@ function scoreDurationPreference(candidate: SocialVideoCandidate) {
   const duration = candidate.durationSeconds;
 
   if (duration <= 30) {
-    return 18;
+    return 8;
   }
 
   if (duration <= 60) {
-    return 16;
-  }
-
-  if (duration <= 90) {
     return 14;
   }
 
-  if (duration <= 120) {
-    return 12;
+  if (duration <= 90) {
+    return 16;
   }
 
-  if (duration <= 180) {
+  if (duration <= 120) {
+    return 18;
+  }
+
+  if (duration <= 240) {
+    return 16;
+  }
+
+  if (duration <= 480) {
     return 10;
   }
 
-  if (duration <= 300) {
-    return 6;
-  }
-
-  if (duration <= 600) {
-    return 3;
+  if (duration <= 900) {
+    return 5;
   }
 
   return shortsHint ? 1 : 0;
@@ -465,13 +547,17 @@ export function scoreSocialVideoCandidate(
 ): SocialVideoScoreBreakdown {
   const destinationRelevance = scoreDestinationRelevance(candidate, context);
   const koreanSignals = scoreKoreanSignals(candidate);
+  const freshness = scoreFreshness(candidate);
+  const engagementQuality = scoreEngagementQuality(candidate);
   const durationPreference = scoreDurationPreference(candidate);
 
   return {
     destinationRelevance,
     koreanSignals,
+    freshness,
+    engagementQuality,
     durationPreference,
-    total: destinationRelevance + koreanSignals + durationPreference,
+    total: destinationRelevance + koreanSignals + freshness + engagementQuality + durationPreference,
   };
 }
 
@@ -501,6 +587,14 @@ export function rankSocialVideoCandidates(
 
       if (right.score.koreanSignals !== left.score.koreanSignals) {
         return right.score.koreanSignals - left.score.koreanSignals;
+      }
+
+      if (right.score.engagementQuality !== left.score.engagementQuality) {
+        return right.score.engagementQuality - left.score.engagementQuality;
+      }
+
+      if (right.score.freshness !== left.score.freshness) {
+        return right.score.freshness - left.score.freshness;
       }
 
       if (right.score.durationPreference !== left.score.durationPreference) {
@@ -550,17 +644,156 @@ export function selectSocialVideoCandidate(
   return bestCandidate;
 }
 
-async function fetchYouTubeSearchResults(query: string, apiKey: string) {
+function hasRecentPublishedAt(candidate: SocialVideoCandidate) {
+  if (!candidate.publishedAt) {
+    return false;
+  }
+
+  const publishedAt = new Date(candidate.publishedAt);
+
+  if (Number.isNaN(publishedAt.getTime())) {
+    return false;
+  }
+
+  return Date.now() - publishedAt.getTime() <= 30 * 86_400_000;
+}
+
+function pickDiverseCandidate(
+  rankedCandidates: SocialVideoScoredCandidate[],
+  selectedVideoIds: Set<string>,
+  selectedChannelIds: Set<string>,
+  predicate?: (candidate: SocialVideoScoredCandidate) => boolean,
+) {
+  for (const candidate of rankedCandidates) {
+    if (selectedVideoIds.has(candidate.candidate.id) || candidate.score.total < SOCIAL_VIDEO_MIN_SCORE) {
+      continue;
+    }
+
+    if (predicate && !predicate(candidate)) {
+      continue;
+    }
+
+    if (candidate.candidate.channelId && selectedChannelIds.has(candidate.candidate.channelId)) {
+      continue;
+    }
+
+    return candidate;
+  }
+
+  for (const candidate of rankedCandidates) {
+    if (selectedVideoIds.has(candidate.candidate.id) || candidate.score.total < SOCIAL_VIDEO_MIN_SCORE) {
+      continue;
+    }
+
+    if (predicate && !predicate(candidate)) {
+      continue;
+    }
+
+    return candidate;
+  }
+
+  return null;
+}
+
+/**
+ * 메인 1개와 보조 2개까지 포함한 소셜 비디오 슬롯을 고른다.
+ * @param candidates 후보 목록
+ * @param context 추천 컨텍스트
+ * @returns 메인 우선 정렬된 선택 결과
+ */
+export function selectSocialVideoCandidates(
+  candidates: SocialVideoCandidate[],
+  context: SocialVideoSearchContext,
+): SocialVideoScoredCandidate[] {
+  const rankedCandidates = rankSocialVideoCandidates(candidates, context);
+  const primaryCandidate = rankedCandidates[0];
+
+  if (!primaryCandidate || primaryCandidate.score.total < SOCIAL_VIDEO_MIN_SCORE) {
+    return [];
+  }
+
+  const selected: SocialVideoScoredCandidate[] = [primaryCandidate];
+  const selectedVideoIds = new Set([primaryCandidate.candidate.id]);
+  const selectedChannelIds = new Set(
+    primaryCandidate.candidate.channelId ? [primaryCandidate.candidate.channelId] : [],
+  );
+
+  const recentCandidate = pickDiverseCandidate(
+    rankedCandidates,
+    selectedVideoIds,
+    selectedChannelIds,
+    (candidate) => hasRecentPublishedAt(candidate.candidate),
+  );
+
+  if (recentCandidate) {
+    selected.push(recentCandidate);
+    selectedVideoIds.add(recentCandidate.candidate.id);
+    if (recentCandidate.candidate.channelId) {
+      selectedChannelIds.add(recentCandidate.candidate.channelId);
+    }
+  }
+
+  const shortCandidate = pickDiverseCandidate(
+    rankedCandidates,
+    selectedVideoIds,
+    selectedChannelIds,
+    (candidate) => (candidate.candidate.durationSeconds ?? Number.POSITIVE_INFINITY) <= 90,
+  );
+
+  if (shortCandidate) {
+    selected.push(shortCandidate);
+    selectedVideoIds.add(shortCandidate.candidate.id);
+    if (shortCandidate.candidate.channelId) {
+      selectedChannelIds.add(shortCandidate.candidate.channelId);
+    }
+  }
+
+  while (selected.length < 3) {
+    const fallbackCandidate = pickDiverseCandidate(
+      rankedCandidates,
+      selectedVideoIds,
+      selectedChannelIds,
+    );
+
+    if (!fallbackCandidate) {
+      break;
+    }
+
+    selected.push(fallbackCandidate);
+    selectedVideoIds.add(fallbackCandidate.candidate.id);
+    if (fallbackCandidate.candidate.channelId) {
+      selectedChannelIds.add(fallbackCandidate.candidate.channelId);
+    }
+  }
+
+  return selected.slice(0, 3);
+}
+
+async function fetchYouTubeSearchResults(
+  query: string,
+  apiKey: string,
+  options?: {
+    order?: "relevance" | "date";
+    publishedAfter?: string;
+  },
+) {
   const searchParams = new URLSearchParams({
     key: apiKey,
     part: "snippet",
     type: "video",
     maxResults: "8",
-    order: "relevance",
+    order: options?.order ?? "relevance",
     q: query,
     relevanceLanguage: "ko",
     safeSearch: "moderate",
+    videoEmbeddable: "true",
+    videoSyndicated: "true",
   });
+
+  if (options?.publishedAfter) {
+    searchParams.set("publishedAfter", options.publishedAfter);
+  }
+
   const response = await fetch(`${YOUTUBE_SEARCH_ENDPOINT}?${searchParams.toString()}`, {
     headers: {
       accept: "application/json",
@@ -584,7 +817,7 @@ async function fetchYouTubeVideoDetails(videoIds: string[], apiKey: string) {
 
   const searchParams = new URLSearchParams({
     key: apiKey,
-    part: "contentDetails,status,snippet",
+    part: "contentDetails,status,snippet,statistics",
     id: videoIds.join(","),
     maxResults: String(videoIds.length),
   });
@@ -648,27 +881,33 @@ function hydrateCandidatesFromYouTube(
         description: snippet.description,
         publishedAt: snippet.publishedAt,
         languageHint: details?.snippet?.defaultAudioLanguage ?? details?.snippet?.defaultLanguage ?? snippet.defaultAudioLanguage,
+        viewCount: parseYouTubeCount(details?.statistics?.viewCount),
+        likeCount: parseYouTubeCount(details?.statistics?.likeCount),
+        commentCount: parseYouTubeCount(details?.statistics?.commentCount),
       } satisfies SocialVideoCandidate,
     ];
   });
 }
 
 /**
- * YouTube에서 대표 추천용 소셜 비디오 1개를 고른다.
+ * YouTube에서 대표 추천용 소셜 비디오 최대 3개를 고른다.
  * @param context 리드 목적지와 추천 질의
- * @returns 선택된 비디오 또는 null
+ * @returns 메인 우선 정렬된 비디오 목록
  */
-export async function getLeadSocialVideo(context: SocialVideoSearchContext): Promise<SocialVideoItem | null> {
+export async function getLeadSocialVideos(context: SocialVideoSearchContext): Promise<SocialVideoItem[]> {
   const apiKey = getYouTubeApiKey();
 
   if (!apiKey) {
-    return null;
+    return [];
   }
 
-  const candidates: SocialVideoCandidate[] = [];
+  const candidatesById = new Map<string, SocialVideoCandidate>();
+  const publishedAfter = new Date(Date.now() - (30 * 86_400_000)).toISOString();
 
   for (const query of buildSocialVideoSearchQueries(context)) {
-    const searchPayload = await fetchYouTubeSearchResults(query, apiKey);
+    const searchPayload = await fetchYouTubeSearchResults(query, apiKey, {
+      order: "relevance",
+    });
 
     if (!searchPayload?.items?.length) {
       continue;
@@ -679,24 +918,44 @@ export async function getLeadSocialVideo(context: SocialVideoSearchContext): Pro
       .filter((value): value is string => Boolean(value));
     const detailsMap = await fetchYouTubeVideoDetails(videoIds, apiKey);
 
-    candidates.push(...hydrateCandidatesFromYouTube(searchPayload, detailsMap));
+    for (const candidate of hydrateCandidatesFromYouTube(searchPayload, detailsMap)) {
+      candidatesById.set(candidate.id, candidate);
+    }
 
-    const selected = selectSocialVideoCandidate(candidates, context);
-
-    if (selected) {
-      return {
-        provider: "youtube",
-        videoId: selected.candidate.id,
-        title: selected.candidate.title,
-        channelTitle: selected.candidate.channelTitle,
-        channelUrl: formatChannelUrl(selected.candidate.channelId ?? undefined),
-        videoUrl: selected.candidate.url,
-        thumbnailUrl: selected.candidate.thumbnailUrl,
-        publishedAt: selected.candidate.publishedAt ?? new Date(0).toISOString(),
-        durationSeconds: selected.candidate.durationSeconds ?? 1,
-      };
+    if (candidatesById.size >= 12) {
+      break;
     }
   }
 
-  return null;
+  for (const query of buildSocialVideoSearchQueries(context).slice(0, 3)) {
+    const searchPayload = await fetchYouTubeSearchResults(query, apiKey, {
+      order: "date",
+      publishedAfter,
+    });
+
+    if (!searchPayload?.items?.length) {
+      continue;
+    }
+
+    const videoIds = searchPayload.items
+      .map((item) => item.id?.videoId)
+      .filter((value): value is string => Boolean(value));
+    const detailsMap = await fetchYouTubeVideoDetails(videoIds, apiKey);
+
+    for (const candidate of hydrateCandidatesFromYouTube(searchPayload, detailsMap)) {
+      candidatesById.set(candidate.id, candidate);
+    }
+  }
+
+  return selectSocialVideoCandidates(Array.from(candidatesById.values()), context).map((selected) => ({
+    provider: "youtube",
+    videoId: selected.candidate.id,
+    title: selected.candidate.title,
+    channelTitle: selected.candidate.channelTitle,
+    channelUrl: formatChannelUrl(selected.candidate.channelId ?? undefined),
+    videoUrl: selected.candidate.url,
+    thumbnailUrl: selected.candidate.thumbnailUrl,
+    publishedAt: selected.candidate.publishedAt ?? new Date(0).toISOString(),
+    durationSeconds: selected.candidate.durationSeconds ?? 1,
+  }));
 }

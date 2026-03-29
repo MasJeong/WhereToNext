@@ -7,6 +7,7 @@ import {
   buildSocialVideoSearchQueries,
   scoreSocialVideoCandidate,
   selectSocialVideoCandidate,
+  selectSocialVideoCandidates,
   type SocialVideoCandidate,
 } from "@/lib/social-video/service";
 
@@ -85,6 +86,41 @@ describe("social-video service", () => {
     expect(shortScore.total).toBeGreaterThan(longScore.total);
     expect(shortScore.koreanSignals).toBeGreaterThan(longScore.koreanSignals);
     expect(shortScore.durationPreference).toBeGreaterThan(longScore.durationPreference);
+  });
+
+  it("keeps the main candidate highly relevant even when a newer short clip exists", () => {
+    const context = buildTestContext();
+    const mainCandidate = buildCandidate({
+      id: "main-candidate",
+      title: "도쿄 여행 가이드",
+      channelTitle: "지훈의 여행일기",
+      durationSeconds: 150,
+      description: "도쿄 맛집과 야경, 동선을 자세히 정리",
+      publishedAt: "2026-03-01T00:00:00.000Z",
+      languageHint: "ko",
+      creatorCountryCode: "KR",
+      viewCount: 220000,
+      likeCount: 5400,
+      commentCount: 310,
+    });
+    const recentShortCandidate = buildCandidate({
+      id: "recent-short",
+      title: "도쿄 여행 쇼츠",
+      channelTitle: "빠른 여행 컷",
+      durationSeconds: 27,
+      description: "도쿄 골목 하이라이트",
+      publishedAt: "2026-03-28T00:00:00.000Z",
+      languageHint: "ko",
+      creatorCountryCode: "KR",
+      viewCount: 32000,
+      likeCount: 510,
+      commentCount: 40,
+    });
+
+    const selected = selectSocialVideoCandidates([recentShortCandidate, mainCandidate], context);
+
+    expect(selected[0]?.candidate.id).toBe("main-candidate");
+    expect(selected).toHaveLength(2);
   });
 
   it("falls back to a relevant standard video when short-form quality is low", () => {

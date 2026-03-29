@@ -5,7 +5,7 @@ import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import { socialVideoResponseSchema } from "@/lib/domain/contracts";
 import { applyAcquisitionCorsHeaders } from "@/lib/security/cors";
 import { parseSocialVideoQuery } from "@/lib/security/validation";
-import { getLeadSocialVideo, type SocialVideoLeadEvidence } from "@/lib/social-video/service";
+import { getLeadSocialVideos, type SocialVideoLeadEvidence } from "@/lib/social-video/service";
 
 const SOCIAL_VIDEO_CACHE_TTL_SECONDS = 10_800;
 
@@ -82,20 +82,22 @@ export async function GET(request: Request) {
       leadEvidence = [leadEvidenceItem];
     }
 
-    const item = await getLeadSocialVideo({
+    const items = await getLeadSocialVideos({
       destination,
       query: parsedQuery.query,
       leadEvidence,
     });
     const payload = socialVideoResponseSchema.parse(
-      item
+      items.length > 0
         ? {
             status: "ok",
-            item,
+            item: items[0],
+            items,
           }
         : {
             status: "empty",
             item: null,
+            items: [],
           },
     );
 
@@ -129,6 +131,7 @@ export async function GET(request: Request) {
         {
           status: "empty",
           item: null,
+          items: [],
         },
         {
           headers: {
