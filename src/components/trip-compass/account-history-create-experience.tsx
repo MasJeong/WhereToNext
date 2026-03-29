@@ -2,11 +2,11 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import type { UserDestinationHistory, UserDestinationHistoryImage } from "@/lib/domain/contracts";
-import { testIds } from "@/lib/test-ids";
+import { getAccountHistoryDestinationResultTestId, testIds } from "@/lib/test-ids";
 import { formatVibeList } from "@/lib/trip-compass/presentation";
 
 import { ExperienceShell } from "./experience-shell";
@@ -138,6 +138,36 @@ function buildHistoryBody(draft: HistoryDraft) {
   };
 }
 
+function normalizeDestinationSearchValue(value: string): string {
+  return value.trim().toLocaleLowerCase();
+}
+
+function rankDestinationSearchMatch(destination: typeof launchCatalog[number], normalizedQuery: string): number {
+  const searchTargets = [
+    normalizeDestinationSearchValue(destination.nameKo),
+    normalizeDestinationSearchValue(destination.nameEn),
+    normalizeDestinationSearchValue(destination.countryCode),
+  ];
+
+  if (searchTargets.some((value) => value === normalizedQuery)) {
+    return 0;
+  }
+
+  if (searchTargets.some((value) => value.startsWith(normalizedQuery))) {
+    return 1;
+  }
+
+  return 2;
+}
+
+function formatDestinationSearchLabel(destination: typeof launchCatalog[number] | undefined): string {
+  if (!destination) {
+    return "";
+  }
+
+  return `${destination.nameKo} · ${destination.nameEn}`;
+}
+
 export function AccountHistoryCreateExperience({
   mode = "create",
   initialEntry,
@@ -149,7 +179,7 @@ export function AccountHistoryCreateExperience({
   const [stepIndex, setStepIndex] = useState(0);
   const [draft, setDraft] = useState<HistoryDraft>({
     id: initialEntry?.id,
-    destinationId: initialEntry?.destinationId ?? launchCatalog[0]?.id ?? "tokyo",
+    destinationId: initialEntry?.destinationId ?? "",
     rating: initialEntry?.rating ?? 5,
     tags: initialEntry?.tags ?? ["city"],
     wouldRevisit: initialEntry?.wouldRevisit ?? false,
@@ -162,6 +192,33 @@ export function AccountHistoryCreateExperience({
 
   const currentStep = historySteps[stepIndex];
   const selectedDestination = launchCatalog.find((item) => item.id === draft.destinationId);
+  const [destinationQuery, setDestinationQuery] = useState(() => formatDestinationSearchLabel(selectedDestination));
+  const filteredDestinations = useMemo(() => {
+    const normalizedQuery = normalizeDestinationSearchValue(destinationQuery);
+
+    if (!normalizedQuery) {
+      return [];
+    }
+
+    return launchCatalog
+      .filter((destination) => {
+        return [destination.nameKo, destination.nameEn, destination.countryCode]
+          .some((value) => normalizeDestinationSearchValue(value).includes(normalizedQuery));
+      })
+      .sort((left, right) => {
+        const leftRank = rankDestinationSearchMatch(left, normalizedQuery);
+        const rightRank = rankDestinationSearchMatch(right, normalizedQuery);
+
+        if (leftRank !== rightRank) {
+          return leftRank - rightRank;
+        }
+
+        return left.nameKo.localeCompare(right.nameKo, "ko");
+      })
+      .slice(0, 8);
+  }, [destinationQuery]);
+  const hasDestinationQuery = normalizeDestinationSearchValue(destinationQuery).length > 0;
+  const hasDestinationSelection = Boolean(selectedDestination);
   const stepSummary = [
     selectedDestination?.nameKo ?? "목적지",
     draft.visitedAt,
@@ -211,6 +268,15 @@ export function AccountHistoryCreateExperience({
     window.setTimeout(() => {
       setStepIndex((current) => Math.min(current + 1, historySteps.length - 1));
     }, 120);
+  }
+
+  function selectDestination(destination: typeof launchCatalog[number]) {
+    setDestinationQuery(formatDestinationSearchLabel(destination));
+    setDraft((currentDraft) => ({
+      ...currentDraft,
+      destinationId: destination.id,
+    }));
+    moveNextSoon();
   }
 
   /**
@@ -339,45 +405,93 @@ export function AccountHistoryCreateExperience({
               <div className="space-y-3">
                 <label className="grid gap-2 text-sm text-[var(--color-ink)]">
                   <span>방문한 목적지</span>
-                  <select
-                    data-testid={testIds.account.newHistoryDestination}
-                    value={draft.destinationId}
+                  <input
+                    data-testid={testIds.account.newHistoryDestinationSearch}
+                    type="text"
+                    value={destinationQuery}
                     onChange={(event) => {
-                      setDraft((currentDraft) => ({
-                        ...currentDraft,
-                        destinationId: event.target.value,
-                      }));
-                      moveNextSoon();
+                      const nextValue = event.target.value;
+                      setDestinationQuery(nextValue);
+                      setDraft((currentDraft) =>
+                        formatDestinationSearchLabel(selectedDestination) === nextValue
+                          ? currentDraft
+                          : {
+                              ...currentDraft,
+                              destinationId: "",
+                            },
+                      );
                     }}
+                    onKeyDown={(event) => {
+                      if (event.key !== "Enter") {
+                        return;
+                      }
+
+                      const firstDestination = filteredDestinations[0];
+
+                      if (!firstDestination) {
+                        return;
+                      }
+
+                      event.preventDefault();
+                      selectDestination(firstDestination);
+                    }}
+                    placeholder="예: 도쿄, Tokyo, JP"
+                    autoComplete="off"
+                    spellCheck={false}
                     className="compass-form-field-light rounded-[calc(var(--radius-card)-10px)] px-4 py-3"
-                  >
-                    {launchCatalog.map((destination) => (
-                      <option key={destination.id} value={destination.id}>
-                        {destination.nameKo}
-                      </option>
-                    ))}
-                  </select>
+                  />
                 </label>
 
-                <div className="flex flex-wrap gap-2">
-                  {launchCatalog.slice(0, 6).map((destination) => (
-                    <button
-                      key={destination.id}
-                      type="button"
-                      onClick={() => {
-                        setDraft((currentDraft) => ({
-                          ...currentDraft,
-                          destinationId: destination.id,
-                        }));
-                        moveNextSoon();
-                      }}
-                      className={`rounded-full px-3 py-2 text-xs font-semibold ${
-                        draft.destinationId === destination.id ? "compass-selected" : "compass-selection-chip"
-                      }`}
-                    >
-                      {destination.nameKo}
-                    </button>
-                  ))}
+                <div className="space-y-2">
+                  {filteredDestinations.length > 0 ? (
+                    filteredDestinations.map((destination, index) => {
+                      const isSelected = draft.destinationId === destination.id;
+
+                      return (
+                        <button
+                          key={destination.id}
+                          type="button"
+                          data-testid={getAccountHistoryDestinationResultTestId(index)}
+                          onClick={() => selectDestination(destination)}
+                          className={`w-full rounded-[calc(var(--radius-card)-10px)] border px-4 py-3 text-left transition-colors ${
+                            isSelected
+                              ? "compass-selected"
+                              : "border-[color:var(--color-frame-soft)] bg-white text-[var(--color-ink)] hover:border-[color:var(--color-brand-primary)] hover:bg-[var(--color-brand-primary-soft)]"
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-sm font-semibold text-[var(--color-ink)]">{destination.nameKo}</p>
+                              <p className="text-xs leading-5 text-[var(--color-ink-soft)]">
+                                {destination.nameEn} · {destination.countryCode}
+                              </p>
+                            </div>
+                            {isSelected ? (
+                              <span className="shrink-0 text-[11px] font-semibold text-[var(--color-brand-primary)]">
+                                선택됨
+                              </span>
+                            ) : null}
+                          </div>
+                        </button>
+                      );
+                    })
+                  ) : hasDestinationQuery ? (
+                    <div className="compass-note rounded-[calc(var(--radius-card)-10px)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-soft)]">
+                      입력한 이름과 맞는 목적지를 찾지 못했어요. 한국어 이름, 영어 이름, 국가 코드로 다시 찾아보세요.
+                    </div>
+                  ) : hasDestinationSelection ? (
+                    <div className="compass-note rounded-[calc(var(--radius-card)-10px)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-soft)]">
+                      다른 목적지로 바꾸려면 이름을 입력해 바로 다시 선택할 수 있어요.
+                    </div>
+                  ) : (
+                    <div className="compass-note rounded-[calc(var(--radius-card)-10px)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-soft)]">
+                      목적지 이름을 입력하면 바로 아래에서 선택할 수 있어요. Enter를 누르면 첫 번째 후보를 바로 고를 수 있어요.
+                    </div>
+                  )}
+                </div>
+
+                <div className="compass-note rounded-[calc(var(--radius-card)-10px)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-soft)]">
+                  입력 후 목록에서 하나를 고르면 바로 다음 단계로 넘어가요.
                 </div>
               </div>
             ) : null}
@@ -605,7 +719,8 @@ export function AccountHistoryCreateExperience({
                 type="button"
                 data-testid={testIds.account.newHistoryNext}
                 onClick={moveNext}
-                className="compass-action-primary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
+                disabled={currentStep.id === "destination" && !hasDestinationSelection}
+                className="compass-action-primary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
               >
                 다음
               </button>

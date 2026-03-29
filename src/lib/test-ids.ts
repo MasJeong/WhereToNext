@@ -61,6 +61,8 @@ export const testIds = {
     thumbnail: "social-video-thumbnail",
     title: "social-video-title",
     link: "social-video-link",
+    fallbackBlock: "social-video-fallback",
+    fallbackLink0: "social-video-fallback-link-0",
   },
   detail: {
     root: "destination-detail-root",
@@ -110,7 +112,8 @@ export const testIds = {
     preferenceRepeat: "preference-repeat",
     preferenceBalanced: "preference-balanced",
     preferenceDiscover: "preference-discover",
-    newHistoryDestination: "new-history-destination",
+    newHistoryDestinationSearch: "new-history-destination-search",
+    newHistoryDestinationResult0: "new-history-destination-result-0",
     newHistoryDate: "new-history-date",
     newHistoryBack: "new-history-back",
     newHistoryNext: "new-history-next",
@@ -235,6 +238,12 @@ export function getAccountHistoryDeleteTestId(index: number): string {
  */
 export function getAccountHistoryEditTestId(index: number): string {
   return index === 0 ? testIds.account.historyEdit0 : `history-edit-${index}`;
+}
+
+export function getAccountHistoryDestinationResultTestId(index: number): string {
+  return index === 0
+    ? testIds.account.newHistoryDestinationResult0
+    : `new-history-destination-result-${index}`;
 }
 
 export function getAccountFutureTripEntryTestId(index: number): string {

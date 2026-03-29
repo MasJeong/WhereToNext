@@ -15,6 +15,7 @@ type ResultPageProps = {
   leadTags: string[];
   leadFacts: RecommendationDecisionFactView[];
   leadSupportSlot?: ReactNode;
+  leadWeatherSlot?: ReactNode;
   leadDetails: ReactNode;
   resultMeta?: ReactNode;
   personalized: boolean;
@@ -33,6 +34,7 @@ export function ResultPage({
   leadTags,
   leadFacts,
   leadSupportSlot,
+  leadWeatherSlot,
   leadDetails,
   resultMeta,
   personalized,
@@ -83,6 +85,7 @@ export function ResultPage({
                 </article>
               )}
             </div>
+
           </div>
 
           <div data-testid={testIds.result.card0} className="flex flex-col p-5 sm:p-6 lg:p-7">
@@ -108,6 +111,8 @@ export function ResultPage({
                 ))}
               </div>
             ) : null}
+
+            {leadWeatherSlot ? <div className="mt-4">{leadWeatherSlot}</div> : null}
 
             <div className="mt-5 divide-y divide-[color:var(--color-funnel-border)] rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)]">
               {leadFacts.map((fact) => (
