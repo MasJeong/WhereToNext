@@ -8,6 +8,7 @@ import {
   snapshotVisibilitySchema,
   socialVideoRequestSchema,
   userDestinationHistoryInputSchema,
+  userFutureTripInputSchema,
   userPreferenceProfileUpdateSchema,
 } from "@/lib/domain/contracts";
 
@@ -33,6 +34,7 @@ export const createSnapshotBodySchema = z.discriminatedUnion("kind", [
 export type RecommendationQuery = z.infer<typeof recommendationQuerySchema>;
 export type CreateSnapshotBody = z.infer<typeof createSnapshotBodySchema>;
 export type UserDestinationHistoryInput = z.infer<typeof userDestinationHistoryInputSchema>;
+export type UserFutureTripInput = z.infer<typeof userFutureTripInputSchema>;
 export type UserPreferenceProfileUpdate = z.infer<typeof userPreferenceProfileUpdateSchema>;
 export type SocialVideoRequest = z.infer<typeof socialVideoRequestSchema>;
 export type SocialVideoQuery = z.infer<typeof socialVideoRequestSchema>;
@@ -148,6 +150,20 @@ export function parseSocialVideoQuery(params: URLSearchParams): SocialVideoReque
  */
 export function parseUserDestinationHistoryInput(body: unknown): UserDestinationHistoryInput {
   return userDestinationHistoryInputSchema
+    .refine((value) => destinationIdSet.has(value.destinationId), {
+      message: "UNKNOWN_DESTINATION",
+      path: ["destinationId"],
+    })
+    .parse(body);
+}
+
+/**
+ * 앞으로 갈 곳 등록 요청 바디를 검증한다.
+ * @param body 요청 바디 원문
+ * @returns 검증된 앞으로 갈 곳 입력
+ */
+export function parseUserFutureTripInput(body: unknown): UserFutureTripInput {
+  return userFutureTripInputSchema
     .refine((value) => destinationIdSet.has(value.destinationId), {
       message: "UNKNOWN_DESTINATION",
       path: ["destinationId"],

@@ -3,6 +3,7 @@ import type {
   RecommendationSnapshot,
   TrendEvidenceSnapshot,
   UserDestinationHistory,
+  UserFutureTrip,
   UserPreferenceProfile,
 } from "@/lib/domain/contracts";
 
@@ -35,6 +36,7 @@ declare global {
         oauthTransactions: Map<string, { state: string; codeVerifier: string; nonce: string; provider: string; next: string; intent: string; expiresAt: string }>;
         preferences: Map<string, UserPreferenceProfile>;
         history: Map<string, UserDestinationHistory>;
+        futureTrips: Map<string, UserFutureTrip>;
         trendSnapshots: Map<string, TrendEvidenceSnapshot>;
         snapshots: Map<string, MemorySnapshotRecord>;
       }
@@ -49,6 +51,7 @@ if (!globalThis.__tripCompassMemoryStore) {
     oauthTransactions: new Map(),
     preferences: new Map(),
     history: new Map(),
+    futureTrips: new Map(),
     trendSnapshots: new Map(),
     snapshots: new Map(),
   };

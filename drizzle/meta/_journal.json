@@ -43,6 +43,13 @@
       "when": 1774763059129,
       "tag": "0005_sweet_spacker_dave",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1774789751658,
+      "tag": "0006_nostalgic_hex",
+      "breakpoints": true
     }
   ]
 }

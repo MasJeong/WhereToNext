@@ -8,6 +8,7 @@ import type {
   RecommendationSnapshot,
   TrendEvidenceSnapshot,
   UserDestinationHistory,
+  UserFutureTrip,
   UserPreferenceProfile,
 } from "@/lib/domain/contracts";
 
@@ -38,6 +39,7 @@ type LocalStoreData = {
   oauthTransactions: Record<string, { state: string; codeVerifier: string; nonce: string; provider: string; next: string; intent: string; expiresAt: string }>;
   preferences: Record<string, UserPreferenceProfile>;
   history: Record<string, UserDestinationHistory>;
+  futureTrips: Record<string, UserFutureTrip>;
   trendSnapshots: Record<string, TrendEvidenceSnapshot>;
   snapshots: Record<string, LocalSnapshotRecord>;
 };
@@ -67,6 +69,7 @@ function createDefaultStore(): LocalStoreData {
     oauthTransactions: {},
     preferences: {},
     history: {},
+    futureTrips: {},
     trendSnapshots: {},
     snapshots: {},
   };
@@ -82,6 +85,7 @@ function normalizeLocalStore(store: Partial<LocalStoreData>): LocalStoreData {
     oauthTransactions: store.oauthTransactions ?? defaults.oauthTransactions,
     preferences: store.preferences ?? defaults.preferences,
     history: store.history ?? defaults.history,
+    futureTrips: store.futureTrips ?? defaults.futureTrips,
     trendSnapshots: store.trendSnapshots ?? defaults.trendSnapshots,
     snapshots: Object.fromEntries(
       Object.entries(store.snapshots ?? defaults.snapshots).map(([snapshotId, snapshot]) => [

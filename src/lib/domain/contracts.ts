@@ -158,6 +158,15 @@ export const destinationWeatherSnapshotSchema = z.object({
   observedAt: z.string().datetime(),
 });
 
+export const destinationTravelMonthWeatherSchema = z.object({
+  travelMonth: z.number().int().min(1).max(12),
+  summary: z.string().min(1),
+  averageMinTemperatureC: z.number(),
+  averageMaxTemperatureC: z.number(),
+  rainyDayRatio: z.number().min(0).max(100),
+  basedOnYears: z.number().int().min(1),
+});
+
 export const destinationNearbyPlaceSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -182,6 +191,7 @@ export const destinationTravelSupplementSchema = z.object({
   location: destinationTravelLocationSchema,
   heroImage: destinationHeroImageSchema.optional(),
   weather: destinationWeatherSnapshotSchema.optional(),
+  travelMonthWeather: destinationTravelMonthWeatherSchema.optional(),
   nearbyPlaces: z.array(destinationNearbyPlaceSchema).max(5).optional(),
   mapEmbed: destinationMapEmbedSchema.optional(),
   exchangeRate: destinationExchangeRateSchema.optional(),
@@ -217,10 +227,12 @@ export const socialVideoResponseSchema = z.discriminatedUnion("status", [
   z.object({
     status: z.literal("ok"),
     item: socialVideoItemSchema,
+    items: z.array(socialVideoItemSchema).min(1).max(3),
   }),
   z.object({
     status: z.literal("empty"),
     item: z.null(),
+    items: z.array(socialVideoItemSchema).max(0).optional(),
   }),
 ]);
 
@@ -280,6 +292,22 @@ export const userDestinationHistoryInputSchema = z.object({
   image: userDestinationHistoryImageSchema.nullish().transform((value) => value ?? null),
 });
 
+export const userFutureTripSchema = z.object({
+  id: z.string().uuid(),
+  userId: z.string().min(1),
+  destinationId: z.string().min(1),
+  sourceSnapshotId: z.string().uuid(),
+  destinationNameKo: z.string().min(1),
+  countryCode: z.string().length(2),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const userFutureTripInputSchema = z.object({
+  destinationId: z.string().min(1),
+  sourceSnapshotId: z.string().uuid(),
+});
+
 export const recommendationPersonalizationContextSchema = z.object({
   explorationPreference: explorationPreferenceSchema,
   history: z.array(userDestinationHistorySchema),
@@ -306,6 +334,8 @@ export type UserPreferenceProfileUpdate = z.infer<typeof userPreferenceProfileUp
 export type UserDestinationHistoryImage = z.infer<typeof userDestinationHistoryImageSchema>;
 export type UserDestinationHistory = z.infer<typeof userDestinationHistorySchema>;
 export type UserDestinationHistoryInput = z.infer<typeof userDestinationHistoryInputSchema>;
+export type UserFutureTrip = z.infer<typeof userFutureTripSchema>;
+export type UserFutureTripInput = z.infer<typeof userFutureTripInputSchema>;
 export type RecommendationPersonalizationContext = z.infer<
   typeof recommendationPersonalizationContextSchema
 >;

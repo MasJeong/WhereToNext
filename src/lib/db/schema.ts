@@ -198,3 +198,27 @@ export const userDestinationHistory = pgTable("user_destination_history", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });
+
+export const userFutureTrips = pgTable(
+  "user_future_trips",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    destinationId: text("destination_id")
+      .notNull()
+      .references(() => destinationProfiles.id, { onDelete: "cascade" }),
+    sourceSnapshotId: uuid("source_snapshot_id").notNull(),
+    destinationNameKo: text("destination_name_ko").notNull(),
+    countryCode: text("country_code").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    userDestinationUnique: uniqueIndex("user_future_trips_user_destination_unique").on(
+      table.userId,
+      table.destinationId,
+    ),
+  }),
+);

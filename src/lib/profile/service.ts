@@ -2,19 +2,90 @@ import { randomUUID } from "node:crypto";
 
 import { and, desc, eq } from "drizzle-orm";
 
+import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import { getRuntimeDatabase } from "@/lib/db/runtime";
-import { userDestinationHistory, userPreferenceProfiles } from "@/lib/db/schema";
+import { destinationProfiles, userDestinationHistory, userFutureTrips, userPreferenceProfiles } from "@/lib/db/schema";
 import {
   type ExplorationPreference,
   type UserDestinationHistory,
   type UserDestinationHistoryInput,
+  type UserFutureTrip,
+  type UserFutureTripInput,
   type UserPreferenceProfile,
+  userFutureTripInputSchema,
+  userFutureTripSchema,
 } from "@/lib/domain/contracts";
 import { readLocalStore, writeLocalStore } from "@/lib/persistence/local-store";
 import { memoryStore } from "@/lib/persistence/memory-store";
 
 const usePersistentDatabase = Boolean(process.env.DATABASE_URL);
 const useLocalFileStore = !usePersistentDatabase && process.env.NODE_ENV !== "test";
+
+type FutureTripDestinationMeta = {
+  destinationNameKo: string;
+  countryCode: string;
+};
+
+function sortFutureTripsByUpdatedAt(left: UserFutureTrip, right: UserFutureTrip) {
+  return right.updatedAt.localeCompare(left.updatedAt);
+}
+
+function mapUserFutureTripRow(row: {
+  id: string;
+  userId: string;
+  destinationId: string;
+  sourceSnapshotId: string;
+  destinationNameKo: string;
+  countryCode: string;
+  createdAt: Date;
+  updatedAt: Date;
+}): UserFutureTrip {
+  return userFutureTripSchema.parse({
+    id: row.id,
+    userId: row.userId,
+    destinationId: row.destinationId,
+    sourceSnapshotId: row.sourceSnapshotId,
+    destinationNameKo: row.destinationNameKo,
+    countryCode: row.countryCode,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  });
+}
+
+async function resolveFutureTripDestinationMeta(
+  destinationId: string,
+): Promise<FutureTripDestinationMeta> {
+  if (!usePersistentDatabase) {
+    const destination = launchCatalog.find((entry) => entry.id === destinationId);
+
+    if (!destination) {
+      throw new Error("FUTURE_TRIP_DESTINATION_NOT_FOUND");
+    }
+
+    return {
+      destinationNameKo: destination.nameKo,
+      countryCode: destination.countryCode,
+    };
+  }
+
+  const { db } = await getRuntimeDatabase();
+  const destination = await db.query.destinationProfiles.findFirst({
+    where: eq(destinationProfiles.id, destinationId),
+    columns: {
+      nameKo: true,
+      countryCode: true,
+    },
+  });
+
+  if (!destination) {
+    throw new Error("FUTURE_TRIP_DESTINATION_NOT_FOUND");
+  }
+
+  return {
+    destinationNameKo: destination.nameKo,
+    countryCode: destination.countryCode,
+  };
+}
 
 /**
  * 사용자 추천 선호를 조회하거나 기본값으로 생성한다.
@@ -398,6 +469,167 @@ export async function deleteUserDestinationHistory(
   const deleted = await db
     .delete(userDestinationHistory)
     .where(and(eq(userDestinationHistory.id, historyId), eq(userDestinationHistory.userId, userId)))
+    .returning();
+
+  return deleted.length > 0;
+}
+
+/**
+ * 사용자의 앞으로 갈 곳 목록을 최근 업데이트 순으로 조회한다.
+ * @param userId 인증 사용자 ID
+ * @returns 앞으로 갈 곳 목록
+ */
+export async function listUserFutureTrips(userId: string): Promise<UserFutureTrip[]> {
+  if (!usePersistentDatabase) {
+    if (useLocalFileStore) {
+      const store = await readLocalStore();
+      return Object.values(store.futureTrips)
+        .filter((entry) => entry.userId === userId)
+        .sort(sortFutureTripsByUpdatedAt);
+    }
+
+    return [...memoryStore.futureTrips.values()]
+      .filter((entry) => entry.userId === userId)
+      .sort(sortFutureTripsByUpdatedAt);
+  }
+
+  const { db } = await getRuntimeDatabase();
+  const rows = await db.query.userFutureTrips.findMany({
+    where: eq(userFutureTrips.userId, userId),
+    orderBy: desc(userFutureTrips.updatedAt),
+  });
+
+  return rows.map(mapUserFutureTripRow);
+}
+
+/**
+ * 사용자의 특정 앞으로 갈 곳 1건을 조회한다.
+ * @param userId 인증 사용자 ID
+ * @param futureTripId 앞으로 갈 곳 ID
+ * @returns 앞으로 갈 곳 또는 null
+ */
+export async function readUserFutureTrip(
+  userId: string,
+  futureTripId: string,
+): Promise<UserFutureTrip | null> {
+  const futureTrips = await listUserFutureTrips(userId);
+  return futureTrips.find((entry) => entry.id === futureTripId) ?? null;
+}
+
+/**
+ * 사용자의 앞으로 갈 곳을 여행지 기준으로 upsert한다.
+ * @param userId 인증 사용자 ID
+ * @param input 앞으로 갈 곳 입력
+ * @returns 저장된 앞으로 갈 곳
+ */
+export async function upsertUserFutureTrip(
+  userId: string,
+  input: UserFutureTripInput,
+): Promise<UserFutureTrip> {
+  const parsedInput = userFutureTripInputSchema.parse(input);
+  const destinationMeta = await resolveFutureTripDestinationMeta(parsedInput.destinationId);
+
+  if (!usePersistentDatabase) {
+    if (useLocalFileStore) {
+      const store = await readLocalStore();
+      const existing = Object.values(store.futureTrips).find(
+        (entry) => entry.userId === userId && entry.destinationId === parsedInput.destinationId,
+      );
+      const nowIso = new Date().toISOString();
+      const saved = userFutureTripSchema.parse({
+        id: existing?.id ?? randomUUID(),
+        userId,
+        destinationId: parsedInput.destinationId,
+        sourceSnapshotId: parsedInput.sourceSnapshotId,
+        destinationNameKo: destinationMeta.destinationNameKo,
+        countryCode: destinationMeta.countryCode,
+        createdAt: existing?.createdAt ?? nowIso,
+        updatedAt: nowIso,
+      });
+
+      store.futureTrips[saved.id] = saved;
+      await writeLocalStore(store);
+      return saved;
+    }
+
+    const existing = [...memoryStore.futureTrips.values()].find(
+      (entry) => entry.userId === userId && entry.destinationId === parsedInput.destinationId,
+    );
+    const nowIso = new Date().toISOString();
+    const saved = userFutureTripSchema.parse({
+      id: existing?.id ?? randomUUID(),
+      userId,
+      destinationId: parsedInput.destinationId,
+      sourceSnapshotId: parsedInput.sourceSnapshotId,
+      destinationNameKo: destinationMeta.destinationNameKo,
+      countryCode: destinationMeta.countryCode,
+      createdAt: existing?.createdAt ?? nowIso,
+      updatedAt: nowIso,
+    });
+
+    memoryStore.futureTrips.set(saved.id, saved);
+    return saved;
+  }
+
+  const { db } = await getRuntimeDatabase();
+  const [saved] = await db
+    .insert(userFutureTrips)
+    .values({
+      userId,
+      destinationId: parsedInput.destinationId,
+      sourceSnapshotId: parsedInput.sourceSnapshotId,
+      destinationNameKo: destinationMeta.destinationNameKo,
+      countryCode: destinationMeta.countryCode,
+    })
+    .onConflictDoUpdate({
+      target: [userFutureTrips.userId, userFutureTrips.destinationId],
+      set: {
+        sourceSnapshotId: parsedInput.sourceSnapshotId,
+        destinationNameKo: destinationMeta.destinationNameKo,
+        countryCode: destinationMeta.countryCode,
+        updatedAt: new Date(),
+      },
+    })
+    .returning();
+
+  return mapUserFutureTripRow(saved);
+}
+
+/**
+ * 사용자의 앞으로 갈 곳을 삭제한다.
+ * @param userId 인증 사용자 ID
+ * @param futureTripId 삭제할 앞으로 갈 곳 ID
+ * @returns 삭제 성공 여부
+ */
+export async function deleteUserFutureTrip(userId: string, futureTripId: string): Promise<boolean> {
+  if (!usePersistentDatabase) {
+    if (useLocalFileStore) {
+      const store = await readLocalStore();
+      const existing = store.futureTrips[futureTripId];
+
+      if (!existing || existing.userId !== userId) {
+        return false;
+      }
+
+      delete store.futureTrips[futureTripId];
+      await writeLocalStore(store);
+      return true;
+    }
+
+    const existing = memoryStore.futureTrips.get(futureTripId);
+
+    if (!existing || existing.userId !== userId) {
+      return false;
+    }
+
+    memoryStore.futureTrips.delete(futureTripId);
+    return true;
+  }
+
+  const { db } = await getRuntimeDatabase();
+  const deleted = await db
+    .delete(userFutureTrips)
+    .where(and(eq(userFutureTrips.id, futureTripId), eq(userFutureTrips.userId, userId)))
     .returning();
 
   return deleted.length > 0;
