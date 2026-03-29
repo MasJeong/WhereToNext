@@ -5,6 +5,7 @@ import {
   getAccountFutureTripEntryTestId,
   getAccountHistoryDeleteTestId,
   getAccountHistoryEntryTestId,
+  getSavedSnapshotPlanTestId,
   testIds,
 } from "@/lib/test-ids";
 
@@ -15,10 +16,12 @@ describe("account future trip selector contract", () => {
     expect(testIds.account.futureTripEntry0).toBe("future-trip-entry-0");
     expect(testIds.account.futureTripDelete0).toBe("future-trip-delete-0");
     expect(testIds.account.futureTripEmptyState).toBe("future-trip-empty-state");
+    expect(testIds.account.savedPlan0).toBe("saved-plan-0");
     expect(getAccountFutureTripEntryTestId(0)).toBe("future-trip-entry-0");
     expect(getAccountFutureTripEntryTestId(3)).toBe("future-trip-entry-3");
     expect(getAccountFutureTripDeleteTestId(0)).toBe("future-trip-delete-0");
     expect(getAccountFutureTripDeleteTestId(2)).toBe("future-trip-delete-2");
+    expect(getSavedSnapshotPlanTestId(0)).toBe("saved-plan-0");
   });
 
   it("keeps existing account selectors unchanged", () => {
@@ -36,6 +39,7 @@ describe("account future trip selector contract", () => {
       testIds.account.futureTripEntry0,
       testIds.account.futureTripDelete0,
       testIds.account.futureTripEmptyState,
+      testIds.account.savedPlan0,
     ];
 
     expect(new Set(selectorValues).size).toBe(selectorValues.length);

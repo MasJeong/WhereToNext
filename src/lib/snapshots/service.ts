@@ -9,6 +9,7 @@ import {
   recommendationSnapshotSchema,
   type ComparisonSnapshot,
   type RecommendationSnapshot,
+  type SnapshotStatus,
   type SnapshotVisibility,
   type TrendEvidenceSnapshot,
 } from "@/lib/domain/contracts";
@@ -70,6 +71,25 @@ function collectTrendSnapshots(payload: RecommendationSnapshot): TrendEvidenceSn
   }
 
   return [...evidenceMap.values()];
+}
+
+/**
+ * 추천 스냅샷 payload에 상태 메타를 반영한다.
+ * @param payload 기존 추천 스냅샷 payload
+ * @param status 새 저장 상태
+ * @returns 상태가 반영된 payload
+ */
+function withRecommendationSnapshotStatus(
+  payload: RecommendationSnapshot,
+  status: SnapshotStatus,
+): RecommendationSnapshot {
+  return recommendationSnapshotSchema.parse({
+    ...payload,
+    meta: {
+      ...payload.meta,
+      status,
+    },
+  });
 }
 
 /**
@@ -417,4 +437,117 @@ export async function listOwnedRecommendationSnapshots(userId: string) {
         destinationIds: snapshot.destinationIds,
       }) satisfies RecommendationStoredSnapshot,
   );
+}
+
+/**
+ * 로그인 사용자가 소유한 추천 스냅샷의 저장 상태를 갱신한다.
+ * @param userId 사용자 ID
+ * @param snapshotId 추천 스냅샷 ID
+ * @param status 새 저장 상태
+ * @returns 갱신된 추천 스냅샷 또는 null
+ */
+export async function updateOwnedRecommendationSnapshotStatus(
+  userId: string,
+  snapshotId: string,
+  status: SnapshotStatus,
+): Promise<RecommendationStoredSnapshot | null> {
+  if (!usePersistentDatabase) {
+    if (useLocalFileStore) {
+      const store = await readLocalStore();
+      const snapshot = store.snapshots[snapshotId];
+
+      if (
+        !snapshot ||
+        snapshot.kind !== "recommendation" ||
+        snapshot.visibility !== "private" ||
+        snapshot.ownerUserId !== userId
+      ) {
+        return null;
+      }
+
+      const updatedSnapshot = {
+        id: snapshot.id,
+        kind: "recommendation",
+        visibility: snapshot.visibility,
+        ownerUserId: snapshot.ownerUserId,
+        createdAt: snapshot.createdAt,
+        payload: withRecommendationSnapshotStatus(
+          recommendationSnapshotSchema.parse(snapshot.payload),
+          status,
+        ),
+        scoringVersionId: snapshot.scoringVersionId,
+        destinationIds: snapshot.destinationIds,
+      } satisfies RecommendationStoredSnapshot;
+
+      store.snapshots[snapshotId] = updatedSnapshot;
+      await writeLocalStore(store);
+
+      return updatedSnapshot;
+    }
+
+    const snapshot = memoryStore.snapshots.get(snapshotId);
+    if (
+      !snapshot ||
+      snapshot.kind !== "recommendation" ||
+      snapshot.visibility !== "private" ||
+      snapshot.ownerUserId !== userId
+    ) {
+      return null;
+    }
+
+    const updatedSnapshot = {
+      id: snapshot.id,
+      kind: "recommendation",
+      visibility: snapshot.visibility,
+      ownerUserId: snapshot.ownerUserId,
+      createdAt: snapshot.createdAt,
+      payload: withRecommendationSnapshotStatus(
+        recommendationSnapshotSchema.parse(snapshot.payload),
+        status,
+      ),
+      scoringVersionId: snapshot.scoringVersionId,
+      destinationIds: snapshot.destinationIds,
+    } satisfies RecommendationStoredSnapshot;
+
+    memoryStore.snapshots.set(snapshotId, updatedSnapshot);
+    return updatedSnapshot;
+  }
+
+  const { db } = await getRuntimeDatabase();
+  const hit = await db.query.recommendationSnapshots.findFirst({
+    where: and(
+      eq(recommendationSnapshots.id, snapshotId),
+      eq(recommendationSnapshots.kind, "recommendation"),
+      eq(recommendationSnapshots.visibility, "private"),
+      eq(recommendationSnapshots.ownerUserId, userId),
+    ),
+  });
+
+  if (!hit) {
+    return null;
+  }
+
+  const updatedPayload = withRecommendationSnapshotStatus(
+    recommendationSnapshotSchema.parse(hit.payload),
+    status,
+  );
+
+  const [updated] = await db
+    .update(recommendationSnapshots)
+    .set({
+      payload: updatedPayload,
+    })
+    .where(eq(recommendationSnapshots.id, snapshotId))
+    .returning();
+
+  return {
+    id: updated.id,
+    kind: "recommendation",
+    visibility: updated.visibility,
+    ownerUserId: updated.ownerUserId,
+    createdAt: updated.createdAt.toISOString(),
+    payload: recommendationSnapshotSchema.parse(updated.payload),
+    scoringVersionId: updated.scoringVersionId,
+    destinationIds: updated.destinationIds,
+  };
 }

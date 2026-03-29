@@ -13,6 +13,9 @@ export type SavedRecommendationSnapshotRequest = {
     results: [RecommendationCardView["recommendation"]];
     scoringVersionId: string;
     trendSnapshotIds: string[];
+    meta: {
+      status: "saved";
+    };
   };
 };
 
@@ -40,6 +43,9 @@ export function buildRecommendationSnapshotPayload(
       results: [card.recommendation],
       scoringVersionId,
       trendSnapshotIds: card.recommendation.trendEvidence.map((item) => item.id),
+      meta: {
+        status: "saved",
+      },
     },
   };
 }

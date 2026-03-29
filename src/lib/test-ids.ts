@@ -44,6 +44,7 @@ export const testIds = {
   },
   result: {
     card0: "result-card-0",
+    futureTripCta0: "future-trip-cta-0",
     filterBar: "result-filter-bar",
     filterChip0: "result-filter-chip-0",
     instagramVibe0: "instagram-vibe-0",
@@ -126,6 +127,7 @@ export const testIds = {
     futureTripEntry0: "future-trip-entry-0",
     futureTripDelete0: "future-trip-delete-0",
     futureTripEmptyState: "future-trip-empty-state",
+    savedPlan0: "saved-plan-0",
   },
 } as const;
 
@@ -140,6 +142,10 @@ export function getHomeChoiceTestId(index: number): string {
  */
 export function getResultCardTestId(index: number): string {
   return index === 0 ? testIds.result.card0 : `result-card-${index}`;
+}
+
+export function getFutureTripCtaTestId(index: number): string {
+  return index === 0 ? testIds.result.futureTripCta0 : `future-trip-cta-${index}`;
 }
 
 /**
@@ -237,6 +243,10 @@ export function getAccountFutureTripEntryTestId(index: number): string {
 
 export function getAccountFutureTripDeleteTestId(index: number): string {
   return index === 0 ? testIds.account.futureTripDelete0 : `future-trip-delete-${index}`;
+}
+
+export function getSavedSnapshotPlanTestId(index: number): string {
+  return index === 0 ? testIds.account.savedPlan0 : `saved-plan-${index}`;
 }
 
 export function getDestinationTasteTagTestId(index: number): string {

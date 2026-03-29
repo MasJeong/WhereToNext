@@ -30,6 +30,7 @@ export const evidenceSourceTypeValues = [
 export const freshnessStateValues = ["fresh", "aging", "stale"] as const;
 export const snapshotKindValues = ["recommendation", "comparison"] as const;
 export const snapshotVisibilityValues = ["public", "private"] as const;
+export const snapshotStatusValues = ["saved", "planned"] as const;
 export const explorationPreferenceValues = ["repeat", "balanced", "discover"] as const;
 
 export const destinationKindSchema = z.enum(destinationKindValues);
@@ -45,6 +46,7 @@ export const evidenceSourceTypeSchema = z.enum(evidenceSourceTypeValues);
 export const freshnessStateSchema = z.enum(freshnessStateValues);
 export const snapshotKindSchema = z.enum(snapshotKindValues);
 export const snapshotVisibilitySchema = z.enum(snapshotVisibilityValues);
+export const snapshotStatusSchema = z.enum(snapshotStatusValues);
 export const explorationPreferenceSchema = z.enum(explorationPreferenceValues);
 
 export const scoringWeightsSchema = z.object({
@@ -236,6 +238,10 @@ export const socialVideoResponseSchema = z.discriminatedUnion("status", [
   }),
 ]);
 
+export const recommendationSnapshotMetaSchema = z.object({
+  status: snapshotStatusSchema.default("saved"),
+});
+
 export const recommendationSnapshotSchema = z.object({
   v: z.literal(1),
   kind: z.literal("recommendation"),
@@ -244,6 +250,7 @@ export const recommendationSnapshotSchema = z.object({
   results: z.array(recommendationResultSchema).min(1),
   scoringVersionId: z.string().min(1),
   trendSnapshotIds: z.array(z.string().min(1)),
+  meta: recommendationSnapshotMetaSchema.optional(),
 });
 
 export const comparisonSnapshotSchema = z.object({
@@ -328,6 +335,7 @@ export type ScoringVersion = z.infer<typeof scoringVersionSchema>;
 export type EvidenceTier = z.infer<typeof evidenceTierSchema>;
 export type EvidenceSourceType = z.infer<typeof evidenceSourceTypeSchema>;
 export type SnapshotVisibility = z.infer<typeof snapshotVisibilitySchema>;
+export type SnapshotStatus = z.infer<typeof snapshotStatusSchema>;
 export type ExplorationPreference = z.infer<typeof explorationPreferenceSchema>;
 export type UserPreferenceProfile = z.infer<typeof userPreferenceProfileSchema>;
 export type UserPreferenceProfileUpdate = z.infer<typeof userPreferenceProfileUpdateSchema>;

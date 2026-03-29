@@ -5,6 +5,7 @@ import {
   comparisonSnapshotSchema,
   recommendationQuerySchema,
   recommendationSnapshotSchema,
+  snapshotStatusSchema,
   snapshotVisibilitySchema,
   socialVideoRequestSchema,
   userDestinationHistoryInputSchema,
@@ -31,6 +32,10 @@ export const createSnapshotBodySchema = z.discriminatedUnion("kind", [
   createComparisonSnapshotBodySchema,
 ]);
 
+export const updateRecommendationSnapshotBodySchema = z.object({
+  status: snapshotStatusSchema,
+});
+
 export type RecommendationQuery = z.infer<typeof recommendationQuerySchema>;
 export type CreateSnapshotBody = z.infer<typeof createSnapshotBodySchema>;
 export type UserDestinationHistoryInput = z.infer<typeof userDestinationHistoryInputSchema>;
@@ -38,6 +43,7 @@ export type UserFutureTripInput = z.infer<typeof userFutureTripInputSchema>;
 export type UserPreferenceProfileUpdate = z.infer<typeof userPreferenceProfileUpdateSchema>;
 export type SocialVideoRequest = z.infer<typeof socialVideoRequestSchema>;
 export type SocialVideoQuery = z.infer<typeof socialVideoRequestSchema>;
+export type UpdateRecommendationSnapshotBody = z.infer<typeof updateRecommendationSnapshotBodySchema>;
 
 const defaultSocialVideoQuery: RecommendationQuery = {
   partyType: "couple",
@@ -83,6 +89,15 @@ export function parseRecommendationQuery(params: URLSearchParams): Recommendatio
  */
 export function parseCreateSnapshotBody(body: unknown): CreateSnapshotBody {
   return createSnapshotBodySchema.parse(body);
+}
+
+/**
+ * 저장한 추천 상태 변경 요청 바디를 검증한다.
+ * @param body 요청 바디 원문
+ * @returns 검증된 상태 변경 입력
+ */
+export function parseUpdateRecommendationSnapshotBody(body: unknown): UpdateRecommendationSnapshotBody {
+  return updateRecommendationSnapshotBodySchema.parse(body);
 }
 
 /**

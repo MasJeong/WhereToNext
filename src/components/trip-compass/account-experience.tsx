@@ -11,15 +11,14 @@ import type {
   ExplorationPreference,
   RecommendationSnapshot,
   UserDestinationHistory,
-  UserFutureTrip,
   UserPreferenceProfile,
 } from "@/lib/domain/contracts";
 import {
-  getAccountFutureTripDeleteTestId,
   getAccountFutureTripEntryTestId,
   getAccountHistoryDeleteTestId,
   getAccountHistoryEditTestId,
   getAccountHistoryEntryTestId,
+  getSavedSnapshotPlanTestId,
   getSavedSnapshotTestId,
   testIds,
 } from "@/lib/test-ids";
@@ -34,7 +33,6 @@ type AccountExperienceProps = {
   initialTab: AccountTab;
   initialProfile: UserPreferenceProfile;
   initialHistory: UserDestinationHistory[];
-  initialFutureTrips: UserFutureTrip[];
   initialSavedSnapshots: Array<{
     id: string;
     createdAt: string;
@@ -78,14 +76,7 @@ function findDestinationCopy(destinationId: string) {
   return {
     nameKo: destination?.nameKo ?? destinationId,
     nameEn: destination?.nameEn ?? destinationId,
-  };
-}
-
-function findFutureTripCopy(futureTrip: UserFutureTrip) {
-  const destination = launchCatalog.find((item) => item.id === futureTrip.destinationId);
-  return {
-    nameKo: destination?.nameKo ?? futureTrip.destinationNameKo,
-    nameEn: destination?.nameEn ?? futureTrip.destinationId,
+    countryCode: destination?.countryCode ?? "--",
   };
 }
 
@@ -98,23 +89,30 @@ function formatHistoryDate(value: string): string {
   return value.slice(0, 10);
 }
 
+/**
+ * 저장한 추천의 상태를 안전하게 읽는다.
+ * @param payload 저장된 추천 payload
+ * @returns 저장 상태
+ */
+function getSnapshotStatus(payload: RecommendationSnapshot): "saved" | "planned" {
+  return payload.meta?.status ?? "saved";
+}
+
 export function AccountExperience({
   userName,
   initialTab,
   initialProfile,
   initialHistory,
-  initialFutureTrips,
   initialSavedSnapshots,
 }: AccountExperienceProps) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<AccountTab>(initialTab);
   const [profile, setProfile] = useState(initialProfile);
   const [historyEntries, setHistoryEntries] = useState(initialHistory);
-  const [futureTrips, setFutureTrips] = useState(initialFutureTrips);
-  const [savedSnapshots] = useState(initialSavedSnapshots);
+  const [savedSnapshots, setSavedSnapshots] = useState(initialSavedSnapshots);
   const [error, setError] = useState<string | null>(null);
   const [isSavingPreference, setIsSavingPreference] = useState(false);
-  const [deletingFutureTripId, setDeletingFutureTripId] = useState<string | null>(null);
+  const [updatingSnapshotId, setUpdatingSnapshotId] = useState<string | null>(null);
 
   const summary = useMemo(() => {
     const totalRating = historyEntries.reduce((sum, entry) => sum + entry.rating, 0);
@@ -136,6 +134,15 @@ export function AccountExperience({
         .slice(0, 3),
     };
   }, [historyEntries]);
+
+  const plannedSnapshots = useMemo(
+    () => savedSnapshots.filter((snapshot) => getSnapshotStatus(snapshot.payload) === "planned"),
+    [savedSnapshots],
+  );
+  const savedCandidateSnapshots = useMemo(
+    () => savedSnapshots.filter((snapshot) => getSnapshotStatus(snapshot.payload) === "saved"),
+    [savedSnapshots],
+  );
 
   /**
    * 취향 모드를 저장한다.
@@ -189,25 +196,44 @@ export function AccountExperience({
     }
   }
 
-  async function deleteFutureTripEntry(futureTripId: string) {
-    setDeletingFutureTripId(futureTripId);
+  async function updateSnapshotStatus(snapshotId: string, status: "saved" | "planned") {
+    setUpdatingSnapshotId(snapshotId);
     setError(null);
 
     try {
-      const response = await fetch(`/api/me/future-trips/${futureTripId}`, {
-        method: "DELETE",
+      const response = await fetch(`/api/me/snapshots/${snapshotId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
         credentials: "include",
+        body: JSON.stringify({ status }),
       });
 
       if (!response.ok) {
-        throw new Error("future-trip-delete-failed");
+        throw new Error("snapshot-status-update-failed");
       }
 
-      setFutureTrips((currentEntries) => currentEntries.filter((entry) => entry.id !== futureTripId));
+      const payload = (await response.json()) as {
+        snapshot: {
+          id: string;
+          createdAt: string;
+          payload: RecommendationSnapshot;
+        };
+      };
+
+      setSavedSnapshots((currentEntries) =>
+        currentEntries.map((entry) => (
+          entry.id === payload.snapshot.id
+            ? {
+                ...entry,
+                payload: payload.snapshot.payload,
+              }
+            : entry
+        )),
+      );
     } catch {
-      setError("앞으로 갈 곳을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setError("저장 상태를 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.");
     } finally {
-      setDeletingFutureTripId((currentId) => (currentId === futureTripId ? null : currentId));
+      setUpdatingSnapshotId((currentId) => (currentId === snapshotId ? null : currentId));
     }
   }
 
@@ -228,8 +254,8 @@ export function AccountExperience({
     <ExperienceShell
       eyebrow="여행 기록"
       title="다녀온 여행은 짧게 남기고, 저장한 추천은 빠르게 다시 여세요."
-      intro="기록은 리스트로 바로 보고, 새 여행은 별도 step 화면에서 차분하게 남기도록 구조를 다시 정리했어요."
-      capsule="기록 리스트 · 저장한 추천 · 추천 모드"
+      intro="기록은 리스트로 바로 보고, 저장한 추천은 후보와 확정 단계로 나눠 차분하게 이어가도록 정리했어요."
+      capsule="기록 리스트 · 저장한 추천 · 앞으로 갈 곳 · 추천 모드"
       headerAside={
         <div className="compass-sheet rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
           <p className="compass-editorial-kicker">{userName}님의 여행 기록</p>
@@ -477,22 +503,22 @@ export function AccountExperience({
             <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
               <p className="compass-editorial-kicker">앞으로 갈 곳</p>
               <h2 className="mt-1.5 font-display text-[1.12rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.3rem]">
-                다음에 가고 싶은 여행지만 따로 모아 가볍게 정리해 두세요.
+                이번에 실제로 검토할 후보만 따로 올려 두세요.
               </h2>
               <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-                저장한 추천이나 다녀온 기록과 섞지 않고, 앞으로 검토할 목적지만 따로 보여줘요.
+                저장한 추천에서 마음이 굳은 것만 올려 두고, 다시 후보로 내릴 수도 있어요.
               </p>
             </div>
 
             <div data-testid={testIds.account.futureTripList} className="mt-4 grid gap-3">
-              {futureTrips.length > 0 ? (
-                futureTrips.map((futureTrip, index) => {
-                  const destination = findFutureTripCopy(futureTrip);
-                  const isDeleting = deletingFutureTripId === futureTrip.id;
+              {plannedSnapshots.length > 0 ? (
+                plannedSnapshots.map((snapshot, index) => {
+                  const destination = findDestinationCopy(snapshot.payload.destinationIds[0]);
+                  const isUpdating = updatingSnapshotId === snapshot.id;
 
                   return (
                     <article
-                      key={futureTrip.id}
+                      key={snapshot.id}
                       data-testid={getAccountFutureTripEntryTestId(index)}
                       className="compass-sheet rounded-[calc(var(--radius-card)-10px)] px-4 py-4"
                     >
@@ -501,27 +527,26 @@ export function AccountExperience({
                           <div className="flex flex-wrap items-center gap-2">
                             <p className="compass-editorial-kicker">{destination.nameKo}</p>
                             <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold uppercase">
-                              {futureTrip.countryCode}
+                              {destination.countryCode}
                             </span>
                           </div>
                           <p className="mt-1 font-display text-[1rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
                             {destination.nameEn}
                           </p>
                           <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-                            최근 담은 날짜 {formatHistoryDate(futureTrip.updatedAt)} · 다음에 다시 볼 후보만 조용히 모아 둘 수 있어요.
+                            저장일 {formatHistoryDate(snapshot.createdAt)} · 이번에 진지하게 검토할 후보만 위로 올려 두었어요.
                           </p>
                         </div>
 
                         <button
                           type="button"
-                          data-testid={getAccountFutureTripDeleteTestId(index)}
-                          disabled={isDeleting}
+                          disabled={isUpdating}
                           onClick={() => {
-                            void deleteFutureTripEntry(futureTrip.id);
+                            void updateSnapshotStatus(snapshot.id, "saved");
                           }}
                           className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
                         >
-                          {isDeleting ? "삭제 중..." : "삭제"}
+                          {isUpdating ? "정리 중..." : "후보로 돌리기"}
                         </button>
                       </div>
                     </article>
@@ -532,7 +557,7 @@ export function AccountExperience({
                   data-testid={testIds.account.futureTripEmptyState}
                   className="compass-note rounded-[calc(var(--radius-card)-10px)] p-4 text-sm leading-6 text-[var(--color-ink-soft)]"
                 >
-                  아직 앞으로 갈 곳이 없어요. 결과 화면에서 마음에 드는 여행지를 담아 두면 이 탭에서 따로 정리해 볼 수 있어요.
+                  아직 앞으로 갈 곳이 없어요. 저장한 추천에서 마음이 굳은 후보만 이 탭으로 올려 두세요.
                 </div>
               )}
             </div>
@@ -544,14 +569,15 @@ export function AccountExperience({
             <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
               <p className="compass-editorial-kicker">저장한 추천</p>
               <h2 className="mt-1.5 font-display text-[1.12rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.3rem]">
-                따로 저장해 둔 추천만 모아 빠르게 다시 열어보세요.
+                아직 검토 중인 추천만 모아 빠르게 다시 열어보세요.
               </h2>
             </div>
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              {savedSnapshots.length > 0 ? (
-                savedSnapshots.map((snapshot, index) => {
+              {savedCandidateSnapshots.length > 0 ? (
+                savedCandidateSnapshots.map((snapshot, index) => {
                   const destination = findDestinationCopy(snapshot.payload.destinationIds[0]);
+                  const isUpdating = updatingSnapshotId === snapshot.id;
 
                   return (
                     <article
@@ -564,22 +590,33 @@ export function AccountExperience({
                         {destination.nameEn}
                       </p>
                       <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-                        저장일 {formatHistoryDate(snapshot.createdAt)} · 다음에 비교하거나 다시 공유할 때 바로 꺼낼 수 있어요.
+                        저장일 {formatHistoryDate(snapshot.createdAt)} · 다시 보기 전에 앞으로 갈 곳으로 올려 우선 검토할 수 있어요.
                       </p>
-                      <div className="mt-3">
+                      <div className="mt-3 flex flex-wrap gap-2">
                         <Link
                           href={`/s/${snapshot.id}`}
                           className="compass-action-primary compass-soft-press inline-flex rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
                         >
                           다시 보기
                         </Link>
+                        <button
+                          type="button"
+                          data-testid={getSavedSnapshotPlanTestId(index)}
+                          disabled={isUpdating}
+                          onClick={() => {
+                            void updateSnapshotStatus(snapshot.id, "planned");
+                          }}
+                          className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {isUpdating ? "올리는 중..." : "앞으로 갈 곳으로"}
+                        </button>
                       </div>
                     </article>
                   );
                 })
               ) : (
                 <div className="compass-note rounded-[calc(var(--radius-card)-10px)] p-4 text-sm leading-6 text-[var(--color-ink-soft)]">
-                  아직 로그인 후 저장한 추천이 없어요. 결과 화면에서 마음에 드는 추천을 저장하면 이 탭으로 모입니다.
+                  아직 검토 중인 저장 추천이 없어요. 결과 화면에서 저장하거나, 앞으로 갈 곳에 올린 후보를 다시 이 탭으로 내려 둘 수 있어요.
                 </div>
               )}
             </div>

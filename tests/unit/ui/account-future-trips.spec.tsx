@@ -7,14 +7,13 @@ import type {
   RecommendationSnapshot,
   RecommendationQuery,
   UserDestinationHistory,
-  UserFutureTrip,
   UserPreferenceProfile,
 } from "@/lib/domain/contracts";
 import { rankDestinations } from "@/lib/recommendation/engine";
 import {
-  getAccountFutureTripDeleteTestId,
   getAccountFutureTripEntryTestId,
   getAccountHistoryEntryTestId,
+  getSavedSnapshotPlanTestId,
   getSavedSnapshotTestId,
   testIds,
 } from "@/lib/test-ids";
@@ -77,18 +76,7 @@ const historyEntry: UserDestinationHistory = {
   updatedAt: "2026-02-01T00:00:00.000Z",
 };
 
-const futureTripEntry: UserFutureTrip = {
-  id: "future-1",
-  userId: "user-1",
-  destinationId: "osaka",
-  sourceSnapshotId: "11111111-1111-4111-8111-111111111111",
-  destinationNameKo: "오사카",
-  countryCode: "JP",
-  createdAt: "2026-03-01T00:00:00.000Z",
-  updatedAt: "2026-03-02T00:00:00.000Z",
-};
-
-function buildSavedSnapshotPayload(): RecommendationSnapshot {
+function buildSavedSnapshotPayload(status: "saved" | "planned" = "saved"): RecommendationSnapshot {
   const query: RecommendationQuery = {
     partyType: "couple",
     partySize: 2,
@@ -114,23 +102,34 @@ function buildSavedSnapshotPayload(): RecommendationSnapshot {
     results: [result],
     scoringVersionId: "mvp-v1",
     trendSnapshotIds: result.trendEvidence.map((item) => item.id),
+    meta: {
+      status,
+    },
   };
 }
 
-function renderAccountExperience(options?: { futureTrips?: UserFutureTrip[] }) {
+function renderAccountExperience(options?: { plannedSnapshots?: number }) {
   return render(
     <AccountExperience
       userName="테스트 사용자"
       initialTab="future-trips"
       initialProfile={profile}
       initialHistory={[historyEntry]}
-      initialFutureTrips={options?.futureTrips ?? [futureTripEntry]}
       initialSavedSnapshots={[
         {
           id: "saved-1",
           createdAt: "2026-03-03T00:00:00.000Z",
           payload: buildSavedSnapshotPayload(),
         },
+        ...(options?.plannedSnapshots === 0
+          ? []
+          : [
+              {
+                id: "saved-2",
+                createdAt: "2026-03-04T00:00:00.000Z",
+                payload: buildSavedSnapshotPayload("planned"),
+              },
+            ]),
       ]}
     />,
   );
@@ -145,7 +144,7 @@ describe("AccountExperience future trips tab", () => {
   });
 
   it("renders a dedicated empty state when no future trips are loaded", () => {
-    renderAccountExperience({ futureTrips: [] });
+    renderAccountExperience({ plannedSnapshots: 0 });
 
     expect(screen.getByTestId(testIds.account.tabFutureTrips)).toBeInTheDocument();
     expect(screen.getByTestId(testIds.account.futureTripList)).toBeInTheDocument();
@@ -155,9 +154,15 @@ describe("AccountExperience future trips tab", () => {
     expect(screen.queryByTestId(getAccountFutureTripEntryTestId(0))).not.toBeInTheDocument();
   });
 
-  it("deletes only future trips and preserves history plus saved snapshot state", async () => {
+  it("moves a planned snapshot back to saved and preserves history", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ ok: true }), {
+      new Response(JSON.stringify({
+        snapshot: {
+          id: "saved-2",
+          createdAt: "2026-03-04T00:00:00.000Z",
+          payload: buildSavedSnapshotPayload("saved"),
+        },
+      }), {
         status: 200,
         headers: { "content-type": "application/json" },
       }),
@@ -165,14 +170,16 @@ describe("AccountExperience future trips tab", () => {
 
     renderAccountExperience();
 
-    expect(screen.getByTestId(getAccountFutureTripEntryTestId(0))).toHaveTextContent("오사카");
+    expect(screen.getByTestId(getAccountFutureTripEntryTestId(0))).toHaveTextContent("리스본");
 
-    fireEvent.click(screen.getByTestId(getAccountFutureTripDeleteTestId(0)));
+    fireEvent.click(screen.getByRole("button", { name: "후보로 돌리기" }));
 
     await waitFor(() => {
-      expect(fetchSpy).toHaveBeenCalledWith("/api/me/future-trips/future-1", {
-        method: "DELETE",
+      expect(fetchSpy).toHaveBeenCalledWith("/api/me/snapshots/saved-2", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
         credentials: "include",
+        body: JSON.stringify({ status: "saved" }),
       });
     });
 
@@ -187,5 +194,51 @@ describe("AccountExperience future trips tab", () => {
 
     fireEvent.click(screen.getByTestId(testIds.account.tabSaved));
     expect(screen.getByTestId(getSavedSnapshotTestId(0))).toHaveTextContent("리스본");
+    expect(screen.getByTestId(getSavedSnapshotTestId(1))).toHaveTextContent("리스본");
+  });
+
+  it("promotes a saved snapshot into the planned list", async () => {
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
+      new Response(JSON.stringify({
+        snapshot: {
+          id: "saved-1",
+          createdAt: "2026-03-03T00:00:00.000Z",
+          payload: buildSavedSnapshotPayload("planned"),
+        },
+      }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    render(
+      <AccountExperience
+        userName="테스트 사용자"
+        initialTab="saved"
+        initialProfile={profile}
+        initialHistory={[historyEntry]}
+        initialSavedSnapshots={[
+          {
+            id: "saved-1",
+            createdAt: "2026-03-03T00:00:00.000Z",
+            payload: buildSavedSnapshotPayload("saved"),
+          },
+        ]}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId(getSavedSnapshotPlanTestId(0)));
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledWith("/api/me/snapshots/saved-1", {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status: "planned" }),
+      });
+    });
+
+    fireEvent.click(screen.getByTestId(testIds.account.tabFutureTrips));
+    expect(screen.getByTestId(getAccountFutureTripEntryTestId(0))).toBeInTheDocument();
   });
 });

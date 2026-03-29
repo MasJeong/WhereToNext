@@ -7,6 +7,7 @@ vi.mock("@/lib/auth-session", () => ({
 }));
 
 import { GET as getSnapshot } from "@/app/api/me/snapshots/[snapshotId]/route";
+import { PATCH as patchSnapshot } from "@/app/api/me/snapshots/[snapshotId]/route";
 import { GET as listSnapshots } from "@/app/api/me/snapshots/route";
 import type { RecommendationQuery } from "@/lib/domain/contracts";
 import { rankDestinations } from "@/lib/recommendation/engine";
@@ -28,6 +29,9 @@ function buildRecommendationPayload(query: RecommendationQuery) {
     results: [result],
     scoringVersionId: "mvp-v1",
     trendSnapshotIds: result.trendEvidence.map((item) => item.id),
+    meta: {
+      status: "saved" as const,
+    },
   };
 }
 
@@ -44,9 +48,17 @@ describe("me snapshots routes", () => {
     const getResponse = await getSnapshot(new Request("http://localhost:4010/api/me/snapshots/test"), {
       params: Promise.resolve({ snapshotId: "test" }),
     });
+    const patchResponse = await patchSnapshot(new Request("http://localhost:4010/api/me/snapshots/test", {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status: "planned" }),
+    }), {
+      params: Promise.resolve({ snapshotId: "test" }),
+    });
 
     expect(listResponse.status).toBe(401);
     expect(getResponse.status).toBe(401);
+    expect(patchResponse.status).toBe(401);
   });
 
   it("lists and reads only the signed-in user's private recommendation snapshots", async () => {
@@ -107,5 +119,18 @@ describe("me snapshots routes", () => {
     expect(getResponse.status).toBe(200);
     expect(getPayload.snapshot.id).toBe(owned.id);
     expect(getPayload.snapshot.visibility).toBe("private");
+
+    const patchResponse = await patchSnapshot(new Request(`http://localhost:4010/api/me/snapshots/${owned.id}`, {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ status: "planned" }),
+    }), {
+      params: Promise.resolve({ snapshotId: owned.id }),
+    });
+    const patchPayload = await patchResponse.json();
+
+    expect(patchResponse.status).toBe(200);
+    expect(patchPayload.snapshot.id).toBe(owned.id);
+    expect(patchPayload.snapshot.payload.meta.status).toBe("planned");
   });
 });
