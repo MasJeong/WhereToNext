@@ -206,6 +206,17 @@ function formatViewCountLabel(viewCount: number | undefined) {
   return `조회수 ${viewCount}`;
 }
 
+function decodeHtmlEntities(value: string) {
+  return value
+    .replace(/&#(\d+);/g, (_, codePoint) => String.fromCodePoint(Number.parseInt(codePoint, 10)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, codePoint) => String.fromCodePoint(Number.parseInt(codePoint, 16)))
+    .replace(/&amp;/g, "&")
+    .replace(/&quot;/g, "\"")
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">");
+}
+
 /**
  * 하나의 영상 슬롯을 메인 또는 서브 카드로 렌더한다.
  * @param props 영상 슬롯 정보
@@ -221,6 +232,8 @@ function SocialVideoSlot({
   fallbackNote,
 }: SocialVideoSlotProps) {
   const mainViewCountLabel = isMain ? formatViewCountLabel(item?.viewCount) : null;
+  const resolvedTitle = item ? decodeHtmlEntities(item.title) : "";
+  const resolvedChannelTitle = item ? decodeHtmlEntities(item.channelTitle) : "";
 
   if (!item) {
     return (
@@ -297,7 +310,7 @@ function SocialVideoSlot({
         target="_blank"
         rel="noreferrer"
         className="group block"
-        aria-label={`${item.title} YouTube에서 열기`}
+        aria-label={`${resolvedTitle} YouTube에서 열기`}
       >
         <div
           className={[
@@ -308,7 +321,7 @@ function SocialVideoSlot({
           <Image
             data-testid={isMain ? testIds.socialVideo.thumbnail : undefined}
             src={item.thumbnailUrl}
-            alt={`${item.title} 썸네일`}
+            alt={`${resolvedTitle} 썸네일`}
             fill
             unoptimized
             sizes={isMain ? "(max-width: 1280px) 100vw, 46rem" : "(max-width: 640px) 100vw, 22rem"}
@@ -337,10 +350,10 @@ function SocialVideoSlot({
                   isMain ? "line-clamp-2 text-[1rem] sm:text-[1.12rem]" : "line-clamp-2 text-[0.94rem]",
                 ].join(" ")}
               >
-                {item.title}
+                {resolvedTitle}
               </h3>
               <p className="mt-1.5 text-xs leading-5 text-white/78">
-                {item.channelTitle}
+                {resolvedChannelTitle}
                 {" · "}
                 {formatPublishedLabel(item.publishedAt)}
                 {item.durationSeconds ? ` · ${formatDurationLabel(item.durationSeconds)}` : ""}
@@ -481,7 +494,7 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
     return () => {
       controller.abort();
     };
-  }, [requestKey]);
+  }, [destinationName, requestKey]);
 
   const isCurrentRequest = state.requestKey === requestKey;
   const items = isCurrentRequest ? state.items : [];

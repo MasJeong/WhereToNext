@@ -281,6 +281,13 @@ function scrollToElementById(elementId: string, behavior: ScrollBehavior = getMo
   });
 }
 
+function scrollToPageTop(behavior: ScrollBehavior = "auto") {
+  window.scrollTo({
+    top: 0,
+    behavior,
+  });
+}
+
 function SavedSnapshotCompactItem({
   snapshot,
   index,
@@ -1041,7 +1048,7 @@ export function HomeExperience() {
       setResultSort("fit");
       setShowAllResults(false);
       requestAnimationFrame(() => {
-        scrollToElementById("home-results-anchor", "auto");
+        scrollToPageTop("auto");
       });
     } catch {
       if (activeRecommendationRequestRef.current !== requestId) {
@@ -1052,7 +1059,7 @@ export function HomeExperience() {
       setCards([]);
       setSubmitError("지금은 추천 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
       requestAnimationFrame(() => {
-        scrollToElementById("home-results-anchor", "auto");
+        scrollToPageTop("auto");
       });
     } finally {
       if (activeRecommendationRequestRef.current === requestId) {

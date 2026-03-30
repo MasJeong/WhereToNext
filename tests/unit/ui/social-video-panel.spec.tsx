@@ -46,4 +46,53 @@ describe("LeadSocialVideoPanel fallback", () => {
     expect(await screen.findByTestId("social-video-fallback")).toBeInTheDocument();
     expect(screen.getByTestId("social-video-fallback-link-0")).toHaveTextContent("도쿄 여행 브이로그");
   });
+
+  it("renders decoded YouTube text when the API returns html entities", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            status: "ok",
+            item: {
+              provider: "youtube",
+              videoId: "tokyo-amp",
+              title: "Tokyo Food &amp; Night Walk",
+              channelTitle: "Trips &amp; Eats",
+              channelUrl: "https://www.youtube.com/channel/trips-and-eats",
+              videoUrl: "https://www.youtube.com/watch?v=tokyo-amp",
+              thumbnailUrl: "https://img.youtube.com/vi/tokyo-amp/hqdefault.jpg",
+              publishedAt: "2026-03-28T00:00:00.000Z",
+              durationSeconds: 65,
+            },
+            items: [
+              {
+                provider: "youtube",
+                videoId: "tokyo-amp",
+                title: "Tokyo Food &amp; Night Walk",
+                channelTitle: "Trips &amp; Eats",
+                channelUrl: "https://www.youtube.com/channel/trips-and-eats",
+                videoUrl: "https://www.youtube.com/watch?v=tokyo-amp",
+                thumbnailUrl: "https://img.youtube.com/vi/tokyo-amp/hqdefault.jpg",
+                publishedAt: "2026-03-28T00:00:00.000Z",
+                durationSeconds: 65,
+              },
+            ],
+          }),
+        ),
+      ),
+    );
+
+    render(
+      <LeadSocialVideoPanel
+        destinationId="tokyo"
+        destinationName="도쿄"
+        leadReason="먹고 걷는 일정과 잘 맞아요"
+        query={defaultRecommendationQuery}
+      />,
+    );
+
+    expect(await screen.findByText("Tokyo Food & Night Walk")).toBeInTheDocument();
+    expect(screen.getByText(/Trips & Eats/)).toBeInTheDocument();
+  });
 });
