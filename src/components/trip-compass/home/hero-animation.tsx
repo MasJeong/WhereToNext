@@ -1,57 +1,129 @@
-import { motion, useReducedMotion } from "framer-motion";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { useCallback, useEffect, useState } from "react";
 
 type HeroAnimationProps = {
   testId: string;
 };
 
+const destinations = [
+  { name: "시드니", nameEn: "Sydney", country: "호주", image: "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=800&q=80" },
+  { name: "도쿄", nameEn: "Tokyo", country: "일본", image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80" },
+  { name: "파리", nameEn: "Paris", country: "프랑스", image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80" },
+  { name: "발리", nameEn: "Bali", country: "인도네시아", image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80" },
+  { name: "바르셀로나", nameEn: "Barcelona", country: "스페인", image: "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=800&q=80" },
+];
+
+const blurredPreviews = [
+  { rank: 1, label: "1순위 추천", score: "95", tags: ["#휴양", "#맛집"] },
+  { rank: 2, label: "2순위 추천", score: "89", tags: ["#도시", "#쇼핑"] },
+  { rank: 3, label: "3순위 추천", score: "84", tags: ["#문화", "#자연"] },
+];
+
 export function HeroAnimation({ testId }: HeroAnimationProps) {
   const prefersReducedMotion = useReducedMotion();
+  const [current, setCurrent] = useState(0);
+
+  const advance = useCallback(() => {
+    setCurrent((prev) => (prev + 1) % destinations.length);
+  }, []);
+
+  useEffect(() => {
+    if (prefersReducedMotion) return;
+    const timer = setInterval(advance, 4000);
+    return () => clearInterval(timer);
+  }, [advance, prefersReducedMotion]);
+
+  const dest = destinations[current];
 
   return (
-    <motion.div
-      data-testid={testId}
-      className="relative aspect-[4/3] w-full max-w-md overflow-hidden rounded-[1.5rem] bg-[linear-gradient(180deg,rgb(255_255_255),rgb(249_252_255))]"
-      aria-hidden="true"
-      initial={prefersReducedMotion ? false : { opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.28, ease: "easeOut" }}
-    >
-      <div className="absolute inset-x-0 top-0 h-[50%] bg-[linear-gradient(180deg,var(--color-funnel-accent-soft),var(--color-funnel-accent-subtle))]" />
-      <div className="absolute inset-x-0 bottom-0 h-[34%] bg-white" />
-      <div className="absolute left-6 top-6 h-20 w-20 rounded-full bg-[radial-gradient(circle,_rgb(74_180_255_/_0.26),_transparent_68%)] blur-md" />
-      <div className="absolute left-1/2 top-[21%] h-16 w-16 -translate-x-1/2 rounded-full border border-[color:rgb(74_180_255_/_0.34)] bg-[linear-gradient(180deg,rgb(255_255_255_/_0.96),rgb(238_247_255_/_0.94))] shadow-[0_10px_24px_rgb(74_180_255_/_0.16)]" />
-      <div className="absolute inset-x-10 top-[46%] h-px bg-[linear-gradient(90deg,transparent,rgb(74_180_255_/_0.6),transparent)]" />
+    <div data-testid={testId} className="w-full max-w-xl space-y-5">
+      {/* Destination photo showcase */}
+      <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[1.5rem] bg-[var(--color-funnel-muted)] shadow-[var(--shadow-card)]">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={dest.nameEn}
+            className="absolute inset-0"
+            initial={prefersReducedMotion ? false : { opacity: 0, scale: 1.04 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={prefersReducedMotion ? undefined : { opacity: 0 }}
+            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.8, ease: "easeInOut" }}
+          >
+            <img
+              src={dest.image}
+              alt={`${dest.name} 여행 풍경`}
+              className="h-full w-full object-cover"
+              loading="eager"
+              decoding="async"
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
+          </motion.div>
+        </AnimatePresence>
 
-      <div className="absolute inset-x-6 bottom-16 flex items-end justify-between">
-        <span className="h-16 w-10 rounded-t-[1rem] bg-[linear-gradient(180deg,var(--color-funnel-accent-muted),var(--color-funnel-accent-soft))]" />
-        <span className="h-24 w-12 rounded-t-[1rem] bg-[linear-gradient(180deg,var(--color-action-primary),var(--color-sand-deep))]" />
-        <span className="h-14 w-10 rounded-t-[0.9rem] bg-[var(--color-funnel-accent-soft)]" />
-        <span className="h-20 w-11 rounded-t-[1rem] bg-[linear-gradient(180deg,var(--color-sand-deep),#0f4ea6)]" />
-        <span className="h-12 w-9 rounded-t-[0.8rem] bg-[linear-gradient(180deg,var(--color-funnel-accent-muted),#93d4ff)]" />
+        {/* Destination label */}
+        <div className="absolute bottom-4 left-5 right-5 flex items-end justify-between">
+          <div>
+            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-white/70">
+              {dest.country}
+            </p>
+            <p className="text-[1.6rem] font-semibold leading-tight tracking-[-0.04em] text-white drop-shadow-sm sm:text-[2rem]">
+              {dest.name}
+            </p>
+          </div>
+          <div className="flex gap-1.5">
+            {destinations.map((_, i) => (
+              <button
+                type="button"
+                key={destinations[i].nameEn}
+                onClick={() => setCurrent(i)}
+                aria-label={`${destinations[i].name} 보기`}
+                className={`h-1.5 rounded-full transition-all duration-300 ${
+                  i === current
+                    ? "w-6 bg-white"
+                    : "w-1.5 bg-white/40 hover:bg-white/60"
+                }`}
+              />
+            ))}
+          </div>
+        </div>
       </div>
 
-      <motion.div
-        className="home-funnel-hero-orbit absolute bottom-20 left-10 h-16 w-16 rounded-full border-2 border-[color:var(--color-action-primary)]"
-        animate={prefersReducedMotion ? undefined : { rotate: 360 }}
-        transition={{ duration: 7, repeat: Infinity, ease: "linear" }}
-      />
-      <motion.div
-        className="home-funnel-hero-orbit absolute bottom-16 left-14 h-4 w-4 rounded-full bg-[var(--color-action-primary)] shadow-[0_0_0_6px_rgb(74_180_255_/_0.16)]"
-        animate={prefersReducedMotion ? undefined : { y: [0, -4, 0] }}
-        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-      />
-
-      <motion.div
-        className="home-funnel-hero-traveler absolute bottom-10 right-16"
-        animate={prefersReducedMotion ? undefined : { y: [0, -5, 0] }}
-        transition={{ duration: 2.2, repeat: Infinity, ease: "easeInOut" }}
-      >
-        <span className="absolute bottom-10 left-3 h-5 w-5 rounded-full bg-[var(--color-funnel-text)]" />
-        <span className="absolute bottom-2 left-4 h-10 w-4 rounded-full bg-[linear-gradient(180deg,var(--color-action-primary),var(--color-sand-deep))]" />
-        <span className="absolute bottom-0 left-2 h-7 w-[0.32rem] rounded-full bg-[var(--color-funnel-text)]" />
-        <span className="absolute bottom-0 left-7 h-7 w-[0.32rem] rounded-full bg-[var(--color-funnel-text)]" />
-        <span className="absolute bottom-7 -left-1 h-4 w-4 rounded-[0.7rem] border border-[color:var(--color-action-primary)] bg-[var(--color-paper-soft)]" />
-      </motion.div>
-    </motion.div>
+      {/* Blurred preview cards — value sneak peek */}
+      <div className="relative">
+        <div className="grid grid-cols-3 gap-2">
+          {blurredPreviews.map((preview) => (
+            <div
+              key={preview.rank}
+              className="relative overflow-hidden rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white px-3 py-3"
+            >
+              <div className="select-none blur-[6px]">
+                <p className="text-[1.3rem] font-bold tracking-[-0.04em] text-[var(--color-funnel-text)]">
+                  ████
+                </p>
+                <p className="mt-1 text-[0.7rem] font-semibold text-[var(--color-action-primary)]">
+                  {preview.score}점
+                </p>
+                <div className="mt-1.5 flex gap-1">
+                  {preview.tags.map((tag) => (
+                    <span key={tag} className="text-[0.6rem] text-[var(--color-funnel-text-soft)]">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              </div>
+              {/* Rank badge — visible through blur */}
+              <div className="absolute left-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-action-primary)] text-[0.6rem] font-bold text-white">
+                {preview.rank}
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Overlay prompt */}
+        <div className="absolute inset-0 flex items-center justify-center">
+          <p className="rounded-full bg-white/90 px-4 py-1.5 text-[0.75rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)] shadow-sm backdrop-blur-sm">
+            질문에 답하면 내 여행지가 보여요
+          </p>
+        </div>
+      </div>
+    </div>
   );
 }
