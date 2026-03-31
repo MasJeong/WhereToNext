@@ -12,6 +12,7 @@ describe("oauth transaction", () => {
       provider: "google",
       next: "/auth?intent=save",
       intent: "save",
+      clientType: "ios-shell",
     });
 
     expect(created.codeChallenge).toBe(createPkceCodeChallenge(created.codeVerifier));
@@ -23,6 +24,7 @@ describe("oauth transaction", () => {
 
     expect(consumed.state).toBe(created.state);
     expect(consumed.next).toBe("/auth?intent=save");
+    expect(consumed.clientType).toBe("ios-shell");
 
     await expect(
       consumeOAuthTransaction({

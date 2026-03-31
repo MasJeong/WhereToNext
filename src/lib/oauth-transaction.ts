@@ -21,6 +21,7 @@ export type OAuthTransactionRecord = {
   provider: OAuthProviderId;
   next: string;
   intent: OAuthIntent;
+  clientType?: "web" | "ios-shell";
   expiresAt: string;
 };
 
@@ -106,6 +107,7 @@ export async function createOAuthTransaction(input: {
   provider: OAuthProviderId;
   next: string;
   intent: OAuthIntent;
+  clientType?: "web" | "ios-shell";
 }): Promise<OAuthTransactionRecord & { codeChallenge: string }> {
   const codeVerifier = randomBytes(32).toString("base64url");
   const record: OAuthTransactionRecord = {
@@ -115,6 +117,7 @@ export async function createOAuthTransaction(input: {
     provider: input.provider,
     next: assertRelativeNext(input.next),
     intent: input.intent,
+    clientType: input.clientType,
     expiresAt: new Date(Date.now() + OAUTH_TRANSACTION_TTL_MS).toISOString(),
   };
 
