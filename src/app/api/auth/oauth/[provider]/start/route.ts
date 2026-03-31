@@ -6,6 +6,7 @@ import {
   type OAuthProviderId,
   createOAuthTransaction,
 } from "@/lib/oauth-transaction";
+import { isTrustedIosShellRequest } from "@/lib/runtime/shell";
 
 function parseProvider(provider: string): OAuthProviderId | null {
   return provider === "google" || provider === "kakao" || provider === "apple" ? provider : null;
@@ -27,10 +28,12 @@ export async function GET(
   }
 
   const url = new URL(request.url);
+  const allowIosShell = isTrustedIosShellRequest(request);
   const transaction = await createOAuthTransaction({
     provider,
     next: url.searchParams.get("next") ?? "/account",
     intent: parseIntent(url.searchParams.get("intent")),
+    clientType: allowIosShell ? "ios-shell" : "web",
   });
 
   const authorizationUrl = await buildOAuthAuthorizationUrl({

@@ -71,7 +71,7 @@ async function handleCallback(request: Request, provider: OAuthProviderId) {
     redirectUri: `${new URL(request.url).origin}/api/auth/oauth/${provider}/callback`,
   });
 
-  const allowIosShell = isTrustedIosShellRequest(request);
+  const allowIosShell = transaction.clientType === "ios-shell" || isTrustedIosShellRequest(request);
 
   const result = await signInWithProviderIdentity({
     identity,
