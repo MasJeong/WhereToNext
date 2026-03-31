@@ -58,6 +58,9 @@ export const user = pgTable("user", {
 export const session = pgTable("session", {
   id: text("id").primaryKey(),
   expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  clientType: text("client_type"),
+  lastSeenAt: timestamp("last_seen_at", { withTimezone: true }),
+  absoluteExpiresAt: timestamp("absolute_expires_at", { withTimezone: true }),
   token: text("token").notNull().unique(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),

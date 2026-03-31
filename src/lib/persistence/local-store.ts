@@ -23,6 +23,27 @@ export type LocalSnapshotRecord = {
   destinationIds: string[];
 };
 
+export type LocalSessionRecord = {
+  id: string;
+  userId: string;
+  token: string;
+  expiresAt: string;
+  clientType?: "web" | "ios-shell";
+  lastSeenAt?: string;
+  absoluteExpiresAt?: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+};
+
+type SessionLifetimeMetadata = Pick<
+  LocalSessionRecord,
+  "clientType" | "lastSeenAt" | "absoluteExpiresAt"
+>;
+
+export function isLegacyLocalSessionRecord(record: SessionLifetimeMetadata): boolean {
+  return !record.clientType || !record.lastSeenAt || !record.absoluteExpiresAt;
+}
+
 type LocalStoreData = {
   users: Record<string, { id: string; name: string; email: string | null; emailVerified: boolean; image: string | null }>;
   accounts: Record<string, {
@@ -35,7 +56,7 @@ type LocalStoreData = {
     providerEmailVerified: boolean;
     lastLoginAt: string | null;
   }>;
-  sessions: Record<string, { id: string; userId: string; token: string; expiresAt: string; ipAddress: string | null; userAgent: string | null }>;
+  sessions: Record<string, LocalSessionRecord>;
   oauthTransactions: Record<string, { state: string; codeVerifier: string; nonce: string; provider: string; next: string; intent: string; expiresAt: string }>;
   preferences: Record<string, UserPreferenceProfile>;
   history: Record<string, UserDestinationHistory>;
@@ -81,7 +102,16 @@ function normalizeLocalStore(store: Partial<LocalStoreData>): LocalStoreData {
   return {
     users: store.users ?? defaults.users,
     accounts: store.accounts ?? defaults.accounts,
-    sessions: store.sessions ?? defaults.sessions,
+    sessions: Object.fromEntries(
+      Object.entries(store.sessions ?? defaults.sessions).map(([sessionId, session]) => [
+        sessionId,
+        {
+          ...session,
+          ipAddress: session.ipAddress ?? null,
+          userAgent: session.userAgent ?? null,
+        },
+      ]),
+    ) as LocalStoreData["sessions"],
     oauthTransactions: store.oauthTransactions ?? defaults.oauthTransactions,
     preferences: store.preferences ?? defaults.preferences,
     history: store.history ?? defaults.history,

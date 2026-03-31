@@ -18,6 +18,27 @@ type MemorySnapshotRecord = {
   destinationIds: string[];
 };
 
+export type MemorySessionRecord = {
+  id: string;
+  userId: string;
+  token: string;
+  expiresAt: string;
+  clientType?: "web" | "ios-shell";
+  lastSeenAt?: string;
+  absoluteExpiresAt?: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+};
+
+type SessionLifetimeMetadata = Pick<
+  MemorySessionRecord,
+  "clientType" | "lastSeenAt" | "absoluteExpiresAt"
+>;
+
+export function isLegacyMemorySessionRecord(record: SessionLifetimeMetadata): boolean {
+  return !record.clientType || !record.lastSeenAt || !record.absoluteExpiresAt;
+}
+
 declare global {
   var __tripCompassMemoryStore:
     | {
@@ -32,7 +53,7 @@ declare global {
           providerEmailVerified: boolean;
           lastLoginAt: string | null;
         }>;
-        sessions: Map<string, { id: string; userId: string; token: string; expiresAt: string; ipAddress: string | null; userAgent: string | null }>;
+        sessions: Map<string, MemorySessionRecord>;
         oauthTransactions: Map<string, { state: string; codeVerifier: string; nonce: string; provider: string; next: string; intent: string; expiresAt: string }>;
         preferences: Map<string, UserPreferenceProfile>;
         history: Map<string, UserDestinationHistory>;

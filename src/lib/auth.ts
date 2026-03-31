@@ -10,14 +10,13 @@ import { readLocalStore, writeLocalStore } from "@/lib/persistence/local-store";
 import { memoryStore } from "@/lib/persistence/memory-store";
 
 const SESSION_COOKIE_NAME = "trip_compass_session";
+const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 
 export const WEB_IDLE_TTL_SECONDS = 60 * 60 * 24 * 14;
 export const WEB_ABSOLUTE_TTL_SECONDS = 60 * 60 * 24 * 90;
 export const SHELL_IDLE_TTL_SECONDS = 60 * 60 * 24 * 30;
 export const SHELL_ABSOLUTE_TTL_SECONDS = 60 * 60 * 24 * 180;
 
-const WEB_IDLE_TTL_MS = WEB_IDLE_TTL_SECONDS * 1000;
-const SHELL_IDLE_TTL_MS = SHELL_IDLE_TTL_SECONDS * 1000;
 export const CLIENT_TYPES = ["web", "ios-shell"] as const;
 export type ClientType = (typeof CLIENT_TYPES)[number];
 
@@ -52,8 +51,30 @@ export function getSessionPolicyForClientType(clientType: ClientType): SessionPo
   };
 }
 
-function getSessionIdleTtlMsForClientType(clientType: ClientType): number {
-  return clientType === "ios-shell" ? SHELL_IDLE_TTL_MS : WEB_IDLE_TTL_MS;
+type IssuedSessionStamp = Readonly<{
+  clientType: ClientType;
+  lastSeenAt: Date;
+  expiresAt: Date;
+  absoluteExpiresAt: Date;
+}>;
+
+function computeIssuedSessionStamp(input: {
+  now: Date;
+  clientType?: unknown;
+  allowIosShell?: boolean;
+}): IssuedSessionStamp {
+  const issuedClientType = classifyClientTypeForSessionIssuance({
+    clientType: input.clientType,
+    allowIosShell: input.allowIosShell,
+  });
+  const policy = getSessionPolicyForClientType(issuedClientType);
+
+  return {
+    clientType: issuedClientType,
+    lastSeenAt: input.now,
+    expiresAt: new Date(input.now.getTime() + policy.idleTtlSeconds * 1000),
+    absoluteExpiresAt: new Date(input.now.getTime() + policy.absoluteTtlSeconds * 1000),
+  };
 }
 const usePersistentDatabase = Boolean(process.env.DATABASE_URL);
 const useLocalFileStore = !usePersistentDatabase && process.env.NODE_ENV !== "test";
@@ -327,17 +348,11 @@ export function setSessionCookie(
   response: import("next/server").NextResponse,
   token: string,
   request?: Request,
-  options?: {
+  _options?: {
     clientType?: ClientType;
     allowIosShell?: boolean;
   },
 ) {
-  const issuedClientType = classifyClientTypeForSessionIssuance({
-    clientType: options?.clientType,
-    allowIosShell: options?.allowIosShell,
-  });
-  const policy = getSessionPolicyForClientType(issuedClientType);
-
   response.cookies.set({
     name: SESSION_COOKIE_NAME,
     value: token,
@@ -345,7 +360,7 @@ export function setSessionCookie(
     sameSite: "lax",
     secure: shouldUseSecureCookie(request),
     path: "/",
-    maxAge: policy.idleTtlSeconds,
+    maxAge: SESSION_MAX_AGE_SECONDS,
   });
 }
 
@@ -382,7 +397,8 @@ export async function signUpWithEmailPassword(input: {
   const email = input.email.trim().toLowerCase();
   const userId = randomUUID();
   const now = new Date();
-  const issuedClientType = classifyClientTypeForSessionIssuance({
+  const stamp = computeIssuedSessionStamp({
+    now,
     clientType: input.clientType,
     allowIosShell: input.allowIosShell,
   });
@@ -403,9 +419,7 @@ export async function signUpWithEmailPassword(input: {
         };
       }
 
-      const expiresAtIso = new Date(
-        now.getTime() + getSessionIdleTtlMsForClientType(issuedClientType),
-      ).toISOString();
+      const expiresAtIso = stamp.expiresAt.toISOString();
       store.users[userId] = {
         id: userId,
         name: input.name.trim(),
@@ -429,6 +443,9 @@ export async function signUpWithEmailPassword(input: {
         userId,
         token: sessionTokenHash,
         expiresAt: expiresAtIso,
+        clientType: stamp.clientType,
+        lastSeenAt: stamp.lastSeenAt.toISOString(),
+        absoluteExpiresAt: stamp.absoluteExpiresAt.toISOString(),
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
       };
@@ -460,9 +477,7 @@ export async function signUpWithEmailPassword(input: {
       };
     }
 
-    const expiresAtIso = new Date(
-      now.getTime() + getSessionIdleTtlMsForClientType(issuedClientType),
-    ).toISOString();
+    const expiresAtIso = stamp.expiresAt.toISOString();
 
     memoryStore.users.set(userId, {
       id: userId,
@@ -487,6 +502,9 @@ export async function signUpWithEmailPassword(input: {
       userId,
       token: sessionTokenHash,
       expiresAt: expiresAtIso,
+      clientType: stamp.clientType,
+      lastSeenAt: stamp.lastSeenAt.toISOString(),
+      absoluteExpiresAt: stamp.absoluteExpiresAt.toISOString(),
       ipAddress: input.ipAddress ?? null,
       userAgent: input.userAgent ?? null,
     });
@@ -558,12 +576,15 @@ export async function signUpWithEmailPassword(input: {
         updatedAt: now,
       });
 
-      const expiresAt = new Date(now.getTime() + getSessionIdleTtlMsForClientType(issuedClientType));
+      const expiresAt = stamp.expiresAt;
       const [nextSession] = await tx
         .insert(session)
         .values({
           id: sessionId,
           expiresAt,
+          clientType: stamp.clientType,
+          lastSeenAt: stamp.lastSeenAt,
+          absoluteExpiresAt: stamp.absoluteExpiresAt,
           token: sessionTokenHash,
           createdAt: now,
           updatedAt: now,
@@ -608,7 +629,8 @@ export async function signInWithEmailPassword(input: {
 }): Promise<AuthResult & { token?: string }> {
   const email = input.email.trim().toLowerCase();
   const now = new Date();
-  const issuedClientType = classifyClientTypeForSessionIssuance({
+  const stamp = computeIssuedSessionStamp({
+    now,
     clientType: input.clientType,
     allowIosShell: input.allowIosShell,
   });
@@ -631,9 +653,7 @@ export async function signInWithEmailPassword(input: {
         };
       }
 
-      const expiresAtIso = new Date(
-        now.getTime() + getSessionIdleTtlMsForClientType(issuedClientType),
-      ).toISOString();
+      const expiresAtIso = stamp.expiresAt.toISOString();
       const nextSessionId = randomUUID();
       const nextToken = randomBytes(32).toString("hex");
       store.sessions[nextSessionId] = {
@@ -641,6 +661,9 @@ export async function signInWithEmailPassword(input: {
         userId: localUser.id,
         token: hashSessionToken(nextToken),
         expiresAt: expiresAtIso,
+        clientType: stamp.clientType,
+        lastSeenAt: stamp.lastSeenAt.toISOString(),
+        absoluteExpiresAt: stamp.absoluteExpiresAt.toISOString(),
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
       };
@@ -677,9 +700,7 @@ export async function signInWithEmailPassword(input: {
       };
     }
 
-    const expiresAtIso = new Date(
-      now.getTime() + getSessionIdleTtlMsForClientType(issuedClientType),
-    ).toISOString();
+    const expiresAtIso = stamp.expiresAt.toISOString();
     const nextSessionId = randomUUID();
     const nextToken = randomBytes(32).toString("hex");
 
@@ -688,6 +709,9 @@ export async function signInWithEmailPassword(input: {
       userId: memoryUser.id,
       token: hashSessionToken(nextToken),
       expiresAt: expiresAtIso,
+      clientType: stamp.clientType,
+      lastSeenAt: stamp.lastSeenAt.toISOString(),
+      absoluteExpiresAt: stamp.absoluteExpiresAt.toISOString(),
       ipAddress: input.ipAddress ?? null,
       userAgent: input.userAgent ?? null,
     });
@@ -736,12 +760,15 @@ export async function signInWithEmailPassword(input: {
 
   const sessionToken = randomBytes(32).toString("hex");
   const sessionTokenHash = hashSessionToken(sessionToken);
-  const expiresAt = new Date(now.getTime() + getSessionIdleTtlMsForClientType(issuedClientType));
+  const expiresAt = stamp.expiresAt;
   const [createdSession] = await db
     .insert(session)
     .values({
       id: randomUUID(),
       expiresAt,
+      clientType: stamp.clientType,
+      lastSeenAt: stamp.lastSeenAt,
+      absoluteExpiresAt: stamp.absoluteExpiresAt,
       token: sessionTokenHash,
       createdAt: now,
       updatedAt: now,
@@ -812,14 +839,15 @@ export async function rotateSessionForUser(input: {
   await deleteSessionByToken(currentToken);
 
   const now = new Date();
-  const issuedClientType = classifyClientTypeForSessionIssuance({
+  const stamp = computeIssuedSessionStamp({
+    now,
     clientType: input.clientType,
     allowIosShell: input.allowIosShell,
   });
   const sessionId = randomUUID();
   const sessionToken = randomBytes(32).toString("hex");
   const sessionTokenHash = hashSessionToken(sessionToken);
-  const expiresAt = new Date(now.getTime() + getSessionIdleTtlMsForClientType(issuedClientType));
+  const expiresAt = stamp.expiresAt;
 
   if (!usePersistentDatabase) {
     if (useLocalFileStore) {
@@ -829,6 +857,9 @@ export async function rotateSessionForUser(input: {
         userId: input.user.id,
         token: sessionTokenHash,
         expiresAt: expiresAt.toISOString(),
+        clientType: stamp.clientType,
+        lastSeenAt: stamp.lastSeenAt.toISOString(),
+        absoluteExpiresAt: stamp.absoluteExpiresAt.toISOString(),
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
       };
@@ -839,6 +870,9 @@ export async function rotateSessionForUser(input: {
         userId: input.user.id,
         token: sessionTokenHash,
         expiresAt: expiresAt.toISOString(),
+        clientType: stamp.clientType,
+        lastSeenAt: stamp.lastSeenAt.toISOString(),
+        absoluteExpiresAt: stamp.absoluteExpiresAt.toISOString(),
         ipAddress: input.ipAddress ?? null,
         userAgent: input.userAgent ?? null,
       });
@@ -850,6 +884,9 @@ export async function rotateSessionForUser(input: {
       userId: input.user.id,
       token: sessionTokenHash,
       expiresAt,
+      clientType: stamp.clientType,
+      lastSeenAt: stamp.lastSeenAt,
+      absoluteExpiresAt: stamp.absoluteExpiresAt,
       createdAt: now,
       updatedAt: now,
       ipAddress: input.ipAddress ?? null,
