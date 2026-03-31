@@ -49,6 +49,8 @@ export async function signInWithProviderIdentity(input: {
   requestHeaders?: Headers;
   ipAddress?: string | null;
   userAgent?: string | null;
+  clientType?: "web" | "ios-shell";
+  allowIosShell?: boolean;
 }): Promise<ProviderAuthResult> {
   const currentSession = input.requestHeaders
     ? await getSessionFromHeaders(input.requestHeaders)
@@ -94,6 +96,8 @@ export async function signInWithProviderIdentity(input: {
             requestHeaders: input.requestHeaders,
             ipAddress: input.ipAddress,
             userAgent: input.userAgent,
+            clientType: input.clientType,
+            allowIosShell: input.allowIosShell,
           }),
         };
       }
@@ -137,6 +141,8 @@ export async function signInWithProviderIdentity(input: {
           requestHeaders: input.requestHeaders,
           ipAddress: input.ipAddress,
           userAgent: input.userAgent,
+          clientType: input.clientType,
+          allowIosShell: input.allowIosShell,
         }),
       };
     }
@@ -171,6 +177,8 @@ export async function signInWithProviderIdentity(input: {
           requestHeaders: input.requestHeaders,
           ipAddress: input.ipAddress,
           userAgent: input.userAgent,
+          clientType: input.clientType,
+          allowIosShell: input.allowIosShell,
         }),
       };
     }
@@ -212,6 +220,8 @@ export async function signInWithProviderIdentity(input: {
         requestHeaders: input.requestHeaders,
         ipAddress: input.ipAddress,
         userAgent: input.userAgent,
+        clientType: input.clientType,
+        allowIosShell: input.allowIosShell,
       }),
     };
   }
@@ -250,6 +260,8 @@ export async function signInWithProviderIdentity(input: {
         requestHeaders: input.requestHeaders,
         ipAddress: input.ipAddress,
         userAgent: input.userAgent,
+        clientType: input.clientType,
+        allowIosShell: input.allowIosShell,
       }),
     };
   }
@@ -302,6 +314,8 @@ export async function signInWithProviderIdentity(input: {
       requestHeaders: input.requestHeaders,
       ipAddress: input.ipAddress,
       userAgent: input.userAgent,
+      clientType: input.clientType,
+      allowIosShell: input.allowIosShell,
     }),
   };
 }

@@ -4,6 +4,7 @@ import { exchangeOAuthCallback } from "@/lib/oauth-provider-service";
 import { setSessionCookie } from "@/lib/auth";
 import { consumeOAuthTransaction, type OAuthProviderId } from "@/lib/oauth-transaction";
 import { signInWithProviderIdentity } from "@/lib/provider-auth";
+import { isTrustedIosShellRequest } from "@/lib/runtime/shell";
 
 function parseProvider(provider: string): OAuthProviderId | null {
   return provider === "google" || provider === "kakao" || provider === "apple" ? provider : null;
@@ -70,11 +71,15 @@ async function handleCallback(request: Request, provider: OAuthProviderId) {
     redirectUri: `${new URL(request.url).origin}/api/auth/oauth/${provider}/callback`,
   });
 
+  const allowIosShell = isTrustedIosShellRequest(request);
+
   const result = await signInWithProviderIdentity({
     identity,
     requestHeaders: request.headers,
     ipAddress: request.headers.get("x-real-ip"),
     userAgent: request.headers.get("user-agent"),
+    clientType: allowIosShell ? "ios-shell" : undefined,
+    allowIosShell,
   });
 
   if (result.error || !result.data || !result.data.token) {
@@ -82,7 +87,11 @@ async function handleCallback(request: Request, provider: OAuthProviderId) {
   }
 
   const response = NextResponse.redirect(new URL(transaction.next, request.url));
-  setSessionCookie(response, result.data.token, request);
+  setSessionCookie(response, result.data.token, request, {
+    clientType: allowIosShell ? "ios-shell" : "web",
+    allowIosShell,
+    expiresAt: result.data.session.expiresAt,
+  });
   return response;
 }
 
