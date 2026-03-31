@@ -88,9 +88,13 @@ body {
   min-height: 100vh;
   background: transparent;
   color: var(--color-ink);
-  font-family: var(--font-body), sans-serif;
+  font-family: var(--font-ko), var(--font-body), "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif;
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
   overflow-x: clip;
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+  line-height: 1.7;
 }
 
 .compass-app-body {
@@ -942,13 +946,13 @@ textarea:focus-visible {
   border: 1px solid var(--color-action-primary-border);
   background: linear-gradient(180deg, var(--color-action-primary), var(--color-action-primary-strong));
   color: var(--color-action-primary-text);
-  box-shadow: 0 12px 28px rgb(0 127 84 / 0.2);
+  box-shadow: 0 8px 20px rgb(30 136 229 / 0.22);
 }
 
 .compass-action-primary:hover {
   transform: translateY(-2px);
-  background: linear-gradient(180deg, #0ab97a, #00875a);
-  box-shadow: 0 16px 28px rgb(0 127 84 / 0.24);
+  background: linear-gradient(180deg, #2196f3, #0d6fce);
+  box-shadow: 0 12px 28px rgb(30 136 229 / 0.3);
 }
 
 .compass-action-secondary {
@@ -974,7 +978,7 @@ textarea:focus-visible {
 .compass-selection-chip:hover {
   transform: translateY(-2px);
   border-color: var(--color-sand);
-  box-shadow: 0 14px 28px rgb(0 127 84 / 0.12);
+  box-shadow: 0 10px 24px rgb(30 136 229 / 0.12);
 }
 
 .compass-selected {
@@ -1015,10 +1019,9 @@ textarea:focus-visible {
 }
 
 .compass-editorial-kicker {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
 }
 
 .compass-editorial-rule {

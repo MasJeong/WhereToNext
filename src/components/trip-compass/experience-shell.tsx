@@ -81,12 +81,12 @@ export function ExperienceShell({
 
                 <div className="space-y-1.5">
                   {title ? (
-                    <h1 className="font-display text-[1.12rem] leading-[0.98] tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.28rem] lg:text-[1.44rem]">
+                    <h1 className="text-[1.2rem] font-bold leading-snug tracking-[-0.02em] text-[var(--color-ink)] sm:text-[1.36rem] lg:text-[1.5rem]">
                       {title}
                     </h1>
                   ) : null}
                   {intro ? (
-                    <p className="max-w-2xl text-sm leading-6 text-[var(--color-ink-soft)]">{intro}</p>
+                    <p className="max-w-2xl text-[0.88rem] leading-relaxed text-[var(--color-ink-soft)]">{intro}</p>
                   ) : null}
                 </div>
               </div>

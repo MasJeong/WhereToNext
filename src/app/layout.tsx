@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, JetBrains_Mono, Manrope } from "next/font/google";
+import { Cormorant_Garamond, JetBrains_Mono, Manrope, Noto_Sans_KR } from "next/font/google";
 import { brandDisplayName } from "@/lib/brand";
 import "./globals.css";
 
@@ -7,6 +7,12 @@ const bodyFont = Manrope({
   variable: "--font-body",
   subsets: ["latin"],
   weight: ["400", "500", "600", "700", "800"],
+});
+
+const koFont = Noto_Sans_KR({
+  variable: "--font-ko",
+  subsets: ["latin"],
+  weight: ["300", "400", "500", "600", "700"],
 });
 
 const displayFont = Cormorant_Garamond({
@@ -49,7 +55,7 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body
-        className={`${bodyFont.variable} ${displayFont.variable} ${monoFont.variable} compass-app-body antialiased`}
+        className={`${bodyFont.variable} ${koFont.variable} ${displayFont.variable} ${monoFont.variable} compass-app-body antialiased`}
       >
         <div className="compass-app-frame compass-app-shell">
           <div className="compass-route-stage">{children}</div>
