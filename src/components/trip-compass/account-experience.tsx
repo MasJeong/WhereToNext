@@ -18,6 +18,8 @@ import {
   getAccountHistoryDeleteTestId,
   getAccountHistoryEditTestId,
   getAccountHistoryEntryTestId,
+  getAccountHistoryGalleryImageTestId,
+  getAccountHistoryGalleryToggleTestId,
   getSavedSnapshotPlanTestId,
   getSavedSnapshotTestId,
   testIds,
@@ -89,6 +91,10 @@ function formatHistoryDate(value: string): string {
   return value.slice(0, 10);
 }
 
+function getHistoryCoverImage(entry: UserDestinationHistory) {
+  return entry.images[0] ?? null;
+}
+
 /**
  * 저장한 추천의 상태를 안전하게 읽는다.
  * @param payload 저장된 추천 payload
@@ -113,6 +119,7 @@ export function AccountExperience({
   const [error, setError] = useState<string | null>(null);
   const [isSavingPreference, setIsSavingPreference] = useState(false);
   const [updatingSnapshotId, setUpdatingSnapshotId] = useState<string | null>(null);
+  const [openHistoryGalleryId, setOpenHistoryGalleryId] = useState<string | null>(null);
 
   const summary = useMemo(() => {
     const totalRating = historyEntries.reduce((sum, entry) => sum + entry.rating, 0);
@@ -376,6 +383,8 @@ export function AccountExperience({
                 {historyEntries.length > 0 ? (
                   historyEntries.map((entry, index) => {
                     const destination = findDestinationCopy(entry.destinationId);
+                    const coverImage = getHistoryCoverImage(entry);
+                    const isGalleryOpen = openHistoryGalleryId === entry.id;
 
                     return (
                       <article
@@ -385,9 +394,9 @@ export function AccountExperience({
                       >
                         <div className="grid gap-0 sm:grid-cols-[10rem_minmax(0,1fr)]">
                           <div className="relative min-h-[11rem] bg-[linear-gradient(180deg,rgba(17,24,39,0.05),rgba(17,24,39,0.16))]">
-                            {entry.image ? (
+                            {coverImage ? (
                               <Image
-                                src={entry.image.dataUrl}
+                                src={coverImage.dataUrl}
                                 alt={`${destination.nameKo} 기록 사진`}
                                 fill
                                 unoptimized
@@ -401,6 +410,11 @@ export function AccountExperience({
                                 </div>
                               </div>
                             )}
+                            {entry.images.length > 1 ? (
+                              <div className="absolute bottom-3 right-3 rounded-full bg-[rgba(15,23,42,0.78)] px-3 py-1 text-[11px] font-semibold text-white">
+                                +{entry.images.length - 1}
+                              </div>
+                            ) : null}
                           </div>
 
                           <div className="space-y-3 px-4 py-4 sm:px-5">
@@ -415,10 +429,24 @@ export function AccountExperience({
                                 </p>
                               </div>
 
-                              <div className="flex flex-wrap gap-2">
+                            <div className="flex flex-wrap gap-2">
+                              {entry.images.length > 0 ? (
                                 <button
                                   type="button"
-                                  data-testid={getAccountHistoryEditTestId(index)}
+                                  data-testid={getAccountHistoryGalleryToggleTestId(index)}
+                                  onClick={() => {
+                                    setOpenHistoryGalleryId((currentId) =>
+                                      currentId === entry.id ? null : entry.id,
+                                    );
+                                  }}
+                                  className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
+                                >
+                                  {isGalleryOpen ? "사진 닫기" : `사진 ${entry.images.length}장 보기`}
+                                </button>
+                              ) : null}
+                              <button
+                                type="button"
+                                data-testid={getAccountHistoryEditTestId(index)}
                                   onClick={() => {
                                     router.push(`/account/history/${entry.id}/edit`);
                                   }}
@@ -453,6 +481,36 @@ export function AccountExperience({
                             <p className="text-sm leading-6 text-[var(--color-ink-soft)]">
                               {entry.memo?.trim() || "메모 없이도 기록은 저장돼요. 다음에 여행을 다시 떠올릴 때 한 줄씩만 남겨도 충분합니다."}
                             </p>
+
+                            {isGalleryOpen && entry.images.length > 0 ? (
+                              <div className="space-y-3 rounded-[calc(var(--radius-card)-12px)] border border-[color:var(--color-frame-soft)] bg-white/70 p-3">
+                                <div className="flex items-center justify-between gap-3">
+                                  <p className="text-sm font-semibold text-[var(--color-ink)]">여행 사진</p>
+                                  <p className="text-xs text-[var(--color-ink-soft)]">좌우로 넘기며 편하게 볼 수 있어요.</p>
+                                </div>
+                                <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-1">
+                                  {entry.images.map((image, imageIndex) => (
+                                    <div
+                                      key={`${entry.id}-gallery-${imageIndex}`}
+                                      data-testid={getAccountHistoryGalleryImageTestId(imageIndex)}
+                                      className="relative h-52 w-[min(18rem,78vw)] shrink-0 snap-start overflow-hidden rounded-[calc(var(--radius-card)-12px)] bg-[linear-gradient(180deg,rgba(17,24,39,0.04),rgba(17,24,39,0.12))]"
+                                    >
+                                      <Image
+                                        src={image.dataUrl}
+                                        alt={`${destination.nameKo} 기록 사진 ${imageIndex + 1}`}
+                                        fill
+                                        unoptimized
+                                        sizes="(max-width: 640px) 78vw, 18rem"
+                                        className="object-cover"
+                                      />
+                                      <div className="absolute left-3 top-3 rounded-full bg-white/92 px-3 py-1 text-[11px] font-semibold text-[var(--color-ink)]">
+                                        {imageIndex + 1} / {entry.images.length}
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
                           </div>
                         </div>
                       </article>

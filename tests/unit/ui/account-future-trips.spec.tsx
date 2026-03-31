@@ -71,7 +71,7 @@ const historyEntry: UserDestinationHistory = {
   wouldRevisit: true,
   visitedAt: "2026-02-01T00:00:00.000Z",
   memo: "다음에도 밤 산책 코스로 다시 가고 싶어요.",
-  image: null,
+  images: [],
   createdAt: "2026-02-01T00:00:00.000Z",
   updatedAt: "2026-02-01T00:00:00.000Z",
 };

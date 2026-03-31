@@ -5,8 +5,20 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
-import type { UserDestinationHistory, UserDestinationHistoryImage } from "@/lib/domain/contracts";
-import { getAccountHistoryDestinationResultTestId, testIds } from "@/lib/test-ids";
+import {
+  userDestinationHistoryImageContentTypeValues,
+  userDestinationHistoryImageExtensionValues,
+  userDestinationHistoryImageMaxBytes,
+  userDestinationHistoryImageMaxCount,
+  type UserDestinationHistory,
+  type UserDestinationHistoryImage,
+} from "@/lib/domain/contracts";
+import {
+  getAccountHistoryDestinationResultTestId,
+  getAccountHistoryImageRemoveTestId,
+  getAccountHistoryImageThumbTestId,
+  testIds,
+} from "@/lib/test-ids";
 import { formatVibeList } from "@/lib/trip-compass/presentation";
 
 import { ExperienceShell } from "./experience-shell";
@@ -21,7 +33,7 @@ type HistoryDraft = {
   wouldRevisit: boolean;
   visitedAt: string;
   memo: string;
-  image: UserDestinationHistoryImage | null;
+  images: UserDestinationHistoryImage[];
 };
 
 const historySteps: Array<{
@@ -51,8 +63,8 @@ const historySteps: Array<{
   },
   {
     id: "image",
-    title: "사진도 남길까요?",
-    helper: "대표 사진 한 장만 올려도 나중에 기록을 훨씬 빨리 떠올릴 수 있어요.",
+    title: "사진도 함께 남길까요?",
+    helper: "최대 10장까지 가볍게 올릴 수 있어요. 첫 번째 사진이 목록 대표 사진으로 보여요.",
   },
   {
     id: "memo",
@@ -66,6 +78,20 @@ const quickDateChoices = [
   { label: "1주 전", offsetDays: 7 },
   { label: "1달 전", offsetDays: 30 },
 ] as const;
+
+const historyImageAccept = [...userDestinationHistoryImageExtensionValues, ...userDestinationHistoryImageContentTypeValues].join(",");
+
+function isAllowedHistoryImageFile(file: File): boolean {
+  const normalizedName = file.name.trim().toLowerCase();
+  const hasAllowedContentType = userDestinationHistoryImageContentTypeValues.some(
+    (contentType) => contentType === file.type,
+  );
+  const hasAllowedExtension = userDestinationHistoryImageExtensionValues.some((extension) =>
+    normalizedName.endsWith(extension),
+  );
+
+  return hasAllowedContentType && hasAllowedExtension;
+}
 
 /**
  * 오늘 날짜 입력값을 만든다.
@@ -93,12 +119,21 @@ function getRelativeDateValue(offsetDays: number): string {
  */
 function readImageFile(file: File): Promise<UserDestinationHistoryImage> {
   return new Promise((resolve, reject) => {
-    if (!file.type.startsWith("image/")) {
+    if (!isAllowedHistoryImageFile(file)) {
       reject(new Error("IMAGE_TYPE_INVALID"));
       return;
     }
 
-    if (file.size > 2_000_000) {
+    const allowedContentType = userDestinationHistoryImageContentTypeValues.find(
+      (contentType) => contentType === file.type,
+    );
+
+    if (!allowedContentType) {
+      reject(new Error("IMAGE_TYPE_INVALID"));
+      return;
+    }
+
+    if (file.size > userDestinationHistoryImageMaxBytes) {
       reject(new Error("IMAGE_TOO_LARGE"));
       return;
     }
@@ -113,7 +148,7 @@ function readImageFile(file: File): Promise<UserDestinationHistoryImage> {
 
       resolve({
         name: file.name,
-        contentType: file.type,
+        contentType: allowedContentType,
         dataUrl: reader.result,
       });
     };
@@ -134,7 +169,7 @@ function buildHistoryBody(draft: HistoryDraft) {
     wouldRevisit: draft.wouldRevisit,
     visitedAt: new Date(`${draft.visitedAt}T00:00:00.000Z`).toISOString(),
     memo: draft.memo.trim() || null,
-    image: draft.image,
+    images: draft.images,
   };
 }
 
@@ -185,10 +220,11 @@ export function AccountHistoryCreateExperience({
     wouldRevisit: initialEntry?.wouldRevisit ?? false,
     visitedAt: initialEntry ? initialEntry.visitedAt.slice(0, 10) : getTodayValue(),
     memo: initialEntry?.memo ?? "",
-    image: initialEntry?.image ?? null,
+    images: initialEntry?.images ?? [],
   });
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   const currentStep = historySteps[stepIndex];
   const selectedDestination = launchCatalog.find((item) => item.id === draft.destinationId);
@@ -224,7 +260,7 @@ export function AccountHistoryCreateExperience({
     draft.visitedAt,
     `${draft.rating}점`,
     `${draft.tags.length}개 태그`,
-    draft.image ? "사진 있음" : "사진 없음",
+    draft.images.length > 0 ? `사진 ${draft.images.length}장` : "사진 없음",
     draft.memo.trim() ? "메모 있음" : "메모 없음",
   ];
 
@@ -284,25 +320,64 @@ export function AccountHistoryCreateExperience({
    * @param fileList 입력 요소에서 받은 파일 목록
    */
   async function handleImageChange(fileList: FileList | null) {
-    const file = fileList?.[0];
-    if (!file) {
-      setDraft((currentDraft) => ({ ...currentDraft, image: null }));
+    const files = fileList ? Array.from(fileList) : [];
+    if (files.length === 0) {
       return;
     }
 
     setError(null);
 
     try {
-      const image = await readImageFile(file);
-      setDraft((currentDraft) => ({ ...currentDraft, image }));
+      const nextImages = await Promise.all(files.map((file) => readImageFile(file)));
+      setDraft((currentDraft) => {
+        const remainingSlots = Math.max(userDestinationHistoryImageMaxCount - currentDraft.images.length, 0);
+        const appendedImages = nextImages.slice(0, remainingSlots);
+
+        if (appendedImages.length === 0) {
+          setError(`사진은 최대 ${userDestinationHistoryImageMaxCount}장까지 올릴 수 있어요.`);
+          return currentDraft;
+        }
+
+        if (appendedImages.length < nextImages.length) {
+          setError(`사진은 최대 ${userDestinationHistoryImageMaxCount}장까지 올릴 수 있어요.`);
+        }
+
+        const images = [...currentDraft.images, ...appendedImages];
+        setSelectedImageIndex(images.length === appendedImages.length ? 0 : selectedImageIndex);
+
+        return {
+          ...currentDraft,
+          images,
+        };
+      });
     } catch (imageError) {
+      if (imageError instanceof Error && imageError.message === "IMAGE_TYPE_INVALID") {
+        setError("PNG, JPG, WEBP, HEIC/HEIF 사진만 올려 주세요.");
+        return;
+      }
+
       if (imageError instanceof Error && imageError.message === "IMAGE_TOO_LARGE") {
-        setError("이미지는 2MB 이하 파일로 올려 주세요.");
+        setError("사진 한 장은 10MB 이하 파일로 올려 주세요.");
         return;
       }
 
       setError("이미지를 읽지 못했어요. 다른 파일로 다시 시도해 주세요.");
     }
+  }
+
+  function removeImage(index: number) {
+    setDraft((currentDraft) => ({
+      ...currentDraft,
+      images: currentDraft.images.filter((_, imageIndex) => imageIndex !== index),
+    }));
+
+    setSelectedImageIndex((currentIndex) => {
+      if (currentIndex > index) {
+        return currentIndex - 1;
+      }
+
+      return currentIndex === index ? Math.max(currentIndex - 1, 0) : currentIndex;
+    });
   }
 
   /**
@@ -608,29 +683,83 @@ export function AccountHistoryCreateExperience({
             {currentStep.id === "image" ? (
               <div className="space-y-3">
                 <label className="grid gap-2 text-sm text-[var(--color-ink)]">
-                  <span>대표 사진</span>
+                  <span>여행 사진</span>
                   <input
                     data-testid={testIds.account.newHistoryImageInput}
                     type="file"
-                    accept="image/*"
+                    multiple
+                    accept={historyImageAccept}
                     onChange={(event) => {
                       void handleImageChange(event.target.files);
+                      event.target.value = "";
                     }}
                     className="compass-form-field-light rounded-[calc(var(--radius-card)-10px)] px-4 py-3"
                   />
                 </label>
 
-                {draft.image ? (
-                  <div className="relative h-64 overflow-hidden rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame-soft)]">
-                    <Image
-                      data-testid={testIds.account.newHistoryImagePreview}
-                      src={draft.image.dataUrl}
-                      alt="선택한 여행 사진 미리보기"
-                      fill
-                      unoptimized
-                      sizes="100vw"
-                      className="object-cover"
-                    />
+                <div className="compass-note rounded-[calc(var(--radius-card)-10px)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-soft)]">
+                  사진은 최대 {userDestinationHistoryImageMaxCount}장, 한 장당 10MB 이하로 올릴 수 있어요.
+                </div>
+
+                {draft.images.length > 0 ? (
+                  <div className="space-y-3">
+                    <div className="relative h-64 overflow-hidden rounded-[calc(var(--radius-card)-10px)] border border-[color:var(--color-frame-soft)] bg-[linear-gradient(180deg,rgba(17,24,39,0.05),rgba(17,24,39,0.16))]">
+                      <Image
+                        data-testid={testIds.account.newHistoryImagePreview}
+                        src={draft.images[selectedImageIndex]?.dataUrl ?? draft.images[0].dataUrl}
+                        alt={`선택한 여행 사진 ${selectedImageIndex + 1}번 미리보기`}
+                        fill
+                        unoptimized
+                        sizes="100vw"
+                        className="object-cover"
+                      />
+                      <div className="absolute left-3 top-3 rounded-full bg-white/92 px-3 py-1 text-[11px] font-semibold text-[var(--color-ink)]">
+                        {selectedImageIndex + 1} / {draft.images.length}
+                      </div>
+                    </div>
+
+                    <div className="flex gap-3 overflow-x-auto pb-1">
+                      {draft.images.map((image, index) => {
+                        const isSelected = index === selectedImageIndex;
+
+                        return (
+                          <div key={`${image.name}-${index}`} className="relative shrink-0">
+                            <button
+                              type="button"
+                              data-testid={getAccountHistoryImageThumbTestId(index)}
+                              onClick={() => {
+                                setSelectedImageIndex(index);
+                              }}
+                              className={`relative h-20 w-20 overflow-hidden rounded-[calc(var(--radius-card)-14px)] border transition-colors ${
+                                isSelected
+                                  ? "border-[var(--color-brand-primary)]"
+                                  : "border-[color:var(--color-frame-soft)]"
+                              }`}
+                            >
+                              <Image
+                                src={image.dataUrl}
+                                alt={`선택한 여행 사진 ${index + 1}번 썸네일`}
+                                fill
+                                unoptimized
+                                sizes="5rem"
+                                className="object-cover"
+                              />
+                            </button>
+                            <button
+                              type="button"
+                              data-testid={getAccountHistoryImageRemoveTestId(index)}
+                              onClick={() => {
+                                removeImage(index);
+                              }}
+                              className="absolute right-1 top-1 rounded-full bg-white/92 px-2 py-1 text-[11px] font-semibold text-[var(--color-ink)] shadow-sm"
+                              aria-label={`${index + 1}번 사진 삭제`}
+                            >
+                              삭제
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
                   </div>
                 ) : (
                   <div className="compass-note rounded-[calc(var(--radius-card)-10px)] p-4 text-sm leading-6 text-[var(--color-ink-soft)]">

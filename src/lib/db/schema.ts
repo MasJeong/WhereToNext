@@ -190,11 +190,11 @@ export const userDestinationHistory = pgTable("user_destination_history", {
   wouldRevisit: boolean("would_revisit").notNull().default(false),
   visitedAt: timestamp("visited_at", { withTimezone: true }).notNull(),
   memo: text("memo"),
-  image: jsonb("image").$type<{
+  images: jsonb("images").$type<Array<{
     name: string;
     contentType: string;
     dataUrl: string;
-  } | null>(),
+  }>>(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

@@ -289,11 +289,55 @@ export const userPreferenceProfileUpdateSchema = z.object({
   explorationPreference: explorationPreferenceSchema,
 });
 
-export const userDestinationHistoryImageSchema = z.object({
-  name: z.string().min(1).max(120),
-  contentType: z.string().min(1).max(120),
-  dataUrl: z.string().startsWith("data:image/").max(3_000_000),
-});
+export const userDestinationHistoryImageContentTypeValues = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+] as const;
+
+export const userDestinationHistoryImageExtensionValues = [
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".heic",
+  ".heif",
+] as const;
+
+export const userDestinationHistoryImageMaxCount = 10;
+export const userDestinationHistoryImageMaxBytes = 10 * 1024 * 1024;
+const userDestinationHistoryImageMaxDataUrlLength = 14_100_000;
+
+export const userDestinationHistoryImageSchema = z
+  .object({
+    name: z.string().min(1).max(120),
+    contentType: z.enum(userDestinationHistoryImageContentTypeValues),
+    dataUrl: z.string().max(userDestinationHistoryImageMaxDataUrlLength),
+  })
+  .superRefine((value, context) => {
+    const normalizedName = value.name.trim().toLowerCase();
+    const hasAllowedExtension = userDestinationHistoryImageExtensionValues.some((extension) =>
+      normalizedName.endsWith(extension),
+    );
+
+    if (!hasAllowedExtension) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "INVALID_IMAGE_EXTENSION",
+        path: ["name"],
+      });
+    }
+
+    if (!value.dataUrl.startsWith(`data:${value.contentType};base64,`)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "INVALID_IMAGE_DATA_URL",
+        path: ["dataUrl"],
+      });
+    }
+  });
 
 export const userDestinationHistorySchema = z.object({
   id: z.string().uuid(),
@@ -304,7 +348,7 @@ export const userDestinationHistorySchema = z.object({
   wouldRevisit: z.boolean(),
   visitedAt: z.string().datetime(),
   memo: z.string().trim().max(500).nullable().optional(),
-  image: userDestinationHistoryImageSchema.nullable().optional(),
+  images: z.array(userDestinationHistoryImageSchema).max(userDestinationHistoryImageMaxCount),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -316,7 +360,11 @@ export const userDestinationHistoryInputSchema = z.object({
   wouldRevisit: z.boolean(),
   visitedAt: z.string().datetime(),
   memo: z.string().trim().max(500).nullish().transform((value) => value ?? null),
-  image: userDestinationHistoryImageSchema.nullish().transform((value) => value ?? null),
+  images: z
+    .array(userDestinationHistoryImageSchema)
+    .max(userDestinationHistoryImageMaxCount)
+    .nullish()
+    .transform((value) => value ?? []),
 });
 
 export const userFutureTripSchema = z.object({

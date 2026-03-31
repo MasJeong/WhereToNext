@@ -120,12 +120,16 @@ export const testIds = {
     newHistoryStep: "new-history-step",
     newHistoryImageInput: "new-history-image-input",
     newHistoryImagePreview: "new-history-image-preview",
+    newHistoryImageThumb0: "new-history-image-thumb-0",
+    newHistoryImageRemove0: "new-history-image-remove-0",
     newHistoryMemo: "new-history-memo",
     newHistorySubmit: "new-history-submit",
     historyEntry0: "history-entry-0",
     historySave0: "history-save-0",
     historyEdit0: "history-edit-0",
     historyDelete0: "history-delete-0",
+    historyGalleryToggle0: "history-gallery-toggle-0",
+    historyGalleryImage0: "history-gallery-image-0",
     futureTripList: "future-trip-list",
     futureTripEntry0: "future-trip-entry-0",
     futureTripDelete0: "future-trip-delete-0",
@@ -244,6 +248,22 @@ export function getAccountHistoryDestinationResultTestId(index: number): string 
   return index === 0
     ? testIds.account.newHistoryDestinationResult0
     : `new-history-destination-result-${index}`;
+}
+
+export function getAccountHistoryImageThumbTestId(index: number): string {
+  return index === 0 ? testIds.account.newHistoryImageThumb0 : `new-history-image-thumb-${index}`;
+}
+
+export function getAccountHistoryImageRemoveTestId(index: number): string {
+  return index === 0 ? testIds.account.newHistoryImageRemove0 : `new-history-image-remove-${index}`;
+}
+
+export function getAccountHistoryGalleryToggleTestId(index: number): string {
+  return index === 0 ? testIds.account.historyGalleryToggle0 : `history-gallery-toggle-${index}`;
+}
+
+export function getAccountHistoryGalleryImageTestId(index: number): string {
+  return index === 0 ? testIds.account.historyGalleryImage0 : `history-gallery-image-${index}`;
 }
 
 export function getAccountFutureTripEntryTestId(index: number): string {

@@ -9,9 +9,11 @@ import {
   type ExplorationPreference,
   type UserDestinationHistory,
   type UserDestinationHistoryInput,
+  type UserDestinationHistoryImage,
   type UserFutureTrip,
   type UserFutureTripInput,
   type UserPreferenceProfile,
+  userDestinationHistoryImageSchema,
   userFutureTripInputSchema,
   userFutureTripSchema,
 } from "@/lib/domain/contracts";
@@ -50,6 +52,16 @@ function mapUserFutureTripRow(row: {
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   });
+}
+
+function normalizeHistoryImages(
+  images: Array<{ name: string; contentType: string; dataUrl: string }> | null | undefined,
+): UserDestinationHistoryImage[] {
+  if (!images || images.length === 0) {
+    return [];
+  }
+
+  return images.map((image) => userDestinationHistoryImageSchema.parse(image));
 }
 
 async function resolveFutureTripDestinationMeta(
@@ -238,7 +250,7 @@ export async function listUserDestinationHistory(userId: string): Promise<UserDe
     wouldRevisit: row.wouldRevisit,
     visitedAt: row.visitedAt.toISOString(),
     memo: row.memo,
-    image: row.image ?? null,
+    images: normalizeHistoryImages(row.images),
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   }));
@@ -281,7 +293,7 @@ export async function createUserDestinationHistory(
         wouldRevisit: input.wouldRevisit,
         visitedAt: input.visitedAt,
         memo: input.memo ?? null,
-        image: input.image ?? null,
+        images: input.images,
         createdAt: nowIso,
         updatedAt: nowIso,
       } satisfies UserDestinationHistory;
@@ -301,7 +313,7 @@ export async function createUserDestinationHistory(
       wouldRevisit: input.wouldRevisit,
       visitedAt: input.visitedAt,
       memo: input.memo ?? null,
-      image: input.image ?? null,
+      images: input.images,
       createdAt: nowIso,
       updatedAt: nowIso,
     } satisfies UserDestinationHistory;
@@ -321,7 +333,7 @@ export async function createUserDestinationHistory(
       wouldRevisit: input.wouldRevisit,
       visitedAt: new Date(input.visitedAt),
       memo: input.memo ?? null,
-      image: input.image ?? null,
+      images: input.images,
     })
     .returning();
 
@@ -334,7 +346,7 @@ export async function createUserDestinationHistory(
     wouldRevisit: created.wouldRevisit,
     visitedAt: created.visitedAt.toISOString(),
     memo: created.memo,
-    image: created.image ?? null,
+    images: normalizeHistoryImages(created.images),
     createdAt: created.createdAt.toISOString(),
     updatedAt: created.updatedAt.toISOString(),
   };
@@ -368,7 +380,7 @@ export async function updateUserDestinationHistory(
         wouldRevisit: input.wouldRevisit,
         visitedAt: input.visitedAt,
         memo: input.memo ?? null,
-        image: input.image ?? null,
+        images: input.images,
         updatedAt: new Date().toISOString(),
       } satisfies UserDestinationHistory;
 
@@ -390,7 +402,7 @@ export async function updateUserDestinationHistory(
       wouldRevisit: input.wouldRevisit,
       visitedAt: input.visitedAt,
       memo: input.memo ?? null,
-      image: input.image ?? null,
+      images: input.images,
       updatedAt: new Date().toISOString(),
     } satisfies UserDestinationHistory;
 
@@ -408,7 +420,7 @@ export async function updateUserDestinationHistory(
       wouldRevisit: input.wouldRevisit,
       visitedAt: new Date(input.visitedAt),
       memo: input.memo ?? null,
-      image: input.image ?? null,
+      images: input.images,
       updatedAt: new Date(),
     })
     .where(and(eq(userDestinationHistory.id, historyId), eq(userDestinationHistory.userId, userId)))
@@ -427,7 +439,7 @@ export async function updateUserDestinationHistory(
     wouldRevisit: updated.wouldRevisit,
     visitedAt: updated.visitedAt.toISOString(),
     memo: updated.memo,
-    image: updated.image ?? null,
+    images: normalizeHistoryImages(updated.images),
     createdAt: updated.createdAt.toISOString(),
     updatedAt: updated.updatedAt.toISOString(),
   };
