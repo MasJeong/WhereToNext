@@ -51,19 +51,19 @@ const preferenceOptions: Array<{
   {
     value: "repeat",
     label: "반복형",
-    description: "좋았던 여행 감각을 다음 추천에서 더 강하게 이어가요.",
+    description: "좋았던 여행지 위주로 추천해요.",
     testId: testIds.account.preferenceRepeat,
   },
   {
     value: "balanced",
     label: "균형형",
-    description: "익숙한 취향과 새로운 후보를 자연스럽게 섞어 보여줘요.",
+    description: "익숙한 곳과 새로운 곳을 섞어 추천해요.",
     testId: testIds.account.preferenceBalanced,
   },
   {
     value: "discover",
     label: "발견형",
-    description: "이미 다녀온 곳보다 새로운 후보를 조금 더 먼저 보여줘요.",
+    description: "아직 안 가본 곳을 우선 추천해요.",
     testId: testIds.account.preferenceDiscover,
   },
 ];
@@ -119,6 +119,7 @@ export function AccountExperience({
   const [error, setError] = useState<string | null>(null);
   const [isSavingPreference, setIsSavingPreference] = useState(false);
   const [updatingSnapshotId, setUpdatingSnapshotId] = useState<string | null>(null);
+  const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
   const [openHistoryGalleryId, setOpenHistoryGalleryId] = useState<string | null>(null);
 
   const summary = useMemo(() => {
@@ -185,6 +186,7 @@ export function AccountExperience({
    * @param historyId 삭제할 여행 기록 ID
    */
   async function deleteHistoryEntry(historyId: string) {
+    setDeletingHistoryId(historyId);
     setError(null);
 
     try {
@@ -200,6 +202,8 @@ export function AccountExperience({
       setHistoryEntries((currentEntries) => currentEntries.filter((entry) => entry.id !== historyId));
     } catch {
       setError("여행 기록을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setDeletingHistoryId((currentId) => (currentId === historyId ? null : currentId));
     }
   }
 
@@ -253,322 +257,274 @@ export function AccountExperience({
     router.refresh();
   }
 
-  const historyHero = summary.topTags.length > 0
-    ? summary.topTags.map(([tag]) => formatVibeList([tag])).join(" · ")
-    : "아직 기록 전";
+  const tabItems: Array<{ key: AccountTab; label: string; testId: string; count?: number }> = [
+    { key: "history", label: "여행 기록", testId: testIds.account.tabHistory, count: summary.count },
+    { key: "future-trips", label: "예정된 여행", testId: testIds.account.tabFutureTrips, count: plannedSnapshots.length },
+    { key: "saved", label: "저장 목록", testId: testIds.account.tabSaved, count: savedCandidateSnapshots.length },
+    { key: "preferences", label: "추천 설정", testId: testIds.account.tabPreferences },
+  ];
 
   return (
     <ExperienceShell
-      eyebrow="여행 기록"
-      title="다녀온 여행은 짧게 남기고, 저장한 추천은 빠르게 다시 여세요."
-      intro="기록은 리스트로 바로 보고, 저장한 추천은 후보와 확정 단계로 나눠 차분하게 이어가도록 정리했어요."
-      capsule="기록 리스트 · 저장한 추천 · 앞으로 갈 곳 · 추천 모드"
+      eyebrow="내 여행"
+      title={`${userName}님의 여행 관리`}
+      intro="여행 기록을 남기고, 저장한 추천을 비교해 보세요."
+      capsule=""
       headerAside={
-        <div className="compass-sheet rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-          <p className="compass-editorial-kicker">{userName}님의 여행 기록</p>
-          <div className="mt-3 grid gap-2.5 sm:grid-cols-3">
-            <article className="rounded-[calc(var(--radius-card)-14px)] bg-white/70 px-3.5 py-3">
-              <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">남긴 기록</p>
-              <p className="mt-2 text-lg font-semibold text-[var(--color-ink)]">{summary.count}개</p>
-            </article>
-            <article className="rounded-[calc(var(--radius-card)-14px)] bg-white/70 px-3.5 py-3">
-              <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">평균 만족도</p>
-              <p className="mt-2 text-lg font-semibold text-[var(--color-ink)]">{summary.averageRating}</p>
-            </article>
-            <article className="rounded-[calc(var(--radius-card)-14px)] bg-white/70 px-3.5 py-3">
-              <p className="text-[0.68rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">자주 남긴 결</p>
-              <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">{historyHero}</p>
-            </article>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Link
-              href="/account/history/new"
-              data-testid={testIds.account.addHistoryCta}
-              className="compass-action-primary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
-            >
-              기록 추가
-            </Link>
-            <Link
-              href="/"
-              className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
-            >
-              홈으로
-            </Link>
-            <button
-              type="button"
-              onClick={() => {
-                void handleSignOut();
-              }}
-              className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
-            >
-              로그아웃
-            </button>
-          </div>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link
+            href="/account/history/new"
+            data-testid={testIds.account.addHistoryCta}
+            className="compass-action-primary compass-soft-press rounded-full px-5 py-2.5 text-[0.8rem] font-semibold"
+          >
+            기록 추가
+          </Link>
+          <Link
+            href="/"
+            className="compass-action-secondary compass-soft-press rounded-full px-5 py-2.5 text-[0.8rem] font-semibold"
+          >
+            홈으로
+          </Link>
+          <button
+            type="button"
+            onClick={() => {
+              void handleSignOut();
+            }}
+            className="rounded-full px-4 py-2.5 text-[0.8rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)]"
+          >
+            로그아웃
+          </button>
         </div>
       }
     >
-      <div data-testid={testIds.account.root} className="space-y-4">
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            data-testid={testIds.account.tabHistory}
-            onClick={() => setActiveTab("history")}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              activeTab === "history" ? "compass-selected" : "compass-selection-chip"
-            }`}
-          >
-            여행 기록
-          </button>
-          <button
-            type="button"
-            data-testid={testIds.account.tabFutureTrips}
-            onClick={() => setActiveTab("future-trips")}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              activeTab === "future-trips" ? "compass-selected" : "compass-selection-chip"
-            }`}
-          >
-            앞으로 갈 곳
-          </button>
-          <button
-            type="button"
-            data-testid={testIds.account.tabSaved}
-            onClick={() => setActiveTab("saved")}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              activeTab === "saved" ? "compass-selected" : "compass-selection-chip"
-            }`}
-          >
-            저장한 추천
-          </button>
-          <button
-            type="button"
-            data-testid={testIds.account.tabPreferences}
-            onClick={() => setActiveTab("preferences")}
-            className={`rounded-full px-4 py-2 text-sm font-semibold ${
-              activeTab === "preferences" ? "compass-selected" : "compass-selection-chip"
-            }`}
-          >
-            추천 모드
-          </button>
+      <div data-testid={testIds.account.root} className="space-y-6">
+        {/* ── 통계 요약 카드 ── */}
+        <div data-testid={testIds.account.tasteSummary} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div className="rounded-2xl border border-[var(--color-frame-soft)] bg-white/80 px-4 py-4">
+            <p className="text-[0.75rem] font-medium text-[var(--color-ink-soft)]">기록</p>
+            <p className="mt-1.5 text-2xl font-bold tracking-tight text-[var(--color-ink)]">{summary.count}</p>
+          </div>
+          <div className="rounded-2xl border border-[var(--color-frame-soft)] bg-white/80 px-4 py-4">
+            <p className="text-[0.75rem] font-medium text-[var(--color-ink-soft)]">평균 평점</p>
+            <p className="mt-1.5 text-2xl font-bold tracking-tight text-[var(--color-ink)]">{summary.averageRating}</p>
+          </div>
+          <div className="rounded-2xl border border-[var(--color-frame-soft)] bg-white/80 px-4 py-4">
+            <p className="text-[0.75rem] font-medium text-[var(--color-ink-soft)]">재방문 희망</p>
+            <p className="mt-1.5 text-2xl font-bold tracking-tight text-[var(--color-ink)]">{summary.revisitCount}</p>
+          </div>
+          <div className="rounded-2xl border border-[var(--color-frame-soft)] bg-white/80 px-4 py-4">
+            <p className="text-[0.75rem] font-medium text-[var(--color-ink-soft)]">자주 쓴 태그</p>
+            <p className="mt-1.5 text-base font-bold tracking-tight text-[var(--color-ink)]">
+              {summary.topTags.length > 0
+                ? summary.topTags.map(([tag]) => formatVibeList([tag])).join(" · ")
+                : "아직 기록 전"}
+            </p>
+          </div>
         </div>
 
+        {/* ── 탭 네비게이션 ── */}
+        <nav role="tablist" aria-label="계정 탭" className="flex gap-1 overflow-x-auto border-b border-[var(--color-frame-soft)]">
+          {tabItems.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.key}
+              data-testid={tab.testId}
+              onClick={() => setActiveTab(tab.key)}
+              className={`relative shrink-0 cursor-pointer px-4 pb-3 pt-2 text-[0.85rem] font-semibold transition-colors min-h-[44px] ${
+                activeTab === tab.key
+                  ? "text-[var(--color-sand-deep)]"
+                  : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                {tab.label}
+                {tab.count !== undefined ? (
+                  <span className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[0.65rem] font-bold ${
+                    activeTab === tab.key
+                      ? "bg-[var(--color-sand-deep)] text-white"
+                      : "bg-[var(--color-frame-soft)] text-[var(--color-ink-soft)]"
+                  }`}>
+                    {tab.count}
+                  </span>
+                ) : null}
+              </span>
+              {activeTab === tab.key ? (
+                <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-[var(--color-sand-deep)]" />
+              ) : null}
+            </button>
+          ))}
+        </nav>
+
         {error ? (
-          <p className="compass-warning-card rounded-[var(--radius-card)] px-4 py-3.5 text-sm leading-6">
+          <p className="rounded-xl border border-[var(--color-warning-border)] bg-[var(--color-warning-bg)] px-4 py-3 text-sm text-[var(--color-warning-text)]">
             {error}
           </p>
         ) : null}
 
+        {/* ── 여행 기록 탭 ── */}
         {activeTab === "history" ? (
-          <section className="grid gap-4 xl:grid-cols-[minmax(0,0.78fr)_minmax(19rem,0.22fr)]">
-            <article className="compass-desk rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
-              <div className="flex flex-col gap-3 border-b border-[color:var(--color-frame-soft)] pb-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <p className="compass-editorial-kicker">여행 기록 리스트</p>
-                  <h2 className="mt-1.5 font-display text-[1.12rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.3rem]">
-                    남겨 둔 기록을 한 화면에서 빠르게 다시 보세요.
-                  </h2>
-                  <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-                    이미지, 메모, 태그까지 카드 한 장에 묶어 바로 훑을 수 있게 정리했어요.
-                  </p>
-                </div>
+          <section className="space-y-3">
+            {historyEntries.length > 0 ? (
+              historyEntries.map((entry, index) => {
+                const destination = findDestinationCopy(entry.destinationId);
+                const coverImage = getHistoryCoverImage(entry);
+                const isGalleryOpen = openHistoryGalleryId === entry.id;
 
-                <Link
-                  href="/account/history/new"
-                  className="compass-action-primary compass-soft-press inline-flex items-center justify-center rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
-                >
-                  기록 추가
-                </Link>
-              </div>
+                return (
+                  <article
+                    key={entry.id}
+                    data-testid={getAccountHistoryEntryTestId(index)}
+                    className="overflow-hidden rounded-2xl border border-[var(--color-frame-soft)] bg-white transition-shadow hover:shadow-[var(--shadow-card)]"
+                  >
+                    <div className="grid gap-0 sm:grid-cols-[12rem_minmax(0,1fr)]">
+                      <div className="relative min-h-[10rem] bg-gradient-to-b from-slate-50 to-slate-100 sm:min-h-full">
+                        {coverImage ? (
+                          <Image
+                            src={coverImage.dataUrl}
+                            alt={`${destination.nameKo} 기록 사진`}
+                            fill
+                            unoptimized
+                            sizes="(max-width: 640px) 100vw, 12rem"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center">
+                            <span className="text-sm text-[var(--color-ink-soft)]">사진 없음</span>
+                          </div>
+                        )}
+                        {entry.images.length > 1 ? (
+                          <div className="absolute bottom-2.5 right-2.5 rounded-full bg-black/60 px-2.5 py-0.5 text-[0.7rem] font-semibold text-white backdrop-blur-sm">
+                            +{entry.images.length - 1}
+                          </div>
+                        ) : null}
+                      </div>
 
-              <div className="mt-4 grid gap-3">
-                {historyEntries.length > 0 ? (
-                  historyEntries.map((entry, index) => {
-                    const destination = findDestinationCopy(entry.destinationId);
-                    const coverImage = getHistoryCoverImage(entry);
-                    const isGalleryOpen = openHistoryGalleryId === entry.id;
-
-                    return (
-                      <article
-                        key={entry.id}
-                        data-testid={getAccountHistoryEntryTestId(index)}
-                        className="compass-sheet overflow-hidden rounded-[calc(var(--radius-card)-10px)]"
-                      >
-                        <div className="grid gap-0 sm:grid-cols-[10rem_minmax(0,1fr)]">
-                          <div className="relative min-h-[11rem] bg-[linear-gradient(180deg,rgba(17,24,39,0.05),rgba(17,24,39,0.16))]">
-                            {coverImage ? (
-                              <Image
-                                src={coverImage.dataUrl}
-                                alt={`${destination.nameKo} 기록 사진`}
-                                fill
-                                unoptimized
-                                sizes="(max-width: 640px) 100vw, 10rem"
-                                className="object-cover"
-                              />
-                            ) : (
-                              <div className="flex h-full items-end p-4">
-                                <div className="rounded-2xl bg-white/86 px-3 py-2 text-xs font-semibold text-[var(--color-ink-soft)]">
-                                  사진 없음
-                                </div>
-                              </div>
-                            )}
-                            {entry.images.length > 1 ? (
-                              <div className="absolute bottom-3 right-3 rounded-full bg-[rgba(15,23,42,0.78)] px-3 py-1 text-[11px] font-semibold text-white">
-                                +{entry.images.length - 1}
-                              </div>
-                            ) : null}
+                      <div className="space-y-3 px-5 py-4">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div>
+                            <h3 className="text-base font-bold text-[var(--color-ink)]">
+                              {destination.nameKo}
+                              <span className="ml-2 text-sm font-normal text-[var(--color-ink-soft)]">{destination.nameEn}</span>
+                            </h3>
+                            <p className="mt-1 text-[0.82rem] text-[var(--color-ink-soft)]">
+                              {formatHistoryDate(entry.visitedAt)} · {entry.rating}점 · {entry.wouldRevisit ? "다시 가고 싶음" : "새 후보 넓히기"}
+                            </p>
                           </div>
 
-                          <div className="space-y-3 px-4 py-4 sm:px-5">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                              <div>
-                                <p className="compass-editorial-kicker">{destination.nameKo}</p>
-                                <p className="mt-1 font-display text-[1rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
-                                  {destination.nameEn}
-                                </p>
-                                <p className="mt-2 text-sm leading-6 text-[var(--color-ink)]">
-                                  {formatHistoryDate(entry.visitedAt)} · {entry.rating}점 · {entry.wouldRevisit ? "다시 가고 싶음" : "새 후보 넓히기"}
-                                </p>
-                              </div>
-
-                            <div className="flex flex-wrap gap-2">
-                              {entry.images.length > 0 ? (
-                                <button
-                                  type="button"
-                                  data-testid={getAccountHistoryGalleryToggleTestId(index)}
-                                  onClick={() => {
-                                    setOpenHistoryGalleryId((currentId) =>
-                                      currentId === entry.id ? null : entry.id,
-                                    );
-                                  }}
-                                  className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
-                                >
-                                  {isGalleryOpen ? "사진 닫기" : `사진 ${entry.images.length}장 보기`}
-                                </button>
-                              ) : null}
+                          <div className="flex shrink-0 gap-1.5">
+                            {entry.images.length > 0 ? (
                               <button
                                 type="button"
-                                data-testid={getAccountHistoryEditTestId(index)}
-                                  onClick={() => {
-                                    router.push(`/account/history/${entry.id}/edit`);
-                                  }}
-                                  className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
-                                >
-                                  수정
-                                </button>
-                                <button
-                                  type="button"
-                                  data-testid={getAccountHistoryDeleteTestId(index)}
-                                  onClick={() => {
-                                    void deleteHistoryEntry(entry.id);
-                                  }}
-                                  className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
-                                >
-                                  삭제
-                                </button>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-wrap gap-2">
-                              {entry.tags.map((tag) => (
-                                <span
-                                  key={`${entry.id}-${tag}`}
-                                  className="compass-metric-pill rounded-full px-3 py-1 text-xs font-semibold"
-                                >
-                                  #{formatVibeList([tag])}
-                                </span>
-                              ))}
-                            </div>
-
-                            <p className="text-sm leading-6 text-[var(--color-ink-soft)]">
-                              {entry.memo?.trim() || "메모 없이도 기록은 저장돼요. 다음에 여행을 다시 떠올릴 때 한 줄씩만 남겨도 충분합니다."}
-                            </p>
-
-                            {isGalleryOpen && entry.images.length > 0 ? (
-                              <div className="space-y-3 rounded-[calc(var(--radius-card)-12px)] border border-[color:var(--color-frame-soft)] bg-white/70 p-3">
-                                <div className="flex items-center justify-between gap-3">
-                                  <p className="text-sm font-semibold text-[var(--color-ink)]">여행 사진</p>
-                                  <p className="text-xs text-[var(--color-ink-soft)]">좌우로 넘기며 편하게 볼 수 있어요.</p>
-                                </div>
-                                <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-1">
-                                  {entry.images.map((image, imageIndex) => (
-                                    <div
-                                      key={`${entry.id}-gallery-${imageIndex}`}
-                                      data-testid={getAccountHistoryGalleryImageTestId(imageIndex)}
-                                      className="relative h-52 w-[min(18rem,78vw)] shrink-0 snap-start overflow-hidden rounded-[calc(var(--radius-card)-12px)] bg-[linear-gradient(180deg,rgba(17,24,39,0.04),rgba(17,24,39,0.12))]"
-                                    >
-                                      <Image
-                                        src={image.dataUrl}
-                                        alt={`${destination.nameKo} 기록 사진 ${imageIndex + 1}`}
-                                        fill
-                                        unoptimized
-                                        sizes="(max-width: 640px) 78vw, 18rem"
-                                        className="object-cover"
-                                      />
-                                      <div className="absolute left-3 top-3 rounded-full bg-white/92 px-3 py-1 text-[11px] font-semibold text-[var(--color-ink)]">
-                                        {imageIndex + 1} / {entry.images.length}
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
+                                data-testid={getAccountHistoryGalleryToggleTestId(index)}
+                                onClick={() => {
+                                  setOpenHistoryGalleryId((currentId) =>
+                                    currentId === entry.id ? null : entry.id,
+                                  );
+                                }}
+                                className="min-h-[36px] cursor-pointer rounded-lg border border-[var(--color-frame-soft)] px-3 py-1.5 text-[0.78rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-sand)] hover:text-[var(--color-sand-deep)]"
+                              >
+                                {isGalleryOpen ? "닫기" : `사진 ${entry.images.length}`}
+                              </button>
                             ) : null}
+                            <button
+                              type="button"
+                              data-testid={getAccountHistoryEditTestId(index)}
+                              onClick={() => {
+                                router.push(`/account/history/${entry.id}/edit`);
+                              }}
+                              className="min-h-[36px] cursor-pointer rounded-lg border border-[var(--color-frame-soft)] px-3 py-1.5 text-[0.78rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-sand)] hover:text-[var(--color-sand-deep)]"
+                            >
+                              수정
+                            </button>
+                            <button
+                              type="button"
+                              data-testid={getAccountHistoryDeleteTestId(index)}
+                              disabled={deletingHistoryId === entry.id}
+                              onClick={() => {
+                                void deleteHistoryEntry(entry.id);
+                              }}
+                              className="min-h-[36px] cursor-pointer rounded-lg border border-[var(--color-frame-soft)] px-3 py-1.5 text-[0.78rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:border-red-300 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {deletingHistoryId === entry.id ? "삭제 중..." : "삭제"}
+                            </button>
                           </div>
                         </div>
-                      </article>
-                    );
-                  })
-                ) : (
-                  <div className="compass-note rounded-[calc(var(--radius-card)-10px)] p-4 text-sm leading-6 text-[var(--color-ink-soft)]">
-                    아직 남겨 둔 여행 기록이 없어요. 한 곳만 먼저 적어 두면 다음 추천이 훨씬 개인 취향에 가까워져요.
-                  </div>
-                )}
-              </div>
-            </article>
 
-            <aside className="space-y-4">
-              <article data-testid={testIds.account.tasteSummary} className="compass-sheet rounded-[var(--radius-card)] px-4 py-4">
-                <p className="compass-editorial-kicker">요약</p>
-                <div className="mt-3 grid gap-3">
-                  <div className="rounded-[calc(var(--radius-card)-12px)] bg-white/70 px-4 py-3">
-                    <p className="text-xs text-[var(--color-ink-soft)]">남긴 기록</p>
-                    <p className="mt-1 text-lg font-semibold text-[var(--color-ink)]">{summary.count}개</p>
-                  </div>
-                  <div className="rounded-[calc(var(--radius-card)-12px)] bg-white/70 px-4 py-3">
-                    <p className="text-xs text-[var(--color-ink-soft)]">평균 만족도</p>
-                    <p className="mt-1 text-lg font-semibold text-[var(--color-ink)]">{summary.averageRating}</p>
-                  </div>
-                  <div className="rounded-[calc(var(--radius-card)-12px)] bg-white/70 px-4 py-3">
-                    <p className="text-xs text-[var(--color-ink-soft)]">다시 가고 싶은 곳</p>
-                    <p className="mt-1 text-lg font-semibold text-[var(--color-ink)]">{summary.revisitCount}개</p>
-                  </div>
-                </div>
-              </article>
+                        {entry.tags.length > 0 ? (
+                          <div className="flex flex-wrap gap-1.5">
+                            {entry.tags.map((tag) => (
+                              <span
+                                key={`${entry.id}-${tag}`}
+                                className="rounded-full bg-[var(--color-accent-soft)] px-2.5 py-0.5 text-[0.75rem] font-medium text-[var(--color-sand-deep)]"
+                              >
+                                #{formatVibeList([tag])}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
 
-              <article className="compass-sheet rounded-[var(--radius-card)] px-4 py-4">
-                <p className="compass-editorial-kicker">빠른 추가</p>
-                <h3 className="mt-1.5 text-base font-semibold text-[var(--color-ink)]">
-                  여행지는 step으로, 저장은 한 번에 끝내세요.
-                </h3>
-                <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-                  여행지, 날짜, 평점, 태그, 사진, 메모 순서로 따로 묻기 때문에 길게 입력하지 않아도 됩니다.
+                        {entry.memo?.trim() ? (
+                          <p className="text-[0.85rem] leading-relaxed text-[var(--color-ink-soft)]">{entry.memo}</p>
+                        ) : null}
+
+                        {isGalleryOpen && entry.images.length > 0 ? (
+                          <div className="rounded-xl border border-[var(--color-frame-soft)] bg-slate-50/60 p-3">
+                            <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-1">
+                              {entry.images.map((image, imageIndex) => (
+                                <div
+                                  key={`${entry.id}-gallery-${imageIndex}`}
+                                  data-testid={getAccountHistoryGalleryImageTestId(imageIndex)}
+                                  className="relative h-48 w-[min(16rem,75vw)] shrink-0 snap-start overflow-hidden rounded-xl bg-slate-100"
+                                >
+                                  <Image
+                                    src={image.dataUrl}
+                                    alt={`${destination.nameKo} 기록 사진 ${imageIndex + 1}`}
+                                    fill
+                                    unoptimized
+                                    sizes="(max-width: 640px) 75vw, 16rem"
+                                    className="object-cover"
+                                  />
+                                  <div className="absolute left-2.5 top-2.5 rounded-full bg-white/90 px-2.5 py-0.5 text-[0.7rem] font-semibold text-[var(--color-ink)] backdrop-blur-sm">
+                                    {imageIndex + 1} / {entry.images.length}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
+            ) : (
+              <div className="rounded-2xl border border-dashed border-[var(--color-frame)] bg-[var(--color-surface-muted)] px-6 py-10 text-center">
+                <p className="text-[0.9rem] font-medium text-[var(--color-ink-soft)]">
+                  아직 여행 기록이 없습니다
                 </p>
-              </article>
-            </aside>
+                <p className="mt-1.5 text-[0.82rem] text-[var(--color-ink-soft)]">
+                  다녀온 여행을 기록하면 더 정확한 추천을 받을 수 있어요.
+                </p>
+                <Link
+                  href="/account/history/new"
+                  className="compass-action-primary compass-soft-press mt-4 inline-flex rounded-full px-5 py-2.5 text-[0.8rem] font-semibold"
+                >
+                  첫 여행 기록하기
+                </Link>
+              </div>
+            )}
           </section>
         ) : null}
 
+        {/* ── 앞으로 갈 곳 탭 ── */}
         {activeTab === "future-trips" ? (
-          <article className="compass-desk rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
-            <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
-              <p className="compass-editorial-kicker">앞으로 갈 곳</p>
-              <h2 className="mt-1.5 font-display text-[1.12rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.3rem]">
-                이번에 실제로 검토할 후보만 따로 올려 두세요.
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-                저장한 추천에서 마음이 굳은 것만 올려 두고, 다시 후보로 내릴 수도 있어요.
-              </p>
-            </div>
-
-            <div data-testid={testIds.account.futureTripList} className="mt-4 grid gap-3">
+          <section>
+            <p className="mb-4 text-[0.85rem] text-[var(--color-ink-soft)]">
+              실제로 갈 여행지를 모아 두세요.
+            </p>
+            <div data-testid={testIds.account.futureTripList} className="grid gap-3">
               {plannedSnapshots.length > 0 ? (
                 plannedSnapshots.map((snapshot, index) => {
                   const destination = findDestinationCopy(snapshot.payload.destinationIds[0]);
@@ -578,60 +534,57 @@ export function AccountExperience({
                     <article
                       key={snapshot.id}
                       data-testid={getAccountFutureTripEntryTestId(index)}
-                      className="compass-sheet rounded-[calc(var(--radius-card)-10px)] px-4 py-4"
+                      className="flex flex-col gap-3 rounded-2xl border border-[var(--color-frame-soft)] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <div className="flex flex-wrap items-center gap-2">
-                            <p className="compass-editorial-kicker">{destination.nameKo}</p>
-                            <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold uppercase">
-                              {destination.countryCode}
-                            </span>
-                          </div>
-                          <p className="mt-1 font-display text-[1rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
-                            {destination.nameEn}
-                          </p>
-                          <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-                            저장일 {formatHistoryDate(snapshot.createdAt)} · 이번에 진지하게 검토할 후보만 위로 올려 두었어요.
-                          </p>
-                        </div>
-
-                        <button
-                          type="button"
-                          disabled={isUpdating}
-                          onClick={() => {
-                            void updateSnapshotStatus(snapshot.id, "saved");
-                          }}
-                          className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {isUpdating ? "정리 중..." : "후보로 돌리기"}
-                        </button>
+                      <div>
+                        <h3 className="text-base font-bold text-[var(--color-ink)]">
+                          {destination.nameKo}
+                          <span className="ml-2 rounded-md bg-slate-100 px-1.5 py-0.5 text-[0.7rem] font-semibold text-[var(--color-ink-soft)]">
+                            {destination.countryCode}
+                          </span>
+                        </h3>
+                        <p className="mt-1 text-[0.82rem] text-[var(--color-ink-soft)]">
+                          {destination.nameEn} · 저장일 {formatHistoryDate(snapshot.createdAt)}
+                        </p>
                       </div>
+
+                      <button
+                        type="button"
+                        disabled={isUpdating}
+                        onClick={() => {
+                          void updateSnapshotStatus(snapshot.id, "saved");
+                        }}
+                        className="shrink-0 rounded-lg border border-[var(--color-frame-soft)] px-4 py-2 text-[0.8rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-sand)] hover:text-[var(--color-sand-deep)] disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        {isUpdating ? "이동 중..." : "저장 목록으로"}
+                      </button>
                     </article>
                   );
                 })
               ) : (
                 <div
                   data-testid={testIds.account.futureTripEmptyState}
-                  className="compass-note rounded-[calc(var(--radius-card)-10px)] p-4 text-sm leading-6 text-[var(--color-ink-soft)]"
+                  className="rounded-2xl border border-dashed border-[var(--color-frame)] bg-[var(--color-surface-muted)] px-6 py-10 text-center"
                 >
-                  아직 앞으로 갈 곳이 없어요. 저장한 추천에서 마음이 굳은 후보만 이 탭으로 올려 두세요.
+                  <p className="text-[0.9rem] font-medium text-[var(--color-ink-soft)]">
+                    아직 예정된 여행이 없습니다
+                  </p>
+                  <p className="mt-1.5 text-[0.82rem] text-[var(--color-ink-soft)]">
+                    저장 목록에서 가고 싶은 여행지를 올려 보세요.
+                  </p>
                 </div>
               )}
             </div>
-          </article>
+          </section>
         ) : null}
 
+        {/* ── 저장한 추천 탭 ── */}
         {activeTab === "saved" ? (
-          <article className="compass-desk rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
-            <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
-              <p className="compass-editorial-kicker">저장한 추천</p>
-              <h2 className="mt-1.5 font-display text-[1.12rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.3rem]">
-                아직 검토 중인 추천만 모아 빠르게 다시 열어보세요.
-              </h2>
-            </div>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <section>
+            <p className="mb-4 text-[0.85rem] text-[var(--color-ink-soft)]">
+              관심 있는 추천을 한곳에서 비교하세요.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {savedCandidateSnapshots.length > 0 ? (
                 savedCandidateSnapshots.map((snapshot, index) => {
                   const destination = findDestinationCopy(snapshot.payload.destinationIds[0]);
@@ -641,19 +594,19 @@ export function AccountExperience({
                     <article
                       key={snapshot.id}
                       data-testid={getSavedSnapshotTestId(index)}
-                      className="compass-sheet rounded-[calc(var(--radius-card)-10px)] px-4 py-4"
+                      className="flex flex-col justify-between rounded-2xl border border-[var(--color-frame-soft)] bg-white px-5 py-4 transition-shadow hover:shadow-[var(--shadow-card)]"
                     >
-                      <p className="compass-editorial-kicker">{destination.nameKo}</p>
-                      <p className="mt-1 font-display text-[1rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
-                        {destination.nameEn}
-                      </p>
-                      <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">
-                        저장일 {formatHistoryDate(snapshot.createdAt)} · 다시 보기 전에 앞으로 갈 곳으로 올려 우선 검토할 수 있어요.
-                      </p>
-                      <div className="mt-3 flex flex-wrap gap-2">
+                      <div>
+                        <h3 className="text-base font-bold text-[var(--color-ink)]">{destination.nameKo}</h3>
+                        <p className="mt-0.5 text-[0.82rem] text-[var(--color-ink-soft)]">{destination.nameEn}</p>
+                        <p className="mt-2 text-[0.78rem] text-[var(--color-ink-soft)]">
+                          저장일 {formatHistoryDate(snapshot.createdAt)}
+                        </p>
+                      </div>
+                      <div className="mt-4 flex gap-2">
                         <Link
                           href={`/s/${snapshot.id}`}
-                          className="compass-action-primary compass-soft-press inline-flex rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
+                          className="compass-action-primary compass-soft-press rounded-lg px-4 py-2 text-[0.78rem] font-semibold"
                         >
                           다시 보기
                         </Link>
@@ -664,33 +617,35 @@ export function AccountExperience({
                           onClick={() => {
                             void updateSnapshotStatus(snapshot.id, "planned");
                           }}
-                          className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
+                          className="rounded-lg border border-[var(--color-frame-soft)] px-4 py-2 text-[0.78rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-sand)] hover:text-[var(--color-sand-deep)] disabled:cursor-not-allowed disabled:opacity-50"
                         >
-                          {isUpdating ? "올리는 중..." : "앞으로 갈 곳으로"}
+                          {isUpdating ? "이동 중..." : "예정 여행으로"}
                         </button>
                       </div>
                     </article>
                   );
                 })
               ) : (
-                <div className="compass-note rounded-[calc(var(--radius-card)-10px)] p-4 text-sm leading-6 text-[var(--color-ink-soft)]">
-                  아직 검토 중인 저장 추천이 없어요. 결과 화면에서 저장하거나, 앞으로 갈 곳에 올린 후보를 다시 이 탭으로 내려 둘 수 있어요.
+                <div className="col-span-full rounded-2xl border border-dashed border-[var(--color-frame)] bg-[var(--color-surface-muted)] px-6 py-10 text-center">
+                  <p className="text-[0.9rem] font-medium text-[var(--color-ink-soft)]">
+                    저장한 추천이 없어요
+                  </p>
+                  <p className="mt-1.5 text-[0.82rem] text-[var(--color-ink-soft)]">
+                    결과 화면에서 마음에 드는 추천을 저장해 보세요.
+                  </p>
                 </div>
               )}
             </div>
-          </article>
+          </section>
         ) : null}
 
+        {/* ── 추천 모드 탭 ── */}
         {activeTab === "preferences" ? (
-          <article data-testid={testIds.account.tasteMode} className="compass-desk rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
-            <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
-              <p className="compass-editorial-kicker">추천 모드</p>
-              <h2 className="mt-1.5 font-display text-[1.12rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.3rem]">
-                익숙한 추천을 더 볼지, 새로운 추천을 넓힐지 따로 정해 두세요.
-              </h2>
-            </div>
-
-            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+          <section data-testid={testIds.account.tasteMode}>
+            <p className="mb-4 text-[0.85rem] text-[var(--color-ink-soft)]">
+              익숙한 추천을 더 볼지, 새로운 추천을 넓힐지 정해 두세요.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
               {preferenceOptions.map((option) => {
                 const active = profile.explorationPreference === option.value;
 
@@ -703,17 +658,21 @@ export function AccountExperience({
                     onClick={() => {
                       void savePreference(option.value);
                     }}
-                    className={`rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-left ${
-                      active ? "compass-selected" : "compass-selection-chip"
+                    className={`rounded-2xl px-5 py-5 text-left transition-all ${
+                      active
+                        ? "border-2 border-[var(--color-sand)] bg-[var(--color-selected)] shadow-[0_0_0_1px_var(--color-sand)]"
+                        : "border border-[var(--color-frame-soft)] bg-white hover:border-[var(--color-sand)] hover:shadow-[var(--shadow-card)]"
                     }`}
                   >
-                    <p className="text-sm font-semibold text-[var(--color-ink)]">{option.label}</p>
-                    <p className="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">{option.description}</p>
+                    <p className={`text-[0.95rem] font-bold ${active ? "text-[var(--color-sand-deep)]" : "text-[var(--color-ink)]"}`}>
+                      {option.label}
+                    </p>
+                    <p className="mt-2 text-[0.82rem] leading-relaxed text-[var(--color-ink-soft)]">{option.description}</p>
                   </button>
                 );
               })}
             </div>
-          </article>
+          </section>
         ) : null}
       </div>
     </ExperienceShell>

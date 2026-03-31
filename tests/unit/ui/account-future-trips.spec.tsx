@@ -149,7 +149,7 @@ describe("AccountExperience future trips tab", () => {
     expect(screen.getByTestId(testIds.account.tabFutureTrips)).toBeInTheDocument();
     expect(screen.getByTestId(testIds.account.futureTripList)).toBeInTheDocument();
     expect(screen.getByTestId(testIds.account.futureTripEmptyState)).toHaveTextContent(
-      "아직 앞으로 갈 곳이 없어요.",
+      "아직 예정된 여행이 없습니다",
     );
     expect(screen.queryByTestId(getAccountFutureTripEntryTestId(0))).not.toBeInTheDocument();
   });
@@ -172,7 +172,7 @@ describe("AccountExperience future trips tab", () => {
 
     expect(screen.getByTestId(getAccountFutureTripEntryTestId(0))).toHaveTextContent("리스본");
 
-    fireEvent.click(screen.getByRole("button", { name: "후보로 돌리기" }));
+    fireEvent.click(screen.getByRole("button", { name: "저장 목록으로" }));
 
     await waitFor(() => {
       expect(fetchSpy).toHaveBeenCalledWith("/api/me/snapshots/saved-2", {
