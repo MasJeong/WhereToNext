@@ -10,8 +10,51 @@ import { readLocalStore, writeLocalStore } from "@/lib/persistence/local-store";
 import { memoryStore } from "@/lib/persistence/memory-store";
 
 const SESSION_COOKIE_NAME = "trip_compass_session";
-const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
-const SESSION_MAX_AGE_MS = SESSION_MAX_AGE_SECONDS * 1000;
+
+export const WEB_IDLE_TTL_SECONDS = 60 * 60 * 24 * 14;
+export const WEB_ABSOLUTE_TTL_SECONDS = 60 * 60 * 24 * 90;
+export const SHELL_IDLE_TTL_SECONDS = 60 * 60 * 24 * 30;
+export const SHELL_ABSOLUTE_TTL_SECONDS = 60 * 60 * 24 * 180;
+
+const WEB_IDLE_TTL_MS = WEB_IDLE_TTL_SECONDS * 1000;
+const SHELL_IDLE_TTL_MS = SHELL_IDLE_TTL_SECONDS * 1000;
+export const CLIENT_TYPES = ["web", "ios-shell"] as const;
+export type ClientType = (typeof CLIENT_TYPES)[number];
+
+type SessionPolicy = Readonly<{
+  idleTtlSeconds: number;
+  absoluteTtlSeconds: number;
+}>;
+
+/** issuance-time client classification (defaults to "web" unless explicitly allowed). */
+export function classifyClientTypeForSessionIssuance(input?: {
+  clientType?: unknown;
+  allowIosShell?: boolean;
+}): ClientType {
+  if (input?.allowIosShell && input.clientType === "ios-shell") {
+    return "ios-shell";
+  }
+
+  return "web";
+}
+
+export function getSessionPolicyForClientType(clientType: ClientType): SessionPolicy {
+  if (clientType === "ios-shell") {
+    return {
+      idleTtlSeconds: SHELL_IDLE_TTL_SECONDS,
+      absoluteTtlSeconds: SHELL_ABSOLUTE_TTL_SECONDS,
+    };
+  }
+
+  return {
+    idleTtlSeconds: WEB_IDLE_TTL_SECONDS,
+    absoluteTtlSeconds: WEB_ABSOLUTE_TTL_SECONDS,
+  };
+}
+
+function getSessionIdleTtlMsForClientType(clientType: ClientType): number {
+  return clientType === "ios-shell" ? SHELL_IDLE_TTL_MS : WEB_IDLE_TTL_MS;
+}
 const usePersistentDatabase = Boolean(process.env.DATABASE_URL);
 const useLocalFileStore = !usePersistentDatabase && process.env.NODE_ENV !== "test";
 
@@ -284,7 +327,17 @@ export function setSessionCookie(
   response: import("next/server").NextResponse,
   token: string,
   request?: Request,
+  options?: {
+    clientType?: ClientType;
+    allowIosShell?: boolean;
+  },
 ) {
+  const issuedClientType = classifyClientTypeForSessionIssuance({
+    clientType: options?.clientType,
+    allowIosShell: options?.allowIosShell,
+  });
+  const policy = getSessionPolicyForClientType(issuedClientType);
+
   response.cookies.set({
     name: SESSION_COOKIE_NAME,
     value: token,
@@ -292,7 +345,7 @@ export function setSessionCookie(
     sameSite: "lax",
     secure: shouldUseSecureCookie(request),
     path: "/",
-    maxAge: SESSION_MAX_AGE_SECONDS,
+    maxAge: policy.idleTtlSeconds,
   });
 }
 
@@ -323,10 +376,16 @@ export async function signUpWithEmailPassword(input: {
   password: string;
   ipAddress?: string | null;
   userAgent?: string | null;
+  clientType?: ClientType;
+  allowIosShell?: boolean;
 }): Promise<AuthResult & { token?: string }> {
   const email = input.email.trim().toLowerCase();
   const userId = randomUUID();
   const now = new Date();
+  const issuedClientType = classifyClientTypeForSessionIssuance({
+    clientType: input.clientType,
+    allowIosShell: input.allowIosShell,
+  });
   const sessionToken = randomBytes(32).toString("hex");
   const sessionTokenHash = hashSessionToken(sessionToken);
   const sessionId = randomUUID();
@@ -344,7 +403,9 @@ export async function signUpWithEmailPassword(input: {
         };
       }
 
-      const expiresAtIso = new Date(now.getTime() + SESSION_MAX_AGE_MS).toISOString();
+      const expiresAtIso = new Date(
+        now.getTime() + getSessionIdleTtlMsForClientType(issuedClientType),
+      ).toISOString();
       store.users[userId] = {
         id: userId,
         name: input.name.trim(),
@@ -399,7 +460,9 @@ export async function signUpWithEmailPassword(input: {
       };
     }
 
-    const expiresAtIso = new Date(now.getTime() + SESSION_MAX_AGE_MS).toISOString();
+    const expiresAtIso = new Date(
+      now.getTime() + getSessionIdleTtlMsForClientType(issuedClientType),
+    ).toISOString();
 
     memoryStore.users.set(userId, {
       id: userId,
@@ -495,7 +558,7 @@ export async function signUpWithEmailPassword(input: {
         updatedAt: now,
       });
 
-      const expiresAt = new Date(now.getTime() + SESSION_MAX_AGE_MS);
+      const expiresAt = new Date(now.getTime() + getSessionIdleTtlMsForClientType(issuedClientType));
       const [nextSession] = await tx
         .insert(session)
         .values({
@@ -540,9 +603,15 @@ export async function signInWithEmailPassword(input: {
   password: string;
   ipAddress?: string | null;
   userAgent?: string | null;
+  clientType?: ClientType;
+  allowIosShell?: boolean;
 }): Promise<AuthResult & { token?: string }> {
   const email = input.email.trim().toLowerCase();
   const now = new Date();
+  const issuedClientType = classifyClientTypeForSessionIssuance({
+    clientType: input.clientType,
+    allowIosShell: input.allowIosShell,
+  });
 
   if (!usePersistentDatabase) {
     if (useLocalFileStore) {
@@ -562,7 +631,9 @@ export async function signInWithEmailPassword(input: {
         };
       }
 
-      const expiresAtIso = new Date(now.getTime() + SESSION_MAX_AGE_MS).toISOString();
+      const expiresAtIso = new Date(
+        now.getTime() + getSessionIdleTtlMsForClientType(issuedClientType),
+      ).toISOString();
       const nextSessionId = randomUUID();
       const nextToken = randomBytes(32).toString("hex");
       store.sessions[nextSessionId] = {
@@ -606,7 +677,9 @@ export async function signInWithEmailPassword(input: {
       };
     }
 
-    const expiresAtIso = new Date(now.getTime() + SESSION_MAX_AGE_MS).toISOString();
+    const expiresAtIso = new Date(
+      now.getTime() + getSessionIdleTtlMsForClientType(issuedClientType),
+    ).toISOString();
     const nextSessionId = randomUUID();
     const nextToken = randomBytes(32).toString("hex");
 
@@ -663,7 +736,7 @@ export async function signInWithEmailPassword(input: {
 
   const sessionToken = randomBytes(32).toString("hex");
   const sessionTokenHash = hashSessionToken(sessionToken);
-  const expiresAt = new Date(now.getTime() + SESSION_MAX_AGE_MS);
+  const expiresAt = new Date(now.getTime() + getSessionIdleTtlMsForClientType(issuedClientType));
   const [createdSession] = await db
     .insert(session)
     .values({
@@ -729,6 +802,8 @@ export async function rotateSessionForUser(input: {
   requestHeaders?: Headers;
   ipAddress?: string | null;
   userAgent?: string | null;
+  clientType?: ClientType;
+  allowIosShell?: boolean;
 }): Promise<AuthSession & { token: string }> {
   const currentToken = input.requestHeaders
     ? getSessionTokenFromCookieHeader(input.requestHeaders.get("cookie"))
@@ -737,10 +812,14 @@ export async function rotateSessionForUser(input: {
   await deleteSessionByToken(currentToken);
 
   const now = new Date();
+  const issuedClientType = classifyClientTypeForSessionIssuance({
+    clientType: input.clientType,
+    allowIosShell: input.allowIosShell,
+  });
   const sessionId = randomUUID();
   const sessionToken = randomBytes(32).toString("hex");
   const sessionTokenHash = hashSessionToken(sessionToken);
-  const expiresAt = new Date(now.getTime() + SESSION_MAX_AGE_MS);
+  const expiresAt = new Date(now.getTime() + getSessionIdleTtlMsForClientType(issuedClientType));
 
   if (!usePersistentDatabase) {
     if (useLocalFileStore) {
