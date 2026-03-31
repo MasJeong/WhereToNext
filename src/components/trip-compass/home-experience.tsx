@@ -55,6 +55,7 @@ import {
   getSavedSnapshotTestId,
   testIds,
 } from "@/lib/test-ids";
+import { shellHomeEvent, shellStartRecommendationEvent } from "@/lib/trip-compass/shell-events";
 
 import { ExperienceShell } from "./experience-shell";
 import { LandingPage } from "./home/landing-page";
@@ -648,8 +649,12 @@ export function HomeExperience() {
 
     if (searchParams.get("start") === "1") {
       startFunnel();
+      const nextSearchParams = new URLSearchParams(searchParams.toString());
+      nextSearchParams.delete("start");
+      const nextUrl = nextSearchParams.size > 0 ? `/?${nextSearchParams.toString()}` : "/";
+      router.replace(nextUrl, { scroll: false });
     }
-  }, [isSubmitting, results, searchParams, stage]);
+  }, [isSubmitting, results, router, searchParams, stage]);
 
   useEffect(() => {
     if (stage !== "landing" || results || isSubmitting) {
@@ -667,6 +672,32 @@ export function HomeExperience() {
     } catch {
     }
   }, [isSubmitting, results, searchParams, stage]);
+
+  useEffect(() => {
+    function handleHomeNavigation() {
+      resetFunnel();
+      requestAnimationFrame(() => {
+        scrollToPageTop(getMotionBehavior());
+      });
+    }
+
+    function handleStartRecommendation() {
+      startFunnel();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollToElementById("home-question-flow");
+        });
+      });
+    }
+
+    window.addEventListener(shellHomeEvent, handleHomeNavigation);
+    window.addEventListener(shellStartRecommendationEvent, handleStartRecommendation);
+
+    return () => {
+      window.removeEventListener(shellHomeEvent, handleHomeNavigation);
+      window.removeEventListener(shellStartRecommendationEvent, handleStartRecommendation);
+    };
+  }, []);
 
   function resetFunnel() {
     activeRecommendationRequestRef.current += 1;
@@ -1021,6 +1052,9 @@ export function HomeExperience() {
     activeRecommendationRequestRef.current = requestId;
 
     setStage("result");
+    requestAnimationFrame(() => {
+      scrollToPageTop("auto");
+    });
     setIsSubmitting(true);
     setSubmitError(null);
     setResults(null);

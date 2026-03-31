@@ -22,6 +22,7 @@ test("shows the 떠나볼래 smoke shell and immediate search entry", async ({ p
 test("shows the home header with auth and account shortcuts", async ({ page }) => {
   await page.goto("/");
 
+  await expect(page.getByRole("link", { name: /떠나볼래.*홈으로/i })).toBeVisible();
   await expect(page.getByLabel("주요 메뉴").getByRole("link", { name: "추천 받기" })).toBeVisible();
   await expect(page.getByLabel("주요 메뉴").getByRole("link", { name: "내 여행" })).toBeVisible();
   await expect(page.getByTestId("account-link")).toBeVisible();
@@ -34,8 +35,19 @@ test("opens the question flow from the header start link", async ({ page }) => {
   await page.goto("/");
 
   await page.getByRole("link", { name: "추천 받기" }).click();
-  await expect(page).toHaveURL(/\/\?start=1/);
   await expect(page.getByTestId("home-step-question")).toBeVisible({ timeout: 10000 });
+  await expect(page).toHaveURL(/\/$/);
+});
+
+test("resets to landing when the logo is clicked from the home funnel", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("link", { name: "추천 받기" }).click();
+  await expect(page.getByTestId("home-step-question")).toBeVisible({ timeout: 10000 });
+
+  await page.getByRole("link", { name: /떠나볼래.*홈으로/i }).click();
+  await expect(page.getByTestId("home-landing")).toBeVisible();
+  await expect(page.getByTestId("home-step-question")).toHaveCount(0);
 });
 
 test("hides auth and account navigation in ios shell mode", async ({ page }) => {

@@ -1,14 +1,13 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 
-import { brandDisplayName } from "@/lib/brand";
 import { isIosShellMode } from "@/lib/runtime/shell";
 import { testIds } from "@/lib/test-ids";
 
 import { ShellAuthNav } from "./shell-auth-nav";
+import { ShellPrimaryNav } from "./shell-primary-nav";
 
 const primaryNavItems = [
-  { label: "추천 받기", href: "/?start=1" },
+  { label: "추천 받기", href: "/?start=1", kind: "primary" },
   { label: "내 여행", href: "/account" },
 ] as const;
 
@@ -54,26 +53,7 @@ export function ExperienceShell({
             className="compass-shell-topbar compass-stage-reveal compass-stage-reveal-fast rounded-[calc(var(--radius-card)-16px)] px-3.5 py-2.5 sm:px-4"
           >
             <div className="compass-shell-topbar-layout min-h-[3.25rem]">
-              <Link href="/" className="compass-shell-brand inline-flex min-w-0 items-center gap-2.5 text-[var(--color-ink)]">
-                <span className="compass-shell-brand-mark inline-flex h-2.5 w-2.5 shrink-0 rounded-full" />
-                <span className="min-w-0">
-                  <span className="mt-0.5 block font-display text-[1.06rem] leading-none tracking-[-0.045em] sm:text-[1.12rem]">
-                    {brandDisplayName}
-                  </span>
-                </span>
-              </Link>
-
-              <nav aria-label="주요 메뉴" className="compass-shell-primary-nav">
-                {primaryNavItems.map((item) => (
-                  <Link
-                    key={item.label}
-                    href={item.href}
-                    className="compass-shell-nav-link"
-                  >
-                    {item.label}
-                  </Link>
-                ))}
-              </nav>
+              <ShellPrimaryNav items={primaryNavItems} />
 
               {hideAuthNavigation ? null : <ShellAuthNav />}
             </div>

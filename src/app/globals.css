@@ -210,7 +210,29 @@ textarea:focus-visible {
 }
 
 .compass-shell-brand {
+  position: relative;
+  border: 1px solid rgb(30 136 229 / 0.12);
+  border-radius: calc(var(--radius-card) - 10px);
+  padding: 0.42rem 0.65rem 0.42rem 0.42rem;
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(243 248 255 / 0.95));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.82),
+    0 8px 20px rgb(30 136 229 / 0.06);
   transition: opacity var(--transition-smooth), transform var(--transition-smooth);
+}
+
+.compass-shell-brand-lockup {
+  position: relative;
+}
+
+.compass-shell-brand-mark-wrap {
+  border: 1px solid rgb(30 136 229 / 0.14);
+  background:
+    radial-gradient(circle at 30% 30%, rgb(255 255 255 / 0.82), transparent 52%),
+    linear-gradient(160deg, rgb(231 244 255 / 0.98), rgb(207 229 255 / 0.92));
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    0 10px 24px rgb(30 136 229 / 0.1);
 }
 
 .compass-shell-topbar-layout {
@@ -231,13 +253,19 @@ textarea:focus-visible {
 
 .compass-shell-brand:hover {
   transform: translateY(-1px);
-  opacity: 0.92;
+  opacity: 1;
+  border-color: rgb(11 99 206 / 0.2);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.86),
+    0 12px 28px rgb(30 136 229 / 0.1);
 }
 
 .compass-shell-brand-mark {
   position: relative;
   background: linear-gradient(135deg, rgb(74 180 255 / 0.98), rgb(11 99 206 / 0.94));
-  box-shadow: 0 0 0 6px rgb(74 180 255 / 0.12);
+  box-shadow:
+    0 0 0 7px rgb(74 180 255 / 0.12),
+    0 6px 16px rgb(11 99 206 / 0.18);
 }
 
 .compass-shell-brand-mark::before {
@@ -261,6 +289,12 @@ textarea:focus-visible {
   transform-origin: center;
 }
 
+.compass-shell-brand-caption {
+  border: 1px solid rgb(30 136 229 / 0.14);
+  background: rgb(238 247 255 / 0.92);
+  color: var(--color-action-primary-strong);
+}
+
 .compass-shell-identity {
   border: 1px solid rgb(15 23 42 / 0.08);
   background: rgb(248 251 255 / 0.92);
@@ -276,6 +310,11 @@ textarea:focus-visible {
 }
 
 .compass-shell-nav-link {
+  display: inline-flex;
+  min-height: 2.6rem;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.5rem 0;
   color: var(--color-ink-soft);
   transition:
     color var(--transition-smooth),
@@ -289,6 +328,20 @@ textarea:focus-visible {
 
 .compass-shell-nav-link-active {
   color: var(--color-ink-strong);
+}
+
+.compass-shell-nav-link-cta {
+  padding: 0.5rem 0.95rem;
+  border: 1px solid var(--color-action-primary-border);
+  background: linear-gradient(180deg, var(--color-action-primary), var(--color-action-primary-strong));
+  color: var(--color-action-primary-text);
+  box-shadow: var(--shadow-hero);
+}
+
+.compass-shell-nav-link-cta:hover {
+  color: var(--color-action-primary-text);
+  transform: translateY(-1px);
+  opacity: 0.98;
 }
 
 .compass-shell-auth-nav {
