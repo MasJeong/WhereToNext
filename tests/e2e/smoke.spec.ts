@@ -22,8 +22,8 @@ test("shows the 떠나볼래 smoke shell and immediate search entry", async ({ p
 test("shows the home header with auth and account shortcuts", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("link", { name: "추천 시작" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "여행 기록" })).toBeVisible();
+  await expect(page.getByLabel("주요 메뉴").getByRole("link", { name: "추천 받기" })).toBeVisible();
+  await expect(page.getByLabel("주요 메뉴").getByRole("link", { name: "내 여행" })).toBeVisible();
   await expect(page.getByTestId("account-link")).toBeVisible();
   await expect(page.getByTestId("account-link")).toHaveText("내 여행");
   await expect(page.getByTestId("auth-cta")).toBeVisible();
@@ -33,7 +33,7 @@ test("shows the home header with auth and account shortcuts", async ({ page }) =
 test("opens the question flow from the header start link", async ({ page }) => {
   await page.goto("/");
 
-  await page.getByRole("link", { name: "추천 시작" }).click();
+  await page.getByRole("link", { name: "추천 받기" }).click();
   await expect(page).toHaveURL(/\/\?start=1/);
   await expect(page.getByTestId("home-step-question")).toBeVisible({ timeout: 10000 });
 });
