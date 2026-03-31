@@ -135,9 +135,9 @@ test("asks realistic travel conditions instead of romance-first and departure-ai
   await page.getByTestId("home-step-choice-1").click();
 
   await expect(page.getByTestId("home-step-question")).toContainText("이번 여행에서는 뭐가 더 중요해요?");
-  await expect(page.getByText("체험·액티비티")).toBeVisible();
-  await expect(page.getByText("SNS 핫플레이스")).toBeVisible();
-  await expect(page.getByText("관광보다 먹방")).toBeVisible();
+  await expect(page.getByText("가만히 있긴 아쉬워")).toBeVisible();
+  await expect(page.getByText("사진부터 남기고 싶어")).toBeVisible();
+  await expect(page.getByText("이번엔 먹는 게 메인")).toBeVisible();
   await page.getByTestId("home-step-choice-0").click();
   await page.getByTestId("home-step-choice-8").click();
   await page.getByTestId("home-step-next").click();
@@ -164,7 +164,7 @@ test("reflects the selected practical conditions in the result summary", async (
   await page.getByTestId("home-step-choice-2").click();
 
   await expect(page.getByTestId("home-top-summary")).toBeVisible({ timeout: 10000 });
-  await expect(page.getByTestId("query-summary")).toContainText("7월 · 8일");
+  await expect(page.getByTestId("query-summary")).toContainText("7월 · 7~10일");
   await expect(page.getByTestId("query-summary")).toContainText("장거리도 가능");
   await expect(page.getByTestId("query-summary")).toContainText("도시");
   await expect(page.getByTestId("query-summary")).toContainText("쇼핑");

@@ -137,7 +137,7 @@ type CompactRecommendationItemProps = {
 type ResultFilterKey = "all" | "short-flight" | "city" | "rest" | "balanced-budget";
 type ResultSortKey = "fit" | "shortest-flight" | "budget";
 
-const tripLengthRelaxationOrder = [3, 5, 8] as const;
+const tripLengthRelaxationOrder = [3, 5, 8, 15] as const;
 const flightToleranceRelaxationOrder = ["short", "medium", "long"] as const;
 const travelMonthRelaxationOrder = [7, 10, 12] as const;
 const defaultAnswers: HomeStepAnswers = {
@@ -201,7 +201,9 @@ function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] 
   if (nextTripLength) {
     actions.push({
       id: "trip-length",
-      label: `일정을 ${nextTripLength}일로 넓히기`,
+      label: `여행 기간을 ${
+        nextTripLength <= 3 ? "2~3일" : nextTripLength <= 6 ? "4~6일" : nextTripLength <= 10 ? "7~10일" : "11일 이상"
+      }으로 넓히기`,
       description: "짧은 일정 제약을 풀어 후보 풀을 조금 더 넓혀요.",
       nextQuery: { ...query, tripLengthDays: nextTripLength },
     });

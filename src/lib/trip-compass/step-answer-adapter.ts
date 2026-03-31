@@ -127,48 +127,48 @@ export const homeStepFlightPreferenceOptions: HomeStepOption<HomeStepAnswers["fl
 export const homeStepTravelStyleOptions: HomeStepOption<HomeStepTravelStyle>[] = [
   {
     value: "activity",
-    label: "체험·액티비티",
-    description: "몸을 움직이거나 직접 해보는 일정이 여행의 기억으로 남는 편이에요.",
+    label: "가만히 있긴 아쉬워",
+    description: "몸을 움직이거나 현지에서만 할 수 있는 체험이 있어야 여행 온 느낌이 살아요.",
   },
   {
     value: "sns-hotplace",
-    label: "SNS 핫플레이스",
-    description: "사진으로 남기고 싶은 공간과 요즘 많이 가는 스폿을 먼저 보고 싶어요.",
+    label: "사진부터 남기고 싶어",
+    description: "사진 남기기 좋고 요즘 많이 가는 곳은 한 번쯤 찍고 가야 덜 아쉬워요.",
   },
   {
     value: "nature",
-    label: "자연과 함께",
-    description: "풍경이 좋고 바깥 공기를 오래 느낄 수 있는 곳이 더 끌려요.",
+    label: "풍경 좋은 데로",
+    description: "바다, 산, 공원처럼 풍경 좋고 공기 좋은 곳이면 오래 머물고 싶어요.",
   },
   {
     value: "must-see",
-    label: "유명 관광지는 필수",
-    description: "처음 가는 곳이라면 대표 명소는 놓치고 싶지 않아요.",
+    label: "유명한 곳은 찍고 와야지",
+    description: "처음 가는 곳이라면 많이 가는 명소는 놓치지 않고 보고 오는 편이에요.",
   },
   {
     value: "healing",
-    label: "여유롭게 힐링",
-    description: "빡빡한 동선보다 쉬는 시간이 분명한 여행이 더 좋아요.",
+    label: "쉬는 게 제일 중요해",
+    description: "빡빡하게 돌기보다 여유 있게 쉬는 시간이 분명한 여행이 더 좋아요.",
   },
   {
     value: "culture-history",
-    label: "문화·예술·역사",
-    description: "전시, 유적, 공연처럼 그 지역의 결이 느껴지는 곳이 좋아요.",
+    label: "전시나 유적은 보고 싶어",
+    description: "전시, 박물관, 유적처럼 그 지역의 이야기와 결이 느껴지는 일정이 좋아요.",
   },
   {
     value: "local-atmosphere",
-    label: "여행지 느낌 물씬",
-    description: "그 도시만의 골목, 시장, 거리 분위기를 느낄 수 있어야 해요.",
+    label: "그 동네 느낌이 좋아",
+    description: "유명 명소보다 골목, 시장, 거리에서 현지 분위기를 느끼고 싶어요.",
   },
   {
     value: "shopping",
-    label: "쇼핑은 열정적으로",
-    description: "시장, 편집숍, 쇼핑 동선이 여행 만족도에 큰 영향을 줘요.",
+    label: "수하물 1개 더할걸",
+    description: "시장, 편집숍, 쇼핑몰처럼 사는 재미가 있는 동선이면 만족도가 확 올라가요.",
   },
   {
     value: "foodie",
-    label: "관광보다 먹방",
-    description: "유명 관광지보다 맛집과 카페, 현지 음식이 더 중요해요.",
+    label: "이번엔 먹는 게 메인",
+    description: "관광보다 현지 음식, 맛집, 카페 찾아다니는 시간이 더 중요해요.",
   },
 ];
 

@@ -70,6 +70,10 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
     expect(defaultHomeStepAnswers).not.toHaveProperty("departureChoice");
   });
 
+  it("keeps trip-length defaults mapped to representative values behind grouped labels", () => {
+    expect(defaultRecommendationQuery.tripLengthDays).toBe(5);
+  });
+
   it("defines travel-style options based on concrete travel behaviors", () => {
     expect(homeStepTravelStyleOptions.map((option) => option.value)).toEqual([
       "activity",

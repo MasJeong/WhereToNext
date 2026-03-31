@@ -158,20 +158,41 @@ export const budgetOptions: QueryOption<RecommendationQuery["budgetBand"]>[] = [
 export const tripLengthOptions: QueryOption<RecommendationQuery["tripLengthDays"]>[] = [
   {
     value: 3,
-    label: "3일",
-    description: "짧지만 확실하게 쉬고 오는 일정이에요.",
+    label: "2~3일",
+    description: "주말이나 짧은 연차로 가볍게 다녀오기 좋은 일정이에요.",
   },
   {
     value: 5,
-    label: "5일",
-    description: "연차 부담과 만족감의 균형이 좋은 길이예요.",
+    label: "4~6일",
+    description: "가장 일반적인 짧은 해외 휴가에 잘 맞는 기간이에요.",
   },
   {
     value: 8,
-    label: "8일",
-    description: "장거리나 여러 동선을 여유 있게 담기 좋은 일정이에요.",
+    label: "7~10일",
+    description: "장거리나 여러 동선을 비교적 여유 있게 담기 좋은 일정이에요.",
+  },
+  {
+    value: 15,
+    label: "11일 이상",
+    description: "장기 휴가나 한달살기처럼 충분한 시간을 쓰는 여행에 가까워요.",
   },
 ];
+
+export function formatTripLengthBand(tripLengthDays: RecommendationQuery["tripLengthDays"]): string {
+  if (tripLengthDays <= 3) {
+    return "2~3일";
+  }
+
+  if (tripLengthDays <= 6) {
+    return "4~6일";
+  }
+
+  if (tripLengthDays <= 10) {
+    return "7~10일";
+  }
+
+  return "11일 이상";
+}
 
 export const travelMonthOptions: QueryOption<RecommendationQuery["travelMonth"]>[] = [
   {
@@ -382,7 +403,7 @@ export function buildRecommendationVerdict(
     .map((item) => item.label);
 
   const context = query
-    ? `${formatTravelMonth(query.travelMonth)} ${query.tripLengthDays}일 일정 기준`
+    ? `${formatTravelMonth(query.travelMonth)} ${formatTripLengthBand(query.tripLengthDays)} 일정 기준`
     : `${formatMonthList(card.destination.bestMonths)} 여행 기준`;
   const support = `${context} ${strengthAreas.join(" · ")} 쪽이 특히 안정적이에요.`;
 
@@ -421,7 +442,7 @@ export function buildStructuredTripBrief(
     {
       id: "travel-window",
       label: "출발 시기",
-      value: `${formatTravelMonth(query.travelMonth)} · ${query.tripLengthDays}일`,
+      value: `${formatTravelMonth(query.travelMonth)} · ${formatTripLengthBand(query.tripLengthDays)}`,
       detail: `${formatPartyType(query.partyType)} 일정 기준으로 현실적인 여행 길이를 먼저 맞추고 있어요.`,
     },
     {
@@ -714,7 +735,7 @@ export function buildRecommendationPriorityBadge(totalScore: number): string {
  * @returns Human-readable query summary
  */
 export function buildQueryNarrative(query: RecommendationQuery): string {
-  return `${formatTravelMonth(query.travelMonth)}에 떠나는 ${query.tripLengthDays}일 ${formatPartyType(query.partyType)} 일정이에요. 예산은 ${formatBudgetBand(query.budgetBand)}, 이동 부담은 ${formatFlightTolerance(query.flightTolerance)} 기준으로 맞췄고 여행 스타일은 ${formatResultVibeList(query.vibes)} 쪽에 가깝게 잡았어요.`;
+  return `${formatTravelMonth(query.travelMonth)}에 떠나는 ${formatTripLengthBand(query.tripLengthDays)} ${formatPartyType(query.partyType)} 일정이에요. 예산은 ${formatBudgetBand(query.budgetBand)}, 이동 부담은 ${formatFlightTolerance(query.flightTolerance)} 기준으로 맞췄고 여행 스타일은 ${formatResultVibeList(query.vibes)} 쪽에 가깝게 잡았어요.`;
 }
 
 /**
