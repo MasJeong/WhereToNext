@@ -65,6 +65,12 @@ type ExchangeRateLiveResponse = {
   quotes?: Record<string, number>;
 };
 
+type OpenErApiResponse = {
+  result?: string;
+  time_last_update_unix?: number;
+  rates?: Record<string, number>;
+};
+
 type LocationMeta = {
   latitude: number;
   longitude: number;
@@ -511,18 +517,58 @@ function getMapEmbed(
 
 /**
  * 환율을 원화 기준 참고값으로 가져온다.
- * @param currencyCode 목적지 통화 코드
- * @param accessKey exchangerate.host access key
- * @returns 환율 요약 또는 undefined
+ * open.er-api.com (무료, 키 불필요)을 우선 사용하고,
+ * 실패 시 exchangerate.host(키 필요)로 폴백한다.
  */
 async function getExchangeRate(
   currencyCode: string,
   accessKey: string,
 ): Promise<DestinationTravelSupplement["exchangeRate"] | undefined> {
-  if (!accessKey || currencyCode === "KRW") {
+  if (currencyCode === "KRW") {
     return undefined;
   }
 
+  const result = await getExchangeRateFromOpenErApi(currencyCode);
+  if (result) return result;
+
+  if (!accessKey) return undefined;
+  return getExchangeRateFromHost(currencyCode, accessKey);
+}
+
+async function getExchangeRateFromOpenErApi(
+  currencyCode: string,
+): Promise<DestinationTravelSupplement["exchangeRate"] | undefined> {
+  try {
+    const response = await fetch(`https://open.er-api.com/v6/latest/KRW`, {
+      ...DEFAULT_REQUEST_OPTIONS,
+      next: { revalidate: 86400 },
+    });
+
+    if (!response.ok) return undefined;
+
+    const payload = (await response.json()) as OpenErApiResponse;
+    const quote = payload.rates?.[currencyCode];
+
+    if (payload.result !== "success" || !quote || !payload.time_last_update_unix) {
+      return undefined;
+    }
+
+    return {
+      baseCurrency: "KRW",
+      quoteCurrency: currencyCode,
+      quote,
+      summary: `1,000원당 약 ${(quote * 1000).toFixed(currencyCode === "JPY" ? 0 : 2)} ${currencyCode}`,
+      observedAt: new Date(payload.time_last_update_unix * 1000).toISOString(),
+    };
+  } catch {
+    return undefined;
+  }
+}
+
+async function getExchangeRateFromHost(
+  currencyCode: string,
+  accessKey: string,
+): Promise<DestinationTravelSupplement["exchangeRate"] | undefined> {
   const searchParams = new URLSearchParams({
     access_key: accessKey,
     source: "KRW",
@@ -531,14 +577,10 @@ async function getExchangeRate(
 
   const response = await fetch(`https://api.exchangerate.host/live?${searchParams.toString()}`, {
     ...DEFAULT_REQUEST_OPTIONS,
-    next: {
-      revalidate: 1800,
-    },
+    next: { revalidate: 1800 },
   });
 
-  if (!response.ok) {
-    return undefined;
-  }
+  if (!response.ok) return undefined;
 
   const payload = (await response.json()) as ExchangeRateLiveResponse;
   const quote = payload.quotes?.[`KRW${currencyCode}`];
