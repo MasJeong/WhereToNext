@@ -42,12 +42,42 @@ describe("user destination history image schema", () => {
       destinationId: "tokyo",
       rating: 5,
       tags: ["city"],
+      customTags: undefined,
       wouldRevisit: true,
       visitedAt: "2026-02-01T00:00:00.000Z",
       memo: null,
     });
 
     expect(parsed.images).toEqual([]);
+    expect(parsed.customTags).toEqual([]);
+  });
+
+  it("normalizes custom hashtags by trimming the leading hash", () => {
+    const parsed = userDestinationHistoryInputSchema.parse({
+      destinationId: "tokyo",
+      rating: 5,
+      tags: ["city"],
+      customTags: [" #야경맛집 "],
+      wouldRevisit: true,
+      visitedAt: "2026-02-01T00:00:00.000Z",
+      memo: null,
+    });
+
+    expect(parsed.customTags).toEqual(["야경맛집"]);
+  });
+
+  it("rejects invalid custom hashtags", () => {
+    expect(() =>
+      userDestinationHistoryInputSchema.parse({
+        destinationId: "tokyo",
+        rating: 5,
+        tags: ["city"],
+        customTags: ["야경 맛집"],
+        wouldRevisit: true,
+        visitedAt: "2026-02-01T00:00:00.000Z",
+        memo: null,
+      }),
+    ).toThrow();
   });
 
   it("rejects more than ten images in one history entry", () => {

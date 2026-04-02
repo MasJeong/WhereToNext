@@ -11,6 +11,8 @@ export const testIds = {
     searchEntry: "home-search-entry",
     cta: "home-cta",
     heroVisual: "home-hero-visual",
+    loadingState: "home-result-loading",
+    loadingSponsor: "home-loading-sponsor",
     resultPage: "home-result-page",
     progress: "home-step-progress",
     question: "home-step-question",
@@ -75,6 +77,9 @@ export const testIds = {
     tasteLogger: "destination-taste-logger",
     tasteRating: "destination-taste-rating",
     tasteTag0: "destination-taste-tag-0",
+    tasteCustomTagInput: "destination-taste-custom-tag-input",
+    tasteCustomTagAdd: "destination-taste-custom-tag-add",
+    tasteCustomTagRemove0: "destination-taste-custom-tag-remove-0",
     tasteRevisit: "destination-taste-revisit",
     tasteDate: "destination-taste-date",
     tasteSubmit: "destination-taste-submit",
@@ -116,12 +121,19 @@ export const testIds = {
     newHistoryDestinationResult0: "new-history-destination-result-0",
     newHistoryDate: "new-history-date",
     newHistoryBack: "new-history-back",
+    newHistoryCancel: "new-history-cancel",
+    newHistoryCancelDialog: "new-history-cancel-dialog",
+    newHistoryCancelStay: "new-history-cancel-stay",
+    newHistoryCancelLeave: "new-history-cancel-leave",
     newHistoryNext: "new-history-next",
     newHistoryStep: "new-history-step",
     newHistoryImageInput: "new-history-image-input",
     newHistoryImagePreview: "new-history-image-preview",
     newHistoryImageThumb0: "new-history-image-thumb-0",
     newHistoryImageRemove0: "new-history-image-remove-0",
+    newHistoryCustomTagInput: "new-history-custom-tag-input",
+    newHistoryCustomTagAdd: "new-history-custom-tag-add",
+    newHistoryCustomTagRemove0: "new-history-custom-tag-remove-0",
     newHistoryMemo: "new-history-memo",
     newHistorySubmit: "new-history-submit",
     historyEntry0: "history-entry-0",
@@ -280,4 +292,16 @@ export function getSavedSnapshotPlanTestId(index: number): string {
 
 export function getDestinationTasteTagTestId(index: number): string {
   return index === 0 ? testIds.detail.tasteTag0 : `destination-taste-tag-${index}`;
+}
+
+export function getDestinationTasteCustomTagRemoveTestId(index: number): string {
+  return index === 0
+    ? testIds.detail.tasteCustomTagRemove0
+    : `destination-taste-custom-tag-remove-${index}`;
+}
+
+export function getAccountHistoryCustomTagRemoveTestId(index: number): string {
+  return index === 0
+    ? testIds.account.newHistoryCustomTagRemove0
+    : `new-history-custom-tag-remove-${index}`;
 }

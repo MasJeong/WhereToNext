@@ -5,6 +5,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountHistoryCreateExperience } from "@/components/trip-compass/account-history-create-experience";
 import type { UserDestinationHistory } from "@/lib/domain/contracts";
 import {
+  getAccountHistoryCustomTagRemoveTestId,
   getAccountHistoryDestinationResultTestId,
   getAccountHistoryImageRemoveTestId,
   getAccountHistoryImageThumbTestId,
@@ -21,6 +22,7 @@ vi.mock("next/navigation", () => ({
     push: mockPush,
     refresh: mockRefresh,
   }),
+  usePathname: () => "/account/history/new",
 }));
 
 vi.mock("next/link", () => ({
@@ -41,6 +43,7 @@ const initialEntry: UserDestinationHistory = {
   destinationId: "tokyo",
   rating: 5,
   tags: ["city", "food"],
+  customTags: [],
   wouldRevisit: true,
   visitedAt: "2026-02-01T00:00:00.000Z",
   memo: "골목 분위기가 좋았어요.",
@@ -77,16 +80,34 @@ describe("AccountHistoryCreateExperience destination autocomplete", () => {
     vi.unstubAllGlobals();
   });
 
-  it("filters destinations by Korean, English, and country code input", () => {
+  it("filters destinations by Korean, English, country name, and country code input", () => {
     render(<AccountHistoryCreateExperience />);
 
     const searchInput = screen.getByTestId(testIds.account.newHistoryDestinationSearch);
+
+    fireEvent.change(searchInput, { target: { value: "도" } });
+    expect(screen.getByText("도쿄")).toBeInTheDocument();
+    expect(screen.queryByText("발리")).not.toBeInTheDocument();
+    expect(screen.queryByText("사이판")).not.toBeInTheDocument();
+
+    fireEvent.change(searchInput, { target: { value: "인" } });
+    expect(screen.queryByText("발리")).not.toBeInTheDocument();
 
     fireEvent.change(searchInput, { target: { value: "오사" } });
     expect(screen.getByTestId(getAccountHistoryDestinationResultTestId(0))).toHaveTextContent("오사카");
 
     fireEvent.change(searchInput, { target: { value: "pari" } });
     expect(screen.getByTestId(getAccountHistoryDestinationResultTestId(0))).toHaveTextContent("파리");
+
+    fireEvent.change(searchInput, { target: { value: "일본" } });
+    expect(screen.getByText("도쿄")).toBeInTheDocument();
+    expect(screen.getByText("오사카")).toBeInTheDocument();
+    expect(screen.getByText("교토")).toBeInTheDocument();
+
+    fireEvent.change(searchInput, { target: { value: "vietnam" } });
+    expect(screen.getByText("나트랑")).toBeInTheDocument();
+    expect(screen.getByText("다낭")).toBeInTheDocument();
+    expect(screen.getByText("호이안")).toBeInTheDocument();
 
     fireEvent.change(searchInput, { target: { value: "us" } });
     expect(screen.getByTestId(getAccountHistoryDestinationResultTestId(0))).toHaveTextContent("US");
@@ -136,5 +157,106 @@ describe("AccountHistoryCreateExperience destination autocomplete", () => {
 
     expect(screen.getByTestId(getAccountHistoryImageThumbTestId(0))).toBeInTheDocument();
     expect(screen.queryByTestId(getAccountHistoryImageThumbTestId(1))).not.toBeInTheDocument();
+  });
+
+  it("adds custom hashtags, blocks duplicates, and removes them in the tags step", () => {
+    render(<AccountHistoryCreateExperience mode="edit" initialEntry={initialEntry} />);
+
+    fireEvent.click(screen.getByTestId(testIds.account.newHistoryNext));
+    fireEvent.click(screen.getByTestId(testIds.account.newHistoryNext));
+    fireEvent.click(screen.getByTestId(testIds.account.newHistoryNext));
+
+    const customTagInput = screen.getByTestId(testIds.account.newHistoryCustomTagInput);
+    const addButton = screen.getByTestId(testIds.account.newHistoryCustomTagAdd);
+
+    fireEvent.change(customTagInput, { target: { value: "#야경맛집" } });
+    fireEvent.click(addButton);
+
+    expect(screen.getByText("#야경맛집")).toBeInTheDocument();
+
+    fireEvent.change(customTagInput, { target: { value: "야경맛집" } });
+    fireEvent.click(addButton);
+
+    expect(screen.getByText("이미 추가한 해시태그예요.")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId(getAccountHistoryCustomTagRemoveTestId(0)));
+
+    expect(screen.queryByText("#야경맛집")).not.toBeInTheDocument();
+  });
+
+  it("waits for IME composition to finish before adding a custom hashtag", () => {
+    render(<AccountHistoryCreateExperience mode="edit" initialEntry={initialEntry} />);
+
+    fireEvent.click(screen.getByTestId(testIds.account.newHistoryNext));
+    fireEvent.click(screen.getByTestId(testIds.account.newHistoryNext));
+    fireEvent.click(screen.getByTestId(testIds.account.newHistoryNext));
+
+    const customTagInput = screen.getByTestId(testIds.account.newHistoryCustomTagInput);
+    const addButton = screen.getByTestId(testIds.account.newHistoryCustomTagAdd);
+
+    fireEvent.compositionStart(customTagInput);
+    fireEvent.change(customTagInput, { target: { value: "아아" } });
+    fireEvent.click(addButton);
+
+    expect(screen.queryByText("#아아")).not.toBeInTheDocument();
+
+    fireEvent.compositionEnd(customTagInput, { currentTarget: { value: "아아이" }, target: { value: "아아이" } });
+
+    expect(screen.getByText("#아아이")).toBeInTheDocument();
+    expect(screen.queryByText("#아아")).not.toBeInTheDocument();
+    expect(screen.queryByText("#이")).not.toBeInTheDocument();
+  });
+
+  it("blocks submit when the destination search text changed after selection", async () => {
+    render(<AccountHistoryCreateExperience />);
+
+    const searchInput = screen.getByTestId(testIds.account.newHistoryDestinationSearch);
+    fireEvent.change(searchInput, { target: { value: "taipei" } });
+    fireEvent.click(screen.getByTestId(getAccountHistoryDestinationResultTestId(0)));
+
+    act(() => {
+      vi.advanceTimersByTime(130);
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /여행지/ }));
+    fireEvent.change(screen.getByTestId(testIds.account.newHistoryDestinationSearch), {
+      target: { value: "taipe" },
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: /메모/ }));
+    fireEvent.click(screen.getByTestId(testIds.account.newHistorySubmit));
+
+    expect(screen.getByText("목적지를 목록에서 선택해 주세요.")).toBeInTheDocument();
+    expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("leaves immediately when cancel is pressed without any changes", () => {
+    render(<AccountHistoryCreateExperience />);
+
+    fireEvent.click(screen.getByTestId(testIds.account.newHistoryCancel));
+
+    expect(mockPush).toHaveBeenCalledWith("/account?tab=history");
+    expect(screen.queryByTestId(testIds.account.newHistoryCancelDialog)).not.toBeInTheDocument();
+  });
+
+  it("asks for confirmation before leaving when the draft changed", () => {
+    render(<AccountHistoryCreateExperience />);
+
+    fireEvent.change(screen.getByTestId(testIds.account.newHistoryDestinationSearch), {
+      target: { value: "taipei" },
+    });
+    fireEvent.click(screen.getByTestId(testIds.account.newHistoryCancel));
+
+    expect(screen.getByTestId(testIds.account.newHistoryCancelDialog)).toBeInTheDocument();
+    expect(mockPush).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByTestId(testIds.account.newHistoryCancelStay));
+
+    expect(screen.queryByTestId(testIds.account.newHistoryCancelDialog)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId(testIds.account.newHistoryCancel));
+    fireEvent.click(screen.getByTestId(testIds.account.newHistoryCancelLeave));
+
+    expect(mockPush).toHaveBeenCalledWith("/account?tab=history");
   });
 });

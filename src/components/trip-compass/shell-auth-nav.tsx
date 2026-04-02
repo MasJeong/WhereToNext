@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth-client";
 import { testIds } from "@/lib/test-ids";
@@ -22,8 +22,11 @@ function getInitial(name: string): string {
  */
 export function ShellAuthNav() {
   const router = useRouter();
+  const pathname = usePathname() ?? "";
   const session = authClient.useSession();
   const user = session.data?.user;
+  const isAccountPath = pathname.startsWith("/account");
+  const isAuthPath = pathname.startsWith("/auth");
 
   async function handleSignOut() {
     await authClient.signOut();
@@ -38,9 +41,10 @@ export function ShellAuthNav() {
           <Link
             href="/account"
             data-testid={testIds.shell.identityCard}
-            className="compass-shell-identity compass-soft-press inline-flex min-h-[2.75rem] items-center gap-2.5 rounded-full px-2.5 py-2 text-[var(--color-ink)]"
+            aria-current={isAccountPath ? "page" : undefined}
+            className={`compass-shell-identity compass-soft-press inline-flex min-h-[2.25rem] items-center gap-2 rounded-full px-2 py-1.5 text-[var(--color-ink)]${isAccountPath ? " compass-shell-identity-active" : ""}`}
           >
-            <span className="compass-shell-identity-badge inline-flex h-8 w-8 items-center justify-center rounded-full text-xs font-semibold text-white">
+            <span className="compass-shell-identity-badge inline-flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold text-white">
               {getInitial(user.name)}
             </span>
             <span className="min-w-0">
@@ -59,13 +63,13 @@ export function ShellAuthNav() {
             onClick={() => {
               void handleSignOut();
             }}
-            className="compass-shell-auth-text-action compass-soft-press inline-flex min-h-[2.75rem] items-center px-1 py-2 text-[12px] font-semibold tracking-[0.02em]"
+            className="compass-shell-auth-text-action compass-soft-press inline-flex min-h-[2.25rem] items-center px-1 py-1.5 text-[11px] font-semibold tracking-[0.02em]"
           >
             로그아웃
           </button>
         </>
       ) : session.isPending ? (
-        <span className="inline-flex min-h-[2.75rem] items-center px-1 py-2 text-[12px] font-semibold tracking-[0.02em] text-[var(--color-ink-soft)]">
+        <span className="inline-flex min-h-[2.25rem] items-center px-1 py-1.5 text-[11px] font-semibold tracking-[0.02em] text-[var(--color-ink-soft)]">
           확인 중
         </span>
       ) : (
@@ -73,16 +77,10 @@ export function ShellAuthNav() {
           <Link
             href="/auth"
             data-testid={testIds.shell.authCta}
-            className="compass-shell-auth-text-link inline-flex min-h-[2.75rem] items-center px-1 py-2 text-[12px] font-semibold tracking-[0.02em]"
+            aria-current={isAuthPath ? "page" : undefined}
+            className={`compass-shell-auth-text-link inline-flex min-h-[2.25rem] items-center px-1 py-1.5 text-[11px] font-semibold tracking-[0.02em]${isAuthPath ? " compass-shell-auth-text-link-active" : ""}`}
           >
             로그인
-          </Link>
-          <Link
-            href="/account"
-            data-testid={testIds.shell.accountLink}
-            className="compass-shell-auth-pill compass-soft-press inline-flex min-h-[2.75rem] items-center rounded-full px-3.5 py-2 text-[12px] font-semibold tracking-[0.02em]"
-          >
-            내 여행
           </Link>
         </>
       )}

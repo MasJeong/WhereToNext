@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 
@@ -6,11 +7,11 @@ type HeroAnimationProps = {
 };
 
 const destinations = [
-  { name: "시드니", nameEn: "Sydney", country: "호주", image: "https://images.unsplash.com/photo-1506973035872-a4ec16b8e8d9?w=800&q=80" },
-  { name: "도쿄", nameEn: "Tokyo", country: "일본", image: "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=800&q=80" },
-  { name: "파리", nameEn: "Paris", country: "프랑스", image: "https://images.unsplash.com/photo-1502602898657-3e91760cbb34?w=800&q=80" },
-  { name: "발리", nameEn: "Bali", country: "인도네시아", image: "https://images.unsplash.com/photo-1537996194471-e657df975ab4?w=800&q=80" },
-  { name: "바르셀로나", nameEn: "Barcelona", country: "스페인", image: "https://images.unsplash.com/photo-1583422409516-2895a77efded?w=800&q=80" },
+  { name: "시드니", nameEn: "Sydney", country: "호주", image: "https://images.unsplash.com/photo-1524293581917-878a6d017c71?w=1280&q=80" },
+  { name: "도쿄", nameEn: "Tokyo", country: "일본", image: "https://images.unsplash.com/photo-1542051841857-5f90071e7989?w=1280&q=80" },
+  { name: "파리", nameEn: "Paris", country: "프랑스", image: "https://images.unsplash.com/photo-1431274172761-fca41d930114?w=1280&q=80" },
+  { name: "발리", nameEn: "Bali", country: "인도네시아", image: "https://images.unsplash.com/photo-1604999333679-b86d54738315?w=1280&q=80" },
+  { name: "바르셀로나", nameEn: "Barcelona", country: "스페인", image: "https://images.unsplash.com/photo-1523531294919-4bcd7c65e216?w=1280&q=80" },
 ];
 
 const blurredPreviews = [
@@ -48,12 +49,12 @@ export function HeroAnimation({ testId }: HeroAnimationProps) {
             exit={prefersReducedMotion ? undefined : { opacity: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.8, ease: "easeInOut" }}
           >
-            <img
+            <Image
               src={dest.image}
               alt={`${dest.name} 여행 풍경`}
-              className="h-full w-full object-cover"
-              loading="eager"
-              decoding="async"
+              fill
+              className="object-cover"
+              priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
           </motion.div>

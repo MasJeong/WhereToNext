@@ -123,6 +123,14 @@ function buildProviderHref(
   return `/api/auth/oauth/${provider}/start${query ? `?${query}` : ""}`;
 }
 
+function buildContinueHref(next: string | null): string {
+  if (!next || !next.startsWith("/")) {
+    return "/";
+  }
+
+  return next;
+}
+
 function ProviderIcon({ provider }: { provider: Provider }) {
   if (provider === "kakao") {
     return (
@@ -247,7 +255,7 @@ export function AuthExperience() {
 
           <div className="mt-5">
             <Link
-              href="/"
+              href={buildContinueHref(next)}
               className="inline-flex items-center text-sm font-medium text-[var(--color-ink-soft)] underline decoration-[color:var(--color-frame-strong)] underline-offset-4"
             >
               로그인 없이 계속 보기

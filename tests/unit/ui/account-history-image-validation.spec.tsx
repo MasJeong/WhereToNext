@@ -15,6 +15,7 @@ vi.mock("next/navigation", () => ({
     push: mockPush,
     refresh: mockRefresh,
   }),
+  usePathname: () => "/account/history/new",
 }));
 
 vi.mock("next/link", () => ({

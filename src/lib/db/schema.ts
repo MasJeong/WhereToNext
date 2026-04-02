@@ -190,6 +190,7 @@ export const userDestinationHistory = pgTable("user_destination_history", {
     .references(() => destinationProfiles.id, { onDelete: "cascade" }),
   rating: integer("rating").notNull(),
   tags: jsonb("tags").$type<typeof vibeValues[number][]>().notNull(),
+  customTags: jsonb("custom_tags").$type<string[]>().notNull().default([]),
   wouldRevisit: boolean("would_revisit").notNull().default(false),
   visitedAt: timestamp("visited_at", { withTimezone: true }).notNull(),
   memo: text("memo"),

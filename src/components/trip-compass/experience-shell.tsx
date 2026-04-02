@@ -6,10 +6,31 @@ import { testIds } from "@/lib/test-ids";
 import { ShellAuthNav } from "./shell-auth-nav";
 import { ShellPrimaryNav } from "./shell-primary-nav";
 
-const primaryNavItems = [
-  { label: "추천 받기", href: "/?start=1", kind: "primary" },
-  { label: "내 여행", href: "/account" },
-] as const;
+/* Compass icon for 추천 받기 */
+function CompassIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className="h-[14px] w-[14px]" aria-hidden="true">
+      <circle cx="8" cy="8" r="6.5" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M10.5 5.5 9 9l-3.5 1.5L7 7l3.5-1.5Z" fill="currentColor" opacity="0.7" />
+    </svg>
+  );
+}
+
+/* Suitcase icon for 내 여행 */
+function SuitcaseIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className="h-[14px] w-[14px]" aria-hidden="true">
+      <rect x="3" y="5.5" width="10" height="7.5" rx="1.5" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M6 5.5V4a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1v1.5" stroke="currentColor" strokeWidth="1.3" />
+      <line x1="3" y1="9" x2="13" y2="9" stroke="currentColor" strokeWidth="1.3" />
+    </svg>
+  );
+}
+
+const primaryNavItems: readonly { label: string; href: string; icon: React.ReactNode }[] = [
+  { label: "추천 받기", href: "/?stage=question&step=1", icon: <CompassIcon /> },
+  { label: "내 여행", href: "/account", icon: <SuitcaseIcon /> },
+];
 
 type ExperienceShellProps = {
   eyebrow: string;
@@ -50,9 +71,9 @@ export function ExperienceShell({
         {hideTopbar ? null : (
           <div
             data-testid={testIds.shell.header}
-            className="compass-shell-topbar compass-stage-reveal compass-stage-reveal-fast rounded-[calc(var(--radius-card)-16px)] px-3.5 py-2.5 sm:px-4"
+            className="compass-shell-topbar compass-stage-reveal compass-stage-reveal-fast rounded-[calc(var(--radius-card)-4px)] px-3 py-2 sm:px-4 sm:py-2.5"
           >
-            <div className="compass-shell-topbar-layout min-h-[3.25rem]">
+            <div className="compass-shell-topbar-layout min-h-[2.75rem]">
               <ShellPrimaryNav items={primaryNavItems} />
 
               {hideAuthNavigation ? null : <ShellAuthNav />}

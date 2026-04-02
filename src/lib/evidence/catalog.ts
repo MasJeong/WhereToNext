@@ -139,6 +139,50 @@ export const destinationEvidenceCatalog: Record<string, EvidenceCatalogItem[]> =
       observedAt: "2026-03-16T03:00:00.000Z",
     },
   ],
+  brisbane: [
+    {
+      tier: "yellow",
+      sourceType: "hashtag_capsule",
+      sourceLabel: "#brisbane",
+      sourceUrl: "https://www.instagram.com/explore/tags/brisbane/",
+      summary: "강변 산책과 브리지, 사우스뱅크 중심의 도심 라이프스타일 컷이 꾸준히 보입니다.",
+      confidence: 79,
+      observedAt: "2026-04-01T08:00:00.000Z",
+    },
+  ],
+  perth: [
+    {
+      tier: "yellow",
+      sourceType: "hashtag_capsule",
+      sourceLabel: "#perth",
+      sourceUrl: "https://www.instagram.com/explore/tags/perth/",
+      summary: "해변과 도심 바, 강변 산책 컷이 함께 보이는 서호주 도시 무드가 꾸준합니다.",
+      confidence: 80,
+      observedAt: "2026-04-01T09:00:00.000Z",
+    },
+  ],
+  cairns: [
+    {
+      tier: "yellow",
+      sourceType: "hashtag_capsule",
+      sourceLabel: "#cairns",
+      sourceUrl: "https://www.instagram.com/explore/tags/cairns/",
+      summary: "리프 투어와 열대우림, 리조트 무드가 강하게 반복되는 자연형 피드입니다.",
+      confidence: 82,
+      observedAt: "2026-04-01T09:10:00.000Z",
+    },
+  ],
+  adelaide: [
+    {
+      tier: "yellow",
+      sourceType: "hashtag_capsule",
+      sourceLabel: "#adelaide",
+      sourceUrl: "https://www.instagram.com/explore/tags/adelaide/",
+      summary: "와인 산지 근교와 여유로운 도심, 해변 라이프스타일 컷이 고르게 보입니다.",
+      confidence: 77,
+      observedAt: "2026-04-01T10:00:00.000Z",
+    },
+  ],
   miyakojima: [
     {
       tier: "yellow",
@@ -181,6 +225,127 @@ export const destinationEvidenceCatalog: Record<string, EvidenceCatalogItem[]> =
       summary: "입체적인 야경과 훠궈, 도시 포토 스폿 중심의 강한 비주얼 신호가 있습니다.",
       confidence: 80,
       observedAt: "2026-03-18T07:30:00.000Z",
+    },
+  ],
+  beijing: [
+    {
+      tier: "yellow",
+      sourceType: "hashtag_capsule",
+      sourceLabel: "#beijing",
+      sourceUrl: "https://www.instagram.com/explore/tags/beijing/",
+      summary: "자금성과 만리장성, 중심축 유적 동선이 도드라지는 문화 도시 비주얼이 강합니다.",
+      confidence: 81,
+      observedAt: "2026-04-01T09:20:00.000Z",
+    },
+  ],
+  guangzhou: [
+    {
+      tier: "yellow",
+      sourceType: "hashtag_capsule",
+      sourceLabel: "#guangzhou",
+      sourceUrl: "https://www.instagram.com/explore/tags/guangzhou/",
+      summary: "캔톤타워 야경과 광둥 미식, 대형 쇼핑몰 동선이 반복적으로 보이는 도시 피드입니다.",
+      confidence: 80,
+      observedAt: "2026-04-01T10:10:00.000Z",
+    },
+  ],
+  shanghai: [
+    {
+      tier: "yellow",
+      sourceType: "hashtag_capsule",
+      sourceLabel: "#shanghai",
+      sourceUrl: "https://www.instagram.com/explore/tags/shanghai/",
+      summary: "와이탄 야경과 난징동루, 스카이라인 중심의 도시 비주얼이 강하게 반복됩니다.",
+      confidence: 83,
+      observedAt: "2026-04-01T08:30:00.000Z",
+    },
+  ],
+  shenzhen: [
+    {
+      tier: "yellow",
+      sourceType: "hashtag_capsule",
+      sourceLabel: "#shenzhen",
+      sourceUrl: "https://www.instagram.com/explore/tags/shenzhen/",
+      summary: "현대적인 스카이라인과 테마파크, 해안 도시 야경 컷이 함께 노출됩니다.",
+      confidence: 79,
+      observedAt: "2026-04-01T10:20:00.000Z",
+    },
+  ],
+  vancouver: [
+    {
+      tier: "yellow",
+      sourceType: "hashtag_capsule",
+      sourceLabel: "#vancouver",
+      sourceUrl: "https://www.instagram.com/explore/tags/vancouver/",
+      summary: "도심과 바다, 산 풍경이 한 화면에 담기는 서부 캐나다 도시 무드가 강합니다.",
+      confidence: 82,
+      observedAt: "2026-04-01T10:30:00.000Z",
+    },
+  ],
+  banff: [
+    {
+      tier: "yellow",
+      sourceType: "hashtag_capsule",
+      sourceLabel: "#banff",
+      sourceUrl: "https://www.instagram.com/explore/tags/banff/",
+      summary: "록키 산맥과 청록빛 호수, 겨울 설경이 강하게 반복되는 캐나다 대표 절경 피드입니다.",
+      confidence: 89,
+      observedAt: "2026-04-01T10:40:00.000Z",
+    },
+  ],
+  toronto: [
+    {
+      tier: "yellow",
+      sourceType: "hashtag_capsule",
+      sourceLabel: "#toronto",
+      sourceUrl: "https://www.instagram.com/explore/tags/toronto/",
+      summary: "도심 스카이라인과 미식, 쇼핑, 공연 관람 무드가 고르게 보이는 대도시 피드입니다.",
+      confidence: 78,
+      observedAt: "2026-04-01T10:50:00.000Z",
+    },
+  ],
+  montreal: [
+    {
+      tier: "yellow",
+      sourceType: "hashtag_capsule",
+      sourceLabel: "#montreal",
+      sourceUrl: "https://www.instagram.com/explore/tags/montreal/",
+      summary: "올드타운과 축제, 카페와 미식 중심의 감성 도시 컷이 꾸준히 보입니다.",
+      confidence: 81,
+      observedAt: "2026-04-01T11:00:00.000Z",
+    },
+  ],
+  auckland: [
+    {
+      tier: "yellow",
+      sourceType: "hashtag_capsule",
+      sourceLabel: "#auckland",
+      sourceUrl: "https://www.instagram.com/explore/tags/auckland/",
+      summary: "항구와 스카이라인, 섬과 해안이 함께 노출되는 도시형 뉴질랜드 피드입니다.",
+      confidence: 79,
+      observedAt: "2026-04-01T09:30:00.000Z",
+    },
+  ],
+  queenstown: [
+    {
+      tier: "yellow",
+      sourceType: "hashtag_capsule",
+      sourceLabel: "#queenstown",
+      sourceUrl: "https://www.instagram.com/explore/tags/queenstown/",
+      summary: "호수와 산악 풍경, 액티비티와 와이너리 컷이 강하게 반복되는 대표 절경 피드입니다.",
+      confidence: 85,
+      observedAt: "2026-04-01T09:40:00.000Z",
+    },
+  ],
+  christchurch: [
+    {
+      tier: "yellow",
+      sourceType: "hashtag_capsule",
+      sourceLabel: "#christchurch",
+      sourceUrl: "https://www.instagram.com/explore/tags/christchurch/",
+      summary: "정원 도시와 스트리트 감성, 남섬 관문 동선이 함께 보이는 뉴질랜드 도시 피드입니다.",
+      confidence: 76,
+      observedAt: "2026-04-01T11:10:00.000Z",
     },
   ],
   london: [

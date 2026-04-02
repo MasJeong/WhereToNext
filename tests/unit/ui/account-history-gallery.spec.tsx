@@ -20,7 +20,10 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
     refresh: mockRefresh,
+    replace: vi.fn(),
   }),
+  usePathname: () => "/account",
+  useSearchParams: () => new URLSearchParams("tab=history"),
 }));
 
 vi.mock("next/link", () => ({
@@ -60,6 +63,7 @@ const historyEntry: UserDestinationHistory = {
   destinationId: "tokyo",
   rating: 5,
   tags: ["city", "food"],
+  customTags: ["late-night", "hanriver"],
   wouldRevisit: true,
   visitedAt: "2026-02-01T00:00:00.000Z",
   memo: "사진 여러 장으로 다시 보기 쉽게 남겨 뒀어요.",
@@ -91,5 +95,7 @@ describe("AccountExperience history gallery", () => {
     expect(screen.getByTestId(getAccountHistoryGalleryImageTestId(0))).toBeInTheDocument();
     expect(screen.getByTestId(getAccountHistoryGalleryImageTestId(1))).toBeInTheDocument();
     expect(screen.getByTestId(getAccountHistoryGalleryImageTestId(2))).toBeInTheDocument();
+    expect(screen.getByText("#late-night")).toBeInTheDocument();
+    expect(screen.getByText("#hanriver")).toBeInTheDocument();
   });
 });

@@ -110,7 +110,7 @@ export async function resolveSnapshotRestorePageData(
   if (!snapshot || snapshot.kind !== "recommendation") {
     return {
       kind: "error",
-      message: "저장한 여행 링크를 다시 확인하거나 홈에서 새 추천을 내 일정에 담아 보세요.",
+      message: "저장한 여행 링크를 다시 확인하거나 홈에서 새 추천을 담아 보세요.",
     };
   }
 
@@ -120,7 +120,7 @@ export async function resolveSnapshotRestorePageData(
     if (!restored.primaryCard) {
       return {
         kind: "error",
-        message: "저장해 둔 여행 정보를 다시 불러오지 못했어요. 홈에서 새 추천을 내 일정에 담아 다시 공유해 주세요.",
+        message: "저장해 둔 여행 정보를 다시 불러오지 못했어요. 홈에서 새 추천을 담아 다시 공유해 주세요.",
       };
     }
 
@@ -139,7 +139,7 @@ export async function resolveSnapshotRestorePageData(
   } catch {
     return {
       kind: "error",
-      message: "저장해 둔 여행 정보를 다시 불러오지 못했어요. 홈에서 새 추천을 내 일정에 담아 다시 공유해 주세요.",
+      message: "저장해 둔 여행 정보를 다시 불러오지 못했어요. 홈에서 새 추천을 담아 다시 공유해 주세요.",
     };
   }
 }

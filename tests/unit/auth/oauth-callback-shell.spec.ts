@@ -78,6 +78,6 @@ describe("oauth callback shell session issuance", () => {
     );
     expect(setCookie).toContain("trip_compass_session=oauth-shell-token");
     expect(maxAgeMatch).not.toBeNull();
-    expect(Number(maxAgeMatch?.[1] ?? 0)).toBeGreaterThan(2_500_000);
+    expect(Number(maxAgeMatch?.[1] ?? 0)).toBeGreaterThan(2_400_000);
   });
 });

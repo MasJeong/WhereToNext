@@ -33,7 +33,6 @@ import {
 import { buildApiUrl } from "@/lib/runtime/url";
 import { parseRecommendationQuery } from "@/lib/security/validation";
 import {
-  defaultHomeStepAnswers,
   deriveRecommendationQueryFromHomeStepAnswers,
   homeStepCompanionOptions,
   homeStepFlightPreferenceOptions,
@@ -44,7 +43,6 @@ import {
   type HomeStepTravelStyle,
 } from "@/lib/trip-compass/step-answer-adapter";
 import {
-  getFutureTripCtaTestId,
   getHomeChoiceTestId,
   getInstagramVibeTestId,
   getRelaxFilterActionTestId,
@@ -59,12 +57,13 @@ import { shellHomeEvent, shellStartRecommendationEvent } from "@/lib/trip-compas
 
 import { ExperienceShell } from "./experience-shell";
 import { LandingPage } from "./home/landing-page";
+import { ResultLoadingPanel } from "./home/result-loading-panel";
 import { ResultPage } from "./home/result-page";
 import { StepQuestion } from "./home/step-question";
 import { LeadSocialVideoPanel } from "./social-video-panel";
 import { TravelSupportPanel } from "./travel-support-panel";
 
-type FunnelStage = "landing" | "question" | "result";
+type FunnelStage = "landing" | "question" | "loading" | "result";
 
 type SaveState = {
   status: "idle" | "saving" | "saved" | "error";
@@ -126,27 +125,27 @@ type CompactRecommendationItemProps = {
   card: RecommendationCardView;
   index: number;
   query: RecommendationQuery;
-  showFutureTripCta: boolean;
   saveState: SaveState;
-  futureTripState: FutureTripState;
   onSave: (card: RecommendationCardView) => void;
-  onRegisterFutureTrip: (card: RecommendationCardView) => void;
   onCopy: (shareUrl: string) => void;
 };
 
 type ResultFilterKey = "all" | "short-flight" | "city" | "rest" | "balanced-budget";
 type ResultSortKey = "fit" | "shortest-flight" | "budget";
+type HomeUrlStage = FunnelStage;
 
 const tripLengthRelaxationOrder = [3, 5, 8, 15] as const;
 const flightToleranceRelaxationOrder = ["short", "medium", "long"] as const;
 const travelMonthRelaxationOrder = [7, 10, 12] as const;
-const defaultAnswers: HomeStepAnswers = {
-  whoWith: defaultHomeStepAnswers.whoWith,
-  travelWindow: defaultHomeStepAnswers.travelWindow,
-  tripLength: defaultHomeStepAnswers.tripLength,
-  travelStyle: defaultHomeStepAnswers.travelStyle,
-  flightPreference: defaultHomeStepAnswers.flightPreference,
-};
+const defaultAnswers: Partial<HomeStepAnswers> = {};
+const homeStageParam = "stage";
+const homeStepParam = "step";
+const homeWhoWithParam = "whoWith";
+const homeTravelWindowParam = "travelWindow";
+const homeTripLengthParam = "tripLength";
+const homeTravelStyleParam = "travelStyle";
+const homeFlightPreferenceParam = "flightPreference";
+const minimumRecommendationLoadingMs = process.env.NODE_ENV === "test" ? 0 : 5000;
 
 const resultFilterOptions: Array<{ key: ResultFilterKey; label: string; description: string }> = [
   { key: "all", label: "전체", description: "지금 조건과 맞는 순서대로 봐요." },
@@ -155,6 +154,12 @@ const resultFilterOptions: Array<{ key: ResultFilterKey; label: string; descript
   { key: "rest", label: "아웃도어", description: "해변·풍경 쪽 후보를 먼저 볼게요." },
   { key: "balanced-budget", label: "예산 균형", description: "균형 예산 감각을 먼저 볼게요." },
 ];
+
+const companionValueSet = new Set(homeStepCompanionOptions.map((option) => option.value));
+const travelWindowValueSet = new Set(homeStepTravelWindowOptions.map((option) => option.value));
+const tripLengthValueSet = new Set(homeStepTripLengthOptions.map((option) => option.value));
+const flightPreferenceValueSet = new Set(homeStepFlightPreferenceOptions.map((option) => option.value));
+const travelStyleValueSet = new Set(homeStepTravelStyleOptions.map((option) => option.value));
 
 function getNextRelaxedOption<TValue extends string | number>(
   currentValue: TValue,
@@ -191,6 +196,135 @@ function getBudgetRank(budgetBand: RecommendationCardView["destination"]["budget
   }
 
   return 2;
+}
+
+function isHomeStepTravelStyle(value: string): value is HomeStepTravelStyle {
+  return travelStyleValueSet.has(value as HomeStepTravelStyle);
+}
+
+function parseStepParam(stepParam: string | null): number {
+  const parsedValue = Number(stepParam);
+  if (!Number.isInteger(parsedValue) || parsedValue < 1) {
+    return 0;
+  }
+
+  return parsedValue - 1;
+}
+
+/**
+ * Keeps the recommendation loading UI visible for a minimum duration.
+ */
+async function waitForMinimumRecommendationLoading(startedAt: number): Promise<void> {
+  const remainingMs = minimumRecommendationLoadingMs - (Date.now() - startedAt);
+
+  if (remainingMs <= 0) {
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    window.setTimeout(resolve, remainingMs);
+  });
+}
+
+function getFirstIncompleteStepIndex(answers: Partial<HomeStepAnswers>): number {
+  if (!answers.whoWith) {
+    return 0;
+  }
+
+  if (!answers.travelWindow) {
+    return 1;
+  }
+
+  if (!answers.tripLength) {
+    return 2;
+  }
+
+  if (!answers.travelStyle || answers.travelStyle.length === 0) {
+    return 3;
+  }
+
+  if (!answers.flightPreference) {
+    return 4;
+  }
+
+  return 4;
+}
+
+function clampQuestionStepIndex(stepIndex: number, answers: Partial<HomeStepAnswers>, totalSteps: number): number {
+  const maxStepIndex = Math.max(0, totalSteps - 1);
+  const firstIncompleteStepIndex = getFirstIncompleteStepIndex(answers);
+  return Math.min(Math.max(0, stepIndex), Math.min(firstIncompleteStepIndex, maxStepIndex));
+}
+
+function parseQuestionAnswersFromSearchParams(searchParams: URLSearchParams): Partial<HomeStepAnswers> {
+  const whoWith = searchParams.get(homeWhoWithParam);
+  const travelWindow = Number(searchParams.get(homeTravelWindowParam));
+  const tripLength = Number(searchParams.get(homeTripLengthParam));
+  const flightPreference = searchParams.get(homeFlightPreferenceParam);
+  const travelStyle = searchParams
+    .get(homeTravelStyleParam)
+    ?.split(",")
+    .map((value) => value.trim())
+    .filter(isHomeStepTravelStyle)
+    .slice(0, 3);
+
+  const restoredAnswers: Partial<HomeStepAnswers> = {};
+
+  if (whoWith && companionValueSet.has(whoWith as HomeStepAnswers["whoWith"])) {
+    restoredAnswers.whoWith = whoWith as HomeStepAnswers["whoWith"];
+  }
+
+  if (travelWindowValueSet.has(travelWindow as HomeStepAnswers["travelWindow"])) {
+    restoredAnswers.travelWindow = travelWindow as HomeStepAnswers["travelWindow"];
+  }
+
+  if (tripLengthValueSet.has(tripLength as HomeStepAnswers["tripLength"])) {
+    restoredAnswers.tripLength = tripLength as HomeStepAnswers["tripLength"];
+  }
+
+  if (travelStyle && travelStyle.length > 0) {
+    restoredAnswers.travelStyle = travelStyle;
+  }
+
+  if (flightPreference && flightPreferenceValueSet.has(flightPreference as HomeStepAnswers["flightPreference"])) {
+    restoredAnswers.flightPreference = flightPreference as HomeStepAnswers["flightPreference"];
+  }
+
+  return restoredAnswers;
+}
+
+function buildQuestionSearchParams(stepIndex: number, answers: Partial<HomeStepAnswers>): URLSearchParams {
+  const params = new URLSearchParams();
+  params.set(homeStageParam, "question");
+  params.set(homeStepParam, String(stepIndex + 1));
+
+  if (answers.whoWith) {
+    params.set(homeWhoWithParam, answers.whoWith);
+  }
+
+  if (answers.travelWindow) {
+    params.set(homeTravelWindowParam, String(answers.travelWindow));
+  }
+
+  if (answers.tripLength) {
+    params.set(homeTripLengthParam, String(answers.tripLength));
+  }
+
+  if (answers.travelStyle && answers.travelStyle.length > 0) {
+    params.set(homeTravelStyleParam, answers.travelStyle.join(","));
+  }
+
+  if (answers.flightPreference) {
+    params.set(homeFlightPreferenceParam, answers.flightPreference);
+  }
+
+  return params;
+}
+
+function buildResultSearchParams(query: RecommendationQuery): URLSearchParams {
+  const params = buildRecommendationSearchParams(query);
+  params.set(homeStageParam, "result");
+  return params;
 }
 
 function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] {
@@ -341,11 +475,8 @@ function CompactRecommendationItem({
   card,
   index,
   query,
-  showFutureTripCta,
   saveState,
-  futureTripState,
   onSave,
-  onRegisterFutureTrip,
   onCopy,
 }: CompactRecommendationItemProps) {
   const detailPath = buildDestinationDetailPath(card.destination, query, saveState.snapshotId);
@@ -404,33 +535,18 @@ function CompactRecommendationItem({
           >
             상세 보기
           </Link>
-          {showFutureTripCta ? (
-            <button
-              type="button"
-              data-testid={getFutureTripCtaTestId(index)}
-              onClick={() => onRegisterFutureTrip(card)}
-              disabled={futureTripState.status === "saving" || futureTripState.status === "saved"}
-              className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
-            >
-              {futureTripState.status === "saving"
-                ? "담는 중..."
-                : futureTripState.status === "saved"
-                  ? "다음 여행 담음"
-                  : "다음 여행 담기"}
-            </button>
-          ) : null}
           <button
             type="button"
             data-testid={getSaveSnapshotTestId(index)}
             onClick={() => onSave(card)}
-            disabled={saveState.status === "saving"}
+            disabled={saveState.status === "saving" || saveState.status === "saved"}
             className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] disabled:cursor-not-allowed disabled:opacity-60"
           >
             {saveState.status === "saving"
-              ? "저장 중..."
+              ? "담는 중..."
               : saveState.status === "saved"
                 ? "담김"
-                : "저장"}
+                : "담기"}
           </button>
           {saveState.shareUrl ? (
             <button
@@ -473,6 +589,11 @@ export function HomeExperience() {
   const [compareError, setCompareError] = useState<string | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
   const activeRecommendationRequestRef = useRef(0);
+  const localRouteSyncRef = useRef<string | null>(null);
+  const pendingRecommendationQueryRef = useRef<string | null>(null);
+  const requestRecommendationsRef = useRef<(query: RecommendationQuery, syncRoute?: boolean) => Promise<void>>(async () => {});
+  const resetFunnelRef = useRef<() => void>(() => {});
+  const startFunnelRef = useRef<() => void>(() => {});
   const replayedIntentRef = useRef<string | null>(null);
 
   const currentQuery = useMemo(() => deriveRecommendationQueryFromHomeStepAnswers(answers), [answers]);
@@ -539,6 +660,62 @@ export function HomeExperience() {
       .map((snapshot) => snapshot.destinationName)
       .join(" · ");
   }, [savedSnapshots, selectedCompareIds]);
+
+  const searchParamString = searchParams.toString();
+  const homeSearchParams = useMemo(() => new URLSearchParams(searchParamString), [searchParamString]);
+
+  const navigateHomeRoute = useCallback((nextSearchParams: URLSearchParams | null, mode: "push" | "replace") => {
+    const nextQuery = nextSearchParams?.toString() ?? "";
+    const nextRoute = nextQuery ? `/?${nextQuery}` : "/";
+    localRouteSyncRef.current = nextRoute;
+    if (mode === "push") {
+      router.push(nextRoute, { scroll: false });
+      return;
+    }
+
+    router.replace(nextRoute, { scroll: false });
+  }, [router]);
+
+  const replaceHomeRoute = useCallback((nextSearchParams: URLSearchParams | null) => {
+    navigateHomeRoute(nextSearchParams, "replace");
+  }, [navigateHomeRoute]);
+
+  const pushHomeRoute = useCallback((nextSearchParams: URLSearchParams | null) => {
+    navigateHomeRoute(nextSearchParams, "push");
+  }, [navigateHomeRoute]);
+
+  const syncQuestionRoute = useCallback((
+    stepIndex: number,
+    nextAnswers: Partial<HomeStepAnswers>,
+    mode: "push" | "replace" = "push",
+  ) => {
+    const nextSearchParams = buildQuestionSearchParams(stepIndex, nextAnswers);
+    if (mode === "replace") {
+      replaceHomeRoute(nextSearchParams);
+      return;
+    }
+
+    pushHomeRoute(nextSearchParams);
+  }, [pushHomeRoute, replaceHomeRoute]);
+
+  const syncResultRoute = useCallback((query: RecommendationQuery, mode: "push" | "replace" = "push") => {
+    const nextSearchParams = buildResultSearchParams(query);
+    if (mode === "replace") {
+      replaceHomeRoute(nextSearchParams);
+      return;
+    }
+
+    pushHomeRoute(nextSearchParams);
+  }, [pushHomeRoute, replaceHomeRoute]);
+
+  const syncLandingRoute = useCallback((mode: "push" | "replace" = "replace") => {
+    if (mode === "push") {
+      pushHomeRoute(null);
+      return;
+    }
+
+    replaceHomeRoute(null);
+  }, [pushHomeRoute, replaceHomeRoute]);
 
   const steps: HomeFlowStep[] = [
     {
@@ -645,46 +822,117 @@ export function HomeExperience() {
       : "2개부터 선택하면 비교돼요";
 
   useEffect(() => {
-    if (stage !== "landing" || isSubmitting || results) {
+    const currentRoute = buildCurrentRoute("/", homeSearchParams);
+    const isLocallySyncedRoute = localRouteSyncRef.current === currentRoute;
+
+    if (isLocallySyncedRoute) {
+      localRouteSyncRef.current = null;
+    }
+
+    if (homeSearchParams.get("start") === "1") {
+      const nextAnswers = defaultAnswers;
+      setStage("question");
+      setAnswers(nextAnswers);
+      setCurrentStepIndex(0);
+      setResults(null);
+      setCards([]);
+      setIsSubmitting(false);
+      setSubmitError(null);
+      setShowAllResults(false);
+      setResultFilter("all");
+      setResultSort("fit");
+      setCopyFallbackUrl(null);
+      syncQuestionRoute(0, nextAnswers, "replace");
       return;
     }
 
-    if (searchParams.get("start") === "1") {
-      startFunnel();
-      const nextSearchParams = new URLSearchParams(searchParams.toString());
-      nextSearchParams.delete("start");
-      const nextUrl = nextSearchParams.size > 0 ? `/?${nextSearchParams.toString()}` : "/";
-      router.replace(nextUrl, { scroll: false });
-    }
-  }, [isSubmitting, results, router, searchParams, stage]);
+    const routeStage = homeSearchParams.get(homeStageParam) as HomeUrlStage | null;
 
-  useEffect(() => {
-    if (stage !== "landing" || results || isSubmitting) {
+    if (routeStage === "question" && pendingRecommendationQueryRef.current) {
       return;
     }
 
-    const nextSearchParams = new URLSearchParams(searchParams.toString());
-    if (nextSearchParams.size === 0) {
+    if (routeStage === "question") {
+      const restoredAnswers = parseQuestionAnswersFromSearchParams(homeSearchParams);
+      const requestedStepIndex = parseStepParam(homeSearchParams.get(homeStepParam));
+      const nextStepIndex = clampQuestionStepIndex(requestedStepIndex, restoredAnswers, steps.length);
+
+      setStage("question");
+      setAnswers(restoredAnswers);
+      setCurrentStepIndex(nextStepIndex);
+      setResults(null);
+      setCards([]);
+      setIsSubmitting(false);
+      setSubmitError(null);
+      setShowAllResults(false);
+      setResultFilter("all");
+      setResultSort("fit");
+      setCopyFallbackUrl(null);
       return;
     }
 
     try {
-      const query = parseRecommendationQuery(nextSearchParams);
-      void requestRecommendations(query);
+      const query = parseRecommendationQuery(homeSearchParams);
+      const serializedQuery = buildRecommendationSearchParams(query).toString();
+
+      if (routeStage !== "result") {
+        syncResultRoute(query, "replace");
+        return;
+      }
+
+      if (submitError) {
+        return;
+      }
+
+      if (pendingRecommendationQueryRef.current === serializedQuery) {
+        return;
+      }
+
+      if (results) {
+        const serializedResultQuery = buildRecommendationSearchParams(results.query).toString();
+
+        if (serializedResultQuery === serializedQuery) {
+          return;
+        }
+
+        syncResultRoute(results.query, "replace");
+        return;
+      }
+
+      if (isLocallySyncedRoute) {
+        return;
+      }
+
+      void requestRecommendationsRef.current(query, false);
+      return;
     } catch {
     }
-  }, [isSubmitting, results, searchParams, stage]);
+
+    if (routeStage === "landing" || homeSearchParams.size === 0) {
+      setStage("landing");
+      setAnswers(defaultAnswers);
+      setCurrentStepIndex(0);
+      setResults(null);
+      setCards([]);
+      setIsSubmitting(false);
+      setSubmitError(null);
+      setShowAllResults(false);
+      setResultFilter("all");
+      setResultSort("fit");
+      setCopyFallbackUrl(null);
+    }
+  }, [homeSearchParams, isSubmitting, results, searchParamString, steps.length, submitError, syncQuestionRoute, syncResultRoute]);
 
   useEffect(() => {
     function handleHomeNavigation() {
-      resetFunnel();
+      resetFunnelRef.current();
       requestAnimationFrame(() => {
         scrollToPageTop(getMotionBehavior());
       });
     }
 
     function handleStartRecommendation() {
-      startFunnel();
+      startFunnelRef.current();
       requestAnimationFrame(() => {
         requestAnimationFrame(() => {
           scrollToElementById("home-question-flow");
@@ -714,6 +962,7 @@ export function HomeExperience() {
     setResultFilter("all");
     setResultSort("fit");
     setCopyFallbackUrl(null);
+    syncLandingRoute("replace");
   }
 
   function startFunnel() {
@@ -729,6 +978,7 @@ export function HomeExperience() {
     setResultFilter("all");
     setResultSort("fit");
     setCopyFallbackUrl(null);
+    syncQuestionRoute(0, defaultAnswers, "push");
   }
 
   const copyShareUrl = useCallback(async (shareUrl: string) => {
@@ -828,66 +1078,10 @@ export function HomeExperience() {
     [copyShareUrl],
   );
 
-  const saveCard = useCallback(async (card: RecommendationCardView) => {
-    if (!results) {
-      return;
-    }
-
-    if (!session.data?.user) {
-      const currentRoute = buildCurrentRoute(
-        "/",
-        buildRecommendationSearchParams(results.query),
-      );
-      savePostAuthIntent({
-        kind: "save-home-card",
-        route: currentRoute,
-        destinationId: card.destination.id,
-      });
-      router.push(`/auth?next=${encodeURIComponent(currentRoute)}&intent=save`);
-      return;
-    }
-
-    const existingSnapshot = savedSnapshots.find((savedSnapshot) => savedSnapshot.destinationId === card.destination.id);
-
-    if (existingSnapshot) {
-      setSaveStates((currentState) => ({
-        ...currentState,
-        [card.destination.id]: {
-          status: "saved",
-          snapshotId: existingSnapshot.snapshotId,
-          shareUrl: existingSnapshot.shareUrl,
-        },
-      }));
-      return;
-    }
-
-    const snapshotReference = snapshotReferences[card.destination.id];
-    if (snapshotReference) {
-      await promoteSavedSnapshot(card, snapshotReference);
-      return;
-    }
-
-    setSaveStates((currentState) => ({
-      ...currentState,
-      [card.destination.id]: { status: "saving" },
-    }));
-
-    try {
-      const nextSnapshotReference = await createSnapshotReference(card);
-      if (!nextSnapshotReference) {
-        throw new Error("save-failed");
-      }
-
-      await promoteSavedSnapshot(card, nextSnapshotReference);
-    } catch {
-      setSaveStates((currentState) => ({
-        ...currentState,
-        [card.destination.id]: { status: "error" },
-      }));
-    }
-  }, [createSnapshotReference, promoteSavedSnapshot, results, router, savedSnapshots, session.data?.user, snapshotReferences]);
-
-  const registerFutureTrip = useCallback(async (card: RecommendationCardView) => {
+  const registerFutureTrip = useCallback(async (
+    card: RecommendationCardView,
+    sourceSnapshotOverride?: SavedSnapshotCard,
+  ) => {
     if (!session.data?.user) {
       return;
     }
@@ -907,9 +1101,9 @@ export function HomeExperience() {
 
     try {
       const sourceSnapshot =
+        sourceSnapshotOverride ??
         savedSnapshots.find((savedSnapshot) => savedSnapshot.destinationId === card.destination.id) ??
-        snapshotReferences[card.destination.id] ??
-        (await createSnapshotReference(card));
+        snapshotReferences[card.destination.id];
 
       if (!sourceSnapshot) {
         throw new Error("source-snapshot-missing");
@@ -950,7 +1144,76 @@ export function HomeExperience() {
         },
       }));
     }
-  }, [createSnapshotReference, futureTripStates, savedSnapshots, session.data?.user, snapshotReferences]);
+  }, [futureTripStates, savedSnapshots, session.data?.user, snapshotReferences]);
+
+  const saveCard = useCallback(async (card: RecommendationCardView) => {
+    if (!results) {
+      return;
+    }
+
+    if (!session.data?.user) {
+      const currentRoute = buildCurrentRoute(
+        "/",
+        buildResultSearchParams(results.query),
+      );
+      savePostAuthIntent({
+        kind: "save-home-card",
+        route: currentRoute,
+        destinationId: card.destination.id,
+      });
+      router.push(`/auth?next=${encodeURIComponent(currentRoute)}&intent=save`);
+      return;
+    }
+
+    const existingSnapshot = savedSnapshots.find((savedSnapshot) => savedSnapshot.destinationId === card.destination.id);
+
+    if (existingSnapshot) {
+      setSaveStates((currentState) => ({
+        ...currentState,
+        [card.destination.id]: {
+          status: "saved",
+          snapshotId: existingSnapshot.snapshotId,
+          shareUrl: existingSnapshot.shareUrl,
+        },
+      }));
+      return;
+    }
+
+    const snapshotReference = snapshotReferences[card.destination.id];
+    if (snapshotReference) {
+      await promoteSavedSnapshot(card, snapshotReference);
+      return;
+    }
+
+    setSaveStates((currentState) => ({
+      ...currentState,
+      [card.destination.id]: { status: "saving" },
+    }));
+
+    let createdSnapshotReference: SavedSnapshotCard | null = null;
+
+    try {
+      const nextSnapshotReference = await createSnapshotReference(card);
+      if (!nextSnapshotReference) {
+        throw new Error("save-failed");
+      }
+
+      createdSnapshotReference = nextSnapshotReference;
+
+      await promoteSavedSnapshot(card, nextSnapshotReference);
+    } catch {
+      setSaveStates((currentState) => ({
+        ...currentState,
+        [card.destination.id]: { status: "error" },
+      }));
+      return;
+    }
+
+    // 로그인 상태면 future trip도 자동 등록 (담기 = snapshot + future trip 통합)
+    if (session.data?.user) {
+      void registerFutureTrip(card, createdSnapshotReference ?? undefined);
+    }
+  }, [createSnapshotReference, promoteSavedSnapshot, registerFutureTrip, results, router, savedSnapshots, session.data?.user, snapshotReferences]);
 
   function toggleCompareSelection(snapshotId: string) {
     setCompareError(null);
@@ -972,7 +1235,7 @@ export function HomeExperience() {
     if (!session.data?.user) {
       const currentRoute = buildCurrentRoute(
         "/",
-        results ? buildRecommendationSearchParams(results.query) : new URLSearchParams(window.location.search),
+        results ? buildResultSearchParams(results.query) : new URLSearchParams(window.location.search),
       );
       savePostAuthIntent({
         kind: "create-compare",
@@ -1049,11 +1312,13 @@ export function HomeExperience() {
     }
   }, [cards, createCompareSnapshot, results, saveCard, session.data?.user, session.isPending]);
 
-  async function requestRecommendations(nextQuery: RecommendationQuery) {
+  async function requestRecommendations(nextQuery: RecommendationQuery, syncRoute = true) {
+    const loadingStartedAt = Date.now();
     const requestId = activeRecommendationRequestRef.current + 1;
     activeRecommendationRequestRef.current = requestId;
+    pendingRecommendationQueryRef.current = buildRecommendationSearchParams(nextQuery).toString();
 
-    setStage("result");
+    setStage("loading");
     requestAnimationFrame(() => {
       scrollToPageTop("auto");
     });
@@ -1078,11 +1343,22 @@ export function HomeExperience() {
         return;
       }
 
+      if (syncRoute) {
+        await waitForMinimumRecommendationLoading(loadingStartedAt);
+        if (activeRecommendationRequestRef.current !== requestId) {
+          return;
+        }
+      }
+
+      setStage("result");
       setResults(payload);
       setCards(createRecommendationCards(payload.recommendations));
       setResultFilter("all");
       setResultSort("fit");
       setShowAllResults(false);
+      if (syncRoute) {
+        syncResultRoute(payload.query, "push");
+      }
       requestAnimationFrame(() => {
         scrollToPageTop("auto");
       });
@@ -1091,6 +1367,7 @@ export function HomeExperience() {
         return;
       }
 
+      setStage("result");
       setResults(null);
       setCards([]);
       setSubmitError("지금은 추천 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
@@ -1099,10 +1376,15 @@ export function HomeExperience() {
       });
     } finally {
       if (activeRecommendationRequestRef.current === requestId) {
+        pendingRecommendationQueryRef.current = null;
         setIsSubmitting(false);
       }
     }
   }
+
+  requestRecommendationsRef.current = requestRecommendations;
+  resetFunnelRef.current = resetFunnel;
+  startFunnelRef.current = startFunnel;
 
   async function applyRelaxation(nextQuery: RecommendationQuery) {
     await requestRecommendations(nextQuery);
@@ -1154,7 +1436,12 @@ export function HomeExperience() {
     }
 
     if (step.id === "travel-style") {
-      step.onSelect(value);
+      const nextTravelStyleAnswers = {
+        ...answers,
+        travelStyle: toggleTravelStyleOption(answers.travelStyle ?? [], value as HomeStepTravelStyle),
+      };
+      setAnswers(nextTravelStyleAnswers);
+      syncQuestionRoute(stepIndex, nextTravelStyleAnswers, "replace");
       return;
     }
 
@@ -1172,22 +1459,20 @@ export function HomeExperience() {
       return;
     }
 
-    setCurrentStepIndex(stepIndex + 1);
+    const nextStepIndex = stepIndex + 1;
+    setCurrentStepIndex(nextStepIndex);
+    syncQuestionRoute(nextStepIndex, nextAnswers);
   }
 
   function goToPreviousStep() {
-    if (currentStepIndex === 0) {
-      setStage("landing");
-      return;
-    }
-
-    setCurrentStepIndex((currentValue) => Math.max(0, currentValue - 1));
+    router.back();
   }
 
   function reopenQuestionFlow() {
     activeRecommendationRequestRef.current += 1;
     setIsSubmitting(false);
     setStage("question");
+    syncQuestionRoute(currentStepIndex, answers, "push");
     requestAnimationFrame(() => {
       scrollToElementById("home-question-flow", "auto");
     });
@@ -1231,6 +1516,12 @@ export function HomeExperience() {
     </div>
   );
 
+  const loadingStage = (
+    <div id="home-loading-anchor" className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
+      <ResultLoadingPanel queryNarrative={queryNarrative} />
+    </div>
+  );
+
   const resultStage = (
     <div id="home-results-anchor">
       <ResultPage
@@ -1255,7 +1546,6 @@ export function HomeExperience() {
           leadCard ? (
             (() => {
               const saveState = saveStates[leadCard.destination.id] ?? { status: "idle" };
-              const futureTripState = futureTripStates[leadCard.destination.id] ?? { status: "idle" };
               const detailPath = buildDestinationDetailPath(leadCard.destination, results?.query ?? currentQuery, saveState.snapshotId);
 
               return (
@@ -1268,37 +1558,20 @@ export function HomeExperience() {
                       >
                         상세 보기
                       </Link>
-                      {session.data?.user ? (
-                        <button
-                          type="button"
-                          data-testid={getFutureTripCtaTestId(0)}
-                          onClick={() => {
-                            void registerFutureTrip(leadCard);
-                          }}
-                          disabled={futureTripState.status === "saving" || futureTripState.status === "saved"}
-                          className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-white disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {futureTripState.status === "saving"
-                            ? "담는 중..."
-                            : futureTripState.status === "saved"
-                              ? "다음 여행 담음"
-                              : "다음 여행 담기"}
-                        </button>
-                      ) : null}
                       <button
                         type="button"
                         data-testid={getSaveSnapshotTestId(0)}
                         onClick={() => {
                           void saveCard(leadCard);
                         }}
-                        disabled={saveState.status === "saving"}
+                        disabled={saveState.status === "saving" || saveState.status === "saved"}
                         className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] disabled:cursor-not-allowed disabled:opacity-60"
                       >
                         {saveState.status === "saving"
                           ? "담는 중..."
                           : saveState.status === "saved"
-                            ? "일정에 담김"
-                            : "일정 담기"}
+                            ? "여행 담김"
+                            : "여행 담기"}
                       </button>
                     </div>
                   </section>
@@ -1368,52 +1641,54 @@ export function HomeExperience() {
           ) : null
         }
         filtersSlot={
-          <article
-            data-testid={testIds.result.filterBar}
-            className="rounded-[1.75rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-4"
-          >
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
-                  결과 조정
-                </p>
-                <p className="mt-1.5 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-                  대표 추천을 먼저 보고, 아래 후보만 짧게 비교해 보세요.
-                </p>
+          isSubmitting ? null : (
+            <article
+              data-testid={testIds.result.filterBar}
+              className="rounded-[1.75rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-4"
+            >
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+                <div>
+                  <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
+                    결과 조정
+                  </p>
+                  <p className="mt-1.5 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
+                    대표 추천을 먼저 보고, 아래 후보만 짧게 비교해 보세요.
+                  </p>
+                </div>
+
+                <label className="grid gap-2 text-sm text-[var(--color-funnel-text)] lg:min-w-[12rem]">
+                  <span>정렬</span>
+                  <select
+                    value={resultSort}
+                    onChange={(event) => setResultSort(event.target.value as ResultSortKey)}
+                    className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm text-[var(--color-funnel-text)]"
+                  >
+                    <option value="fit">적합도 순</option>
+                    <option value="shortest-flight">가까운 비행 순</option>
+                    <option value="budget">예산 가벼운 순</option>
+                  </select>
+                </label>
               </div>
 
-              <label className="grid gap-2 text-sm text-[var(--color-funnel-text)] lg:min-w-[12rem]">
-                <span>정렬</span>
-                <select
-                  value={resultSort}
-                  onChange={(event) => setResultSort(event.target.value as ResultSortKey)}
-                  className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm text-[var(--color-funnel-text)]"
-                >
-                  <option value="fit">적합도 순</option>
-                  <option value="shortest-flight">가까운 비행 순</option>
-                  <option value="budget">예산 가벼운 순</option>
-                </select>
-              </label>
-            </div>
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              {resultFilterOptions.map((option, index) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  data-testid={getResultFilterChipTestId(index)}
-                  onClick={() => setResultFilter(option.key)}
-                  className={`rounded-full border px-3.5 py-2 text-xs font-semibold tracking-[0.04em] transition-colors duration-200 ${
-                    resultFilter === option.key
-                      ? "border-[color:var(--color-funnel-text)] bg-[var(--color-funnel-text)] text-white"
-                      : "border-[color:var(--color-funnel-border)] bg-white text-[var(--color-funnel-text)] hover:bg-[var(--color-funnel-muted)]"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </article>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {resultFilterOptions.map((option, index) => (
+                  <button
+                    key={option.key}
+                    type="button"
+                    data-testid={getResultFilterChipTestId(index)}
+                    onClick={() => setResultFilter(option.key)}
+                    className={`rounded-full border px-3.5 py-2 text-xs font-semibold tracking-[0.04em] transition-colors duration-200 ${
+                      resultFilter === option.key
+                        ? "border-[color:var(--color-funnel-text)] bg-[var(--color-funnel-text)] text-white"
+                        : "border-[color:var(--color-funnel-border)] bg-white text-[var(--color-funnel-text)] hover:bg-[var(--color-funnel-muted)]"
+                    }`}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+            </article>
+          )
         }
         statusSlot={
           <>
@@ -1472,22 +1747,6 @@ export function HomeExperience() {
                     닫기
                   </button>
                 </div>
-              </div>
-            ) : null}
-
-            {isSubmitting ? (
-              <div className="grid gap-3">
-                {[0, 1, 2].map((placeholder) => (
-                  <div
-                    key={`loading-card-${placeholder}`}
-                    className="rounded-[1.5rem] border border-[color:var(--color-funnel-border)] bg-white p-5 shadow-[var(--shadow-funnel-card)]"
-                  >
-                    <div className="compass-skeleton-shimmer h-4 w-20 rounded-full" />
-                    <div className="compass-skeleton-shimmer mt-4 h-8 w-2/3 rounded-full" />
-                    <div className="compass-skeleton-shimmer mt-4 h-4 w-full rounded-full" />
-                    <div className="compass-skeleton-shimmer mt-2 h-4 w-5/6 rounded-full" />
-                  </div>
-                ))}
               </div>
             ) : null}
 
@@ -1555,17 +1814,12 @@ export function HomeExperience() {
                       card={card}
                       index={cardIndex}
                       query={results?.query ?? currentQuery}
-                      showFutureTripCta={Boolean(session.data?.user)}
                       saveState={saveState}
                       onSave={(nextCard) => {
                         void saveCard(nextCard);
                       }}
                       onCopy={(shareUrl) => {
                         void copyShareUrl(shareUrl);
-                      }}
-                      futureTripState={futureTripStates[card.destination.id] ?? { status: "idle" }}
-                      onRegisterFutureTrip={(nextCard) => {
-                        void registerFutureTrip(nextCard);
                       }}
                     />
                   );
@@ -1683,6 +1937,7 @@ export function HomeExperience() {
           <div key={stage} className="space-y-4">
             {stage === "landing" ? landingStage : null}
             {stage === "question" ? questionStage : null}
+            {stage === "loading" ? loadingStage : null}
             {stage === "result" ? resultStage : null}
           </div>
         </AnimatePresence>

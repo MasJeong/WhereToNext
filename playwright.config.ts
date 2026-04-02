@@ -9,9 +9,10 @@ export default defineConfig({
     trace: "on-first-retry",
   },
   webServer: {
-    command: "MOCK_OAUTH_PROVIDER=true npm run start",
+    command: "MOCK_OAUTH_PROVIDER=true npm run build && MOCK_OAUTH_PROVIDER=true npm run start",
     url: "http://localhost:4010",
     reuseExistingServer: false,
+    timeout: 180000,
   },
   projects: [
     {

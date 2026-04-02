@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { HomeExperience } from "@/components/trip-compass/home-experience";
 import type { RecommendationQuery } from "@/lib/domain/contracts";
 import { rankDestinations } from "@/lib/recommendation/engine";
-import { getFutureTripCtaTestId, getSaveSnapshotTestId, testIds } from "@/lib/test-ids";
+import { getSaveSnapshotTestId, testIds } from "@/lib/test-ids";
 import type { RecommendationApiResponse } from "@/lib/trip-compass/presentation";
 
 const query: RecommendationQuery = {
@@ -30,6 +30,7 @@ const searchParams = new URLSearchParams({
   pace: query.pace,
   flightTolerance: query.flightTolerance,
   vibes: query.vibes.join(","),
+  stage: "result",
 });
 
 const { mockPush, mockSession } = vi.hoisted(() => ({
@@ -48,7 +49,9 @@ const { mockPush, mockSession } = vi.hoisted(() => ({
 vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
+    replace: vi.fn(),
   }),
+  usePathname: () => "/",
   useSearchParams: () => searchParams,
 }));
 
@@ -120,7 +123,7 @@ describe("HomeExperience future-trip result CTA", () => {
     });
   });
 
-  it("creates a source snapshot, registers a future trip, and settles into a disabled registered state", async () => {
+  it("creates a source snapshot, auto-registers a future trip, and keeps users on the results page", async () => {
     const recommendationResponse = buildRecommendationResponse();
     const leadDestinationId = recommendationResponse.recommendations[0]?.destinationId;
     const sourceSnapshotId = "11111111-1111-4111-8111-111111111111";
@@ -170,19 +173,15 @@ describe("HomeExperience future-trip result CTA", () => {
 
     await expectResultCard();
 
-    const futureTripCta = screen.getByTestId(getFutureTripCtaTestId(0));
-    fireEvent.click(futureTripCta);
+    fireEvent.click(screen.getByTestId(getSaveSnapshotTestId(0)));
 
     await waitFor(() => {
-      expect(screen.getByTestId(getFutureTripCtaTestId(0))).toHaveTextContent("다음 여행 담음");
+      expect(screen.getByTestId(getSaveSnapshotTestId(0))).toHaveTextContent("여행 담김");
     });
 
-    expect(screen.getByTestId(getFutureTripCtaTestId(0))).toBeDisabled();
-    expect(screen.getByTestId(getSaveSnapshotTestId(0))).toHaveTextContent("일정 담기");
+    expect(screen.getByTestId(getSaveSnapshotTestId(0))).toBeDisabled();
     expect(screen.getByTestId(testIds.home.resultPage)).toBeInTheDocument();
     expect(mockPush).not.toHaveBeenCalled();
-
-    fireEvent.click(screen.getByTestId(getFutureTripCtaTestId(0)));
 
     await waitFor(() => {
       expect(fetchSpy.mock.calls.filter(([input]) => String(input).includes("/api/snapshots"))).toHaveLength(1);
@@ -200,7 +199,7 @@ describe("HomeExperience future-trip result CTA", () => {
     });
   });
 
-  it("reuses an existing saved snapshot when registering a future trip", async () => {
+  it("does not create duplicate requests after the integrated save flow completes", async () => {
     const recommendationResponse = buildRecommendationResponse();
     const leadDestinationId = recommendationResponse.recommendations[0]?.destinationId;
     const sourceSnapshotId = "22222222-2222-4222-8222-222222222222";
@@ -253,16 +252,77 @@ describe("HomeExperience future-trip result CTA", () => {
     fireEvent.click(screen.getByTestId(getSaveSnapshotTestId(0)));
 
     await waitFor(() => {
-      expect(screen.getByTestId(getSaveSnapshotTestId(0))).toHaveTextContent("일정에 담김");
+      expect(screen.getByTestId(getSaveSnapshotTestId(0))).toHaveTextContent("여행 담김");
     });
 
-    fireEvent.click(screen.getByTestId(getFutureTripCtaTestId(0)));
-
-    await waitFor(() => {
-      expect(screen.getByTestId(getFutureTripCtaTestId(0))).toHaveTextContent("다음 여행 담음");
-    });
+    fireEvent.click(screen.getByTestId(getSaveSnapshotTestId(0)));
 
     expect(fetchSpy.mock.calls.filter(([input]) => String(input).includes("/api/snapshots"))).toHaveLength(1);
+    expect(fetchSpy.mock.calls.filter(([input]) => String(input).includes("/api/me/future-trips"))).toHaveLength(1);
+
+    const futureTripCall = fetchSpy.mock.calls.find(([input]) => String(input).includes("/api/me/future-trips"));
+    expect(JSON.parse(String(futureTripCall?.[1]?.body))).toEqual({
+      destinationId: leadDestinationId,
+      sourceSnapshotId,
+    });
+  });
+
+  it("reuses the freshly created snapshot when save also auto-registers a future trip", async () => {
+    const recommendationResponse = buildRecommendationResponse();
+    const leadDestinationId = recommendationResponse.recommendations[0]?.destinationId;
+    const sourceSnapshotId = "33333333-3333-4333-8333-333333333333";
+
+    const fetchSpy = vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
+      const url = typeof input === "string" ? input : input.toString();
+
+      if (url.includes("/api/recommendations?")) {
+        return new Response(JSON.stringify(recommendationResponse), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      if (url.endsWith("/api/snapshots")) {
+        return new Response(JSON.stringify({ snapshotId: sourceSnapshotId }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      }
+
+      if (url.endsWith("/api/me/future-trips")) {
+        return new Response(
+          JSON.stringify({
+            futureTrip: {
+              id: "future-3",
+              userId: "user-1",
+              destinationId: leadDestinationId,
+              sourceSnapshotId,
+              destinationNameKo: "도쿄",
+              countryCode: "JP",
+              createdAt: "2026-03-29T00:00:00.000Z",
+              updatedAt: "2026-03-29T00:00:00.000Z",
+            },
+          }),
+          {
+            status: 201,
+            headers: { "content-type": "application/json" },
+          },
+        );
+      }
+
+      throw new Error(`UNHANDLED_FETCH:${url}`);
+    });
+
+    render(<HomeExperience />);
+
+    await expectResultCard();
+
+    fireEvent.click(screen.getByTestId(getSaveSnapshotTestId(0)));
+
+    await waitFor(() => {
+      expect(fetchSpy.mock.calls.filter(([input]) => String(input).includes("/api/snapshots"))).toHaveLength(1);
+      expect(fetchSpy.mock.calls.filter(([input]) => String(input).includes("/api/me/future-trips"))).toHaveLength(1);
+    });
 
     const futureTripCall = fetchSpy.mock.calls.find(([input]) => String(input).includes("/api/me/future-trips"));
     expect(JSON.parse(String(futureTripCall?.[1]?.body))).toEqual({

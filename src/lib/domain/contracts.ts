@@ -310,6 +310,19 @@ export const userDestinationHistoryImageMaxCount = 10;
 export const userDestinationHistoryImageMaxBytes = 10 * 1024 * 1024;
 const userDestinationHistoryImageMaxDataUrlLength = 14_100_000;
 
+function normalizeCustomHistoryTag(value: string): string {
+  return value.trim().replace(/^#+/, "").trim();
+}
+
+export const userDestinationHistoryCustomTagSchema = z.preprocess(
+  (value) => (typeof value === "string" ? normalizeCustomHistoryTag(value) : value),
+  z
+    .string()
+    .min(1, "INVALID_CUSTOM_TAG")
+    .max(24, "CUSTOM_TAG_TOO_LONG")
+    .regex(/^[\p{L}\p{N}_-]+$/u, "INVALID_CUSTOM_TAG"),
+);
+
 export const userDestinationHistoryImageSchema = z
   .object({
     name: z.string().min(1).max(120),
@@ -345,6 +358,11 @@ export const userDestinationHistorySchema = z.object({
   destinationId: z.string().min(1),
   rating: z.number().int().min(1).max(5),
   tags: z.array(vibeSchema).min(1).max(4),
+  customTags: z
+    .array(userDestinationHistoryCustomTagSchema)
+    .max(4)
+    .nullish()
+    .transform((value) => value ?? []),
   wouldRevisit: z.boolean(),
   visitedAt: z.string().datetime(),
   memo: z.string().trim().max(500).nullable().optional(),
@@ -357,6 +375,11 @@ export const userDestinationHistoryInputSchema = z.object({
   destinationId: z.string().min(1),
   rating: z.number().int().min(1).max(5),
   tags: z.array(vibeSchema).min(1).max(4),
+  customTags: z
+    .array(userDestinationHistoryCustomTagSchema)
+    .max(4)
+    .nullish()
+    .transform((value) => value ?? []),
   wouldRevisit: z.boolean(),
   visitedAt: z.string().datetime(),
   memo: z.string().trim().max(500).nullish().transform((value) => value ?? null),

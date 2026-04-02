@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useState } from "react";
 
 import { authClient } from "@/lib/auth-client";
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
@@ -83,12 +83,29 @@ function findDestinationCopy(destinationId: string) {
 }
 
 /**
- * 날짜 문자열을 화면용으로 단순화한다.
- * @param value ISO 날짜
- * @returns YYYY-MM-DD 형식
+ * ISO 날짜를 한국식 표기로 변환한다.
+ * @example "2026-03-15T00:00:00Z" → "2026. 3. 15."
  */
 function formatHistoryDate(value: string): string {
-  return value.slice(0, 10);
+  const d = new Date(value);
+  return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
+}
+
+/**
+ * ISO 날짜를 상대 시간으로 변환한다.
+ * @example 3일 전, 2주 전, 1달 전
+ */
+function formatRelativeDate(value: string): string {
+  const now = Date.now();
+  const then = new Date(value).getTime();
+  const diffDays = Math.floor((now - then) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 1) return "오늘";
+  if (diffDays === 1) return "어제";
+  if (diffDays < 7) return `${diffDays}일 전`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)}달 전`;
+  return `${Math.floor(diffDays / 365)}년 전`;
 }
 
 function getHistoryCoverImage(entry: UserDestinationHistory) {
@@ -112,6 +129,7 @@ export function AccountExperience({
   initialSavedSnapshots,
 }: AccountExperienceProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [activeTab, setActiveTab] = useState<AccountTab>(initialTab);
   const [profile, setProfile] = useState(initialProfile);
   const [historyEntries, setHistoryEntries] = useState(initialHistory);
@@ -175,7 +193,7 @@ export function AccountExperience({
       const payload = (await response.json()) as { profile: UserPreferenceProfile };
       setProfile(payload.profile);
     } catch {
-      setError("추천 모드를 저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setError("설정을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setIsSavingPreference(false);
     }
@@ -201,7 +219,7 @@ export function AccountExperience({
 
       setHistoryEntries((currentEntries) => currentEntries.filter((entry) => entry.id !== historyId));
     } catch {
-      setError("여행 기록을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setError("삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setDeletingHistoryId((currentId) => (currentId === historyId ? null : currentId));
     }
@@ -242,7 +260,7 @@ export function AccountExperience({
         )),
       );
     } catch {
-      setError("저장 상태를 바꾸지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setError("변경하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setUpdatingSnapshotId((currentId) => (currentId === snapshotId ? null : currentId));
     }
@@ -263,6 +281,18 @@ export function AccountExperience({
     { key: "saved", label: "저장 목록", testId: testIds.account.tabSaved, count: savedCandidateSnapshots.length },
     { key: "preferences", label: "추천 설정", testId: testIds.account.tabPreferences },
   ];
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
+  function navigateToTab(nextTab: AccountTab) {
+    setActiveTab(nextTab);
+
+    const nextSearchParams = new URLSearchParams(searchParams.toString());
+    nextSearchParams.set("tab", nextTab);
+    router.replace(`/account?${nextSearchParams.toString()}`, { scroll: false });
+  }
 
   return (
     <ExperienceShell
@@ -299,31 +329,37 @@ export function AccountExperience({
     >
       <div data-testid={testIds.account.root} className="space-y-6">
         {/* ── 통계 요약 카드 ── */}
-        <div data-testid={testIds.account.tasteSummary} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-2xl border border-[var(--color-frame-soft)] bg-white/80 px-4 py-4">
-            <p className="text-[0.75rem] font-medium text-[var(--color-ink-soft)]">기록</p>
-            <p className="mt-1.5 text-2xl font-bold tracking-tight text-[var(--color-ink)]">{summary.count}</p>
+        {summary.count > 0 ? (
+          <div data-testid={testIds.account.tasteSummary} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-2xl border border-[var(--color-frame-soft)] bg-white/80 px-4 py-4">
+              <p className="text-[0.75rem] font-medium text-[var(--color-ink-soft)]">기록</p>
+              <p className="mt-1.5 text-2xl font-bold tracking-tight text-[var(--color-ink)]">{summary.count}</p>
+            </div>
+            <div className="rounded-2xl border border-[var(--color-frame-soft)] bg-white/80 px-4 py-4">
+              <p className="text-[0.75rem] font-medium text-[var(--color-ink-soft)]">평균 평점</p>
+              <p className="mt-1.5 text-2xl font-bold tracking-tight text-[var(--color-ink)]">
+                {summary.averageRating}<span className="text-sm font-medium text-[var(--color-ink-soft)]">/5</span>
+              </p>
+            </div>
+            <div className="rounded-2xl border border-[var(--color-frame-soft)] bg-white/80 px-4 py-4">
+              <p className="text-[0.75rem] font-medium text-[var(--color-ink-soft)]">재방문 희망</p>
+              <p className="mt-1.5 text-2xl font-bold tracking-tight text-[var(--color-ink)]">{summary.revisitCount}</p>
+            </div>
+            <div className="rounded-2xl border border-[var(--color-frame-soft)] bg-white/80 px-4 py-4">
+              <p className="text-[0.75rem] font-medium text-[var(--color-ink-soft)]">자주 쓴 태그</p>
+              <p className="mt-1.5 text-base font-bold tracking-tight text-[var(--color-ink)]">
+                {summary.topTags.map(([tag]) => formatVibeList([tag])).join(" · ")}
+              </p>
+            </div>
           </div>
-          <div className="rounded-2xl border border-[var(--color-frame-soft)] bg-white/80 px-4 py-4">
-            <p className="text-[0.75rem] font-medium text-[var(--color-ink-soft)]">평균 평점</p>
-            <p className="mt-1.5 text-2xl font-bold tracking-tight text-[var(--color-ink)]">{summary.averageRating}</p>
-          </div>
-          <div className="rounded-2xl border border-[var(--color-frame-soft)] bg-white/80 px-4 py-4">
-            <p className="text-[0.75rem] font-medium text-[var(--color-ink-soft)]">재방문 희망</p>
-            <p className="mt-1.5 text-2xl font-bold tracking-tight text-[var(--color-ink)]">{summary.revisitCount}</p>
-          </div>
-          <div className="rounded-2xl border border-[var(--color-frame-soft)] bg-white/80 px-4 py-4">
-            <p className="text-[0.75rem] font-medium text-[var(--color-ink-soft)]">자주 쓴 태그</p>
-            <p className="mt-1.5 text-base font-bold tracking-tight text-[var(--color-ink)]">
-              {summary.topTags.length > 0
-                ? summary.topTags.map(([tag]) => formatVibeList([tag])).join(" · ")
-                : "아직 기록 전"}
-            </p>
-          </div>
-        </div>
+        ) : null}
 
         {/* ── 탭 네비게이션 ── */}
-        <nav role="tablist" aria-label="계정 탭" className="flex gap-1 overflow-x-auto border-b border-[var(--color-frame-soft)]">
+        <nav
+          role="tablist"
+          aria-label="계정 탭"
+          className="grid grid-cols-2 gap-2 border-b border-[var(--color-frame-soft)] pb-2 sm:flex sm:gap-1 sm:overflow-x-auto sm:pb-0"
+        >
           {tabItems.map((tab) => (
             <button
               key={tab.key}
@@ -331,8 +367,10 @@ export function AccountExperience({
               role="tab"
               aria-selected={activeTab === tab.key}
               data-testid={tab.testId}
-              onClick={() => setActiveTab(tab.key)}
-              className={`relative shrink-0 cursor-pointer px-4 pb-3 pt-2 text-[0.85rem] font-semibold transition-colors min-h-[44px] ${
+              onClick={() => navigateToTab(tab.key)}
+              id={`tab-${tab.key}`}
+              aria-controls={`tabpanel-${tab.key}`}
+              className={`relative min-h-[44px] w-full min-w-0 cursor-pointer rounded-xl px-4 py-3 text-left text-[0.85rem] font-semibold transition-colors sm:w-auto sm:shrink-0 sm:rounded-none sm:pb-3 sm:pt-2 ${
                 activeTab === tab.key
                   ? "text-[var(--color-sand-deep)]"
                   : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
@@ -358,14 +396,22 @@ export function AccountExperience({
         </nav>
 
         {error ? (
-          <p className="rounded-xl border border-[var(--color-warning-border)] bg-[var(--color-warning-bg)] px-4 py-3 text-sm text-[var(--color-warning-text)]">
-            {error}
-          </p>
+          <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-warning-border)] bg-[var(--color-warning-bg)] px-4 py-3">
+            <p className="text-sm text-[var(--color-warning-text)]">{error}</p>
+            <button
+              type="button"
+              onClick={() => setError(null)}
+              aria-label="알림 닫기"
+              className="shrink-0 cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-[var(--color-warning-text)] transition-opacity hover:opacity-70"
+            >
+              닫기
+            </button>
+          </div>
         ) : null}
 
         {/* ── 여행 기록 탭 ── */}
         {activeTab === "history" ? (
-          <section className="space-y-3">
+          <section role="tabpanel" id="tabpanel-history" aria-labelledby="tab-history" className="space-y-3">
             {historyEntries.length > 0 ? (
               historyEntries.map((entry, index) => {
                 const destination = findDestinationCopy(entry.destinationId);
@@ -401,19 +447,19 @@ export function AccountExperience({
                         ) : null}
                       </div>
 
-                      <div className="space-y-3 px-5 py-4">
+                      <div className="min-w-0 space-y-3 px-5 py-4">
                         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
-                          <div>
+                          <div className="min-w-0">
                             <h3 className="text-base font-bold text-[var(--color-ink)]">
                               {destination.nameKo}
                               <span className="ml-2 text-sm font-normal text-[var(--color-ink-soft)]">{destination.nameEn}</span>
                             </h3>
                             <p className="mt-1 text-[0.82rem] text-[var(--color-ink-soft)]">
-                              {formatHistoryDate(entry.visitedAt)} · {entry.rating}점 · {entry.wouldRevisit ? "다시 가고 싶음" : "새 후보 넓히기"}
+                              {formatHistoryDate(entry.visitedAt)} · {entry.rating}/5 · {entry.wouldRevisit ? "재방문 희망" : "한 번으로 충분"}
                             </p>
                           </div>
 
-                          <div className="flex shrink-0 gap-1.5">
+                          <div className="flex shrink-0 flex-wrap gap-1.5">
                             {entry.images.length > 0 ? (
                               <button
                                 type="button"
@@ -452,16 +498,39 @@ export function AccountExperience({
                           </div>
                         </div>
 
-                        {entry.tags.length > 0 ? (
-                          <div className="flex flex-wrap gap-1.5">
-                            {entry.tags.map((tag) => (
-                              <span
-                                key={`${entry.id}-${tag}`}
-                                className="rounded-full bg-[var(--color-accent-soft)] px-2.5 py-0.5 text-[0.75rem] font-medium text-[var(--color-sand-deep)]"
-                              >
-                                #{formatVibeList([tag])}
-                              </span>
-                            ))}
+                        {entry.tags.length > 0 || entry.customTags.length > 0 ? (
+                          <div className="space-y-2">
+                            {entry.tags.length > 0 ? (
+                              <div className="space-y-1.5">
+                                <p className="text-[0.72rem] font-semibold text-[var(--color-ink-soft)]">추천 태그</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {entry.tags.map((tag) => (
+                                    <span
+                                      key={`${entry.id}-${tag}`}
+                                      className="rounded-full bg-[var(--color-accent-soft)] px-2.5 py-0.5 text-[0.75rem] font-medium text-[var(--color-sand-deep)]"
+                                    >
+                                      #{formatVibeList([tag])}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
+
+                            {entry.customTags.length > 0 ? (
+                              <div className="space-y-1.5">
+                                <p className="text-[0.72rem] font-semibold text-[var(--color-ink-soft)]">직접 등록</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {entry.customTags.map((tag, customTagIndex) => (
+                                    <span
+                                      key={`${entry.id}-custom-${customTagIndex}-${tag}`}
+                                      className="rounded-full border border-[var(--color-frame-soft)] bg-white px-2.5 py-0.5 text-[0.75rem] font-medium text-[var(--color-ink)]"
+                                    >
+                                      #{tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
                           </div>
                         ) : null}
 
@@ -518,9 +587,9 @@ export function AccountExperience({
           </section>
         ) : null}
 
-        {/* ── 앞으로 갈 곳 탭 ── */}
+        {/* ── 예정된 여행 탭 ── */}
         {activeTab === "future-trips" ? (
-          <section>
+          <section role="tabpanel" id="tabpanel-future-trips" aria-labelledby="tab-future-trips">
             <p className="mb-4 text-[0.85rem] text-[var(--color-ink-soft)]">
               실제로 갈 여행지를 모아 두세요.
             </p>
@@ -536,7 +605,7 @@ export function AccountExperience({
                       data-testid={getAccountFutureTripEntryTestId(index)}
                       className="flex flex-col gap-3 rounded-2xl border border-[var(--color-frame-soft)] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
                     >
-                      <div>
+                      <div className="min-w-0">
                         <h3 className="text-base font-bold text-[var(--color-ink)]">
                           {destination.nameKo}
                           <span className="ml-2 rounded-md bg-slate-100 px-1.5 py-0.5 text-[0.7rem] font-semibold text-[var(--color-ink-soft)]">
@@ -544,7 +613,7 @@ export function AccountExperience({
                           </span>
                         </h3>
                         <p className="mt-1 text-[0.82rem] text-[var(--color-ink-soft)]">
-                          {destination.nameEn} · 저장일 {formatHistoryDate(snapshot.createdAt)}
+                          {destination.nameEn} · {formatRelativeDate(snapshot.createdAt)} 저장
                         </p>
                       </div>
 
@@ -578,9 +647,9 @@ export function AccountExperience({
           </section>
         ) : null}
 
-        {/* ── 저장한 추천 탭 ── */}
+        {/* ── 저장 목록 탭 ── */}
         {activeTab === "saved" ? (
-          <section>
+          <section role="tabpanel" id="tabpanel-saved" aria-labelledby="tab-saved">
             <p className="mb-4 text-[0.85rem] text-[var(--color-ink-soft)]">
               관심 있는 추천을 한곳에서 비교하세요.
             </p>
@@ -600,7 +669,7 @@ export function AccountExperience({
                         <h3 className="text-base font-bold text-[var(--color-ink)]">{destination.nameKo}</h3>
                         <p className="mt-0.5 text-[0.82rem] text-[var(--color-ink-soft)]">{destination.nameEn}</p>
                         <p className="mt-2 text-[0.78rem] text-[var(--color-ink-soft)]">
-                          저장일 {formatHistoryDate(snapshot.createdAt)}
+                          {formatRelativeDate(snapshot.createdAt)} 저장
                         </p>
                       </div>
                       <div className="mt-4 flex gap-2">
@@ -628,10 +697,10 @@ export function AccountExperience({
               ) : (
                 <div className="col-span-full rounded-2xl border border-dashed border-[var(--color-frame)] bg-[var(--color-surface-muted)] px-6 py-10 text-center">
                   <p className="text-[0.9rem] font-medium text-[var(--color-ink-soft)]">
-                    저장한 추천이 없어요
+                    아직 저장한 추천이 없습니다
                   </p>
                   <p className="mt-1.5 text-[0.82rem] text-[var(--color-ink-soft)]">
-                    결과 화면에서 마음에 드는 추천을 저장해 보세요.
+                    추천 결과에서 마음에 드는 여행지를 저장해 보세요.
                   </p>
                 </div>
               )}
@@ -639,11 +708,11 @@ export function AccountExperience({
           </section>
         ) : null}
 
-        {/* ── 추천 모드 탭 ── */}
+        {/* ── 추천 설정 탭 ── */}
         {activeTab === "preferences" ? (
-          <section data-testid={testIds.account.tasteMode}>
+          <section role="tabpanel" id="tabpanel-preferences" aria-labelledby="tab-preferences" data-testid={testIds.account.tasteMode}>
             <p className="mb-4 text-[0.85rem] text-[var(--color-ink-soft)]">
-              익숙한 추천을 더 볼지, 새로운 추천을 넓힐지 정해 두세요.
+              추천 방식을 선택하세요. 언제든 변경할 수 있습니다.
             </p>
             <div className="grid gap-3 sm:grid-cols-3">
               {preferenceOptions.map((option) => {

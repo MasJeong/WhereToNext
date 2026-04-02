@@ -64,6 +64,14 @@ function normalizeHistoryImages(
   return images.map((image) => userDestinationHistoryImageSchema.parse(image));
 }
 
+function normalizeHistoryCustomTags(customTags: string[] | null | undefined): string[] {
+  if (!customTags || customTags.length === 0) {
+    return [];
+  }
+
+  return customTags.map((tag) => tag.trim()).filter((tag) => tag.length > 0);
+}
+
 async function resolveFutureTripDestinationMeta(
   destinationId: string,
 ): Promise<FutureTripDestinationMeta> {
@@ -247,6 +255,7 @@ export async function listUserDestinationHistory(userId: string): Promise<UserDe
     destinationId: row.destinationId,
     rating: row.rating,
     tags: row.tags,
+    customTags: normalizeHistoryCustomTags(row.customTags),
     wouldRevisit: row.wouldRevisit,
     visitedAt: row.visitedAt.toISOString(),
     memo: row.memo,
@@ -290,6 +299,7 @@ export async function createUserDestinationHistory(
         destinationId: input.destinationId,
         rating: input.rating,
         tags: input.tags,
+        customTags: input.customTags,
         wouldRevisit: input.wouldRevisit,
         visitedAt: input.visitedAt,
         memo: input.memo ?? null,
@@ -310,6 +320,7 @@ export async function createUserDestinationHistory(
       destinationId: input.destinationId,
       rating: input.rating,
       tags: input.tags,
+      customTags: input.customTags,
       wouldRevisit: input.wouldRevisit,
       visitedAt: input.visitedAt,
       memo: input.memo ?? null,
@@ -330,6 +341,7 @@ export async function createUserDestinationHistory(
       destinationId: input.destinationId,
       rating: input.rating,
       tags: input.tags,
+      customTags: input.customTags,
       wouldRevisit: input.wouldRevisit,
       visitedAt: new Date(input.visitedAt),
       memo: input.memo ?? null,
@@ -343,6 +355,7 @@ export async function createUserDestinationHistory(
     destinationId: created.destinationId,
     rating: created.rating,
     tags: created.tags,
+    customTags: normalizeHistoryCustomTags(created.customTags),
     wouldRevisit: created.wouldRevisit,
     visitedAt: created.visitedAt.toISOString(),
     memo: created.memo,
@@ -377,6 +390,7 @@ export async function updateUserDestinationHistory(
         destinationId: input.destinationId,
         rating: input.rating,
         tags: input.tags,
+        customTags: input.customTags,
         wouldRevisit: input.wouldRevisit,
         visitedAt: input.visitedAt,
         memo: input.memo ?? null,
@@ -399,6 +413,7 @@ export async function updateUserDestinationHistory(
       destinationId: input.destinationId,
       rating: input.rating,
       tags: input.tags,
+      customTags: input.customTags,
       wouldRevisit: input.wouldRevisit,
       visitedAt: input.visitedAt,
       memo: input.memo ?? null,
@@ -417,6 +432,7 @@ export async function updateUserDestinationHistory(
       destinationId: input.destinationId,
       rating: input.rating,
       tags: input.tags,
+      customTags: input.customTags,
       wouldRevisit: input.wouldRevisit,
       visitedAt: new Date(input.visitedAt),
       memo: input.memo ?? null,
@@ -436,6 +452,7 @@ export async function updateUserDestinationHistory(
     destinationId: updated.destinationId,
     rating: updated.rating,
     tags: updated.tags,
+    customTags: normalizeHistoryCustomTags(updated.customTags),
     wouldRevisit: updated.wouldRevisit,
     visitedAt: updated.visitedAt.toISOString(),
     memo: updated.memo,

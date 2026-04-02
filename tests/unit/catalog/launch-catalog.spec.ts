@@ -5,8 +5,8 @@ import { activeScoringVersion } from "@/lib/catalog/scoring-version";
 import { getCountryMetadata } from "@/lib/travel-support/country-metadata";
 
 describe("launchCatalog", () => {
-  it("contains the curated 60-destination launch set", () => {
-    expect(launchCatalog).toHaveLength(60);
+  it("contains the curated 75-destination launch set", () => {
+    expect(launchCatalog).toHaveLength(75);
   });
 
   it("ensures every destination has localized names and recommendation content", () => {

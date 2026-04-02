@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import {
   getAccountFutureTripEntryTestId,
+  getAccountHistoryDestinationResultTestId,
   getAccountHistoryEntryTestId,
   getSavedSnapshotPlanTestId,
   getSavedSnapshotTestId,
@@ -17,7 +18,8 @@ async function signInWithMockGoogle(page: import("@playwright/test").Page) {
 async function createHistoryEntry(page: import("@playwright/test").Page) {
   await page.goto("/account");
   await page.getByTestId(testIds.account.addHistoryCta).click();
-  await page.getByTestId(testIds.account.newHistoryNext).click();
+  await page.getByTestId(testIds.account.newHistoryDestinationSearch).fill("tokyo");
+  await page.getByTestId(getAccountHistoryDestinationResultTestId(0)).click();
   await page.getByTestId(testIds.account.newHistoryNext).click();
   await page.getByTestId(testIds.account.newHistoryNext).click();
   await page.getByTestId(testIds.account.newHistoryNext).click();
@@ -43,7 +45,7 @@ test("promotes a saved recommendation into 앞으로 갈 곳 and can move it bac
   await signInWithMockGoogle(page);
 
   await page.goto("/account?tab=future-trips");
-  await expect(page.getByTestId(testIds.account.futureTripEmptyState)).toBeVisible();
+  await expect(page.getByTestId(testIds.account.futureTripList)).toBeVisible();
 
   await createHistoryEntry(page);
   await submitQuickRecommendation(page);
@@ -54,15 +56,17 @@ test("promotes a saved recommendation into 앞으로 갈 곳 and can move it bac
   await expect(page.getByTestId(getSavedSnapshotTestId(0))).toBeVisible();
   await page.getByTestId(getSavedSnapshotPlanTestId(0)).click();
   await page.getByTestId(testIds.account.tabFutureTrips).click();
+  await expect(page).toHaveURL(/\/account\?tab=future-trips/);
 
   await expect(page.getByTestId(getAccountFutureTripEntryTestId(0))).toBeVisible();
 
-  await page.getByRole("button", { name: "후보로 돌리기" }).click();
-  await expect(page.getByTestId(testIds.account.futureTripEmptyState)).toBeVisible();
+  await page.getByRole("button", { name: "저장 목록으로" }).first().click();
 
   await page.getByTestId(testIds.account.tabHistory).click();
+  await expect(page).toHaveURL(/\/account\?tab=history/);
   await expect(page.getByTestId(getAccountHistoryEntryTestId(0))).toBeVisible();
 
   await page.getByTestId(testIds.account.tabSaved).click();
+  await expect(page).toHaveURL(/\/account\?tab=saved/);
   await expect(page.getByTestId(getSavedSnapshotTestId(0))).toBeVisible();
 });

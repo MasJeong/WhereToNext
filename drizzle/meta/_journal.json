@@ -57,6 +57,13 @@
       "when": 1774915200000,
       "tag": "0007_steady_shadowcat",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1775004851427,
+      "tag": "0008_sudden_master_chief",
+      "breakpoints": true
     }
   ]
 }

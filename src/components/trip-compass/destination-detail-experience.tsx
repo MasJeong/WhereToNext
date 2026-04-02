@@ -14,7 +14,9 @@ import type {
   DestinationTravelSupplement,
   RecommendationQuery,
   TrendEvidenceSnapshot,
+  UserDestinationHistory,
 } from "@/lib/domain/contracts";
+import { userDestinationHistoryCustomTagSchema } from "@/lib/domain/contracts";
 import { buildApiUrl } from "@/lib/runtime/url";
 import {
   buildDestinationDetailPath,
@@ -28,7 +30,11 @@ import {
   type RecommendationCardView,
 } from "@/lib/trip-compass/presentation";
 import { buildRecommendationSnapshotPayload } from "@/lib/trip-compass/snapshot-payload";
-import { getDestinationTasteTagTestId, testIds } from "@/lib/test-ids";
+import {
+  getDestinationTasteCustomTagRemoveTestId,
+  getDestinationTasteTagTestId,
+  testIds,
+} from "@/lib/test-ids";
 
 import { TravelSupportPanel } from "./travel-support-panel";
 
@@ -54,11 +60,34 @@ type SaveState = {
 type TasteLogState = {
   rating: number;
   tags: DestinationProfile["vibeTags"];
+  customTags: UserDestinationHistory["customTags"];
   wouldRevisit: boolean;
   visitedAt: string;
 };
 
 type LinkCopyState = "idle" | "copied" | "error";
+
+const maxCustomTasteTags = 4;
+
+function normalizeCustomTasteTagInput(value: string): string {
+  return value.trim().replace(/^#+/, "").trim();
+}
+
+function getCustomTasteTagErrorMessage(value: string): string | null {
+  const parsedTag = userDestinationHistoryCustomTagSchema.safeParse(value);
+
+  if (parsedTag.success) {
+    return null;
+  }
+
+  const issueMessage = parsedTag.error.issues[0]?.message;
+
+  if (issueMessage === "CUSTOM_TAG_TOO_LONG") {
+    return "해시태그는 24자 이하로 입력해 주세요.";
+  }
+
+  return "한글, 영문, 숫자, 밑줄, 하이픈만 사용할 수 있어요.";
+}
 
 function buildFallbackReasonList(destination: DestinationProfile): string[] {
   return [
@@ -112,10 +141,13 @@ export function DestinationDetailExperience({
   const [tasteState, setTasteState] = useState<TasteLogState>({
     rating: 5,
     tags: destination.vibeTags.slice(0, Math.min(destination.vibeTags.length, 2)),
+    customTags: [],
     wouldRevisit: true,
     visitedAt: new Date().toISOString().slice(0, 10),
   });
   const [tasteStatus, setTasteStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [customTagInput, setCustomTagInput] = useState("");
+  const [customTagError, setCustomTagError] = useState<string | null>(null);
   const [linkCopyState, setLinkCopyState] = useState<LinkCopyState>("idle");
   const [copyFallbackUrl, setCopyFallbackUrl] = useState<string | null>(null);
   const replayedIntentRef = useRef<string | null>(null);
@@ -232,6 +264,7 @@ export function DestinationDetailExperience({
           destinationId: destination.id,
           rating: tasteState.rating,
           tags: tasteState.tags,
+          customTags: tasteState.customTags,
           wouldRevisit: tasteState.wouldRevisit,
           visitedAt: new Date(`${tasteState.visitedAt}T00:00:00.000Z`).toISOString(),
         }),
@@ -248,6 +281,8 @@ export function DestinationDetailExperience({
   }
 
   function toggleTasteTag(tag: DestinationProfile["vibeTags"][number]) {
+    setCustomTagError(null);
+    setTasteStatus("idle");
     setTasteState((currentState) => {
       if (currentState.tags.includes(tag)) {
         const nextTags = currentState.tags.filter((item) => item !== tag);
@@ -266,6 +301,53 @@ export function DestinationDetailExperience({
         tags: [...currentState.tags, tag],
       };
     });
+  }
+
+  function addCustomTasteTag() {
+    const normalizedTag = normalizeCustomTasteTagInput(customTagInput);
+
+    if (!normalizedTag) {
+      setCustomTagError("해시태그를 입력해 주세요.");
+      return;
+    }
+
+    if (tasteState.customTags.length >= maxCustomTasteTags) {
+      setCustomTagError("직접 등록 태그는 최대 4개까지예요.");
+      return;
+    }
+
+    const duplicateExists = tasteState.customTags.some(
+      (tag) => tag.toLocaleLowerCase() === normalizedTag.toLocaleLowerCase(),
+    );
+
+    if (duplicateExists) {
+      setCustomTagError("이미 추가한 해시태그예요.");
+      return;
+    }
+
+    const validationMessage = getCustomTasteTagErrorMessage(normalizedTag);
+
+    if (validationMessage) {
+      setCustomTagError(validationMessage);
+      return;
+    }
+
+    setTasteState((currentState) => ({
+      ...currentState,
+      customTags: [...currentState.customTags, normalizedTag],
+    }));
+    setCustomTagInput("");
+    setCustomTagError(null);
+    setTasteStatus("idle");
+  }
+
+  function removeCustomTasteTag(tagToRemove: string) {
+    setTasteState((currentState) => ({
+      ...currentState,
+      customTags: currentState.customTags.filter((tag) => tag !== tagToRemove),
+    }));
+    setCustomTagError(null);
+    setTasteStatus("idle");
   }
 
   return (
@@ -465,7 +547,10 @@ export function DestinationDetailExperience({
                     <button
                       key={rating}
                       type="button"
-                      onClick={() => setTasteState((currentState) => ({ ...currentState, rating }))}
+                      onClick={() => {
+                        setTasteStatus("idle");
+                        setTasteState((currentState) => ({ ...currentState, rating }));
+                      }}
                       className={`rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] ${
                         tasteState.rating === rating ? "compass-selected" : "compass-selection-chip"
                       }`}
@@ -478,24 +563,95 @@ export function DestinationDetailExperience({
 
               <div>
                 <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">해시태그</p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {destination.vibeTags.slice(0, 4).map((tag, index) => {
-                    const active = tasteState.tags.includes(tag);
+                <p className="mt-1 text-sm leading-6 text-[var(--color-ink-soft)]">추천 태그를 먼저 고르고, 직접 태그는 따로 남겨 보세요.</p>
+                <div className="mt-3 space-y-3">
+                  <div>
+                    <p className="text-[0.76rem] font-semibold text-[var(--color-ink)]">추천 해시태그</p>
+                    <p className="mt-1 text-[0.76rem] text-[var(--color-ink-soft)]">추천 기준에 반영돼요.</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {destination.vibeTags.slice(0, 4).map((tag, index) => {
+                        const active = tasteState.tags.includes(tag);
 
-                    return (
+                        return (
+                          <button
+                            key={tag}
+                            type="button"
+                            data-testid={getDestinationTasteTagTestId(index)}
+                            aria-pressed={active}
+                            onClick={() => toggleTasteTag(tag)}
+                            className={`min-h-[44px] rounded-full px-3.5 py-2.5 text-xs font-semibold tracking-[0.04em] ${
+                              active ? "compass-selected" : "compass-selection-chip"
+                            }`}
+                          >
+                            #{formatVibeList([tag])}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="rounded-[calc(var(--radius-card)-12px)] border border-[color:var(--color-frame-soft)] bg-[var(--color-surface-muted)] px-3.5 py-3.5">
+                    <p className="text-[0.76rem] font-semibold text-[var(--color-ink)]">직접 등록</p>
+                    <p className="mt-1 text-[0.76rem] text-[var(--color-ink-soft)]">기록용 태그예요. 추천 기준과는 따로 저장돼요.</p>
+
+                    <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                      <input
+                        data-testid={testIds.detail.tasteCustomTagInput}
+                        type="text"
+                        value={customTagInput}
+                        onChange={(event) => {
+                          setCustomTagInput(event.target.value);
+                          setCustomTagError(null);
+                          setTasteStatus("idle");
+                        }}
+                        onKeyDown={(event) => {
+                          if (event.key !== "Enter") {
+                            return;
+                          }
+
+                          event.preventDefault();
+                          addCustomTasteTag();
+                        }}
+                        placeholder="#노을산책 처럼 추가"
+                        aria-label="직접 등록 해시태그"
+                        className="compass-form-field-light min-h-[44px] w-full rounded-xl px-4 py-3 text-sm"
+                      />
                       <button
-                        key={tag}
+                        data-testid={testIds.detail.tasteCustomTagAdd}
                         type="button"
-                        data-testid={getDestinationTasteTagTestId(index)}
-                        onClick={() => toggleTasteTag(tag)}
-                        className={`rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em] ${
-                          active ? "compass-selected" : "compass-selection-chip"
-                        }`}
+                        onClick={addCustomTasteTag}
+                        className="compass-action-secondary min-h-[44px] rounded-xl px-4 py-2.5 text-xs font-semibold tracking-[0.04em]"
                       >
-                        #{formatVibeList([tag])}
+                        추가
                       </button>
-                    );
-                  })}
+                    </div>
+
+                    <p className={`mt-2 text-[0.76rem] ${customTagError ? "text-[var(--color-warning-text)]" : "text-[var(--color-ink-soft)]"}`}>
+                      {customTagError ?? `직접 등록 태그는 최대 ${maxCustomTasteTags}개까지 남길 수 있어요.`}
+                    </p>
+
+                    {tasteState.customTags.length > 0 ? (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {tasteState.customTags.map((tag, index) => (
+                          <span
+                            key={`${tag}-${index}`}
+                            className="inline-flex min-h-[44px] items-center gap-2 rounded-full border border-[color:var(--color-frame-soft)] bg-white px-3.5 py-2 text-xs font-medium text-[var(--color-ink)]"
+                          >
+                            <span>#{tag}</span>
+                            <button
+                              type="button"
+                              data-testid={getDestinationTasteCustomTagRemoveTestId(index)}
+                              onClick={() => removeCustomTasteTag(tag)}
+                              className="inline-flex min-h-[28px] min-w-[28px] items-center justify-center rounded-full border border-[color:var(--color-frame-soft)] text-[0.72rem] text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-sand)] hover:text-[var(--color-sand-deep)]"
+                              aria-label={`${tag} 삭제`}
+                            >
+                              ×
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
 
@@ -505,12 +661,13 @@ export function DestinationDetailExperience({
                     data-testid={testIds.detail.tasteRevisit}
                     type="checkbox"
                     checked={tasteState.wouldRevisit}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      setTasteStatus("idle");
                       setTasteState((currentState) => ({
                         ...currentState,
                         wouldRevisit: event.target.checked,
-                      }))
-                    }
+                      }));
+                    }}
                     className="compass-checkbox"
                   />
                   다시 가고 싶어요
@@ -522,12 +679,13 @@ export function DestinationDetailExperience({
                     data-testid={testIds.detail.tasteDate}
                     type="date"
                     value={tasteState.visitedAt}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      setTasteStatus("idle");
                       setTasteState((currentState) => ({
                         ...currentState,
                         visitedAt: event.target.value,
-                      }))
-                    }
+                      }));
+                    }}
                     className="compass-form-field-light rounded-full px-3 py-2 text-sm"
                   />
                 </label>

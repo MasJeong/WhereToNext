@@ -28,7 +28,10 @@ vi.mock("next/navigation", () => ({
   useRouter: () => ({
     push: mockPush,
     refresh: mockRefresh,
+    replace: vi.fn(),
   }),
+  usePathname: () => "/account",
+  useSearchParams: () => new URLSearchParams("tab=future-trips"),
 }));
 
 vi.mock("next/link", () => ({
@@ -68,6 +71,7 @@ const historyEntry: UserDestinationHistory = {
   destinationId: "tokyo",
   rating: 5,
   tags: ["city", "food"],
+  customTags: [],
   wouldRevisit: true,
   visitedAt: "2026-02-01T00:00:00.000Z",
   memo: "다음에도 밤 산책 코스로 다시 가고 싶어요.",
