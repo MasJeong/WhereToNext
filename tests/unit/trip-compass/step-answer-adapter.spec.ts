@@ -4,7 +4,9 @@ import { recommendationQuerySchema } from "@/lib/domain/contracts";
 import {
   defaultHomeStepAnswers,
   deriveRecommendationQueryFromHomeStepAnswers,
+  homeStepTravelWindowOptions,
   homeStepTravelStyleOptions,
+  resolveTravelMonthFromHomeWindow,
 } from "@/lib/trip-compass/step-answer-adapter";
 import { defaultRecommendationQuery } from "@/lib/trip-compass/presentation";
 
@@ -19,7 +21,7 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
   it("maps a representative simplified answer set to the existing API contract", () => {
     const query = deriveRecommendationQueryFromHomeStepAnswers({
       whoWith: "friends",
-      travelWindow: 7,
+      travelWindow: "q3",
       tripLength: 3,
       travelStyle: ["sns-hotplace", "shopping", "foodie"],
       flightPreference: "short",
@@ -61,7 +63,7 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
   it("keeps the default answer snapshot aligned to the strict question flow", () => {
     expect(defaultHomeStepAnswers).toMatchObject({
       whoWith: "couple",
-      travelWindow: 10,
+      travelWindow: "q4",
       tripLength: 5,
       travelStyle: [],
       flightPreference: "medium",
@@ -86,5 +88,16 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
       "shopping",
       "foodie",
     ]);
+  });
+
+  it("exposes every month as a selectable departure window", () => {
+    expect(homeStepTravelWindowOptions.map((option) => option.value)).toEqual(["soon", "q1", "q2", "q3", "q4"]);
+  });
+
+  it("maps grouped departure windows to representative months", () => {
+    expect(resolveTravelMonthFromHomeWindow("q1")).toBe(1);
+    expect(resolveTravelMonthFromHomeWindow("q2")).toBe(4);
+    expect(resolveTravelMonthFromHomeWindow("q3")).toBe(7);
+    expect(resolveTravelMonthFromHomeWindow("q4")).toBe(10);
   });
 });

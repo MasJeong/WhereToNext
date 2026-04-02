@@ -196,14 +196,59 @@ export function formatTripLengthBand(tripLengthDays: RecommendationQuery["tripLe
 
 export const travelMonthOptions: QueryOption<RecommendationQuery["travelMonth"]>[] = [
   {
+    value: 1,
+    label: "1월",
+    description: "새해 무드와 겨울 시즌 분위기를 기대하기 좋은 시기예요.",
+  },
+  {
+    value: 2,
+    label: "2월",
+    description: "짧은 겨울 여행이나 설 연휴 주변 일정을 떠올리기 쉬운 시기예요.",
+  },
+  {
+    value: 3,
+    label: "3월",
+    description: "초봄 공기와 가벼운 일정 감각을 떠올리기 좋은 시기예요.",
+  },
+  {
+    value: 4,
+    label: "4월",
+    description: "봄꽃과 산책 중심 여행을 생각하기 좋은 대표 봄 시즌이에요.",
+  },
+  {
+    value: 5,
+    label: "5월",
+    description: "야외 일정이 많아지는 황금연휴 감각의 대표 시즌이에요.",
+  },
+  {
+    value: 6,
+    label: "6월",
+    description: "초여름 분위기에서 한적하게 다녀오고 싶을 때 떠올리기 쉬워요.",
+  },
+  {
     value: 7,
     label: "7월",
     description: "여름 휴가철 분위기와 활기가 살아나는 시기예요.",
   },
   {
+    value: 8,
+    label: "8월",
+    description: "성수기 한가운데에서 확실한 휴가 일정을 잡기 쉬운 달이에요.",
+  },
+  {
+    value: 9,
+    label: "9월",
+    description: "늦여름에서 초가을로 넘어가며 이동하기 편해지는 시기예요.",
+  },
+  {
     value: 10,
     label: "10월",
     description: "날씨와 이동감이 안정적인 대표 성수기예요.",
+  },
+  {
+    value: 11,
+    label: "11월",
+    description: "붐비는 시기를 조금 피해 차분하게 다녀오기 좋은 달이에요.",
   },
   {
     value: 12,

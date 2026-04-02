@@ -15,7 +15,7 @@ async function submitQuickRecommendation(page: import("@playwright/test").Page) 
   await page.getByTestId("home-cta").click();
   await expect(page.getByTestId("home-step-question")).toBeVisible();
   await page.getByTestId("home-step-choice-0").click();
-  await page.getByTestId("home-step-choice-1").click();
+  await page.getByRole("button", { name: /10~12월/ }).click();
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-0").click();
   await page.getByTestId("home-step-next").click();

@@ -13,7 +13,7 @@ async function submitQuickRecommendation(page: import("@playwright/test").Page) 
   await page.getByTestId("home-cta").click();
   await expect(page.getByTestId("home-step-question")).toBeVisible();
   await page.getByTestId("home-step-choice-0").click();
-  await page.getByTestId("home-step-choice-1").click();
+  await page.getByRole("button", { name: /10~12월/ }).click();
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-0").click();
   await page.getByTestId("home-step-next").click();
@@ -23,31 +23,6 @@ async function submitQuickRecommendation(page: import("@playwright/test").Page) 
   await expect(page.getByTestId(testIds.home.resultPage)).toHaveCount(0);
   await expect(page.getByTestId("home-top-summary")).toBeVisible({ timeout: 10000 });
   await expect(page.getByTestId("result-filter-bar")).toBeVisible({ timeout: 10000 });
-  await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 10000 });
-}
-
-async function submitGuidedRecommendation(page: import("@playwright/test").Page) {
-  await page.goto("/");
-  await expect(page.getByTestId("home-landing")).toBeVisible();
-  await expect(page.getByTestId("home-step-question")).toHaveCount(0);
-  await page.getByTestId("home-cta").click();
-  await expect(page.getByTestId("home-step-question")).toBeVisible();
-  await page.getByTestId("home-step-choice-0").click();
-  await page.getByTestId("home-step-choice-2").click();
-  await page.getByTestId("home-step-prev").click();
-  await expect(page.getByTestId("home-step-question")).toContainText("언제쯤 떠나고 싶으세요?");
-  await page.getByTestId("home-step-choice-2").click();
-  await expect(page.getByTestId("home-step-question")).toContainText("며칠 정도 생각하고 있나요?");
-  await page.getByTestId("home-step-choice-1").click();
-  await expect(page.getByTestId("home-step-question")).toContainText("이번 여행에서는 뭐가 더 중요해요?");
-  await page.getByTestId("home-step-choice-0").click();
-  await page.getByTestId("home-step-choice-8").click();
-  await page.getByTestId("home-step-next").click();
-  await page.getByTestId("home-step-choice-0").click();
-  await expect(page.getByTestId(testIds.home.loadingState)).toBeVisible({ timeout: 10000 });
-  await expect(page.getByTestId(testIds.home.loadingSponsor)).toBeVisible({ timeout: 10000 });
-  await expect(page.getByTestId(testIds.home.resultPage)).toHaveCount(0);
-  await expect(page.getByTestId("home-top-summary")).toBeVisible({ timeout: 10000 });
   await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 10000 });
 }
 
@@ -143,17 +118,17 @@ test("supports back navigation during the one-question-per-screen funnel", async
   await expect(page).toHaveURL(/\/\?stage=question&step=2&whoWith=couple$/);
   await expect(page.getByTestId("home-step-question")).toContainText("언제쯤 떠나고 싶으세요?");
 
-  await page.getByTestId("home-step-choice-2").click();
-  await expect(page).toHaveURL(/travelWindow=10/);
+  await page.getByRole("button", { name: /10~12월/ }).click();
+  await expect(page).toHaveURL(/travelWindow=q4/);
   await expect(page.getByTestId("home-step-question")).toContainText("며칠 정도 생각하고 있나요?");
 
   await page.goBack();
   await expect(page).toHaveURL(/\/\?stage=question&step=2&whoWith=couple$/);
   await expect(page.getByTestId("home-step-question")).toContainText("언제쯤 떠나고 싶으세요?");
 
-  await page.getByTestId("home-step-choice-2").click();
+  await page.getByRole("button", { name: /10~12월/ }).click();
   await page.getByTestId("home-step-choice-1").click();
-  await page.getByTestId("home-step-choice-0").click();
+  await page.getByRole("button", { name: /7~9월/ }).click();
   await page.getByTestId("home-step-choice-8").click();
   await page.getByTestId("home-step-next").click();
   await page.getByTestId("home-step-choice-0").click();
@@ -172,7 +147,7 @@ test("asks realistic travel conditions instead of romance-first and departure-ai
   await page.getByTestId("home-step-choice-0").click();
 
   await expect(page.getByTestId("home-step-question")).toContainText("언제쯤 떠나고 싶으세요?");
-  await page.getByTestId("home-step-choice-1").click();
+  await page.getByRole("button", { name: /10~12월/ }).click();
 
   await expect(page.getByTestId("home-step-question")).toContainText("며칠 정도 생각하고 있나요?");
   await page.getByTestId("home-step-choice-1").click();
@@ -199,7 +174,7 @@ test("reflects the selected practical conditions in the result summary", async (
   await page.getByTestId("home-cta").click();
 
   await page.getByTestId("home-step-choice-2").click();
-  await page.getByTestId("home-step-choice-0").click();
+  await page.getByRole("button", { name: /7~9월/ }).click();
   await page.getByTestId("home-step-choice-2").click();
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-7").click();
@@ -207,7 +182,7 @@ test("reflects the selected practical conditions in the result summary", async (
   await page.getByTestId("home-step-choice-2").click();
 
   await expect(page.getByTestId("home-top-summary")).toBeVisible({ timeout: 10000 });
-  await expect(page.getByTestId("query-summary")).toContainText("7월 · 7~10일");
+  await expect(page.getByTestId("query-summary")).toContainText("7~9월 · 7~10일");
   await expect(page.getByTestId("query-summary")).toContainText("장거리도 가능");
   await expect(page.getByTestId("query-summary")).toContainText("도시");
   await expect(page.getByTestId("query-summary")).toContainText("쇼핑");
@@ -423,7 +398,7 @@ test("recovers from the empty state through a relaxation action", async ({ page 
   await page.goto("/");
   await page.getByTestId("home-cta").click();
   await page.getByTestId("home-step-choice-0").click();
-  await page.getByTestId("home-step-choice-1").click();
+  await page.getByRole("button", { name: /10~12월/ }).click();
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-0").click();
   await page.getByTestId("home-step-next").click();
@@ -457,7 +432,7 @@ test("shows a retry path when recommendation loading fails", async ({ page }) =>
   await page.goto("/");
   await page.getByTestId("home-cta").click();
   await page.getByTestId("home-step-choice-0").click();
-  await page.getByTestId("home-step-choice-1").click();
+  await page.getByRole("button", { name: /10~12월/ }).click();
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-0").click();
   await page.getByTestId("home-step-next").click();

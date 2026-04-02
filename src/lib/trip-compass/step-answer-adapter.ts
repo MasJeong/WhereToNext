@@ -5,7 +5,6 @@ import {
   getPartySizeForType,
   partyOptions,
   tripLengthOptions,
-  travelMonthOptions,
 } from "@/lib/trip-compass/presentation";
 
 type HomeStepOptionValue = string | number | null;
@@ -31,9 +30,13 @@ export const homeStepTravelStyleValues = [
 
 export type HomeStepTravelStyle = (typeof homeStepTravelStyleValues)[number];
 
+export const homeStepTravelWindowValues = ["soon", "q1", "q2", "q3", "q4"] as const;
+
+export type HomeStepTravelWindow = (typeof homeStepTravelWindowValues)[number];
+
 export type HomeStepAnswers = {
   whoWith: RecommendationQuery["partyType"];
-  travelWindow: RecommendationQuery["travelMonth"];
+  travelWindow: HomeStepTravelWindow;
   tripLength: RecommendationQuery["tripLengthDays"];
   travelStyle: HomeStepTravelStyle[];
   flightPreference: RecommendationQuery["flightTolerance"];
@@ -86,13 +89,25 @@ function deriveVibesFromTravelStyles(styles: HomeStepTravelStyle[]): Recommendat
 
 const defaultQuestionFlowAnswers: HomeStepAnswers = {
   whoWith: defaultRecommendationQuery.partyType,
-  travelWindow: defaultRecommendationQuery.travelMonth,
+  travelWindow: "q4",
   tripLength: defaultRecommendationQuery.tripLengthDays,
   travelStyle: [],
   flightPreference: defaultRecommendationQuery.flightTolerance,
 };
 
 const fallbackTravelStyles: HomeStepTravelStyle[] = ["foodie"];
+
+function resolveRelativeTravelMonth(): RecommendationQuery["travelMonth"] {
+  const currentMonth = new Date().getMonth() + 1;
+  return Math.min(Math.max(currentMonth, 1), 12) as RecommendationQuery["travelMonth"];
+}
+
+const travelWindowToRepresentativeMonthMap: Record<Exclude<HomeStepTravelWindow, "soon">, RecommendationQuery["travelMonth"]> = {
+  q1: 1,
+  q2: 4,
+  q3: 7,
+  q4: 10,
+};
 
 export const defaultHomeStepAnswers: HomeStepAnswerDefaults = {
   ...defaultQuestionFlowAnswers,
@@ -101,8 +116,37 @@ export const defaultHomeStepAnswers: HomeStepAnswerDefaults = {
 
 export const homeStepCompanionOptions: HomeStepOption<HomeStepAnswers["whoWith"]>[] = partyOptions;
 
-export const homeStepTravelWindowOptions: HomeStepOption<HomeStepAnswers["travelWindow"]>[] =
-  travelMonthOptions;
+export const homeStepTravelWindowOptions: HomeStepOption<HomeStepAnswers["travelWindow"]>[] = [
+  {
+    value: "soon",
+    label: "곧 떠나고 싶어요",
+    description: "1~2개월 안에 가볍게 다녀오고 싶어요.",
+  },
+  {
+    value: "q1",
+    label: "1~3월",
+    description: "연초 일정 안에서 시기를 맞춰 보고 있어요.",
+  },
+  {
+    value: "q2",
+    label: "4~6월",
+    description: "상반기 안에서 여행 시기를 고르고 싶어요.",
+  },
+  {
+    value: "q3",
+    label: "7~9월",
+    description: "여름 휴가철 전후로 일정을 생각하고 있어요.",
+  },
+  {
+    value: "q4",
+    label: "10~12월",
+    description: "하반기나 연말 안에서 시기를 보고 있어요.",
+  },
+];
+
+export function formatHomeStepTravelWindowLabel(window: HomeStepTravelWindow): string {
+  return homeStepTravelWindowOptions.find((option) => option.value === window)?.label ?? "언제든";
+}
 
 export const homeStepTripLengthOptions: HomeStepOption<HomeStepAnswers["tripLength"]>[] =
   tripLengthOptions;
@@ -172,6 +216,14 @@ export const homeStepTravelStyleOptions: HomeStepOption<HomeStepTravelStyle>[] =
   },
 ];
 
+export function resolveTravelMonthFromHomeWindow(window: HomeStepTravelWindow): RecommendationQuery["travelMonth"] {
+  if (window === "soon") {
+    return resolveRelativeTravelMonth();
+  }
+
+  return travelWindowToRepresentativeMonthMap[window];
+}
+
 export function deriveRecommendationQueryFromHomeStepAnswers(
   answers: Partial<HomeStepAnswers> = {},
 ): RecommendationQuery {
@@ -189,7 +241,7 @@ export function deriveRecommendationQueryFromHomeStepAnswers(
     budgetBand: defaultRecommendationQuery.budgetBand,
     tripLengthDays: mergedAnswers.tripLength,
     departureAirport: defaultRecommendationQuery.departureAirport,
-    travelMonth: mergedAnswers.travelWindow,
+    travelMonth: resolveTravelMonthFromHomeWindow(mergedAnswers.travelWindow),
     pace: derivePaceFromTravelStyles(travelStyles),
     flightTolerance: mergedAnswers.flightPreference,
     vibes: deriveVibesFromTravelStyles(travelStyles),

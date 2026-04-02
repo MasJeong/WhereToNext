@@ -19,6 +19,7 @@ import {
   formatDepartureAirport,
   formatEvidenceMode,
   formatResultVibeLabel,
+  formatTripLengthBand,
   formatTravelMonth,
   type RecommendationApiResponse,
   type RecommendationCardView,
@@ -34,13 +35,16 @@ import { buildApiUrl } from "@/lib/runtime/url";
 import { parseRecommendationQuery } from "@/lib/security/validation";
 import {
   deriveRecommendationQueryFromHomeStepAnswers,
+  formatHomeStepTravelWindowLabel,
   homeStepCompanionOptions,
   homeStepFlightPreferenceOptions,
   homeStepTravelStyleOptions,
+  homeStepTravelWindowValues,
   homeStepTripLengthOptions,
   homeStepTravelWindowOptions,
   type HomeStepAnswers,
   type HomeStepTravelStyle,
+  type HomeStepTravelWindow,
 } from "@/lib/trip-compass/step-answer-adapter";
 import {
   getHomeChoiceTestId,
@@ -156,10 +160,11 @@ const resultFilterOptions: Array<{ key: ResultFilterKey; label: string; descript
 ];
 
 const companionValueSet = new Set(homeStepCompanionOptions.map((option) => option.value));
-const travelWindowValueSet = new Set(homeStepTravelWindowOptions.map((option) => option.value));
+const travelWindowValueSet = new Set<HomeStepTravelWindow>(homeStepTravelWindowValues);
 const tripLengthValueSet = new Set(homeStepTripLengthOptions.map((option) => option.value));
 const flightPreferenceValueSet = new Set(homeStepFlightPreferenceOptions.map((option) => option.value));
 const travelStyleValueSet = new Set(homeStepTravelStyleOptions.map((option) => option.value));
+const homeQuestionStepCount = 5;
 
 function getNextRelaxedOption<TValue extends string | number>(
   currentValue: TValue,
@@ -200,6 +205,10 @@ function getBudgetRank(budgetBand: RecommendationCardView["destination"]["budget
 
 function isHomeStepTravelStyle(value: string): value is HomeStepTravelStyle {
   return travelStyleValueSet.has(value as HomeStepTravelStyle);
+}
+
+function isHomeStepTravelWindow(value: string): value is HomeStepTravelWindow {
+  return travelWindowValueSet.has(value as HomeStepTravelWindow);
 }
 
 function parseStepParam(stepParam: string | null): number {
@@ -258,7 +267,7 @@ function clampQuestionStepIndex(stepIndex: number, answers: Partial<HomeStepAnsw
 
 function parseQuestionAnswersFromSearchParams(searchParams: URLSearchParams): Partial<HomeStepAnswers> {
   const whoWith = searchParams.get(homeWhoWithParam);
-  const travelWindow = Number(searchParams.get(homeTravelWindowParam));
+  const travelWindow = searchParams.get(homeTravelWindowParam);
   const tripLength = Number(searchParams.get(homeTripLengthParam));
   const flightPreference = searchParams.get(homeFlightPreferenceParam);
   const travelStyle = searchParams
@@ -274,8 +283,8 @@ function parseQuestionAnswersFromSearchParams(searchParams: URLSearchParams): Pa
     restoredAnswers.whoWith = whoWith as HomeStepAnswers["whoWith"];
   }
 
-  if (travelWindowValueSet.has(travelWindow as HomeStepAnswers["travelWindow"])) {
-    restoredAnswers.travelWindow = travelWindow as HomeStepAnswers["travelWindow"];
+  if (travelWindow && isHomeStepTravelWindow(travelWindow)) {
+    restoredAnswers.travelWindow = travelWindow;
   }
 
   if (tripLengthValueSet.has(tripLength as HomeStepAnswers["tripLength"])) {
@@ -570,6 +579,7 @@ export function HomeExperience() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const session = authClient.useSession();
+  const [routeSearchParamString, setRouteSearchParamString] = useState(() => searchParams.toString());
   const [stage, setStage] = useState<FunnelStage>("landing");
   const [answers, setAnswers] = useState<Partial<HomeStepAnswers>>(defaultAnswers);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -599,7 +609,24 @@ export function HomeExperience() {
   const currentQuery = useMemo(() => deriveRecommendationQueryFromHomeStepAnswers(answers), [answers]);
   const resultQuery = results?.query ?? currentQuery;
   const queryNarrative = useMemo(() => buildQueryNarrative(resultQuery), [resultQuery]);
-  const briefItems = useMemo(() => buildStructuredTripBrief(resultQuery), [resultQuery]);
+  const briefItems = useMemo(() => {
+    const nextItems = buildStructuredTripBrief(resultQuery);
+    const selectedTravelWindow = answers.travelWindow;
+    if (!selectedTravelWindow) {
+      return nextItems;
+    }
+
+    return nextItems.map((item) => {
+      if (item.id !== "travel-window") {
+        return item;
+      }
+
+      return {
+        ...item,
+        value: `${formatHomeStepTravelWindowLabel(selectedTravelWindow)} · ${formatTripLengthBand(resultQuery.tripLengthDays)}`,
+      };
+    });
+  }, [answers.travelWindow, resultQuery]);
   const emptyStateActions = useMemo(() => buildRelaxationActions(resultQuery), [resultQuery]);
   const filteredCards = useMemo(() => {
     const nextCards = [...cards];
@@ -661,13 +688,34 @@ export function HomeExperience() {
       .join(" · ");
   }, [savedSnapshots, selectedCompareIds]);
 
-  const searchParamString = searchParams.toString();
+  const searchParamString = routeSearchParamString;
   const homeSearchParams = useMemo(() => new URLSearchParams(searchParamString), [searchParamString]);
+  const routeStage = homeSearchParams.get(homeStageParam) as HomeUrlStage | null;
+  const effectiveStage = useMemo<FunnelStage>(() => {
+    if (stage === "loading") {
+      return "loading";
+    }
+
+    if (routeStage === "question") {
+      return "question";
+    }
+
+    if (routeStage === "result") {
+      return "result";
+    }
+
+    if (routeStage === "landing" || homeSearchParams.size === 0) {
+      return "landing";
+    }
+
+    return stage;
+  }, [homeSearchParams.size, routeStage, stage]);
 
   const navigateHomeRoute = useCallback((nextSearchParams: URLSearchParams | null, mode: "push" | "replace") => {
     const nextQuery = nextSearchParams?.toString() ?? "";
     const nextRoute = nextQuery ? `/?${nextQuery}` : "/";
     localRouteSyncRef.current = nextRoute;
+    setRouteSearchParamString(nextQuery);
     if (mode === "push") {
       router.push(nextRoute, { scroll: false });
       return;
@@ -716,6 +764,42 @@ export function HomeExperience() {
 
     replaceHomeRoute(null);
   }, [pushHomeRoute, replaceHomeRoute]);
+
+  const restoreQuestionStage = useCallback((nextSearchParams: URLSearchParams) => {
+    const restoredAnswers = parseQuestionAnswersFromSearchParams(nextSearchParams);
+    const requestedStepIndex = parseStepParam(nextSearchParams.get(homeStepParam));
+    const nextStepIndex = clampQuestionStepIndex(requestedStepIndex, restoredAnswers, homeQuestionStepCount);
+
+    activeRecommendationRequestRef.current += 1;
+    pendingRecommendationQueryRef.current = null;
+    setStage("question");
+    setAnswers(restoredAnswers);
+    setCurrentStepIndex(nextStepIndex);
+    setResults(null);
+    setCards([]);
+    setIsSubmitting(false);
+    setSubmitError(null);
+    setShowAllResults(false);
+    setResultFilter("all");
+    setResultSort("fit");
+    setCopyFallbackUrl(null);
+  }, []);
+
+  const restoreLandingStage = useCallback(() => {
+    activeRecommendationRequestRef.current += 1;
+    pendingRecommendationQueryRef.current = null;
+    setStage("landing");
+    setAnswers(defaultAnswers);
+    setCurrentStepIndex(0);
+    setResults(null);
+    setCards([]);
+    setIsSubmitting(false);
+    setSubmitError(null);
+    setShowAllResults(false);
+    setResultFilter("all");
+    setResultSort("fit");
+    setCopyFallbackUrl(null);
+  }, []);
 
   const steps: HomeFlowStep[] = [
     {
@@ -790,7 +874,9 @@ export function HomeExperience() {
         }));
       },
       onNext: () => {
-        setCurrentStepIndex((currentValue) => Math.min(currentValue + 1, steps.length - 1));
+        const nextStepIndex = Math.min(currentStepIndex + 1, steps.length - 1);
+        setCurrentStepIndex(nextStepIndex);
+        syncQuestionRoute(nextStepIndex, answers, "push");
       },
       nextDisabled: (answers.travelStyle ?? []).length === 0,
     },
@@ -820,6 +906,10 @@ export function HomeExperience() {
     : canCreateCompare
       ? `${selectedCompareIds.length}곳 비교 보드 만들기`
       : "2개부터 선택하면 비교돼요";
+
+  useEffect(() => {
+    setRouteSearchParamString(searchParams.toString());
+  }, [searchParams]);
 
   useEffect(() => {
     const currentRoute = buildCurrentRoute("/", homeSearchParams);
@@ -853,21 +943,7 @@ export function HomeExperience() {
     }
 
     if (routeStage === "question") {
-      const restoredAnswers = parseQuestionAnswersFromSearchParams(homeSearchParams);
-      const requestedStepIndex = parseStepParam(homeSearchParams.get(homeStepParam));
-      const nextStepIndex = clampQuestionStepIndex(requestedStepIndex, restoredAnswers, steps.length);
-
-      setStage("question");
-      setAnswers(restoredAnswers);
-      setCurrentStepIndex(nextStepIndex);
-      setResults(null);
-      setCards([]);
-      setIsSubmitting(false);
-      setSubmitError(null);
-      setShowAllResults(false);
-      setResultFilter("all");
-      setResultSort("fit");
-      setCopyFallbackUrl(null);
+      restoreQuestionStage(homeSearchParams);
       return;
     }
 
@@ -909,19 +985,35 @@ export function HomeExperience() {
     }
 
     if (routeStage === "landing" || homeSearchParams.size === 0) {
-      setStage("landing");
-      setAnswers(defaultAnswers);
-      setCurrentStepIndex(0);
-      setResults(null);
-      setCards([]);
-      setIsSubmitting(false);
-      setSubmitError(null);
-      setShowAllResults(false);
-      setResultFilter("all");
-      setResultSort("fit");
-      setCopyFallbackUrl(null);
+      restoreLandingStage();
     }
-  }, [homeSearchParams, isSubmitting, results, searchParamString, steps.length, submitError, syncQuestionRoute, syncResultRoute]);
+  }, [homeSearchParams, isSubmitting, restoreLandingStage, restoreQuestionStage, results, searchParamString, submitError, syncQuestionRoute, syncResultRoute]);
+
+  useEffect(() => {
+    function handlePopState() {
+      const nextSearchParamString = window.location.search.startsWith("?")
+        ? window.location.search.slice(1)
+        : window.location.search;
+      const nextSearchParams = new URLSearchParams(nextSearchParamString);
+      setRouteSearchParamString(nextSearchParamString);
+      const routeStage = nextSearchParams.get(homeStageParam) as HomeUrlStage | null;
+
+      if (routeStage === "question") {
+        restoreQuestionStage(nextSearchParams);
+        return;
+      }
+
+      if (routeStage === "landing" || nextSearchParams.size === 0) {
+        restoreLandingStage();
+      }
+    }
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [restoreLandingStage, restoreQuestionStage]);
 
   useEffect(() => {
     function handleHomeNavigation() {
@@ -1350,6 +1442,7 @@ export function HomeExperience() {
         }
       }
 
+      pendingRecommendationQueryRef.current = null;
       setStage("result");
       setResults(payload);
       setCards(createRecommendationCards(payload.recommendations));
@@ -1367,6 +1460,7 @@ export function HomeExperience() {
         return;
       }
 
+      pendingRecommendationQueryRef.current = null;
       setStage("result");
       setResults(null);
       setCards([]);
@@ -1376,7 +1470,6 @@ export function HomeExperience() {
       });
     } finally {
       if (activeRecommendationRequestRef.current === requestId) {
-        pendingRecommendationQueryRef.current = null;
         setIsSubmitting(false);
       }
     }
@@ -1931,14 +2024,14 @@ export function HomeExperience() {
   return (
     <ExperienceShell eyebrow="" title="" intro="" capsule="" hideHeader bareBody>
       <div
-        className={`-mx-3 min-h-screen bg-white sm:-mx-4 ${savedSnapshots.length > 0 && stage === "result" ? "pb-28 md:pb-0" : ""}`}
+        className={`-mx-3 min-h-screen bg-white sm:-mx-4 ${savedSnapshots.length > 0 && effectiveStage === "result" ? "pb-28 md:pb-0" : ""}`}
       >
         <AnimatePresence mode="wait" initial={false}>
           <div key={stage} className="space-y-4">
-            {stage === "landing" ? landingStage : null}
-            {stage === "question" ? questionStage : null}
-            {stage === "loading" ? loadingStage : null}
-            {stage === "result" ? resultStage : null}
+            {effectiveStage === "landing" ? landingStage : null}
+            {effectiveStage === "question" ? questionStage : null}
+            {effectiveStage === "loading" ? loadingStage : null}
+            {effectiveStage === "result" ? resultStage : null}
           </div>
         </AnimatePresence>
       </div>
