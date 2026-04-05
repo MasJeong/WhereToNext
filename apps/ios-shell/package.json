@@ -1,5 +1,5 @@
 {
-  "name": "where-to-next-ios-shell",
+  "name": "@soogo/ios-shell",
   "version": "0.1.0",
   "private": true,
   "scripts": {
