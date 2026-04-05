@@ -79,7 +79,6 @@ export function CompareBoard({ columns }: CompareBoardProps) {
   const canMoveNext = mobileStartIndex + 2 < columns.length;
   const canMovePrev = mobileStartIndex > 0;
   const differenceCount = rows.filter((row) => !isSameRow(row, columns)).length;
-  const mobileDifferenceCount = rows.filter((row) => !isSameRow(row, mobileColumns)).length;
 
   return (
     <section className="space-y-3.5">
@@ -88,10 +87,10 @@ export function CompareBoard({ columns }: CompareBoardProps) {
           <div>
             <p className="compass-editorial-kicker">비교 화면</p>
             <h3 className="mt-1.5 font-display text-[1.08rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.24rem]">
-              차이만 빠르게 보고 마지막 후보를 좁혀 보세요.
+              저장해 둔 여행끼리 마지막 판단만 빠르게 비교해 보세요.
             </h3>
             <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-              먼저 한 줄 판정과 체크할 점부터 보면 결정이 빨라져요.
+              모바일에서는 두 후보씩 넘겨 보고, 차이만 남겨 결정 피로를 줄여요. 비교는 보조 단계이고 최종 판단은 상세 페이지와 저장한 여행 링크에서 이어가면 돼요.
             </p>
           </div>
 
@@ -100,8 +99,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
               후보 {columns.length}곳
             </span>
             <span className="compass-metric-pill rounded-full px-3 py-2 text-xs font-semibold">
-              <span className="md:hidden">차이 {mobileDifferenceCount}개</span>
-              <span className="hidden md:inline">차이 {differenceCount}개</span>
+              차이 {differenceCount}개
             </span>
             <button
               type="button"
@@ -109,17 +107,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
               onClick={() => setShowDifferencesOnly((currentState) => !currentState)}
               className={`${showDifferencesOnly ? "compass-selected" : "compass-action-secondary"} compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]`}
             >
-              {showDifferencesOnly ? (
-                <>
-                  <span className="md:hidden">보이는 후보 전체 보기</span>
-                  <span className="hidden md:inline">차이만 보기 해제</span>
-                </>
-              ) : (
-                <>
-                  <span className="md:hidden">보이는 후보 차이만 보기</span>
-                  <span className="hidden md:inline">차이만 보기</span>
-                </>
-              )}
+              {showDifferencesOnly ? "차이만 보기 해제" : "차이만 보기"}
             </button>
           </div>
         </div>
@@ -135,41 +123,28 @@ export function CompareBoard({ columns }: CompareBoardProps) {
               <p className="mt-1.5 font-display text-[0.98rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
                 {column.card.destination.nameKo}
               </p>
-              <p className="mt-1 text-sm font-semibold leading-5 text-[var(--color-ink)]">
-                {buildRecommendationVerdict(column.card).headline}
-              </p>
-              <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">
-                {column.card.recommendation.whyThisFits}
+              <p className="mt-1 text-xs text-[var(--color-ink-soft)]">
+                {column.card.recommendation.scoreBreakdown.total}점 · {column.card.recommendation.confidence}% 일치
               </p>
               <div className="mt-2.5 flex flex-wrap gap-2">
-                <span className="compass-metric-pill rounded-full px-3 py-1.5 text-[11px] font-semibold">
-                  총점 {column.card.recommendation.scoreBreakdown.total}
-                </span>
-                <span className="compass-metric-pill rounded-full px-3 py-1.5 text-[11px] font-semibold">
-                  일치 {column.card.recommendation.confidence}%
-                </span>
-              </div>
-              <div className="mt-3 flex flex-wrap gap-2">
                 <Link
                   href={buildDestinationDetailPath(column.card.destination, undefined, column.snapshotId)}
                   className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-[11px] font-semibold tracking-[0.04em]"
                 >
                   상세 보기
                 </Link>
+                <Link
+                  href={column.sharePath}
+                  className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-[11px] font-semibold tracking-[0.04em]"
+                >
+                  저장 링크
+                </Link>
               </div>
             </article>
           ))}
         </div>
 
-        <div className="flex items-center justify-between gap-2 md:hidden">
-          <div className="min-w-0">
-            <p className="text-xs leading-5 text-[var(--color-ink-soft)]">
-              후보 {mobileStartIndex + 1}-{Math.min(mobileStartIndex + mobileColumns.length, columns.length)} / {columns.length}
-            </p>
-            <p className="text-[11px] leading-5 text-[var(--color-ink-soft)]">
-              {showDifferencesOnly ? "차이만 보기는 지금 보이는 후보 기준이에요." : "지금 보이는 후보를 모두 보고 있어요."}
-            </p>
-          </div>
+        <div className="flex items-center justify-end gap-2 md:hidden">
           <button
             type="button"
             data-testid={testIds.compare.mobilePrev}

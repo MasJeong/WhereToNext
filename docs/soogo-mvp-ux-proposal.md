@@ -1,12 +1,12 @@
-# 떠나볼래 MVP UX 제안서
+# SooGo MVP UX Proposal
 
-참고 문서:
+Reference notes:
 - `docs/uiux-style-guide.md`
 - `docs/designus-reference-notes.md`
 
 ## 1. 서비스 한 줄 정의
 
-떠나볼래는 아직 목적지를 정하지 못한 사용자가 몇 가지 여행 조건만 선택하면, 자신에게 맞는 해외 여행지를 빠르게 발견하고 추천 이유를 납득한 뒤 저장·비교까지 이어갈 수 있게 돕는 발견형 추천 서비스다.
+SooGo는 아직 목적지를 정하지 못한 사용자가 몇 가지 여행 조건만 선택하면, 자신에게 맞는 해외 여행지를 빠르게 발견하고 추천 이유를 납득한 뒤 저장·비교까지 이어갈 수 있게 돕는 발견형 추천 서비스다.
 
 ## 2. 핵심 사용자와 JTBD
 
@@ -39,16 +39,16 @@
 
 | 단계 | 사용자가 결정하는 것 | 마찰 | UX가 줄여야 하는 것 |
 |---|---|---|---|
-| 홈 | 이 서비스가 무엇을 해주는지, 지금 시작할지 | 목적 이해 부족 | 5초 안에 추천형 서비스임을 이해시키기 |
+| 홈 | 이 서비스가 무엇을 해주는지 / 지금 시작할지 | 목적 이해 부족 | 5초 안에 추천형 서비스임을 이해시키기 |
 | 홈 내 조건 선택 | 어떤 여행을 원하는지 | 입력 피로, 선택 과부하 | 3~5개의 고신호 질문으로 의도만 잡기 |
-| 추천 결과 | 어떤 후보를 남길지 | 추천에 대한 불신 | 추천 이유와 신뢰 신호를 먼저 보여주기 |
+| 추천 결과 | 어떤 후보를 남길지 | 추천에 대한 불신 | 추천 이유 + 신뢰 신호를 먼저 보여주기 |
 | 저장/비교 | 어떤 후보를 shortlist로 둘지 | 앱 밖에서 따로 비교해야 함 | 카드 저장 즉시 compare tray로 연결 |
-| 상세 심화 검토 | 정말 이 후보가 맞는지 | 감성은 보이지만 판단 정보 부족 | 예산, 비행, 시즌, 치안, 대안 비교를 우선 제공 |
-| 공유/재방문 | 나중에 다시 볼지, 함께 볼지 | 링크와 상태 재현이 불편함 | 저장 링크, 비교 링크, immutable restore 제공 |
+| 상세 심화 검토 | 정말 이 후보가 맞는지 | 감성은 보이지만 판단 정보 부족 | 예산/비행/시즌/치안/대안 비교를 우선 제공 |
+| 공유/재방문 | 나중에 다시 볼지, 함께 볼지 | 링크/상태 재현 불편 | 저장 링크, 비교 링크, immutable restore 제공 |
 
 ## 4. MVP 화면 목록
 
-MVP는 5개에서 6개 이내로 유지하는 편이 적절하다.
+MVP는 5~6개 이내가 적절하다.
 
 | 화면 | 존재 이유 |
 |---|---|
@@ -82,9 +82,9 @@ MVP는 5개에서 6개 이내로 유지하는 편이 적절하다.
 - 사용자는 목적지보다 먼저 `어떤 여행인지`를 정의한다.
 - 추천 시작 전부터 여행지 카드가 나열되면 검색/피드 서비스처럼 보이게 된다.
 
-#### 제거 / 압축 / 유지
+#### Remove / Compress / Keep
 
-| 제거 | 압축 | 유지 |
+| Remove | Compress | Keep |
 |---|---|---|
 | 대형 검색창, 여행지 카드 피드, 예약 배너 | 추천 방식 설명, 로그인 유도, 고급 조건 | 한 줄 정의, 대표 CTA, 빠른 intent chips, 핵심 질문 |
 
@@ -104,9 +104,9 @@ MVP는 5개에서 6개 이내로 유지하는 편이 적절하다.
 - 감성은 사용자를 끌어오지만, 저장은 신뢰와 납득이 있어야 일어난다.
 - 따라서 `why + trust + action` 순서가 중요하다.
 
-#### 제거 / 압축 / 유지
+#### Remove / Compress / Keep
 
-| 제거 | 압축 | 유지 |
+| Remove | Compress | Keep |
 |---|---|---|
 | 카드형 피드식 장식, 상단 광고, 중복 공유 액션 | 분위기 참고, 체크할 점, 장문 추천 설명 | 한 줄 판정, 추천 이유, 신뢰 신호, 저장/비교 트레이 |
 
@@ -125,9 +125,9 @@ MVP는 5개에서 6개 이내로 유지하는 편이 적절하다.
 - 카드형 비교는 보기엔 예쁘지만 실제 판단 속도가 느리다.
 - 모바일에서는 특히 `예산 / 비행 / 시즌 / 분위기 / 체크할 점` 같은 행 기준 비교가 더 빠르다.
 
-#### 제거 / 압축 / 유지
+#### Remove / Compress / Keep
 
-| 제거 | 압축 | 유지 |
+| Remove | Compress | Keep |
 |---|---|---|
 | 카드형 비교 감성 레이아웃, 광고, 예약 CTA | 상단 요약 카드, 분위기 설명 장문 | 행 기준 비교, 차이만 보기, verdict row, 공유 CTA |
 
@@ -147,9 +147,9 @@ MVP는 5개에서 6개 이내로 유지하는 편이 적절하다.
 - 상위 후보가 명확하면 결과 화면에서 바로 저장/비교하는 것이 더 빠르다.
 - 상세는 `깊이 있게 확인하고 싶은 사용자`를 위한 선택형 단계다.
 
-#### 제거 / 압축 / 유지
+#### Remove / Compress / Keep
 
-| 제거 | 압축 | 유지 |
+| Remove | Compress | Keep |
 |---|---|---|
 | 장문 후기, 커뮤니티, 예약 리스트 | 분위기 참고, 대안 설명 문단 | 예산, 비행, 시즌, 치안, 이동, 추천 이유, 저장/비교 |
 
@@ -173,9 +173,9 @@ MVP는 5개에서 6개 이내로 유지하는 편이 적절하다.
 | 핵심 컴포넌트 | repeat/balanced/discover, 방문한 목적지, 평점, 태그, 다시 가고 싶은지 여부 |
 | 제거 요소 | 설정 중심 대시보드, 소셜/커뮤니티성 UI |
 
-#### 제거 / 압축 / 유지
+#### Remove / Compress / Keep
 
-| 제거 | 압축 | 유지 |
+| Remove | Compress | Keep |
 |---|---|---|
 | 계정 설정 메뉴 트리, 프로필 꾸미기 요소 | 로그인 이유 설명, 과한 프로필 메타 | 여행 기억 입력, 선호 모드, 저장 피드백 |
 
@@ -184,7 +184,7 @@ MVP는 5개에서 6개 이내로 유지하는 편이 적절하다.
 ### 홈 / 추천 시작
 ```text
 [상단]
-- 떠나볼래 로고
+- SooGo 로고
 - 한 줄 정의: 조건만 고르면, 아직 모르는 여행지를 추천해드려요
 
 [본문]
@@ -282,7 +282,7 @@ MVP는 5개에서 6개 이내로 유지하는 편이 적절하다.
 ## 7. AI 추천 UX 설계
 
 ### 추천 질문 단계
-MVP는 `3~5개 핵심 질문 + 결과 후 미세 조정` 구성이 적절하다.
+MVP는 `3~5개 핵심 질문 + 결과 후 미세 조정`이 적절하다.
 
 추천 질문:
 1. 여행 기간
@@ -296,8 +296,8 @@ MVP는 `3~5개 핵심 질문 + 결과 후 미세 조정` 구성이 적절하다.
 - repeat / balanced / discover 선호
 
 ### 질문 수를 최소화하면서 품질을 확보하는 방법
-- 처음부터 모든 조건을 다 물으면 검색형 폼처럼 느껴진다.
-- 그래서 `고신호 변수만 먼저` 받고,
+- 처음부터 모든 조건을 다 물으면 검색형 폼이 된다.
+- 따라서 `고신호 변수만 먼저` 받고,
 - 결과 이후 `더 따뜻하게`, `더 저렴하게`, `더 짧게`, `더 한적하게` 같은 후속 refinement를 제공한다.
 
 ### 추천 결과 카드에 꼭 들어갈 정보
@@ -395,7 +395,7 @@ MVP는 `3~5개 핵심 질문 + 결과 후 미세 조정` 구성이 적절하다.
 - 사용자 탓 금지
 - 구조: `무슨 일이 있었는지 + 다음 액션 1개`
 
-## 10. MVP와 추후 확장 구분
+## 10. MVP / 추후 확장 구분
 
 ### MVP에 반드시 필요한 것
 - 익명 추천
@@ -431,16 +431,16 @@ MVP는 `3~5개 핵심 질문 + 결과 후 미세 조정` 구성이 적절하다.
 
 ### 왜 추천형 서비스에 맞는가
 - 검색형 UX는 사용자가 무엇을 찾는지 이미 아는 상황에 강하다.
-- 떠나볼래 사용자는 `어디 갈지 모르는 상태`에서 들어온다.
+- SooGo 사용자는 `어디 갈지 모르는 상태`에서 들어온다.
 - 따라서 검색/예약형 구조를 가져오면 본질적으로 맞지 않는다.
 
-### 사용자의 의사결정을 어떻게 줄여 주는가
+### 사용자의 의사결정을 어떻게 줄여주는가
 - 후보 수를 먼저 압축한다.
 - 추천 이유를 짧게 제공한다.
 - 비교 기준을 구조화한다.
 - 저장/비교를 같은 흐름 안에서 해결한다.
 
-## 12. 개발 인수인계 (`handoff`)
+## 12. 개발 handoff
 
 ### 프론트엔드 주요 컴포넌트
 - `HeroIntro`
@@ -459,7 +459,7 @@ MVP는 `3~5개 핵심 질문 + 결과 후 미세 조정` 구성이 적절하다.
 
 ### 백엔드/API에서 필요한 필드 예시
 
-#### 추천 질의 (`recommendation query`)
+#### recommendation query
 - `partyType`
 - `partySize`
 - `budgetBand`
@@ -471,7 +471,7 @@ MVP는 `3~5개 핵심 질문 + 결과 후 미세 조정` 구성이 적절하다.
 - `vibes`
 - `explorationPreference` (optional)
 
-#### 추천 결과 (`recommendation result`)
+#### recommendation result
 - `destinationId`
 - `nameKo`
 - `nameEn`
@@ -486,7 +486,7 @@ MVP는 `3~5개 핵심 질문 + 결과 후 미세 조정` 구성이 적절하다.
 - `watchOuts[]`
 - `trendEvidence[]`
 
-#### 비교 (`compare`)
+#### compare
 - `snapshotIds[]`
 - `destinationIds[]`
 - `budget`
@@ -497,7 +497,7 @@ MVP는 `3~5개 핵심 질문 + 결과 후 미세 조정` 구성이 적절하다.
 - `watchOuts`
 - `moodSummary`
 
-#### 사용자 기억 (`user memory`)
+#### user memory
 - `destinationId`
 - `rating`
 - `tags[]`
@@ -523,36 +523,36 @@ MVP는 `3~5개 핵심 질문 + 결과 후 미세 조정` 구성이 적절하다.
 
 ## 13. 화면별 제거/압축 실행 규칙
 
-### 홈 (`Home`)
-- 첫 화면 viewport 그룹 수: 메인 그룹 최대 `3`개
-- 선택 섹션: 접어 두거나 fold 아래에 배치
-- 로그인 유도: 정보 제공용으로만 두고, 메인 CTA와 경쟁하지 않게 유지
+### Home
+- first viewport group count: `3` main groups max
+- optional sections: collapsed or below the fold
+- login prompt: informational, not competitive with the main CTA
 
-### 추천 결과 (`Recommendation Result`)
-- 기본값은 상위 3개 카드만 노출
-- 각 카드는 `verdict + reasons + trust + action` 순서를 먼저 보여 줌
-- mood evidence와 깊은 caution 정보는 점진적으로 공개
+### Recommendation Result
+- top 3 cards only by default
+- each card: `verdict + reasons + trust + action` first
+- mood evidence and deep caution: progressive disclosure
 
-### 비교 (`Compare`)
-- 모바일 기본값: 한 번에 2개 컬럼 비교
-- differences-only: 기본값으로 켜 둠
-- verdict 행: 다른 행이 숨겨져도 항상 보이게 유지
+### Compare
+- mobile default: 2 columns at a time
+- differences-only: on by default
+- verdict row: always visible even when other rows are hidden
 
-### 상세 (`Detail`)
-- 사용자가 확인이 더 필요할 때만 연다
-- 콘텐츠 rabbit hole처럼 길어지지 않게 유지한다
+### Detail
+- only opened when the user needs confirmation
+- should not become a content rabbit hole
 
-## 14. 색상 적용 예시 (`Color application examples`)
+## 14. Color application examples
 
-| UI 요소 | 권장 역할 | 이유 |
+| UI element | Recommended role | Why |
 |---|---|---|
-| 홈 대표 CTA | `action-primary` | 사용자가 무엇을 먼저 해야 하는지 즉시 알 수 있어야 함 |
-| 선택된 intent chip | `selected-state` | 전역 행동이 아니라 현재 선택 상태를 보여 줌 |
-| 추천 카드 verdict box | `decision-highlight` | 버튼이 아니라 우선순위 해석 영역이어야 함 |
-| trust signal card | `trust-info` | 정보 전달용이며, 차분하고 읽기 쉬워야 함 |
-| 분위기 참고 카드 | muted `surface-elevated` + restrained accent | 영감 보조 역할에만 머물러야 함 |
-| 체크할 점 | `warning` | 파괴적인 인상 없이 주의를 전달해야 함 |
-| 오류 메시지 | `error` | 실패하거나 막힌 상태에서만 사용 |
+| 홈 대표 CTA | `action-primary` | user should know what to do first instantly |
+| 선택된 intent chip | `selected-state` | current choice, not global action |
+| 추천 카드 verdict box | `decision-highlight` | priority interpretation, not a button |
+| trust signal card | `trust-info` | informational, calm, readable |
+| 분위기 참고 카드 | muted `surface-elevated` + restrained accent | supporting inspiration only |
+| 체크할 점 | `warning` | caution without looking destructive |
+| 오류 메시지 | `error` | only for failed or blocked states |
 
 ## 13. 화면-컴포넌트-상태 매핑
 
@@ -646,15 +646,15 @@ MVP는 `3~5개 핵심 질문 + 결과 후 미세 조정` 구성이 적절하다.
 - 감성 레이어가 신뢰 레이어를 덮지 않는가?
 - 광고/파트너 배치가 핵심 추천 흐름을 방해하지 않는가?
 
-## 최종 판단
+## Final judgment
 
-떠나볼래는 `트리플/트립닷컴/토스처럼 직관적`이어야 하지만,
-그 서비스들처럼 검색이나 예약을 첫 화면의 주인공으로 두면 안 된다.
+SooGo는 `트리플/트립닷컴/토스처럼 직관적`이어야 하지만,
+그 서비스들처럼 검색이나 예약을 첫 화면 주인공으로 두면 안 된다.
 
-떠나볼래의 정답은:
+SooGo의 정답은:
 - 강한 검색창이 아니라 `빠른 의도 입력`
 - 많은 카드 나열이 아니라 `상위 3개 추천`
 - 감성 소개가 아니라 `추천 이유 + 신뢰 신호`
 - 긴 탐색이 아니라 `저장 -> 비교 -> 결정`
 
-즉, 떠나볼래는 `예쁜 피드`가 아니라 `설명 가능한 발견 + 비교` 서비스로 설계돼야 한다.
+즉, SooGo는 `예쁜 피드`가 아니라 `설명 가능한 발견 + 비교` 서비스로 설계돼야 한다.

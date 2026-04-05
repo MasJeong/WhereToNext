@@ -1,4 +1,4 @@
-# 떠나볼래? 배포 안내
+# WhereToNext Deployment Guide
 
 ## 대상 환경
 
@@ -6,7 +6,7 @@
 - 권장 배포 플랫폼: Vercel
 - 필수 외부 의존성: Postgres (`DATABASE_URL`)
 
-로컬 개발에서는 `DATABASE_URL`이 없으면 JSON 파일 대체 경로가 동작하지만,
+로컬 개발에서는 `DATABASE_URL`이 없으면 JSON 파일 fallback이 동작하지만,
 실서비스 배포에서는 반드시 외부 Postgres를 연결해야 합니다.
 
 ## 권장 브랜치 흐름
@@ -15,7 +15,7 @@
 배포 안정성을 위해 아래 흐름을 권장합니다.
 
 1. `feature/*`에서 작업합니다.
-2. 작업이 정리되면 `feature -> dev`로 병합합니다.
+2. 작업이 정리되면 `feature -> dev`로 merge 합니다.
 3. `dev` push 또는 관련 PR에서 CI로 통합 상태를 계속 검증합니다.
 4. 실제 배포가 필요할 때만 `dev -> main`으로 올립니다.
 5. `main` 반영 후 CI가 성공하면 프로덕션 배포가 진행됩니다.
@@ -40,12 +40,12 @@ npm run test:e2e
 
 ## Vercel 기준 설정
 
-### 1. GitHub 저장소 가져오기
+### 1. GitHub 저장소 Import
 
-- 저장소 이름 대상: `WhereToNext`
-- 현재 원격 저장소 식별값: `MasJeong/WhereToNext`
-- 프레임워크 프리셋: Next.js
-- 루트 디렉터리: 저장소 루트
+- Repository name target: `WhereToNext`
+- Current remote slug: `MasJeong/WhereToNext`
+- Framework Preset: Next.js
+- Root Directory: repo root
 
 ### 2. 환경 변수
 
@@ -56,11 +56,11 @@ DATABASE_URL=postgres://...
 ```
 
 현재 코드 기준으로 필수 배포 환경 변수는 `DATABASE_URL` 하나입니다.
-`PGLITE_DATA_DIR`는 로컬 파일 대체 경로가 필요할 때만 선택적으로 사용합니다.
+`PGLITE_DATA_DIR`는 로컬 파일 fallback이 필요할 때만 선택적으로 사용합니다.
 
 ### 2-1. GitHub Actions 자동 배포 시크릿
 
-`/.github/workflows/vercel-production.yml`를 사용하려면 아래 저장소 비밀값을 설정하세요.
+`/.github/workflows/vercel-production.yml`를 쓰려면 아래 Repository Secrets를 설정하세요.
 
 ```bash
 VERCEL_TOKEN=...
@@ -70,12 +70,12 @@ VERCEL_PROJECT_ID=...
 
 위 값은 `vercel login` 또는 Vercel 대시보드 프로젝트 연결 이후 확인할 수 있습니다.
 
-### 3. 설치 / 빌드
+### 3. Build / Install
 
-- 설치 명령: `npm install`
-- 빌드 명령: `npm run build`
+- Install Command: `npm install`
+- Build Command: `npm run build`
 
-기본값으로 충분합니다. 커스텀 설정이 필요하더라도 위 값은 유지하는 편이 안전합니다.
+기본값으로 충분하지만, 커스텀 설정이 필요한 경우에도 위 값을 유지하세요.
 
 ### 4. 런타임 확인
 
@@ -92,12 +92,12 @@ VERCEL_PROJECT_ID=...
 
 - `middleware.ts`가 공통 보안 헤더와 API `X-Robots-Tag`를 설정합니다.
 - 인증은 이메일/비밀번호 + httpOnly 세션 쿠키 방식입니다.
-- 추천 결과는 인스타그램을 랭킹 엔진으로 쓰지 않고, 분위기와 최신성에 대한 보조 근거로만 사용합니다.
-- snapshot 복원은 실패 시 닫힌 상태로 멈추도록 설계돼 있습니다. 오류가 나면 데이터 누락이나 DB 연결 상태를 먼저 확인하세요.
+- 추천 결과는 인스타그램을 랭킹 엔진으로 쓰지 않고, 분위기/최신성 보조 근거로만 사용합니다.
+- snapshot 복원은 실패 시 닫힌 상태로 멈추도록 설계되어 있으므로, 오류가 나면 데이터 누락이나 DB 연결 상태를 먼저 확인하세요.
 
-## 아직 자동화되지 않은 항목
+## 아직 자동화되지 않은 것
 
 - 배포 후 migration 자동 실행
-- 미리보기/프로덕션 환경 분리 문서
+- preview/production 환경 분리 문서
 
-필요하면 다음 단계에서 CI/CD와 운영용(production) DB migration 전략을 추가할 수 있습니다.
+필요하면 다음 단계로 CI/CD와 production DB migration 전략을 추가할 수 있습니다.
