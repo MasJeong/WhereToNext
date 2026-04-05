@@ -1,0 +1,72 @@
+<svg width="1440" height="960" viewBox="0 0 1440 960" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgPlanner" x1="102" y1="62" x2="1328" y2="876" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FBFF"/>
+      <stop offset="1" stop-color="#ECF6FF"/>
+    </linearGradient>
+    <linearGradient id="plannerPanel" x1="884" y1="144" x2="1278" y2="742" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#F7FBFF"/>
+    </linearGradient>
+    <linearGradient id="plannerCta" x1="0" y1="0" x2="236" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E88E5"/>
+      <stop offset="1" stop-color="#0B63CE"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1440" height="960" fill="#FFFFFF"/>
+  <rect x="40" y="24" width="1360" height="912" rx="32" fill="url(#bgPlanner)"/>
+
+  <rect x="112" y="86" width="112" height="40" rx="20" fill="#FFFFFF" stroke="rgba(15,23,42,0.08)"/>
+  <text x="145" y="112" fill="#1254C7" font-size="17" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="700">떠나볼래?</text>
+
+  <text x="112" y="238" fill="#1254C7" font-size="20" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="700">짧은 질문으로 빠르게 정리</text>
+  <text x="112" y="332" fill="#0F172A" font-size="72" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="800" letter-spacing="-3.1">
+    <tspan x="112" dy="0">당신 일정에 맞는</tspan>
+    <tspan x="112" dy="84">해외 여행지만</tspan>
+    <tspan x="112" dy="84">바로 골라서.</tspan>
+  </text>
+
+  <text x="112" y="590" fill="#5F6B7A" font-size="26" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="500">
+    <tspan x="112" dy="0">과한 탐색 대신, 지금 조건에 맞는 후보부터 보여드려요.</tspan>
+    <tspan x="112" dy="40">가까운 비행인지, 예산이 맞는지, 왜 추천하는지도 함께 확인해요.</tspan>
+  </text>
+
+  <rect x="112" y="672" width="236" height="64" rx="32" fill="url(#plannerCta)"/>
+  <text x="165" y="712" fill="white" font-size="22" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="800">여행 추천 시작하기</text>
+
+  <text x="112" y="798" fill="#0F172A" fill-opacity="0.84" font-size="16" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="700">한국 출발 기준</text>
+  <circle cx="214" cy="792" r="3" fill="#C7D7E8"/>
+  <text x="228" y="798" fill="#0F172A" fill-opacity="0.84" font-size="16" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="700">저장·공유 가능</text>
+
+  <g>
+    <rect x="850" y="134" width="482" height="684" rx="34" fill="url(#plannerPanel)" stroke="rgba(30,136,229,0.16)"/>
+    <text x="886" y="188" fill="#0F172A" font-size="30" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="800">이번 여행 조건</text>
+    <text x="886" y="220" fill="#5F6B7A" font-size="18" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="500">질문 몇 개만 고르면 추천 후보를 바로 좁혀요.</text>
+
+    <rect x="886" y="258" width="410" height="88" rx="22" fill="#FFFFFF" stroke="rgba(15,23,42,0.08)"/>
+    <text x="914" y="292" fill="#5F6B7A" font-size="15" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="700">누구와 가나요</text>
+    <text x="914" y="324" fill="#0F172A" font-size="28" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="800">친구와 짧게</text>
+
+    <rect x="886" y="362" width="196" height="88" rx="22" fill="#EDF7FF" stroke="#D9EDFF"/>
+    <text x="914" y="396" fill="#0B63CE" font-size="15" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="700">일정</text>
+    <text x="914" y="428" fill="#0F172A" font-size="28" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="800">2박 3일</text>
+
+    <rect x="1100" y="362" width="196" height="88" rx="22" fill="#FFFFFF" stroke="rgba(15,23,42,0.08)"/>
+    <text x="1128" y="396" fill="#5F6B7A" font-size="15" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="700">비행 부담</text>
+    <text x="1128" y="428" fill="#0F172A" font-size="28" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="800">단거리 선호</text>
+
+    <rect x="886" y="478" width="410" height="298" rx="28" fill="#FFFFFF" stroke="rgba(15,23,42,0.08)"/>
+    <rect x="914" y="510" width="354" height="118" rx="22" fill="#F5FAFF"/>
+    <circle cx="1188" cy="548" r="30" fill="#FFFFFF"/>
+    <path d="M936 598C982 554 1028 548 1070 572C1112 596 1160 598 1268 528V628H914V598H936Z" fill="#D9EDFF"/>
+    <path d="M914 628H1268V648H914V628Z" fill="#FFFFFF"/>
+    <path d="M952 690C1010 656 1070 656 1134 698" stroke="#1E88E5" stroke-width="4" stroke-linecap="round" stroke-dasharray="10 14"/>
+    <circle cx="952" cy="690" r="9" fill="#0B63CE"/>
+    <circle cx="1134" cy="698" r="9" fill="#0B63CE"/>
+
+    <text x="914" y="676" fill="#1254C7" font-size="15" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="700">이 조건이라면</text>
+    <text x="914" y="718" fill="#0F172A" font-size="34" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="800">후쿠오카가 가장 가볍게 맞아요</text>
+    <text x="914" y="754" fill="#5F6B7A" font-size="19" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-weight="500">짧은 비행 · 식도락 · 주말 이동 동선이 편해요</text>
+  </g>
+</svg>

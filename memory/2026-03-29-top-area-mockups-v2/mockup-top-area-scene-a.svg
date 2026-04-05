@@ -1,0 +1,70 @@
+<svg width="1440" height="1024" viewBox="0 0 1440 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="skyA" x1="720" y1="40" x2="720" y2="860" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F4FAFF"/>
+      <stop offset="0.34" stop-color="#DCEEFF"/>
+      <stop offset="0.7" stop-color="#74C2FF"/>
+      <stop offset="1" stop-color="#0B63CE"/>
+    </linearGradient>
+    <linearGradient id="seaA" x1="792" y1="632" x2="1328" y2="932" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#55B6FF"/>
+      <stop offset="1" stop-color="#0B63CE"/>
+    </linearGradient>
+    <linearGradient id="ctaA" x1="0" y1="0" x2="220" y2="84" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#E8F5FF"/>
+    </linearGradient>
+    <radialGradient id="sunA" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(1128 246) rotate(90) scale(112)">
+      <stop stop-color="#FFFFFF" stop-opacity="0.92"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="1440" height="1024" fill="url(#skyA)"/>
+  <circle cx="1128" cy="246" r="112" fill="url(#sunA)"/>
+  <circle cx="1128" cy="246" r="46" fill="#FFFFFF" fill-opacity="0.72"/>
+
+  <path d="M0 542C110 508 204 490 312 494C430 498 526 554 632 564C748 574 864 530 970 468C1088 400 1222 372 1440 430V0H0V542Z" fill="#FFFFFF" fill-opacity="0.14"/>
+  <path d="M0 624C94 582 194 564 302 570C420 578 512 632 624 648C742 664 860 634 962 576C1080 510 1206 472 1440 522V1024H0V624Z" fill="#FFFFFF" fill-opacity="0.08"/>
+
+  <path d="M0 708C130 654 248 630 388 644C520 658 640 722 782 728C916 734 1034 678 1142 610C1248 544 1334 514 1440 520V1024H0V708Z" fill="#A8D8FF" fill-opacity="0.56"/>
+  <path d="M0 778C158 730 282 728 430 766C568 802 680 848 812 852C954 856 1076 814 1192 750C1286 698 1368 676 1440 690V1024H0V778Z" fill="#5FB8FF" fill-opacity="0.7"/>
+  <path d="M0 846C176 792 336 796 504 838C654 876 764 920 900 916C1040 912 1158 872 1270 820C1338 788 1398 776 1440 782V1024H0V846Z" fill="url(#seaA)"/>
+
+  <path d="M1004 516C1056 456 1112 430 1172 434C1232 438 1282 472 1330 528" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" stroke-dasharray="11 13" opacity="0.92"/>
+  <path d="M998 520L1032 508L1010 540" fill="#FFFFFF"/>
+
+  <path d="M876 620L956 502L1036 620H876Z" fill="#FFFFFF" fill-opacity="0.28"/>
+  <path d="M974 650L1088 482L1200 650H974Z" fill="#FFFFFF" fill-opacity="0.18"/>
+  <path d="M1096 676L1228 484L1360 676H1096Z" fill="#FFFFFF" fill-opacity="0.12"/>
+
+  <path d="M0 908C132 874 240 876 350 904C454 930 538 972 636 982C742 994 836 970 950 930C1074 886 1200 856 1440 884V1024H0V908Z" fill="#0A4CA9" fill-opacity="0.26"/>
+
+  <g fill="#FFFFFF">
+    <circle cx="72" cy="59" r="7"/>
+    <text x="94" y="67" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="28" font-weight="700" letter-spacing="-1.4" fill="#FFFFFF">떠나볼래</text>
+    <text x="948" y="66" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="18" font-weight="700" fill="#FFFFFF">추천 받기</text>
+    <text x="1062" y="66" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="18" font-weight="600" fill="#EAF6FF">여행 기록</text>
+    <text x="1188" y="66" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="18" font-weight="600" fill="#EAF6FF">저장한 결과</text>
+    <text x="1320" y="66" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="18" font-weight="600" fill="#FFFFFF">로그인</text>
+  </g>
+
+  <text x="88" y="230" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="18" font-weight="700" letter-spacing="1.1" fill="#EAF6FF">해외 여행지 추천</text>
+
+  <text x="88" y="344" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="86" font-weight="700" letter-spacing="-4.8" fill="#FFFFFF">
+    <tspan x="88" dy="0">이번 여행,</tspan>
+    <tspan x="88" dy="92">어디로 떠날지</tspan>
+    <tspan x="88" dy="92">바로 정해볼까요</tspan>
+  </text>
+
+  <text x="88" y="656" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="25" font-weight="500" fill="#F2F9FF">
+    <tspan x="88" dy="0">일정과 분위기만 고르면 지금의 취향에 맞는 해외 목적지를</tspan>
+    <tspan x="88" dy="38">로그인 없이 빠르게 추천해 드려요.</tspan>
+  </text>
+
+  <g>
+    <rect x="88" y="734" width="216" height="84" rx="42" fill="url(#ctaA)"/>
+    <text x="150" y="786" font-family="Pretendard, Apple SD Gothic Neo, sans-serif" font-size="24" font-weight="700" fill="#0B63CE">추천 받기</text>
+  </g>
+
+</svg>

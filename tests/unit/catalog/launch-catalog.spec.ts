@@ -2,10 +2,11 @@ import { describe, expect, it } from "vitest";
 
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import { activeScoringVersion } from "@/lib/catalog/scoring-version";
+import { getCountryMetadata } from "@/lib/travel-support/country-metadata";
 
 describe("launchCatalog", () => {
-  it("contains the curated 36-destination launch set", () => {
-    expect(launchCatalog).toHaveLength(36);
+  it("contains the curated 75-destination launch set", () => {
+    expect(launchCatalog).toHaveLength(75);
   });
 
   it("ensures every destination has localized names and recommendation content", () => {
@@ -16,6 +17,12 @@ describe("launchCatalog", () => {
       expect(destination.vibeTags.length).toBeGreaterThan(0);
       expect(destination.watchOuts.length).toBeGreaterThan(0);
       expect(destination.summary.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("ensures every destination country code resolves to travel support metadata", () => {
+    for (const destination of launchCatalog) {
+      expect(getCountryMetadata(destination.countryCode), destination.id).not.toBeNull();
     }
   });
 

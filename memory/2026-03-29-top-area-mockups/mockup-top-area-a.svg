@@ -1,0 +1,67 @@
+<svg width="1440" height="1024" viewBox="0 0 1440 1024" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1440" height="1024" fill="#F5FAFF"/>
+  <rect x="40" y="32" width="1360" height="960" rx="32" fill="#FFFFFF"/>
+  <rect x="40" y="32" width="1360" height="960" rx="32" stroke="#D7EBFF"/>
+
+  <defs>
+    <linearGradient id="bgA" x1="852" y1="148" x2="1348" y2="780" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#EDF7FF"/>
+      <stop offset="0.58" stop-color="#B9DEFF"/>
+      <stop offset="1" stop-color="#0B63CE"/>
+    </linearGradient>
+    <linearGradient id="ctaA" x1="180" y1="0" x2="0" y2="72" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#4AB4FF"/>
+      <stop offset="1" stop-color="#0B63CE"/>
+    </linearGradient>
+    <linearGradient id="seaA" x1="940" y1="650" x2="1320" y2="890" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1E88E5"/>
+      <stop offset="1" stop-color="#0B63CE"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="96" y="72" width="1248" height="76" rx="24" fill="#FFFFFF"/>
+  <rect x="96" y="72" width="1248" height="76" rx="24" stroke="#E6F2FF"/>
+  <circle cx="136" cy="110" r="8" fill="#1E88E5"/>
+  <text x="156" y="116" fill="#0F172A" font-size="28" font-weight="700" letter-spacing="-1.4">떠나볼래</text>
+
+  <text x="520" y="116" fill="#0F172A" font-size="17" font-weight="700">추천 받기</text>
+  <text x="642" y="116" fill="#5F6B7A" font-size="17" font-weight="600">여행 기록</text>
+  <text x="758" y="116" fill="#5F6B7A" font-size="17" font-weight="600">저장한 결과</text>
+  <text x="1164" y="116" fill="#5F6B7A" font-size="16" font-weight="700">로그인</text>
+  <rect x="1234" y="88" width="82" height="44" rx="22" fill="#F6FAFF" stroke="#D7EBFF"/>
+  <text x="1259" y="116" fill="#0B63CE" font-size="15" font-weight="700">내 계정</text>
+
+  <text x="120" y="248" fill="#0B63CE" font-size="16" font-weight="700" letter-spacing="1.6">해외 여행지 추천</text>
+  <text x="120" y="344" fill="#0F172A" font-size="72" font-weight="700" letter-spacing="-3.4">
+    <tspan x="120" dy="0">지금 떠나고 싶은 여행,</tspan>
+    <tspan x="120" dy="82">바로 추천해 드릴게요</tspan>
+  </text>
+  <text x="120" y="478" fill="#5F6B7A" font-size="24" font-weight="500">
+    <tspan x="120" dy="0">일정, 예산, 분위기만 고르면 지금의 취향에 맞는 목적지를</tspan>
+    <tspan x="120" dy="36">로그인 없이도 바로 볼 수 있어요.</tspan>
+  </text>
+
+  <rect x="120" y="576" width="184" height="72" rx="36" fill="url(#ctaA)"/>
+  <text x="173" y="620" fill="#FFFFFF" font-size="22" font-weight="700">추천 받기</text>
+  <text x="120" y="694" fill="#5F6B7A" font-size="17" font-weight="600">복잡한 비교보다, 오늘의 여행 감각부터 빠르게 찾게 합니다.</text>
+
+  <g>
+    <rect x="792" y="184" width="552" height="664" rx="40" fill="url(#bgA)"/>
+    <path d="M792 666C901 604 998 610 1090 666C1174 717 1268 723 1344 666V848H792V666Z" fill="url(#seaA)"/>
+    <path d="M792 711C900 669 988 684 1082 732C1162 773 1265 780 1344 739" stroke="#DFF1FF" stroke-width="6" stroke-linecap="round" opacity="0.82"/>
+    <path d="M828 594C893 548 966 542 1028 579C1096 620 1184 628 1278 580" stroke="#FFFFFF" stroke-width="8" stroke-linecap="round" opacity="0.78"/>
+    <circle cx="1240" cy="300" r="56" fill="#FFFFFF" fill-opacity="0.34"/>
+    <circle cx="1240" cy="300" r="34" fill="#FFFFFF" fill-opacity="0.5"/>
+    <path d="M906 455L960 368L1018 455H906Z" fill="#FFFFFF" fill-opacity="0.38"/>
+    <path d="M980 470L1058 340L1142 470H980Z" fill="#FFFFFF" fill-opacity="0.24"/>
+    <path d="M1048 500L1140 356L1238 500H1048Z" fill="#FFFFFF" fill-opacity="0.16"/>
+    <path d="M1004 268C1038 248 1097 248 1144 268C1197 291 1236 332 1260 348" stroke="#FFFFFF" stroke-width="4" stroke-linecap="round" stroke-dasharray="10 12" opacity="0.92"/>
+    <path d="M996 272L1028 258L1010 288" fill="#FFFFFF"/>
+    <rect x="850" y="232" width="110" height="34" rx="17" fill="#FFFFFF" fill-opacity="0.78"/>
+    <text x="878" y="254" fill="#0B63CE" font-size="15" font-weight="700">서울 출발</text>
+    <rect x="1128" y="776" width="152" height="34" rx="17" fill="#FFFFFF" fill-opacity="0.86"/>
+    <text x="1156" y="798" fill="#0F172A" font-size="15" font-weight="700">장면형 배경</text>
+  </g>
+
+  <text x="120" y="854" fill="#94A3B8" font-size="15" font-weight="600">Direction A · 빠른 이해 중심 · 헤더는 명확한 이동, 히어로는 단일 시작 행동</text>
+</svg>
