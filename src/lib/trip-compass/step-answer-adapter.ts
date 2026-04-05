@@ -171,23 +171,23 @@ export const homeStepFlightPreferenceOptions: HomeStepOption<HomeStepAnswers["fl
 export const homeStepTravelStyleOptions: HomeStepOption<HomeStepTravelStyle>[] = [
   {
     value: "activity",
-    label: "가만히 있으면 아까워",
-    description: "직접 해봐야 여행이지, 눈으로만 보는 건 좀 아쉬워요.",
+    label: "체험 없는 여행은 좀 심심해",
+    description: "타고, 뛰고, 만들어봐야 여행 온 보람이 있어요.",
   },
   {
     value: "sns-hotplace",
-    label: "일단 찍고 봐야 직성이 풀려",
-    description: "피드에 올릴 사진 하나쯤은 건져야 여행 보람이 차요.",
+    label: "사진 한 장은 건져야지",
+    description: "좋은 배경 보면 일단 카메라부터 켜요.",
   },
   {
     value: "nature",
-    label: "눈이 쉬어야 나도 쉬지",
-    description: "탁 트인 데서 멍 때리는 시간, 그게 진짜 충전이에요.",
+    label: "바다 앞에 앉아만 있어도 좋아",
+    description: "탁 트인 데서 멍 때리면 그게 충전이에요.",
   },
   {
     value: "must-see",
-    label: "안 가면 후회할 것 같아",
-    description: "여기까지 왔는데 그건 가봐야지, 하는 곳은 꼭 들르는 편이에요.",
+    label: "랜드마크는 직접 봐야 해",
+    description: "그 도시 대표 스팟은 빠지면 아쉬워요.",
   },
   {
     value: "healing",
@@ -197,22 +197,22 @@ export const homeStepTravelStyleOptions: HomeStepOption<HomeStepTravelStyle>[] =
   {
     value: "culture-history",
     label: "그 도시의 이야기가 궁금해",
-    description: "전시, 박물관, 유적지 같은 데서 그 도시가 좀 다르게 보여요.",
+    description: "전시, 박물관, 유적지 들르면 그 도시가 다르게 보여요.",
   },
   {
     value: "local-atmosphere",
-    label: "골목 한 바퀴가 더 좋아",
-    description: "관광지보다 동네 골목에서 찐 현지 감성 느끼는 게 더 좋아요.",
+    label: "동네 산책이 제일 재밌어",
+    description: "골목, 시장, 거리에서 현지 분위기 느끼는 게 좋아요.",
   },
   {
     value: "shopping",
     label: "수하물 1개 더할걸",
-    description: "시장, 편집숍, 쇼핑몰 돌다 보면 가방이 항상 모자라요.",
+    description: "시장, 편집숍, 쇼핑몰 돌다 보면 캐리어 터져요.",
   },
   {
     value: "foodie",
     label: "이번엔 먹는 게 메인",
-    description: "맛집 리스트 다 돌고 나면 관광은 솔직히 부록이에요.",
+    description: "여행 계획의 반은 맛집 검색이에요.",
   },
 ];
 

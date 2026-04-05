@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
@@ -136,6 +136,8 @@ function getSavedSnapshotSummary(payload: RecommendationSnapshot): string {
   return leadResult?.reasons[0] ?? leadResult?.whyThisFits ?? "결정 이유를 다시 보면서 다음 행동을 이어갈 수 있어요.";
 }
 
+const historyLightboxSwipeThreshold = 80;
+
 export function AccountExperience({
   userName,
   initialTab,
@@ -161,6 +163,12 @@ export function AccountExperience({
     imageIndex: number;
   } | null>(null);
   const [isClient, setIsClient] = useState(false);
+  const historyLightboxPointerStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+  } | null>(null);
+  const historyLightboxDragOffsetRef = useRef(0);
+  const historyLightboxStageRef = useRef<HTMLDivElement | null>(null);
 
   const summary = useMemo(() => {
     const totalRating = historyEntries.reduce((sum, entry) => sum + entry.rating, 0);
@@ -195,6 +203,22 @@ export function AccountExperience({
   useEffect(() => {
     setIsClient(true);
   }, []);
+
+  useEffect(() => {
+    setHistoryLightboxStageOffset(0, false);
+  }, [historyLightboxState?.entryId, historyLightboxState?.imageIndex]);
+
+  function setHistoryLightboxStageOffset(offset: number, animate: boolean) {
+    historyLightboxDragOffsetRef.current = offset;
+
+    const stage = historyLightboxStageRef.current;
+    if (!stage) {
+      return;
+    }
+
+    stage.style.transform = `translateX(${offset}px)`;
+    stage.style.transition = animate ? "transform 180ms ease-out" : "none";
+  }
 
   /**
    * 취향 모드를 저장한다.
@@ -318,14 +342,19 @@ export function AccountExperience({
   }
 
   function openHistoryLightbox(entryId: string, imageIndex: number) {
+    setHistoryLightboxStageOffset(0, false);
     setHistoryLightboxState({ entryId, imageIndex });
   }
 
   function closeHistoryLightbox() {
+    historyLightboxPointerStateRef.current = null;
+    setHistoryLightboxStageOffset(0, false);
     setHistoryLightboxState(null);
   }
 
   function moveHistoryLightbox(step: -1 | 1) {
+    historyLightboxPointerStateRef.current = null;
+    setHistoryLightboxStageOffset(0, false);
     setHistoryLightboxState((currentState) => {
       if (!currentState) {
         return null;
@@ -336,16 +365,48 @@ export function AccountExperience({
         return null;
       }
 
-      const nextIndex = currentState.imageIndex + step;
-      if (nextIndex < 0 || nextIndex >= entry.images.length) {
-        return currentState;
-      }
-
       return {
         entryId: currentState.entryId,
-        imageIndex: nextIndex,
+        imageIndex: (currentState.imageIndex + step + entry.images.length) % entry.images.length,
       };
     });
+  }
+
+  function startHistoryLightboxDrag(pointerId: number, startX: number) {
+    historyLightboxPointerStateRef.current = { pointerId, startX };
+    setHistoryLightboxStageOffset(0, false);
+  }
+
+  function updateHistoryLightboxDrag(pointerId: number, clientX: number) {
+    const pointerState = historyLightboxPointerStateRef.current;
+
+    if (!pointerState || pointerState.pointerId !== pointerId) {
+      return;
+    }
+
+    setHistoryLightboxStageOffset(clientX - pointerState.startX, false);
+  }
+
+  function finishHistoryLightboxDrag(pointerId: number) {
+    const pointerState = historyLightboxPointerStateRef.current;
+
+    if (!pointerState || pointerState.pointerId !== pointerId) {
+      return;
+    }
+
+    historyLightboxPointerStateRef.current = null;
+
+    if (historyLightboxDragOffsetRef.current <= -historyLightboxSwipeThreshold) {
+      moveHistoryLightbox(1);
+      return;
+    }
+
+    if (historyLightboxDragOffsetRef.current >= historyLightboxSwipeThreshold) {
+      moveHistoryLightbox(-1);
+      return;
+    }
+
+    setHistoryLightboxStageOffset(0, true);
   }
 
   const tabItems: Array<{ key: AccountTab; label: string; testId: string; count?: number }> = [
@@ -652,15 +713,62 @@ export function AccountExperience({
                                       data-testid={getAccountHistoryLightboxImageTestId(historyLightboxState.imageIndex)}
                                       className="relative aspect-[4/5] w-full bg-[linear-gradient(180deg,#f8fafc,#eef4fb)] sm:aspect-[16/10]"
                                     >
-                                      <Image
-                                        src={entry.images[historyLightboxState.imageIndex]!.dataUrl}
-                                        alt={`${destination.nameKo} 기록 사진 크게 보기 ${historyLightboxState.imageIndex + 1}`}
-                                        fill
-                                        unoptimized
-                                        sizes="100vw"
-                                        className="object-contain"
-                                        draggable={false}
-                                      />
+                                      <div
+                                        ref={historyLightboxStageRef}
+                                        className={`absolute inset-0 ${entry.images.length > 1 ? "cursor-grab active:cursor-grabbing" : ""}`}
+                                        onPointerDown={(event) => {
+                                          if (entry.images.length <= 1) {
+                                            return;
+                                          }
+
+                                          startHistoryLightboxDrag(event.pointerId, event.clientX);
+                                          event.currentTarget.setPointerCapture(event.pointerId);
+                                        }}
+                                        onPointerMove={(event) => {
+                                          if (entry.images.length <= 1) {
+                                            return;
+                                          }
+
+                                          updateHistoryLightboxDrag(event.pointerId, event.clientX);
+                                        }}
+                                        onPointerUp={(event) => {
+                                          if (entry.images.length <= 1) {
+                                            return;
+                                          }
+
+                                          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                                            event.currentTarget.releasePointerCapture(event.pointerId);
+                                          }
+
+                                          finishHistoryLightboxDrag(event.pointerId);
+                                        }}
+                                        onPointerCancel={(event) => {
+                                          if (entry.images.length <= 1) {
+                                            return;
+                                          }
+
+                                          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                                            event.currentTarget.releasePointerCapture(event.pointerId);
+                                          }
+
+                                          historyLightboxPointerStateRef.current = null;
+                                          setHistoryLightboxStageOffset(0, true);
+                                        }}
+                                        style={{
+                                          touchAction: entry.images.length > 1 ? "pan-y" : "auto",
+                                          willChange: entry.images.length > 1 ? "transform" : "auto",
+                                        }}
+                                      >
+                                        <Image
+                                          src={entry.images[historyLightboxState.imageIndex]!.dataUrl}
+                                          alt={`${destination.nameKo} 기록 사진 크게 보기 ${historyLightboxState.imageIndex + 1}`}
+                                          fill
+                                          unoptimized
+                                          sizes="100vw"
+                                          className="object-contain"
+                                          draggable={false}
+                                        />
+                                      </div>
                                       {entry.images.length > 1 ? (
                                         <>
                                           <button
