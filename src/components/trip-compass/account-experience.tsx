@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 
-import { authClient } from "@/lib/auth-client";
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import type {
   ExplorationPreference,
@@ -276,15 +275,6 @@ export function AccountExperience({
     }
   }
 
-  /**
-   * 현재 세션을 종료하고 홈으로 보낸다.
-   */
-  async function handleSignOut() {
-    await authClient.signOut();
-    router.push("/");
-    router.refresh();
-  }
-
   const tabItems: Array<{ key: AccountTab; label: string; testId: string; count?: number }> = [
     { key: "history", label: "여행 기록", testId: testIds.account.tabHistory, count: summary.count },
     { key: "future-trips", label: "예정된 여행", testId: testIds.account.tabFutureTrips, count: plannedSnapshots.length },
@@ -319,21 +309,6 @@ export function AccountExperience({
           >
             기록 추가
           </Link>
-          <Link
-            href="/"
-            className="compass-action-secondary compass-soft-press rounded-full px-5 py-2.5 text-[0.8rem] font-semibold"
-          >
-            홈으로
-          </Link>
-          <button
-            type="button"
-            onClick={() => {
-              void handleSignOut();
-            }}
-            className="rounded-full px-4 py-2.5 text-[0.8rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)]"
-          >
-            로그아웃
-          </button>
         </div>
       }
     >
