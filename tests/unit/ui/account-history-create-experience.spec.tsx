@@ -3,7 +3,7 @@ import type { AnchorHTMLAttributes } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { AccountHistoryCreateExperience } from "@/components/trip-compass/account-history-create-experience";
-import type { DestinationProfile, UserDestinationHistory } from "@/lib/domain/contracts";
+import type { UserDestinationHistory } from "@/lib/domain/contracts";
 import {
   getAccountHistoryCustomTagRemoveTestId,
   getAccountHistoryDestinationResultTestId,
@@ -23,7 +23,6 @@ vi.mock("next/navigation", () => ({
     refresh: mockRefresh,
   }),
   usePathname: () => "/account/history/new",
-  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("next/link", () => ({
@@ -120,75 +119,6 @@ describe("AccountHistoryCreateExperience destination autocomplete", () => {
     const searchInput = screen.getByTestId(testIds.account.newHistoryDestinationSearch);
 
     fireEvent.change(searchInput, { target: { value: "taipei" } });
-    fireEvent.click(screen.getByTestId(getAccountHistoryDestinationResultTestId(0)));
-
-    act(() => {
-      vi.advanceTimersByTime(130);
-    });
-
-    expect(screen.getByTestId(testIds.account.newHistoryStep)).toHaveTextContent("언제 다녀왔나요?");
-  });
-
-  it("uses the provided destination list and deduplicates duplicate city ids", () => {
-    const providedDestinations: DestinationProfile[] = [
-      {
-        id: "vancouver",
-        slug: "vancouver-canada",
-        kind: "city",
-        countryCode: "CA",
-        nameKo: "밴쿠버",
-        nameEn: "Vancouver",
-        budgetBand: "premium",
-        flightBand: "long",
-        bestMonths: [5, 6, 7, 8, 9],
-        paceTags: ["balanced"],
-        vibeTags: ["city", "nature"],
-        summary: "캐나다 서부 대표 도시입니다.",
-        watchOuts: [],
-        active: true,
-      },
-      {
-        id: "vancouver",
-        slug: "vancouver-canada",
-        kind: "city",
-        countryCode: "CA",
-        nameKo: "밴쿠버",
-        nameEn: "Vancouver",
-        budgetBand: "premium",
-        flightBand: "long",
-        bestMonths: [5, 6, 7, 8, 9],
-        paceTags: ["balanced"],
-        vibeTags: ["city", "food"],
-        summary: "중복 입력 테스트용입니다.",
-        watchOuts: [],
-        active: true,
-      },
-      {
-        id: "lisbon",
-        slug: "lisbon-portugal",
-        kind: "city",
-        countryCode: "PT",
-        nameKo: "리스본",
-        nameEn: "Lisbon",
-        budgetBand: "mid",
-        flightBand: "long",
-        bestMonths: [4, 5, 6, 9, 10],
-        paceTags: ["slow", "balanced"],
-        vibeTags: ["culture", "food"],
-        summary: "포르투갈 대표 도시입니다.",
-        watchOuts: [],
-        active: true,
-      },
-    ];
-
-    render(<AccountHistoryCreateExperience destinations={providedDestinations} />);
-
-    const searchInput = screen.getByTestId(testIds.account.newHistoryDestinationSearch);
-
-    fireEvent.change(searchInput, { target: { value: "vanc" } });
-    expect(screen.getAllByText("밴쿠버")).toHaveLength(1);
-
-    fireEvent.change(searchInput, { target: { value: "lis" } });
     fireEvent.click(screen.getByTestId(getAccountHistoryDestinationResultTestId(0)));
 
     act(() => {

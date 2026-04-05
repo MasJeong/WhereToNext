@@ -51,8 +51,16 @@ export function ShellPrimaryNav({ items }: ShellPrimaryNavProps) {
           window.dispatchEvent(new Event(shellHomeEvent));
         }}
       >
-        <span className="text-[1.1rem] font-extrabold leading-none tracking-[-0.035em] text-[var(--color-action-primary)]">
-          떠나볼까
+        {/* Brand icon */}
+        <span className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-[0.6rem] bg-[linear-gradient(135deg,var(--color-action-primary),var(--color-action-primary-strong))] shadow-[0_2px_8px_rgb(30_136_229_/_0.25)]">
+          <svg viewBox="0 0 20 20" className="h-4 w-4" fill="none" aria-hidden="true">
+            <circle cx="10" cy="10" r="7" stroke="white" strokeWidth="1.8" fill="none" />
+            <circle cx="10" cy="10" r="2.5" fill="white" />
+            <line x1="10" y1="4.5" x2="10" y2="15.5" stroke="white" strokeWidth="1.6" strokeLinecap="round" transform="rotate(38 10 10)" />
+          </svg>
+        </span>
+        <span className="text-[0.95rem] font-bold leading-none tracking-[-0.04em] text-[var(--color-ink-strong)] sm:text-[1.02rem]">
+          {brandDisplayName}
         </span>
       </Link>
 

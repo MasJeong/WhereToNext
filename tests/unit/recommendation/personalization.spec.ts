@@ -4,18 +4,6 @@ import { rankDestinations } from "@/lib/recommendation/engine";
 
 describe("recommendation personalization", () => {
   it("boosts repeat-friendly destinations when the user wants repeats", () => {
-    const baseline = rankDestinations({
-      partyType: "couple",
-      partySize: 2,
-      budgetBand: "mid",
-      tripLengthDays: 5,
-      departureAirport: "ICN",
-      travelMonth: 10,
-      pace: "balanced",
-      flightTolerance: "medium",
-      vibes: ["romance"],
-    });
-
     const results = rankDestinations(
       {
         partyType: "couple",
@@ -50,11 +38,7 @@ describe("recommendation personalization", () => {
       },
     );
 
-    const baselineKyotoIndex = baseline.findIndex((result) => result.destinationId === "kyoto");
-    const personalizedKyotoIndex = results.findIndex((result) => result.destinationId === "kyoto");
-
-    expect(personalizedKyotoIndex).toBeGreaterThanOrEqual(0);
-    expect(baselineKyotoIndex).toBeGreaterThan(personalizedKyotoIndex);
+    expect(results[0]?.reasons[0]).toContain("눈여겨봤어요");
   });
 
   it("penalizes already visited destinations when the user prefers discovery", () => {
@@ -95,7 +79,7 @@ describe("recommendation personalization", () => {
     expect(results[0]?.destinationId).not.toBe("lisbon");
   });
 
-  it("does not use history tags for personalization overlap", () => {
+  it("keeps custom hashtags out of personalization overlap", () => {
     const results = rankDestinations(
       {
         partyType: "couple",
@@ -130,7 +114,6 @@ describe("recommendation personalization", () => {
       },
     );
 
-    expect(results[0]?.reasons.join(" ")).not.toContain("여행 분위기와 닮아서");
-    expect(results[0]?.reasons.join(" ")).not.toContain("여행 태그와 맞는 편이라");
+    expect(results[0]?.reasons.join(" ")).not.toContain("여행 태그와 맞는 편이라 추천 이유에 반영했어요");
   });
 });

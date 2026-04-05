@@ -364,24 +364,35 @@ function SocialVideoSlot({
         </div>
       </a>
 
-      <div className="flex items-center justify-between gap-3 px-4 py-2.5 sm:px-5">
-        <a
-          href={item.channelUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="min-w-0 text-[0.72rem] text-[var(--color-funnel-text-soft)] transition-colors duration-200 hover:text-[var(--color-funnel-text)]"
-        >
-          <span className="font-semibold text-[var(--color-funnel-text)]">{resolvedChannelTitle}</span>
-          {" "}채널
-        </a>
-        <a
-          href={item.videoUrl}
-          target="_blank"
-          rel="noreferrer"
-          className="shrink-0 text-[0.72rem] font-semibold text-[var(--color-action-primary)] transition-colors duration-200 hover:text-[var(--color-action-primary-strong)]"
-        >
-          YouTube에서 보기 →
-        </a>
+      <div
+        className={[
+          "flex flex-col gap-3 px-4 py-3.5",
+          isMain ? "sm:flex-row sm:items-center sm:justify-between sm:px-5" : "sm:px-4",
+        ].join(" ")}
+      >
+        <p className="text-xs leading-5 text-[var(--color-funnel-text-soft)]">
+          {isMain
+            ? "메인은 추천 결과를 가장 잘 설명하는 영상을 먼저 보여줘요."
+            : "서브는 최근성이나 보완 관점이 좋은 영상을 작게 붙여요."}
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <a
+            href={item.videoUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-[2.5rem] shrink-0 items-center justify-center rounded-full bg-[var(--color-action-primary)] px-4 py-2 text-[0.72rem] font-semibold tracking-[0.04em] text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
+          >
+            바로 보기
+          </a>
+          <a
+            href={item.channelUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="inline-flex min-h-[2.5rem] shrink-0 items-center justify-center rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-2 text-[0.72rem] font-semibold tracking-[0.04em] text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-white"
+          >
+            채널 보기
+          </a>
+        </div>
       </div>
     </article>
   );

@@ -1,4 +1,3 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { isIosShellMode } from "@/lib/runtime/shell";
@@ -7,6 +6,7 @@ import { testIds } from "@/lib/test-ids";
 import { ShellAuthNav } from "./shell-auth-nav";
 import { ShellPrimaryNav } from "./shell-primary-nav";
 
+/* Compass icon for 추천 받기 */
 function CompassIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none" className="h-[14px] w-[14px]" aria-hidden="true">
@@ -16,6 +16,7 @@ function CompassIcon() {
   );
 }
 
+/* Suitcase icon for 내 여행 */
 function SuitcaseIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none" className="h-[14px] w-[14px]" aria-hidden="true">
@@ -26,7 +27,7 @@ function SuitcaseIcon() {
   );
 }
 
-const primaryNavItems: readonly { label: string; href: string; icon: ReactNode }[] = [
+const primaryNavItems: readonly { label: string; href: string; icon: React.ReactNode }[] = [
   { label: "추천 받기", href: "/?stage=question&step=1", icon: <CompassIcon /> },
   { label: "내 여행", href: "/account", icon: <SuitcaseIcon /> },
 ];
@@ -74,6 +75,7 @@ export function ExperienceShell({
           >
             <div className="compass-shell-topbar-layout min-h-[2.75rem]">
               <ShellPrimaryNav items={primaryNavItems} />
+
               {hideAuthNavigation ? null : <ShellAuthNav />}
             </div>
           </div>
@@ -122,25 +124,6 @@ export function ExperienceShell({
             {children}
           </div>
         )}
-
-        <footer className="compass-stage-reveal compass-stage-reveal-slower px-4 pb-4 pt-6 sm:px-5">
-          <div className="flex flex-col gap-2 text-[0.72rem] text-[var(--color-ink-soft)] sm:flex-row sm:items-center sm:justify-between">
-            <p>
-              <span className="font-semibold text-[var(--color-ink)]">떠나볼까?</span>
-              {" "}취향 기반 여행지 추천
-            </p>
-            <div className="flex flex-wrap items-center gap-3">
-              <Link
-                href="/privacy"
-                data-testid={testIds.shell.privacyLink}
-                className="transition-colors hover:text-[var(--color-ink)]"
-              >
-                개인정보처리방침
-              </Link>
-              <span>&copy; {new Date().getFullYear()} 떠나볼까?</span>
-            </div>
-          </div>
-        </footer>
       </div>
     </main>
   );

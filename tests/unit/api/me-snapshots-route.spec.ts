@@ -7,7 +7,6 @@ vi.mock("@/lib/auth-session", () => ({
 }));
 
 import { GET as getSnapshot } from "@/app/api/me/snapshots/[snapshotId]/route";
-import { DELETE as deleteSnapshot } from "@/app/api/me/snapshots/[snapshotId]/route";
 import { PATCH as patchSnapshot } from "@/app/api/me/snapshots/[snapshotId]/route";
 import { GET as listSnapshots } from "@/app/api/me/snapshots/route";
 import type { RecommendationQuery } from "@/lib/domain/contracts";
@@ -56,16 +55,10 @@ describe("me snapshots routes", () => {
     }), {
       params: Promise.resolve({ snapshotId: "test" }),
     });
-    const deleteResponse = await deleteSnapshot(new Request("http://localhost:4010/api/me/snapshots/test", {
-      method: "DELETE",
-    }), {
-      params: Promise.resolve({ snapshotId: "test" }),
-    });
 
     expect(listResponse.status).toBe(401);
     expect(getResponse.status).toBe(401);
     expect(patchResponse.status).toBe(401);
-    expect(deleteResponse.status).toBe(401);
   });
 
   it("lists and reads only the signed-in user's private recommendation snapshots", async () => {
@@ -139,19 +132,5 @@ describe("me snapshots routes", () => {
     expect(patchResponse.status).toBe(200);
     expect(patchPayload.snapshot.id).toBe(owned.id);
     expect(patchPayload.snapshot.payload.meta.status).toBe("planned");
-
-    const deleteResponse = await deleteSnapshot(new Request(`http://localhost:4010/api/me/snapshots/${owned.id}`, {
-      method: "DELETE",
-    }), {
-      params: Promise.resolve({ snapshotId: owned.id }),
-    });
-    const deletePayload = await deleteResponse.json();
-
-    expect(deleteResponse.status).toBe(200);
-    expect(deletePayload.ok).toBe(true);
-
-    const nextListResponse = await listSnapshots();
-    const nextListPayload = await nextListResponse.json();
-    expect(nextListPayload.snapshots).toHaveLength(0);
   });
 });

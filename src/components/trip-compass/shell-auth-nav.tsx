@@ -1,10 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 
 import { authClient } from "@/lib/auth-client";
-import { buildCurrentRoute } from "@/lib/post-auth-intent";
 import { testIds } from "@/lib/test-ids";
 
 /**
@@ -24,22 +23,15 @@ function getInitial(name: string): string {
 export function ShellAuthNav() {
   const router = useRouter();
   const pathname = usePathname() ?? "";
-  const searchParams = useSearchParams();
   const session = authClient.useSession();
   const user = session.data?.user;
   const isAccountPath = pathname.startsWith("/account");
   const isAuthPath = pathname.startsWith("/auth");
-  const nextRoute = buildCurrentRoute(pathname, searchParams ?? undefined);
 
   async function handleSignOut() {
-    try {
-      const result = await authClient.signOut();
-      if (result.ok) {
-        router.push("/");
-      }
-    } finally {
-      router.refresh();
-    }
+    await authClient.signOut();
+    router.push("/");
+    router.refresh();
   }
 
   return (
@@ -83,9 +75,7 @@ export function ShellAuthNav() {
       ) : (
         <>
           <Link
-            href={nextRoute === "/"
-              ? "/auth"
-              : `/auth?${new URLSearchParams({ next: nextRoute }).toString()}`}
+            href="/auth"
             data-testid={testIds.shell.authCta}
             aria-current={isAuthPath ? "page" : undefined}
             className={`compass-shell-auth-text-link inline-flex min-h-[2.25rem] items-center px-1 py-1.5 text-[11px] font-semibold tracking-[0.02em]${isAuthPath ? " compass-shell-auth-text-link-active" : ""}`}

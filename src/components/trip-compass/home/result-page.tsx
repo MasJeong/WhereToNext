@@ -12,10 +12,10 @@ type ResultPageProps = {
   leadTitle: string;
   leadReason: string;
   leadDescription: string;
-  leadVisual: ReactNode;
   leadTags: string[];
   leadFacts: RecommendationDecisionFactView[];
   leadSupportSlot?: ReactNode;
+  leadWeatherSlot?: ReactNode;
   leadDetails: ReactNode;
   resultMeta?: ReactNode;
   personalized: boolean;
@@ -31,10 +31,10 @@ export function ResultPage({
   leadTitle,
   leadReason,
   leadDescription,
-  leadVisual,
   leadTags,
   leadFacts,
   leadSupportSlot,
+  leadWeatherSlot,
   leadDetails,
   resultMeta,
   personalized,
@@ -48,7 +48,7 @@ export function ResultPage({
 
   return (
     <motion.section
-      className="mx-auto max-w-5xl space-y-6 px-6 py-8 sm:px-8 sm:py-10"
+      className="mx-auto max-w-6xl space-y-5 px-5 py-6 sm:px-8 sm:py-8"
       data-testid={testId}
       initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
@@ -57,35 +57,54 @@ export function ResultPage({
     >
       <article
         data-testid={testIds.home.topSummary}
-        className="overflow-hidden rounded-[2rem] border border-[color:var(--color-funnel-border)] bg-white"
+        className="overflow-hidden rounded-[1.6rem] border border-[color:var(--color-funnel-border)] bg-white shadow-[0_18px_48px_rgba(15,23,42,0.06)]"
       >
-        <div className="grid gap-0 lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,0.9fr)]">
-          <div className="border-b border-[color:var(--color-funnel-border)] p-4 sm:p-5 lg:border-b-0 lg:border-r">
-            {leadVisual}
-          </div>
-
-          <div className="flex flex-col p-5 sm:p-6 lg:p-7">
+        <div className="grid gap-0 xl:grid-cols-[minmax(0,1.04fr)_minmax(24rem,0.96fr)]">
+          <div className="border-b border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] p-4 sm:p-5 lg:p-6 xl:border-b-0 xl:border-r">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
+              <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
                 가장 잘 맞는 추천
               </span>
               {resultMeta}
             </div>
 
-            <h2 className="mt-4 text-[2.2rem] font-semibold leading-[0.94] tracking-[-0.06em] text-[var(--color-funnel-text)] sm:text-[3.2rem]">
+            <div className="mt-4">
+              {leadSupportSlot ? (
+                leadSupportSlot
+              ) : (
+                <article className="rounded-[1.4rem] border border-[color:var(--color-funnel-border)] bg-white px-5 py-5 shadow-[0_16px_36px_rgba(15,23,42,0.05)]">
+                  <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                    대표 콘텐츠
+                  </p>
+                  <p className="mt-3 text-[1.5rem] font-semibold tracking-[-0.04em] text-[var(--color-funnel-text)]">
+                    {leadTitle}
+                  </p>
+                  <p className="mt-2 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
+                    영상이 준비되면 이 자리에서 바로 보실 수 있게 붙여 드릴게요.
+                  </p>
+                </article>
+              )}
+            </div>
+
+          </div>
+
+          <div data-testid={testIds.result.card0} className="flex flex-col p-5 sm:p-6 lg:p-7">
+            <h2 className="text-[2.15rem] font-semibold leading-[0.96] tracking-[-0.05em] text-[var(--color-funnel-text)] sm:text-[3rem]">
               {leadTitle}
             </h2>
-            <p className="mt-3 text-[1rem] font-semibold leading-7 text-[var(--color-funnel-text)]">{leadReason}</p>
-            <p className="mt-2 text-[0.95rem] leading-6 text-[var(--color-funnel-text-soft)] sm:text-[1rem] sm:leading-7">
+            <p className="mt-3 text-[0.98rem] font-semibold leading-7 text-[var(--color-funnel-text)] sm:text-[1.02rem]">
+              {leadReason}
+            </p>
+            <p className="mt-1.5 line-clamp-2 text-[0.9rem] leading-6 text-[var(--color-funnel-text-soft)] sm:text-[0.95rem]">
               {leadDescription}
             </p>
 
             {leadTags.length > 0 ? (
-              <div className="mt-5 flex flex-wrap gap-2">
+              <div className="mt-4 flex flex-wrap gap-1.5">
                 {leadTags.map((tag) => (
                   <span
                     key={tag}
-                    className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1.5 text-xs font-semibold text-[var(--color-funnel-text-soft)]"
+                    className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)]"
                   >
                     #{tag}
                   </span>
@@ -93,29 +112,25 @@ export function ResultPage({
               </div>
             ) : null}
 
-            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+            {leadWeatherSlot ? <div className="mt-4">{leadWeatherSlot}</div> : null}
+
+            <div className="mt-5 divide-y divide-[color:var(--color-funnel-border)] rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)]">
               {leadFacts.map((fact) => (
-                <article
-                  key={fact.id}
-                  className="rounded-[1.15rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-3.5"
-                >
-                  <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                    {fact.label}
-                  </p>
-                  <p className="mt-2 text-[0.98rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
+                <article key={fact.id} className="flex items-center justify-between gap-4 px-4 py-3">
+                  <div className="min-w-0">
+                    <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                      {fact.label}
+                    </p>
+                  </div>
+                  <p className="shrink-0 text-[0.95rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
                     {fact.value}
                   </p>
-                  <p className="mt-1 text-xs leading-5 text-[var(--color-funnel-text-soft)]">{fact.detail}</p>
                 </article>
               ))}
             </div>
 
-            {leadSupportSlot ? <div className="mt-4">{leadSupportSlot}</div> : null}
+            <div className="mt-5">{leadDetails}</div>
           </div>
-        </div>
-
-        <div data-testid={testIds.result.card0} className="border-t border-[color:var(--color-funnel-border)] px-5 py-5 sm:px-6 lg:px-7">
-          {leadDetails}
         </div>
 
         {personalized ? (
@@ -130,12 +145,12 @@ export function ResultPage({
 
       <div
         data-testid={testIds.result.querySummary}
-        className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
+        className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-4"
       >
         {briefItems.map((item) => (
           <article
             key={item.id}
-            className="rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-3"
+            className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-3"
           >
             <p className="text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
               {item.label}
@@ -147,8 +162,8 @@ export function ResultPage({
         ))}
       </div>
 
-      {filtersSlot}
       {statusSlot}
+      {filtersSlot}
       {resultsSlot}
       {savedSlot}
     </motion.section>

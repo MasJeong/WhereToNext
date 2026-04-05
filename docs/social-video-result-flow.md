@@ -57,7 +57,8 @@ API 진입점은 [route.ts](/Users/jihun/Desktop/study/project/SooGo/src/app/api
 
 - `도쿄 여행 브이로그`
 - `도쿄 여행 쇼츠`
-- `도쿄 야경 여행`
+- `도쿄 한국인 여행`
+- `도쿄 로맨틱 여행`
 - `Tokyo travel vlog`
 - `Japan travel guide`
 

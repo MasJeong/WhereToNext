@@ -13,10 +13,6 @@ import { rankDestinations } from "@/lib/recommendation/engine";
 import {
   getAccountFutureTripEntryTestId,
   getAccountHistoryEntryTestId,
-  getSavedSnapshotDeleteCancelTestId,
-  getSavedSnapshotDeleteConfirmTestId,
-  getSavedSnapshotDeleteDialogTestId,
-  getSavedSnapshotDeleteTestId,
   getSavedSnapshotPlanTestId,
   getSavedSnapshotTestId,
   testIds,
@@ -248,47 +244,5 @@ describe("AccountExperience future trips tab", () => {
 
     fireEvent.click(screen.getByTestId(testIds.account.tabFutureTrips));
     expect(screen.getByTestId(getAccountFutureTripEntryTestId(0))).toBeInTheDocument();
-  });
-
-  it("deletes a saved snapshot after confirmation", async () => {
-    const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
-      new Response(JSON.stringify({ ok: true }), {
-        status: 200,
-        headers: { "content-type": "application/json" },
-      }),
-    );
-
-    render(
-      <AccountExperience
-        userName="테스트 사용자"
-        initialTab="saved"
-        initialProfile={profile}
-        initialHistory={[historyEntry]}
-        initialSavedSnapshots={[
-          {
-            id: "saved-1",
-            createdAt: "2026-03-03T00:00:00.000Z",
-            payload: buildSavedSnapshotPayload("saved"),
-          },
-        ]}
-      />,
-    );
-
-    fireEvent.click(screen.getByTestId(getSavedSnapshotDeleteTestId(0)));
-    expect(screen.getByTestId(getSavedSnapshotDeleteDialogTestId(0))).toBeInTheDocument();
-    expect(screen.getByTestId(getSavedSnapshotDeleteCancelTestId(0))).toBeInTheDocument();
-
-    fireEvent.click(screen.getByTestId(getSavedSnapshotDeleteConfirmTestId(0)));
-
-    await waitFor(() => {
-      expect(fetchSpy).toHaveBeenCalledWith("/api/me/snapshots/saved-1", {
-        method: "DELETE",
-        credentials: "include",
-      });
-    });
-
-    await waitFor(() => {
-      expect(screen.queryByTestId(getSavedSnapshotTestId(0))).not.toBeInTheDocument();
-    });
   });
 });

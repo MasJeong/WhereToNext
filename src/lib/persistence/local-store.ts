@@ -4,7 +4,6 @@ import { readFile, rename, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import type {
-  DestinationAffiliateClick,
   ComparisonSnapshot,
   RecommendationSnapshot,
   TrendEvidenceSnapshot,
@@ -62,7 +61,6 @@ type LocalStoreData = {
   preferences: Record<string, UserPreferenceProfile>;
   history: Record<string, UserDestinationHistory>;
   futureTrips: Record<string, UserFutureTrip>;
-  affiliateClicks: Record<string, DestinationAffiliateClick>;
   trendSnapshots: Record<string, TrendEvidenceSnapshot>;
   snapshots: Record<string, LocalSnapshotRecord>;
 };
@@ -93,7 +91,6 @@ function createDefaultStore(): LocalStoreData {
     preferences: {},
     history: {},
     futureTrips: {},
-    affiliateClicks: {},
     trendSnapshots: {},
     snapshots: {},
   };
@@ -119,7 +116,6 @@ function normalizeLocalStore(store: Partial<LocalStoreData>): LocalStoreData {
     preferences: store.preferences ?? defaults.preferences,
     history: store.history ?? defaults.history,
     futureTrips: store.futureTrips ?? defaults.futureTrips,
-    affiliateClicks: store.affiliateClicks ?? defaults.affiliateClicks,
     trendSnapshots: store.trendSnapshots ?? defaults.trendSnapshots,
     snapshots: Object.fromEntries(
       Object.entries(store.snapshots ?? defaults.snapshots).map(([snapshotId, snapshot]) => [

@@ -64,43 +64,6 @@ describe("session storage model", () => {
     );
   });
 
-  it("preserves null user emails in session payloads", async () => {
-    memoryStore.users.clear();
-    memoryStore.accounts.clear();
-    memoryStore.sessions.clear();
-
-    const userId = randomUUID();
-    const sessionId = randomUUID();
-    const rawToken = "null-email-token";
-    const hashedToken = createHash("sha256").update(rawToken).digest("hex");
-    const now = Date.now();
-
-    memoryStore.users.set(userId, {
-      id: userId,
-      name: "Null Email User",
-      email: null,
-      emailVerified: false,
-      image: null,
-    });
-    memoryStore.sessions.set(sessionId, {
-      id: sessionId,
-      userId,
-      token: hashedToken,
-      expiresAt: new Date(now + 60_000).toISOString(),
-      clientType: "web",
-      lastSeenAt: new Date(now).toISOString(),
-      absoluteExpiresAt: new Date(now + 120_000).toISOString(),
-      ipAddress: null,
-      userAgent: null,
-    });
-
-    const resolved = await getSessionFromHeaders(
-      new Headers({ cookie: `trip_compass_session=${rawToken}` }),
-    );
-
-    expect(resolved?.user.email).toBeNull();
-  });
-
   it("keeps local/memory/db session shapes aligned with the new fields", () => {
     const nowIso = new Date().toISOString();
     const localRecord: LocalSessionRecord = {

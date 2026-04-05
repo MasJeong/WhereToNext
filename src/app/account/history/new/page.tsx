@@ -1,6 +1,7 @@
+import { redirect } from "next/navigation";
+
 import { AccountHistoryCreateExperience } from "@/components/trip-compass/account-history-create-experience";
-import { getSessionOrNull, redirectToAuth } from "@/lib/auth-session";
-import { listDestinationCatalog } from "@/lib/catalog/service";
+import { getSessionOrNull } from "@/lib/auth-session";
 
 export const dynamic = "force-dynamic";
 
@@ -12,10 +13,8 @@ export default async function AccountHistoryNewPage() {
   const session = await getSessionOrNull();
 
   if (!session) {
-    redirectToAuth("/account/history/new", "account");
+    redirect("/auth?next=%2Faccount%2Fhistory%2Fnew&intent=account");
   }
 
-  const destinations = await listDestinationCatalog({ activeOnly: true });
-
-  return <AccountHistoryCreateExperience destinations={destinations} />;
+  return <AccountHistoryCreateExperience />;
 }

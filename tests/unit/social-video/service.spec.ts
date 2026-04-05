@@ -25,7 +25,7 @@ function buildTestContext() {
     leadEvidence: [
       {
         label: "도쿄 야경",
-        detail: "도쿄 야경에서 많이 보이는 포인트",
+        detail: "한국인 브이로그에서 많이 보이는 포인트",
         sourceLabel: "Trend",
         sourceUrl: null,
       },
@@ -54,32 +54,11 @@ describe("social-video service", () => {
     const queries = buildSocialVideoSearchQueries(buildTestContext());
 
     expect(queries[0]).toBe("도쿄 여행 브이로그");
-    expect(queries).not.toContain("도쿄 한국인 여행");
+    expect(queries).toContain("도쿄 한국인 여행");
     expect(queries).toContain("도쿄 여행 가이드");
-    expect(queries).not.toContain("Tokyo korean travel vlog");
     expect(queries.some((query) => query.includes("Tokyo") || query.includes("일본"))).toBe(true);
     expect(queries.some((query) => query.includes("쇼츠") || query.toLowerCase().includes("shorts"))).toBe(true);
     expect(new Set(queries).size).toBe(queries.length);
-  });
-
-  it("maps romance vibes to non-romantic search labels", () => {
-    const destination = launchCatalog.find((item) => item.id === "tokyo");
-
-    if (!destination) {
-      throw new Error("Expected tokyo destination to exist in launch catalog.");
-    }
-
-    const queries = buildSocialVideoSearchQueries({
-      destination,
-      query: {
-        ...defaultRecommendationQuery,
-        vibes: ["romance", "food"],
-      },
-      leadEvidence: [],
-    });
-
-    expect(queries).toContain("도쿄 야경 여행");
-    expect(queries).not.toContain("도쿄 로맨틱 여행");
   });
 
   it("builds direct YouTube fallback searches for the destination", () => {
@@ -205,37 +184,5 @@ describe("social-video service", () => {
     ];
 
     expect(selectSocialVideoCandidate(unrelatedCandidates, context)).toBeNull();
-  });
-
-  it("rejects foreign-language creator videos from auto-selection even when destination relevance is high", () => {
-    const context = buildTestContext();
-    const foreignAirportSecurityCandidate = buildCandidate({
-      id: "foreign-airport-security",
-      title: "Nairobi airport security guide",
-      channelTitle: "Africa Travel Stories",
-      description: "What to expect at Nairobi airport and security lines",
-      languageHint: "en",
-      creatorCountryCode: "KE",
-      durationSeconds: 84,
-      viewCount: 210000,
-      likeCount: 3100,
-      commentCount: 220,
-    });
-    const koreanCandidate = buildCandidate({
-      id: "korean-nairobi",
-      title: "나이로비 여행 브이로그",
-      channelTitle: "지훈의 여행일기",
-      description: "나이로비 일정과 이동 팁을 한국어로 정리",
-      languageHint: "ko",
-      creatorCountryCode: "KR",
-      durationSeconds: 140,
-      viewCount: 54000,
-      likeCount: 880,
-      commentCount: 64,
-    });
-
-    const selected = selectSocialVideoCandidate([foreignAirportSecurityCandidate, koreanCandidate], context);
-
-    expect(selected?.candidate.id).toBe("korean-nairobi");
   });
 });

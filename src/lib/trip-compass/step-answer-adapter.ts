@@ -1,11 +1,10 @@
 import type { RecommendationQuery } from "@/lib/domain/contracts";
 import {
   defaultRecommendationQuery,
-  departureAirportOptions,
+  flightToleranceOptions,
   getPartySizeForType,
   partyOptions,
-  primaryVibeOptions,
-  travelMonthOptions,
+  tripLengthOptions,
 } from "@/lib/trip-compass/presentation";
 
 type HomeStepOptionValue = string | number | null;
@@ -17,71 +16,97 @@ export type HomeStepOption<TValue extends HomeStepOptionValue> = {
   testId?: string;
 };
 
-export const homeStepTripRhythmValues = [
-  "quick-reset",
-  "steady-highlights",
-  "slow-reset",
-  "far-and-full",
+export const homeStepTravelStyleValues = [
+  "activity",
+  "sns-hotplace",
+  "nature",
+  "must-see",
+  "healing",
+  "culture-history",
+  "local-atmosphere",
+  "shopping",
+  "foodie",
 ] as const;
 
-export type HomeStepTripRhythm = (typeof homeStepTripRhythmValues)[number];
+export type HomeStepTravelStyle = (typeof homeStepTravelStyleValues)[number];
+
+export const homeStepTravelWindowValues = ["soon", "q1", "q2", "q3", "q4"] as const;
+
+export type HomeStepTravelWindow = (typeof homeStepTravelWindowValues)[number];
 
 export type HomeStepAnswers = {
   whoWith: RecommendationQuery["partyType"];
-  travelWindow: RecommendationQuery["travelMonth"];
-  tripRhythm: HomeStepTripRhythm;
-  mainVibe: RecommendationQuery["vibes"][number];
-  departureChoice: RecommendationQuery["departureAirport"];
+  travelWindow: HomeStepTravelWindow;
+  tripLength: RecommendationQuery["tripLengthDays"];
+  travelStyle: HomeStepTravelStyle[];
+  flightPreference: RecommendationQuery["flightTolerance"];
 };
 
 type HomeStepAnswerDefaults = HomeStepAnswers & {
   budgetFeel: RecommendationQuery["budgetBand"];
 };
 
-type TripRhythmQueryPatch = Pick<
-  RecommendationQuery,
-  "tripLengthDays" | "pace" | "flightTolerance"
->;
-
-const tripRhythmQueryPatchMap: Record<HomeStepTripRhythm, TripRhythmQueryPatch> = {
-  "quick-reset": {
-    tripLengthDays: 3,
-    pace: "balanced",
-    flightTolerance: "short",
-  },
-  "steady-highlights": {
-    tripLengthDays: 5,
-    pace: "balanced",
-    flightTolerance: "medium",
-  },
-  "slow-reset": {
-    tripLengthDays: 5,
-    pace: "slow",
-    flightTolerance: "medium",
-  },
-  "far-and-full": {
-    tripLengthDays: 8,
-    pace: "packed",
-    flightTolerance: "long",
-  },
+const travelStyleToVibeMap: Record<HomeStepTravelStyle, RecommendationQuery["vibes"][number]> = {
+  activity: "nature",
+  "sns-hotplace": "city",
+  nature: "nature",
+  "must-see": "culture",
+  healing: "beach",
+  "culture-history": "culture",
+  "local-atmosphere": "city",
+  shopping: "shopping",
+  foodie: "food",
 };
 
-const defaultHomeStepTripRhythm = homeStepTripRhythmValues.find((value) => {
-  const patch = tripRhythmQueryPatchMap[value];
+const slowTravelStyles = new Set<HomeStepTravelStyle>(["nature", "healing"]);
+const packedTravelStyles = new Set<HomeStepTravelStyle>([
+  "activity",
+  "sns-hotplace",
+  "must-see",
+  "shopping",
+]);
 
-  return (
-    patch.tripLengthDays === defaultRecommendationQuery.tripLengthDays &&
-    patch.pace === defaultRecommendationQuery.pace &&
-    patch.flightTolerance === defaultRecommendationQuery.flightTolerance
-  );
-});
+function derivePaceFromTravelStyles(styles: HomeStepTravelStyle[]): RecommendationQuery["pace"] {
+  if (styles.some((style) => packedTravelStyles.has(style))) {
+    return "packed";
+  }
+
+  if (styles.length > 0 && styles.every((style) => slowTravelStyles.has(style))) {
+    return "slow";
+  }
+
+  return "balanced";
+}
+
+function deriveVibesFromTravelStyles(styles: HomeStepTravelStyle[]): RecommendationQuery["vibes"] {
+  const uniqueVibes = styles
+    .map((style) => travelStyleToVibeMap[style])
+    .filter((vibe, index, source) => source.indexOf(vibe) === index)
+    .slice(0, 3);
+
+  return uniqueVibes.length > 0 ? uniqueVibes : [defaultRecommendationQuery.vibes[0]];
+}
 
 const defaultQuestionFlowAnswers: HomeStepAnswers = {
   whoWith: defaultRecommendationQuery.partyType,
-  travelWindow: defaultRecommendationQuery.travelMonth,
-  tripRhythm: defaultHomeStepTripRhythm ?? "steady-highlights",
-  mainVibe: defaultRecommendationQuery.vibes[0],
-  departureChoice: defaultRecommendationQuery.departureAirport,
+  travelWindow: "q4",
+  tripLength: defaultRecommendationQuery.tripLengthDays,
+  travelStyle: [],
+  flightPreference: defaultRecommendationQuery.flightTolerance,
+};
+
+const fallbackTravelStyles: HomeStepTravelStyle[] = ["foodie"];
+
+function resolveRelativeTravelMonth(): RecommendationQuery["travelMonth"] {
+  const currentMonth = new Date().getMonth() + 1;
+  return Math.min(Math.max(currentMonth, 1), 12) as RecommendationQuery["travelMonth"];
+}
+
+const travelWindowToRepresentativeMonthMap: Record<Exclude<HomeStepTravelWindow, "soon">, RecommendationQuery["travelMonth"]> = {
+  q1: 1,
+  q2: 4,
+  q3: 7,
+  q4: 10,
 };
 
 export const defaultHomeStepAnswers: HomeStepAnswerDefaults = {
@@ -91,37 +116,113 @@ export const defaultHomeStepAnswers: HomeStepAnswerDefaults = {
 
 export const homeStepCompanionOptions: HomeStepOption<HomeStepAnswers["whoWith"]>[] = partyOptions;
 
-export const homeStepTravelWindowOptions: HomeStepOption<HomeStepAnswers["travelWindow"]>[] =
-  travelMonthOptions;
-
-export const homeStepMainVibeOptions: HomeStepOption<HomeStepAnswers["mainVibe"]>[] =
-  primaryVibeOptions;
-
-export const homeStepDepartureOptions: HomeStepOption<HomeStepAnswers["departureChoice"]>[] =
-  departureAirportOptions;
-
-export const homeStepTripRhythmOptions: HomeStepOption<HomeStepTripRhythm>[] = [
+export const homeStepTravelWindowOptions: HomeStepOption<HomeStepAnswers["travelWindow"]>[] = [
   {
-    value: "quick-reset",
-    label: "짧고 가볍게",
-    description: "연차를 길게 쓰지 않고 가까운 곳부터 가볍게 다녀와요.",
+    value: "soon",
+    label: "곧 떠나고 싶어요",
+    description: "1~2개월 안에 가볍게 다녀오고 싶어요.",
   },
   {
-    value: "steady-highlights",
-    label: "핵심만 균형 있게",
-    description: "대표 일정은 챙기되 무리하지 않는 기본 리듬이에요.",
+    value: "q1",
+    label: "1~3월",
+    description: "연초 일정 안에서 시기를 맞춰 보고 있어요.",
   },
   {
-    value: "slow-reset",
-    label: "쉬는 시간 넉넉하게",
-    description: "이동 부담을 줄이고 쉬는 시간까지 여유 있게 챙겨요.",
+    value: "q2",
+    label: "4~6월",
+    description: "상반기 안에서 여행 시기를 고르고 싶어요.",
   },
   {
-    value: "far-and-full",
-    label: "멀어도 제대로",
-    description: "비행이 길어도 괜찮고 여러 장면을 진하게 담고 싶어요.",
+    value: "q3",
+    label: "7~9월",
+    description: "여름 휴가철 전후로 일정을 생각하고 있어요.",
+  },
+  {
+    value: "q4",
+    label: "10~12월",
+    description: "하반기나 연말 안에서 시기를 보고 있어요.",
   },
 ];
+
+export function formatHomeStepTravelWindowLabel(window: HomeStepTravelWindow): string {
+  return homeStepTravelWindowOptions.find((option) => option.value === window)?.label ?? "언제든";
+}
+
+export const homeStepTripLengthOptions: HomeStepOption<HomeStepAnswers["tripLength"]>[] =
+  tripLengthOptions;
+
+export const homeStepFlightPreferenceOptions: HomeStepOption<HomeStepAnswers["flightPreference"]>[] =
+  flightToleranceOptions.map((option) => ({
+    ...option,
+    label:
+      option.value === "short"
+        ? "가까운 곳 위주"
+        : option.value === "medium"
+          ? "중거리까지 괜찮아요"
+          : "멀어도 괜찮아요",
+    description:
+      option.value === "short"
+        ? "비행 피로가 적고 바로 움직일 수 있는 곳부터 볼게요."
+        : option.value === "medium"
+          ? "선택지는 넓히되 너무 긴 비행은 피하고 싶어요."
+          : "비행 시간이 길어도 여행 만족도가 높다면 괜찮아요.",
+  }));
+
+export const homeStepTravelStyleOptions: HomeStepOption<HomeStepTravelStyle>[] = [
+  {
+    value: "activity",
+    label: "가만히 있긴 아쉬워",
+    description: "몸을 움직이거나 현지에서만 할 수 있는 체험이 있어야 여행 온 느낌이 살아요.",
+  },
+  {
+    value: "sns-hotplace",
+    label: "사진부터 남기고 싶어",
+    description: "사진 남기기 좋고 요즘 많이 가는 곳은 한 번쯤 찍고 가야 덜 아쉬워요.",
+  },
+  {
+    value: "nature",
+    label: "풍경 좋은 데로",
+    description: "바다, 산, 공원처럼 풍경 좋고 공기 좋은 곳이면 오래 머물고 싶어요.",
+  },
+  {
+    value: "must-see",
+    label: "유명한 곳은 찍고 와야지",
+    description: "처음 가는 곳이라면 많이 가는 명소는 놓치지 않고 보고 오는 편이에요.",
+  },
+  {
+    value: "healing",
+    label: "쉬는 게 제일 중요해",
+    description: "빡빡하게 돌기보다 여유 있게 쉬는 시간이 분명한 여행이 더 좋아요.",
+  },
+  {
+    value: "culture-history",
+    label: "전시나 유적은 보고 싶어",
+    description: "전시, 박물관, 유적처럼 그 지역의 이야기와 결이 느껴지는 일정이 좋아요.",
+  },
+  {
+    value: "local-atmosphere",
+    label: "그 동네 느낌이 좋아",
+    description: "유명 명소보다 골목, 시장, 거리에서 현지 분위기를 느끼고 싶어요.",
+  },
+  {
+    value: "shopping",
+    label: "수하물 1개 더할걸",
+    description: "시장, 편집숍, 쇼핑몰처럼 사는 재미가 있는 동선이면 만족도가 확 올라가요.",
+  },
+  {
+    value: "foodie",
+    label: "이번엔 먹는 게 메인",
+    description: "관광보다 현지 음식, 맛집, 카페 찾아다니는 시간이 더 중요해요.",
+  },
+];
+
+export function resolveTravelMonthFromHomeWindow(window: HomeStepTravelWindow): RecommendationQuery["travelMonth"] {
+  if (window === "soon") {
+    return resolveRelativeTravelMonth();
+  }
+
+  return travelWindowToRepresentativeMonthMap[window];
+}
 
 export function deriveRecommendationQueryFromHomeStepAnswers(
   answers: Partial<HomeStepAnswers> = {},
@@ -130,23 +231,19 @@ export function deriveRecommendationQueryFromHomeStepAnswers(
     ...defaultQuestionFlowAnswers,
     ...answers,
   };
-  const tripRhythmQueryPatch = tripRhythmQueryPatchMap[mergedAnswers.tripRhythm];
+  const travelStyles = mergedAnswers.travelStyle.length > 0
+    ? mergedAnswers.travelStyle.slice(0, 3)
+    : fallbackTravelStyles;
 
   return {
     partyType: mergedAnswers.whoWith,
     partySize: getPartySizeForType(mergedAnswers.whoWith),
     budgetBand: defaultRecommendationQuery.budgetBand,
-    tripLengthDays: tripRhythmQueryPatch.tripLengthDays,
-    departureAirport: mergedAnswers.departureChoice,
-    travelMonth: mergedAnswers.travelWindow,
-    pace: tripRhythmQueryPatch.pace,
-    flightTolerance: tripRhythmQueryPatch.flightTolerance,
-    vibes: buildHomeStepVibes(mergedAnswers.mainVibe),
+    tripLengthDays: mergedAnswers.tripLength,
+    departureAirport: defaultRecommendationQuery.departureAirport,
+    travelMonth: resolveTravelMonthFromHomeWindow(mergedAnswers.travelWindow),
+    pace: derivePaceFromTravelStyles(travelStyles),
+    flightTolerance: mergedAnswers.flightPreference,
+    vibes: deriveVibesFromTravelStyles(travelStyles),
   };
-}
-
-function buildHomeStepVibes(
-  mainVibe: HomeStepAnswers["mainVibe"],
-): RecommendationQuery["vibes"] {
-  return [mainVibe];
 }

@@ -2,11 +2,10 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import {
-  type DestinationProfile,
   userDestinationHistoryImageContentTypeValues,
   userDestinationHistoryCustomTagSchema,
   userDestinationHistoryImageExtensionValues,
@@ -41,10 +40,8 @@ type HistoryDraft = {
   images: UserDestinationHistoryImage[];
 };
 
-type HistoryDestinationOption = Pick<DestinationProfile, "id" | "nameKo" | "nameEn" | "countryCode">;
-
 const historyRecommendedTags = ["city", "nature", "food", "shopping", "beach", "culture", "nightlife", "romance"] as const;
-const maxCustomHistoryTags = 10;
+const maxCustomHistoryTags = 4;
 
 function normalizeCustomHistoryTagInput(value: string): string {
   return value.trim().replace(/^#+/, "").trim();
@@ -150,25 +147,6 @@ function getRelativeDateValue(offsetDays: number): string {
 }
 
 /**
- * YYYY-MM-DD 입력값을 읽기 쉬운 날짜 문구로 바꾼다.
- * @param value 날짜 입력값
- * @returns 한국어 날짜 문구
- */
-function formatHistoryDraftDate(value: string): string {
-  if (!value) {
-    return "날짜를 선택해 주세요.";
-  }
-
-  const [year, month, day] = value.split("-").map((part) => Number(part));
-
-  if (!year || !month || !day) {
-    return "날짜를 선택해 주세요.";
-  }
-
-  return `${year}년 ${month}월 ${day}일`;
-}
-
-/**
  * 선택한 파일을 data URL 이미지로 읽는다.
  * @param file 브라우저 파일 객체
  * @returns 업로드용 이미지 객체
@@ -232,7 +210,7 @@ function buildHistoryBody(draft: HistoryDraft) {
 
 function getHistoryDraftValidationError(
   draft: HistoryDraft,
-  selectedDestination: HistoryDestinationOption | undefined,
+  selectedDestination: (typeof launchCatalog)[number] | undefined,
 ): string | null {
   if (!selectedDestination) {
     return "목적지를 목록에서 선택해 주세요.";
@@ -257,7 +235,7 @@ function normalizeDestinationSearchValue(value: string): string {
   return value.trim().toLocaleLowerCase();
 }
 
-function matchesDestinationSearch(destination: HistoryDestinationOption, normalizedQuery: string): boolean {
+function matchesDestinationSearch(destination: typeof launchCatalog[number], normalizedQuery: string): boolean {
   const countryMetadata = getCountryMetadata(destination.countryCode);
   const nameTargets = [
     normalizeDestinationSearchValue(destination.nameKo),
@@ -277,7 +255,7 @@ function matchesDestinationSearch(destination: HistoryDestinationOption, normali
   return [...nameTargets, ...countryTargets].some((value) => value.includes(normalizedQuery));
 }
 
-function rankDestinationSearchMatch(destination: HistoryDestinationOption, normalizedQuery: string): number {
+function rankDestinationSearchMatch(destination: typeof launchCatalog[number], normalizedQuery: string): number {
   const countryMetadata = getCountryMetadata(destination.countryCode);
   const searchTargets = [
     normalizeDestinationSearchValue(destination.nameKo),
@@ -298,7 +276,7 @@ function rankDestinationSearchMatch(destination: HistoryDestinationOption, norma
   return 2;
 }
 
-function formatDestinationSearchLabel(destination: HistoryDestinationOption | undefined): string {
+function formatDestinationSearchLabel(destination: typeof launchCatalog[number] | undefined): string {
   if (!destination) {
     return "";
   }
@@ -309,11 +287,9 @@ function formatDestinationSearchLabel(destination: HistoryDestinationOption | un
 export function AccountHistoryCreateExperience({
   mode = "create",
   initialEntry,
-  destinations = launchCatalog,
 }: {
   mode?: "create" | "edit";
   initialEntry?: UserDestinationHistory;
-  destinations?: HistoryDestinationOption[];
 }) {
   const router = useRouter();
   const initialDraft: HistoryDraft = {
@@ -327,7 +303,7 @@ export function AccountHistoryCreateExperience({
     memo: initialEntry?.memo ?? "",
     images: initialEntry?.images ?? [],
   };
-  const initialDestination = destinations.find((item) => item.id === initialDraft.destinationId);
+  const initialDestination = launchCatalog.find((item) => item.id === initialDraft.destinationId);
   const initialDestinationQuery = formatDestinationSearchLabel(initialDestination);
   const [stepIndex, setStepIndex] = useState(0);
   const [draft, setDraft] = useState<HistoryDraft>(initialDraft);
@@ -339,10 +315,9 @@ export function AccountHistoryCreateExperience({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
-  const dateInputRef = useRef<HTMLInputElement | null>(null);
 
   const currentStep = historySteps[stepIndex];
-  const selectedDestination = destinations.find((item) => item.id === draft.destinationId);
+  const selectedDestination = launchCatalog.find((item) => item.id === draft.destinationId);
   const [destinationQuery, setDestinationQuery] = useState(initialDestinationQuery);
   const filteredDestinations = useMemo(() => {
     const normalizedQuery = normalizeDestinationSearchValue(destinationQuery);
@@ -351,11 +326,8 @@ export function AccountHistoryCreateExperience({
       return [];
     }
 
-    return destinations
+    return launchCatalog
       .filter((destination) => matchesDestinationSearch(destination, normalizedQuery))
-      .filter((destination, index, destinations) =>
-        destinations.findIndex((candidate) => candidate.id === destination.id) === index,
-      )
       .sort((left, right) => {
         const leftRank = rankDestinationSearchMatch(left, normalizedQuery);
         const rightRank = rankDestinationSearchMatch(right, normalizedQuery);
@@ -367,7 +339,7 @@ export function AccountHistoryCreateExperience({
         return left.nameKo.localeCompare(right.nameKo, "ko");
       })
       .slice(0, 8);
-  }, [destinationQuery, destinations]);
+  }, [destinationQuery]);
   const hasDestinationQuery = normalizeDestinationSearchValue(destinationQuery).length > 0;
   const hasDestinationSelection = Boolean(selectedDestination);
   const isDirty = JSON.stringify(draft) !== JSON.stringify(initialDraft)
@@ -419,7 +391,7 @@ export function AccountHistoryCreateExperience({
     }
 
     if (draft.customTags.length >= maxCustomHistoryTags) {
-      setCustomTagError("직접 등록 태그는 최대 10개까지예요.");
+      setCustomTagError("직접 등록 태그는 최대 4개까지예요.");
       return;
     }
 
@@ -487,7 +459,7 @@ export function AccountHistoryCreateExperience({
     }, 120);
   }
 
-  function selectDestination(destination: HistoryDestinationOption) {
+  function selectDestination(destination: typeof launchCatalog[number]) {
     setDestinationQuery(formatDestinationSearchLabel(destination));
     setDraft((currentDraft) => ({
       ...currentDraft,
@@ -587,16 +559,10 @@ export function AccountHistoryCreateExperience({
 
       if (!response.ok) {
         const errorPayload = (await response.json().catch(() => null)) as
-          | { code?: string; error?: string; issues?: Array<{ path?: Array<string | number>; message?: string }> }
+          | { code?: string; error?: string }
           | null;
 
         if (response.status === 400 && errorPayload?.code === "INVALID_HISTORY") {
-          const destinationIssue = errorPayload.issues?.find((issue) => issue.path?.[0] === "destinationId");
-
-          if (destinationIssue?.message === "UNKNOWN_DESTINATION") {
-            throw new Error("UNKNOWN_DESTINATION");
-          }
-
           throw new Error(errorPayload.error ?? "INVALID_HISTORY");
         }
 
@@ -606,7 +572,7 @@ export function AccountHistoryCreateExperience({
       leaveHistoryFlow();
       router.refresh();
     } catch (error) {
-      if (error instanceof Error && (error.message === "UNKNOWN_DESTINATION" || error.message === "여행 이력 형식이 올바르지 않습니다.")) {
+      if (error instanceof Error && error.message === "여행 이력 형식이 올바르지 않습니다.") {
         setError("입력 내용을 확인해 주세요. 목적지는 목록에서 선택해야 합니다.");
         return;
       }
@@ -640,7 +606,7 @@ export function AccountHistoryCreateExperience({
               onClick={handleCancel}
               className="cursor-pointer rounded-lg px-3 py-2 text-[0.82rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)]"
             >
-              {mode === "edit" ? "수정 그만하기" : "다음에 기록하기"}
+              {mode === "edit" ? "수정 그만하기" : "작성 중단"}
             </button>
           </div>
           <div className="flex items-center gap-3">
@@ -671,7 +637,7 @@ export function AccountHistoryCreateExperience({
             >
               <div className="space-y-2">
                 <h2 id="history-cancel-title" className="text-[1rem] font-semibold text-[var(--color-ink)]">
-                  {mode === "edit" ? "수정을 그만할까요?" : "다음에 기록할까요?"}
+                  {mode === "edit" ? "수정을 그만할까요?" : "작성 중단할까요?"}
                 </h2>
                 <p id="history-cancel-description" className="text-[0.86rem] leading-6 text-[var(--color-ink-soft)]">
                   {mode === "edit"
@@ -695,7 +661,7 @@ export function AccountHistoryCreateExperience({
                   onClick={leaveHistoryFlow}
                   className="min-h-[44px] cursor-pointer rounded-xl bg-[var(--color-ink)] px-4 py-2.5 text-[0.82rem] font-semibold text-white transition-opacity hover:opacity-90"
                 >
-                  {mode === "edit" ? "수정 그만하기" : "다음에 기록하기"}
+                  {mode === "edit" ? "수정 그만하기" : "작성 중단"}
                 </button>
               </div>
             </div>
@@ -828,47 +794,22 @@ export function AccountHistoryCreateExperience({
             ) : null}
 
             {currentStep.id === "date" ? (
-              <div className="space-y-4">
-                <div className="rounded-2xl border border-[var(--color-frame-soft)] bg-[var(--color-surface-muted)] p-4 sm:p-5">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                    <div className="min-w-0">
-                      <p className="text-[0.78rem] font-semibold text-[var(--color-ink-soft)]">선택한 날짜</p>
-                      <p className="mt-1 text-[1.08rem] font-bold text-[var(--color-ink)] sm:text-[1.22rem]">
-                        {formatHistoryDraftDate(draft.visitedAt)}
-                      </p>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        dateInputRef.current?.showPicker?.();
-                        dateInputRef.current?.focus();
-                      }}
-                      className="inline-flex min-h-[44px] shrink-0 items-center justify-center rounded-full bg-[var(--color-action-primary)] px-4 py-2.5 text-[0.82rem] font-semibold text-white transition-colors hover:bg-[var(--color-action-primary-strong)]"
-                    >
-                      달력 열기
-                    </button>
-                  </div>
+              <div className="space-y-3">
+                <input
+                  data-testid={testIds.account.newHistoryDate}
+                  type="date"
+                  value={draft.visitedAt}
+                  aria-label="방문 날짜"
+                  onChange={(event) => {
+                    setDraft((currentDraft) => ({
+                      ...currentDraft,
+                      visitedAt: event.target.value,
+                    }));
+                  }}
+                  className="w-full rounded-xl border border-[var(--color-frame-soft)] bg-white px-4 py-3.5 text-[0.9rem] text-[var(--color-ink)] outline-none transition-colors focus:border-[var(--color-sand)] focus:ring-2 focus:ring-[var(--color-sand)]/20"
+                />
 
-                  <input
-                    ref={dateInputRef}
-                    data-testid={testIds.account.newHistoryDate}
-                    type="date"
-                    value={draft.visitedAt}
-                    aria-label="방문 날짜"
-                    onChange={(event) => {
-                      setDraft((currentDraft) => ({
-                        ...currentDraft,
-                        visitedAt: event.target.value,
-                      }));
-                      if (event.target.value) {
-                        moveNextSoon();
-                      }
-                    }}
-                    className="mt-4 min-h-[56px] w-full rounded-2xl border border-[var(--color-frame-soft)] bg-white px-4 py-3.5 text-[1rem] font-semibold text-[var(--color-ink)] outline-none transition-colors focus:border-[var(--color-sand)] focus:ring-2 focus:ring-[var(--color-sand)]/20 sm:text-[1.05rem]"
-                  />
-                </div>
-
-                <div className="grid gap-2 sm:grid-cols-3">
+                <div className="flex flex-wrap gap-2">
                   {quickDateChoices.map((choice) => {
                     const value = getRelativeDateValue(choice.offsetDays);
                     return (
@@ -882,16 +823,13 @@ export function AccountHistoryCreateExperience({
                           }));
                           moveNextSoon();
                         }}
-                        className={`min-h-[52px] cursor-pointer rounded-2xl border px-4 py-3 text-left transition-colors ${
+                        className={`cursor-pointer rounded-full px-4 py-2.5 text-[0.82rem] font-medium min-h-[40px] transition-colors ${
                           draft.visitedAt === value
-                            ? "border-[var(--color-sand)] bg-[var(--color-accent-soft)] text-[var(--color-sand-deep)]"
-                            : "border-[var(--color-frame-soft)] bg-white text-[var(--color-ink)] hover:border-[var(--color-sand)]"
+                            ? "bg-[var(--color-sand)] text-white"
+                            : "border border-[var(--color-frame-soft)] text-[var(--color-ink)] hover:border-[var(--color-sand)]"
                         }`}
                       >
-                        <span className="block text-[0.85rem] font-semibold">{choice.label}</span>
-                        <span className="mt-1 block text-[0.76rem] font-medium text-[var(--color-ink-soft)]">
-                          {formatHistoryDraftDate(value)}
-                        </span>
+                        {choice.label}
                       </button>
                     );
                   })}
@@ -908,6 +846,7 @@ export function AccountHistoryCreateExperience({
                       type="button"
                       onClick={() => {
                         setDraft((currentDraft) => ({ ...currentDraft, rating }));
+                        moveNextSoon();
                       }}
                       className={`flex h-14 w-14 cursor-pointer items-center justify-center rounded-2xl text-lg font-bold transition-all ${
                         draft.rating === rating
@@ -931,9 +870,6 @@ export function AccountHistoryCreateExperience({
                         ...currentDraft,
                         wouldRevisit: event.target.checked,
                       }));
-                      if (event.target.checked && draft.rating >= 1) {
-                        moveNextSoon();
-                      }
                     }}
                     className="h-4.5 w-4.5 rounded border-[var(--color-frame)] accent-[var(--color-sand)]"
                   />
@@ -1159,22 +1095,26 @@ export function AccountHistoryCreateExperience({
                 />
                 <div className="text-right text-[0.75rem] text-[var(--color-ink-soft)]">{draft.memo.length}/500</div>
 
-                <div className="rounded-xl border border-[var(--color-frame-soft)] bg-[var(--color-surface-muted)] px-4 py-3">
-                  <p className="text-[0.76rem] font-semibold text-[var(--color-ink-soft)]">메모 예시</p>
-                  <div className="mt-2 flex flex-wrap gap-1.5">
-                    {[
-                      "다음엔 가을에 다시 가고 싶어요.",
-                      "현장 분위기가 사진보다 좋았어요.",
-                      "맛집 동선이 좋아서 또 가고 싶어요.",
-                    ].map((suggestion) => (
-                      <span
-                        key={suggestion}
-                        className="rounded-full border border-[var(--color-frame-soft)] bg-white px-3 py-1.5 text-[0.78rem] font-medium text-[var(--color-ink-soft)]"
-                      >
-                        {suggestion}
-                      </span>
-                    ))}
-                  </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {[
+                    "다음엔 가을에 다시 가고 싶어요.",
+                    "현장 분위기가 사진보다 좋았어요.",
+                    "맛집 동선이 좋아서 또 가고 싶어요.",
+                  ].map((suggestion) => (
+                    <button
+                      key={suggestion}
+                      type="button"
+                      onClick={() => {
+                        setDraft((currentDraft) => ({
+                          ...currentDraft,
+                          memo: currentDraft.memo.trim() ? currentDraft.memo : suggestion,
+                        }));
+                      }}
+                      className="cursor-pointer rounded-full border border-[var(--color-frame-soft)] px-3 py-1.5 text-[0.78rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-sand)] hover:text-[var(--color-sand-deep)]"
+                    >
+                      {suggestion}
+                    </button>
+                  ))}
                 </div>
               </div>
             ) : null}

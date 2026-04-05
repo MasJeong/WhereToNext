@@ -10,10 +10,9 @@ import { getCountryMetadata } from "@/lib/travel-support/country-metadata";
 const SOCIAL_VIDEO_MAX_QUERIES = 8;
 const SOCIAL_VIDEO_MIN_SCORE = 40;
 const SOCIAL_VIDEO_FALLBACK_MIN_SCORE = 24;
-const SOCIAL_VIDEO_MIN_KOREAN_SIGNAL_SCORE = 8;
 
 const vibeSearchLabels: Record<RecommendationQuery["vibes"][number], string> = {
-  romance: "야경",
+  romance: "로맨틱",
   food: "맛집",
   nature: "자연",
   city: "도시",
@@ -45,7 +44,7 @@ const evidenceStopwords = new Set([
   "youtube",
 ]);
 
-const socialVideoHintTerms = ["한국어", "shorts", "쇼츠"];
+const socialVideoHintTerms = ["한국인", "한국어", "korean", "shorts", "쇼츠"];
 const YOUTUBE_SEARCH_ENDPOINT = "https://www.googleapis.com/youtube/v3/search";
 const YOUTUBE_VIDEOS_ENDPOINT = "https://www.googleapis.com/youtube/v3/videos";
 const SOCIAL_VIDEO_CACHE_TTL_SECONDS = 10_800;
@@ -298,12 +297,14 @@ export function buildSocialVideoSearchQueries(context: SocialVideoSearchContext)
   const queries = [
     `${names.nameKo} 여행 브이로그`,
     `${names.nameKo} 여행 쇼츠`,
+    `${names.nameKo} 한국인 여행`,
     `${names.nameKo} ${primaryVibe} 여행`,
     `${names.nameKo} 여행 가이드`,
     `${names.nameKo} 가볼만한곳`,
     `${names.nameEn} travel vlog`,
     `${names.nameEn} travel shorts`,
     `${names.nameEn} things to do`,
+    `${names.nameEn} korean travel vlog`,
     `${names.countryName} travel guide`,
     `${names.nameKo} ${secondaryVibe} 여행`,
   ];
@@ -469,29 +470,6 @@ function scoreKoreanSignals(candidate: SocialVideoCandidate) {
 }
 
 /**
- * 자동 추천에 쓸 만큼 한국어 제작 신호가 충분한지 확인한다.
- * @param candidate 검토할 후보
- * @returns 자동 추천 허용 여부
- */
-function hasStrongKoreanPublishingSignals(candidate: SocialVideoCandidate) {
-  const title = candidate.title;
-  const description = candidate.description ?? "";
-  const channelTitle = candidate.channelTitle;
-  const languageHint = candidate.languageHint?.toLowerCase() ?? "";
-  const koreanSignals = scoreKoreanSignals(candidate);
-
-  if (koreanSignals >= SOCIAL_VIDEO_MIN_KOREAN_SIGNAL_SCORE) {
-    return true;
-  }
-
-  if (hasHangul(title) || hasHangul(description) || hasHangul(channelTitle)) {
-    return true;
-  }
-
-  return languageHint === "ko" || languageHint.startsWith("ko-");
-}
-
-/**
  * 게시 시점을 바탕으로 최근성 점수를 계산한다.
  * @param candidate 검토할 후보
  * @returns 최근성 점수
@@ -510,19 +488,19 @@ function scoreFreshness(candidate: SocialVideoCandidate) {
   const elapsedDays = Math.max(0, (Date.now() - publishedAt.getTime()) / 86_400_000);
 
   if (elapsedDays <= 7) {
-    return 10;
+    return 15;
   }
 
   if (elapsedDays <= 30) {
-    return 8;
+    return 12;
   }
 
   if (elapsedDays <= 90) {
-    return 5;
+    return 8;
   }
 
   if (elapsedDays <= 180) {
-    return 3;
+    return 4;
   }
 
   return 1;
@@ -547,15 +525,11 @@ function scoreEngagementQuality(candidate: SocialVideoCandidate) {
     return 0;
   }
 
-  const absoluteReach = Math.log10(Math.max(views, 1));
   const engagementPerDay = ((likes * 2.5) + (comments * 4)) / elapsedDays;
   const viewVelocity = Math.log10(Math.max(views / elapsedDays, 1));
-  const rawScore =
-    (absoluteReach * 1.8) +
-    (viewVelocity * 1.6) +
-    Math.log10(Math.max(engagementPerDay, 1)) * 2.4;
+  const rawScore = (viewVelocity * 2.2) + Math.log10(Math.max(engagementPerDay, 1)) * 3.1;
 
-  return Math.max(0, Math.min(16, Math.round(rawScore)));
+  return Math.max(0, Math.min(12, Math.round(rawScore)));
 }
 
 /**
@@ -642,7 +616,6 @@ export function rankSocialVideoCandidates(
   context: SocialVideoSearchContext,
 ): SocialVideoScoredCandidate[] {
   return candidates
-    .filter((candidate) => hasStrongKoreanPublishingSignals(candidate))
     .map((candidate) => ({
       candidate,
       score: scoreSocialVideoCandidate(candidate, context),

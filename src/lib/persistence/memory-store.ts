@@ -1,5 +1,4 @@
 import type {
-  DestinationAffiliateClick,
   ComparisonSnapshot,
   RecommendationSnapshot,
   TrendEvidenceSnapshot,
@@ -59,7 +58,6 @@ declare global {
         preferences: Map<string, UserPreferenceProfile>;
         history: Map<string, UserDestinationHistory>;
         futureTrips: Map<string, UserFutureTrip>;
-        affiliateClicks: Map<string, DestinationAffiliateClick>;
         trendSnapshots: Map<string, TrendEvidenceSnapshot>;
         snapshots: Map<string, MemorySnapshotRecord>;
       }
@@ -75,7 +73,6 @@ if (!globalThis.__tripCompassMemoryStore) {
     preferences: new Map(),
     history: new Map(),
     futureTrips: new Map(),
-    affiliateClicks: new Map(),
     trendSnapshots: new Map(),
     snapshots: new Map(),
   };

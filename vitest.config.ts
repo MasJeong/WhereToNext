@@ -7,7 +7,6 @@ export default defineConfig({
     globals: true,
     setupFiles: ["./tests/setup/vitest.setup.ts"],
     include: ["tests/unit/**/*.spec.ts", "tests/unit/**/*.spec.tsx"],
-    maxWorkers: process.env.CI ? 4 : undefined,
     coverage: {
       provider: "v8",
       reporter: ["text", "html"],

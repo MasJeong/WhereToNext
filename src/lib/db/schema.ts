@@ -11,9 +11,6 @@ import {
 } from "drizzle-orm/pg-core";
 
 import {
-  affiliateCategoryValues,
-  affiliatePageTypeValues,
-  affiliatePartnerValues,
   budgetBandValues,
   destinationKindValues,
   evidenceSourceTypeValues,
@@ -47,19 +44,13 @@ export const explorationPreferenceEnum = pgEnum(
   "exploration_preference",
   explorationPreferenceValues,
 );
-export const userStatusEnum = pgEnum("user_status", ["active", "inactive"]);
-export const affiliatePartnerEnum = pgEnum("affiliate_partner", affiliatePartnerValues);
-export const affiliateCategoryEnum = pgEnum("affiliate_category", affiliateCategoryValues);
-export const affiliatePageTypeEnum = pgEnum("affiliate_page_type", affiliatePageTypeValues);
 
 export const user = pgTable("user", {
   id: text("id").primaryKey(),
-  name: text("name"),
+  name: text("name").notNull(),
   email: text("email").unique(),
   emailVerified: boolean("email_verified").notNull().default(false),
   image: text("image"),
-  status: userStatusEnum("status").notNull().default("active"),
-  lastLoginAt: timestamp("last_login_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull(),
 });
@@ -235,20 +226,3 @@ export const userFutureTrips = pgTable(
     ),
   }),
 );
-
-export const destinationAffiliateClicks = pgTable("destination_affiliate_clicks", {
-  id: uuid("id").defaultRandom().primaryKey(),
-  destinationId: text("destination_id")
-    .notNull()
-    .references(() => destinationProfiles.id, { onDelete: "cascade" }),
-  partner: affiliatePartnerEnum("partner").notNull(),
-  category: affiliateCategoryEnum("category").notNull(),
-  pageType: affiliatePageTypeEnum("page_type").notNull(),
-  departureAirport: text("departure_airport"),
-  travelMonth: integer("travel_month"),
-  tripLengthDays: integer("trip_length_days"),
-  flightTolerance: text("flight_tolerance"),
-  userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
-  sessionId: text("session_id"),
-  clickedAt: timestamp("clicked_at", { withTimezone: true }).notNull().defaultNow(),
-});

@@ -80,20 +80,6 @@ describe("user destination history image schema", () => {
     ).toThrow();
   });
 
-  it("accepts up to ten custom hashtags", () => {
-    const parsed = userDestinationHistoryInputSchema.parse({
-      destinationId: "tokyo",
-      rating: 5,
-      tags: ["city"],
-      customTags: Array.from({ length: 10 }, (_, index) => `태그${index + 1}`),
-      wouldRevisit: true,
-      visitedAt: "2026-02-01T00:00:00.000Z",
-      memo: null,
-    });
-
-    expect(parsed.customTags).toHaveLength(10);
-  });
-
   it("rejects more than ten images in one history entry", () => {
     expect(() =>
       userDestinationHistoryInputSchema.parse({

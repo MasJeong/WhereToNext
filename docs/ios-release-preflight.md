@@ -1,6 +1,6 @@
-# iOS Release Preflight
+# iOS 출시 전 점검
 
-이 문서는 SooGo의 iOS 출시 준비 상태를 점검하는 체크리스트다.
+이 문서는 떠나볼래의 iOS 출시 준비 상태를 점검하는 체크리스트다.
 현재 기준으로는 **모바일 웹/PWA + shell-safe 웹 계약 정리**까지 완료했고, **실제 Capacitor native shell 생성과 Universal Links 구성은 아직 차단 상태**다.
 
 ## 1. 현재 완료된 기반
@@ -17,17 +17,17 @@
 
 ## 2. 현재 차단 상태
 
-### Architecture Blocked
+### 아키텍처 차단 사항
 - [ ] Capacitor가 소비할 실제 static `webDir` 산출물이 아직 없다.
 - [ ] 현재 Next 16 App Router 앱은 일반 `next build`만으로는 Capacitor production bundle용 정적 HTML 번들을 만들지 않는다.
 - [ ] dynamic routes, API handlers, middleware를 유지한 채 어떤 export target을 native shell에 넣을지 별도 아키텍처 결정이 필요하다.
 
-### Environment Blocked
+### 환경 차단 사항
 - [ ] 이 작업 환경에는 full Xcode / iOS simulator tooling이 없어 `xcodebuild` / `simctl` 기반 검증을 수행할 수 없다.
 
 ## 3. TestFlight 이전 필수 조건
 
-### Web / PWA 계약
+### 웹 / PWA 계약
 - [x] `npm run lint`
 - [x] `npm run build`
 - [x] `npx vitest run tests/unit/runtime/url.spec.ts`
@@ -37,13 +37,13 @@
 - [x] `npx playwright test tests/e2e/ios-acquisition-flow.spec.ts --project=webkit`
 - [x] `npx playwright test tests/e2e/ios-acquisition-flow.spec.ts --project="Mobile Safari"`
 
-### Shell transport 계약
-- [x] shell-origin preflight returns `204`
-- [x] `Origin: capacitor://localhost` acquisition API responses include:
+### Shell 전송 계층 계약
+- [x] shell-origin preflight가 `204`를 반환함
+- [x] `Origin: capacitor://localhost`인 acquisition API 응답에 아래 값이 포함됨:
   - `Access-Control-Allow-Origin: capacitor://localhost`
   - `Access-Control-Allow-Credentials: true`
 
-## 4. Native shell 전환 전에 해야 할 일
+## 4. 네이티브 shell 전환 전에 해야 할 일
 
 - [ ] Capacitor용 실제 static shell/web bundle 전략 결정
 - [ ] `capacitor.config.ts`의 `webDir`가 실제 static output을 가리키도록 구성
@@ -55,27 +55,27 @@
 
 ## 5. App Review 메모
 
-- 단순 웹뷰 래핑처럼 보이지 않도록 acquisition flow의 앱다운 가치가 설명 가능해야 한다.
+- 단순한 웹뷰 래핑처럼 보이지 않도록 acquisition flow의 앱다운 가치가 설명 가능해야 한다.
 - v1 shell 범위는 anonymous acquisition flow로 제한한다.
 - broken auth/account/history 진입점은 shell mode에서 숨긴다.
-- 공유 링크, restore flow, compare flow, detail flow가 fail-closed로 동작해야 한다.
-- clipboard failure / recommendation failure 상황에서도 blank state 없이 recovery path가 있어야 한다.
+- 공유 링크, restore flow, compare flow, detail flow는 fail-closed로 동작해야 한다.
+- clipboard failure와 recommendation failure 상황에서도 blank state 없이 recovery path가 있어야 한다.
 
 ## 6. 관련 파일
 
-- Runtime URL contract: `src/lib/runtime/url.ts`
-- Shell flag: `src/lib/runtime/shell.ts`
-- Shell nav guard: `src/components/trip-compass/experience-shell.tsx`
-- Route data split: `src/lib/trip-compass/route-data.ts`
-- Restore views: `src/components/trip-compass/snapshot-restore-view.tsx`, `src/components/trip-compass/compare-restore-view.tsx`
+- Runtime URL 규약: `src/lib/runtime/url.ts`
+- Shell 플래그: `src/lib/runtime/shell.ts`
+- Shell 내비게이션 가드: `src/components/trip-compass/experience-shell.tsx`
+- 라우트 데이터 분리: `src/lib/trip-compass/route-data.ts`
+- 복원 뷰: `src/components/trip-compass/snapshot-restore-view.tsx`, `src/components/trip-compass/compare-restore-view.tsx`
 - Acquisition CORS: `src/lib/security/cors.ts`, `src/app/api/recommendations/route.ts`, `src/app/api/snapshots/route.ts`, `src/app/api/snapshots/[snapshotId]/route.ts`, `src/app/api/auth/session/route.ts`
-- PWA metadata: `src/app/layout.tsx`, `public/manifest.webmanifest`, `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png`
+- PWA 메타데이터: `src/app/layout.tsx`, `public/manifest.webmanifest`, `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png`
 
 ## 7. 현재 결론
 
 지금 저장소는 **iOS 출시 준비를 위한 웹 계약 정리 단계는 완료**했지만,
 **실제 App Store/TestFlight용 native shell 생성은 아직 시작하면 안 되는 상태**다.
 
-다음 진짜 게이트는 하나다:
+다음 실제 게이트는 하나다:
 
 > Capacitor가 사용할 수 있는 진짜 static `webDir`를 먼저 정의하고 검증할 것.

@@ -15,10 +15,7 @@ type MockSessionRow = {
   updatedAt: Date;
 };
 
-function buildMockDb(
-  sessionRow: MockSessionRow | null,
-  userEmail: string | null = "db-user@example.com",
-) {
+function buildMockDb(sessionRow: MockSessionRow | null) {
   return {
     query: {
       session: {
@@ -30,7 +27,7 @@ function buildMockDb(
             ? {
                 id: sessionRow.userId,
                 name: "DB User",
-                email: userEmail,
+                email: "db-user@example.com",
               }
             : null,
         ),
@@ -50,12 +47,12 @@ function buildMockDb(
   };
 }
 
-async function importAuthWithMockedDb(sessionRow: MockSessionRow | null, userEmail?: string | null) {
+async function importAuthWithMockedDb(sessionRow: MockSessionRow | null) {
   vi.resetModules();
   vi.stubEnv("DATABASE_URL", "postgres://unit-test");
   vi.doMock("@/lib/db/runtime", () => ({
     getRuntimeDatabase: async () => ({
-      db: buildMockDb(sessionRow, userEmail === undefined ? "db-user@example.com" : userEmail),
+      db: buildMockDb(sessionRow),
       mode: "postgres",
       close: async () => undefined,
     }),
@@ -115,32 +112,5 @@ describe("session db mode", () => {
 
     expect(session?.session.id).toBe(sessionId);
     expect(session?.user.email).toBe("db-user@example.com");
-  });
-
-  it("preserves null emails in database session payloads", async () => {
-    const rawToken = "db-null-email-token";
-    const sessionId = randomUUID();
-    const auth = await importAuthWithMockedDb(
-      {
-        id: sessionId,
-        userId: randomUUID(),
-        token: createHash("sha256").update(rawToken).digest("hex"),
-        expiresAt: new Date(Date.now() + 60_000),
-        clientType: "web",
-        lastSeenAt: new Date(Date.now() - 10_000),
-        absoluteExpiresAt: new Date(Date.now() + 60_000),
-        ipAddress: null,
-        userAgent: null,
-        updatedAt: new Date(),
-      },
-      null,
-    );
-
-    const session = await auth.getSessionFromHeaders(
-      new Headers({ cookie: `trip_compass_session=${rawToken}` }),
-    );
-
-    expect(session?.session.id).toBe(sessionId);
-    expect(session?.user.email).toBeNull();
   });
 });

@@ -93,6 +93,6 @@ describe("LeadSocialVideoPanel fallback", () => {
     );
 
     expect(await screen.findByText("Tokyo Food & Night Walk")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Trips & Eats 채널/ })).toBeInTheDocument();
+    expect(screen.getByText(/Trips & Eats/)).toBeInTheDocument();
   });
 });

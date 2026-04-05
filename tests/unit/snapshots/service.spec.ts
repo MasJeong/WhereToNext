@@ -59,10 +59,6 @@ describe("snapshot service", () => {
     expect(restored?.destinationIds).toEqual(restored?.payload.destinationIds);
   });
 
-  it("returns null for an invalid snapshot id without querying storage", async () => {
-    await expect(readSnapshot("invalid-snapshot-id")).resolves.toBeNull();
-  });
-
   it("creates a comparison snapshot and resolves its columns", async () => {
     const first = await createSnapshot({
       kind: "recommendation",

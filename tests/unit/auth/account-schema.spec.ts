@@ -11,9 +11,6 @@ describe("auth account schema", () => {
     const accountConfig = getTableConfig(account);
 
     expect(userColumns.email.notNull).toBe(false);
-    expect(userColumns.name.notNull).toBe(false);
-    expect(userColumns.status).toBeDefined();
-    expect(userColumns.lastLoginAt).toBeDefined();
     expect(accountColumns.providerEmail).toBeDefined();
     expect(accountColumns.providerEmailVerified).toBeDefined();
     expect(accountColumns.lastLoginAt).toBeDefined();

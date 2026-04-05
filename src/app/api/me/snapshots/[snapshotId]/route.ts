@@ -3,11 +3,7 @@ import { ZodError } from "zod";
 
 import { getSessionOrNull } from "@/lib/auth-session";
 import { parseUpdateRecommendationSnapshotBody } from "@/lib/security/validation";
-import {
-  deleteOwnedRecommendationSnapshot,
-  readSnapshot,
-  updateOwnedRecommendationSnapshotStatus,
-} from "@/lib/snapshots/service";
+import { readSnapshot, updateOwnedRecommendationSnapshotStatus } from "@/lib/snapshots/service";
 
 export async function GET(
   _request: Request,
@@ -69,38 +65,6 @@ export async function PATCH(
 
     return NextResponse.json(
       { code: "SNAPSHOT_UPDATE_FAILED", error: "저장 상태를 바꾸지 못했어요. 잠시 후 다시 시도해 주세요." },
-      { status: 500 },
-    );
-  }
-}
-
-export async function DELETE(
-  _request: Request,
-  context: { params: Promise<{ snapshotId: string }> },
-) {
-  const session = await getSessionOrNull();
-  if (!session) {
-    return NextResponse.json(
-      { code: "UNAUTHORIZED", error: "로그인이 필요한 기능입니다." },
-      { status: 401 },
-    );
-  }
-
-  try {
-    const { snapshotId } = await context.params;
-    const deleted = await deleteOwnedRecommendationSnapshot(session.user.id, snapshotId);
-
-    if (!deleted) {
-      return NextResponse.json(
-        { code: "SNAPSHOT_NOT_FOUND", error: "저장한 추천을 찾지 못했습니다." },
-        { status: 404 },
-      );
-    }
-
-    return NextResponse.json({ ok: true });
-  } catch {
-    return NextResponse.json(
-      { code: "SNAPSHOT_DELETE_FAILED", error: "저장한 추천을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요." },
       { status: 500 },
     );
   }

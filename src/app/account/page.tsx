@@ -1,5 +1,5 @@
 import { AccountExperience } from "@/components/trip-compass/account-experience";
-import { getSessionOrNull, redirectToAuth } from "@/lib/auth-session";
+import { requireSession } from "@/lib/auth-session";
 import {
   getOrCreateUserPreferenceProfile,
   listUserDestinationHistory,
@@ -17,14 +17,8 @@ export default async function AccountPage({
 }: {
   searchParams: Promise<{ tab?: string }>;
 }) {
+  const session = await requireSession();
   const params = await searchParams;
-  const session = await getSessionOrNull();
-  const next = params.tab ? `/account?tab=${params.tab}` : "/account";
-
-  if (!session) {
-    redirectToAuth(next, "account");
-  }
-
   const [profile, history, savedSnapshots] = await Promise.all([
     getOrCreateUserPreferenceProfile(session.user.id),
     listUserDestinationHistory(session.user.id),
