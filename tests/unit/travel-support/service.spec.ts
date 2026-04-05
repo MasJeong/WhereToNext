@@ -43,23 +43,6 @@ describe("getDestinationTravelSupplement", () => {
         });
       }
 
-      if (requestUrl.includes("archive-api.open-meteo.com")) {
-        return createJsonResponse({
-          daily: {
-            time: [
-              "2021-10-05",
-              "2022-10-12",
-              "2023-10-18",
-              "2024-10-09",
-              "2025-10-21",
-            ],
-            temperature_2m_max: [22, 21, 20, 23, 19],
-            temperature_2m_min: [14, 13, 12, 15, 11],
-            precipitation_sum: [0, 0.2, 1.6, 0, 2.1],
-          },
-        });
-      }
-
       if (requestUrl.includes("api.open-meteo.com")) {
         return createJsonResponse({
           current: {
@@ -126,15 +109,12 @@ describe("getDestinationTravelSupplement", () => {
     const destination = launchCatalog.find((item) => item.id === "tokyo");
     expect(destination).toBeTruthy();
 
-    const supplement = await getDestinationTravelSupplement(destination!, 10);
+    const supplement = await getDestinationTravelSupplement(destination!);
 
     expect(fetchMock).toHaveBeenCalled();
     expect(supplement?.location.countryCode).toBe("JP");
     expect(supplement?.heroImage?.sourceLabel).toBe("Unsplash");
     expect(supplement?.weather?.summary).toBe("맑아요");
-    expect(supplement?.travelMonthWeather?.travelMonth).toBe(10);
-    expect(supplement?.travelMonthWeather?.averageMaxTemperatureC).toBe(21);
-    expect(supplement?.travelMonthWeather?.rainyDayRatio).toBe(40);
     expect(supplement?.nearbyPlaces).toHaveLength(2);
     expect(supplement?.exchangeRate?.quoteCurrency).toBe("JPY");
     expect(supplement?.mapEmbed?.src).toContain("google.com/maps/embed/v1/place");
@@ -147,17 +127,6 @@ describe("getDestinationTravelSupplement", () => {
       if (requestUrl.includes("geocoding-api.open-meteo.com")) {
         return createJsonResponse({
           results: [{ latitude: 48.8566, longitude: 2.3522 }],
-        });
-      }
-
-      if (requestUrl.includes("archive-api.open-meteo.com")) {
-        return createJsonResponse({
-          daily: {
-            time: ["2021-10-04", "2022-10-18"],
-            temperature_2m_max: [18, 17],
-            temperature_2m_min: [10, 9],
-            precipitation_sum: [0, 3],
-          },
         });
       }
 
@@ -183,11 +152,10 @@ describe("getDestinationTravelSupplement", () => {
     const destination = launchCatalog.find((item) => item.id === "paris");
     expect(destination).toBeTruthy();
 
-    const supplement = await getDestinationTravelSupplement(destination!, 10);
+    const supplement = await getDestinationTravelSupplement(destination!);
 
     expect(supplement?.location.countryCode).toBe("FR");
     expect(supplement?.weather?.summary).toBe("흐린 편이에요");
-    expect(supplement?.travelMonthWeather?.travelMonth).toBe(10);
     expect(supplement?.heroImage).toBeUndefined();
     expect(supplement?.nearbyPlaces).toBeUndefined();
     expect(supplement?.exchangeRate).toBeUndefined();

@@ -5,6 +5,7 @@ export const testIds = {
     authCta: "auth-cta",
     accountLink: "account-link",
     personalizedNote: "personalized-note",
+    privacyLink: "footer-privacy-link",
   },
   home: {
     landing: "home-landing",
@@ -70,6 +71,8 @@ export const testIds = {
     root: "destination-detail-root",
     coreFacts: "destination-core-facts",
     travelSupport: "destination-travel-support",
+    flightAffiliate: "destination-flight-affiliate",
+    flightAffiliateCta: "destination-flight-affiliate-cta",
     fitReason: "destination-fit-reason",
     evidence: "destination-evidence",
     watchOuts: "destination-watch-outs",
@@ -107,10 +110,17 @@ export const testIds = {
   },
   account: {
     root: "my-taste-root",
+    settingsRoot: "account-settings-root",
+    settingsLink: "account-settings-link",
     tabHistory: "account-tab-history",
     tabFutureTrips: "account-tab-future-trips",
     tabSaved: "account-tab-saved",
     tabPreferences: "account-tab-preferences",
+    privacyLink: "account-privacy-link",
+    deleteAccountOpen: "account-delete-open",
+    deleteAccountDialog: "account-delete-dialog",
+    deleteAccountCancel: "account-delete-cancel",
+    deleteAccountConfirm: "account-delete-confirm",
     tasteMode: "my-taste-mode",
     tasteSummary: "my-taste-summary",
     addHistoryCta: "add-history-cta",
@@ -147,6 +157,15 @@ export const testIds = {
     futureTripDelete0: "future-trip-delete-0",
     futureTripEmptyState: "future-trip-empty-state",
     savedPlan0: "saved-plan-0",
+    savedDelete0: "saved-delete-0",
+    savedDeleteDialog0: "saved-delete-dialog-0",
+    savedDeleteCancel0: "saved-delete-cancel-0",
+    savedDeleteConfirm0: "saved-delete-confirm-0",
+    historyLightbox: "history-lightbox",
+    historyLightboxImage: "history-lightbox-image",
+    historyLightboxClose: "history-lightbox-close",
+    historyLightboxPrev: "history-lightbox-prev",
+    historyLightboxNext: "history-lightbox-next",
   },
 } as const;
 
@@ -154,11 +173,6 @@ export function getHomeChoiceTestId(index: number): string {
   return `home-step-choice-${index}`;
 }
 
-/**
- * Returns a stable result card selector for a given index.
- * @param index Result card index
- * @returns Card test id
- */
 export function getResultCardTestId(index: number): string {
   return index === 0 ? testIds.result.card0 : `result-card-${index}`;
 }
@@ -167,47 +181,22 @@ export function getFutureTripCtaTestId(index: number): string {
   return index === 0 ? testIds.result.futureTripCta0 : `future-trip-cta-${index}`;
 }
 
-/**
- * Returns a stable Instagram vibe selector for a given index.
- * @param index Result card index
- * @returns Instagram vibe block test id
- */
 export function getInstagramVibeTestId(index: number): string {
   return index === 0 ? testIds.result.instagramVibe0 : `instagram-vibe-${index}`;
 }
 
-/**
- * Returns a stable save snapshot selector for a given index.
- * @param index Result card index
- * @returns Save button test id
- */
 export function getSaveSnapshotTestId(index: number): string {
   return index === 0 ? testIds.snapshot.saveSnapshot : `save-snapshot-${index}`;
 }
 
-/**
- * Returns a stable saved snapshot selector for a given index.
- * @param index Saved snapshot index
- * @returns Saved snapshot test id
- */
 export function getSavedSnapshotTestId(index: number): string {
   return index === 0 ? testIds.snapshot.savedSnapshot0 : `saved-snapshot-${index}`;
 }
 
-/**
- * Returns a stable compare column selector for a given index.
- * @param index Compare column index
- * @returns Compare column test id
- */
 export function getCompareColumnTestId(index: number): string {
   return index === 0 ? testIds.compare.column0 : `compare-column-${index}`;
 }
 
-/**
- * Returns a stable empty-state relaxation selector for a given index.
- * @param index Relaxation action index
- * @returns Relaxation action test id
- */
 export function getRelaxFilterActionTestId(index: number): string {
   return index === 0 ? testIds.result.relaxFilterAction0 : `relax-filter-action-${index}`;
 }
@@ -220,38 +209,18 @@ export function getResultFilterChipTestId(index: number): string {
   return index === 0 ? testIds.result.filterChip0 : `result-filter-chip-${index}`;
 }
 
-/**
- * Returns a stable account history card selector for a given index.
- * @param index History entry index
- * @returns History entry test id
- */
 export function getAccountHistoryEntryTestId(index: number): string {
   return index === 0 ? testIds.account.historyEntry0 : `history-entry-${index}`;
 }
 
-/**
- * Returns a stable account history save selector for a given index.
- * @param index History entry index
- * @returns Save action test id
- */
 export function getAccountHistorySaveTestId(index: number): string {
   return index === 0 ? testIds.account.historySave0 : `history-save-${index}`;
 }
 
-/**
- * Returns a stable account history delete selector for a given index.
- * @param index History entry index
- * @returns Delete action test id
- */
 export function getAccountHistoryDeleteTestId(index: number): string {
   return index === 0 ? testIds.account.historyDelete0 : `history-delete-${index}`;
 }
 
-/**
- * Returns a stable account history edit selector for a given index.
- * @param index 여행 기록 카드 인덱스
- * @returns 수정 버튼 test id
- */
 export function getAccountHistoryEditTestId(index: number): string {
   return index === 0 ? testIds.account.historyEdit0 : `history-edit-${index}`;
 }
@@ -288,6 +257,26 @@ export function getAccountFutureTripDeleteTestId(index: number): string {
 
 export function getSavedSnapshotPlanTestId(index: number): string {
   return index === 0 ? testIds.account.savedPlan0 : `saved-plan-${index}`;
+}
+
+export function getSavedSnapshotDeleteTestId(index: number): string {
+  return index === 0 ? testIds.account.savedDelete0 : `saved-delete-${index}`;
+}
+
+export function getSavedSnapshotDeleteDialogTestId(index: number): string {
+  return index === 0 ? testIds.account.savedDeleteDialog0 : `saved-delete-dialog-${index}`;
+}
+
+export function getSavedSnapshotDeleteCancelTestId(index: number): string {
+  return index === 0 ? testIds.account.savedDeleteCancel0 : `saved-delete-cancel-${index}`;
+}
+
+export function getSavedSnapshotDeleteConfirmTestId(index: number): string {
+  return index === 0 ? testIds.account.savedDeleteConfirm0 : `saved-delete-confirm-${index}`;
+}
+
+export function getAccountHistoryLightboxImageTestId(index: number): string {
+  return index === 0 ? testIds.account.historyLightboxImage : `history-lightbox-image-${index}`;
 }
 
 export function getDestinationTasteTagTestId(index: number): string {

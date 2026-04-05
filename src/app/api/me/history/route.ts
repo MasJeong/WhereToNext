@@ -6,6 +6,7 @@ import {
   createUserDestinationHistory,
   listUserDestinationHistory,
 } from "@/lib/profile/service";
+import { assertKnownDestinationId } from "@/lib/security/destination-validation";
 import { parseUserDestinationHistoryInput } from "@/lib/security/validation";
 
 /**
@@ -41,13 +42,14 @@ export async function POST(request: Request) {
 
   try {
     const body = parseUserDestinationHistoryInput((await request.json()) as unknown);
+    await assertKnownDestinationId(body.destinationId);
     const historyEntry = await createUserDestinationHistory(session.user.id, body);
 
     return NextResponse.json({ historyEntry }, { status: 201 });
   } catch (error) {
     if (error instanceof ZodError) {
       return NextResponse.json(
-        { code: "INVALID_HISTORY", error: "여행 이력 형식이 올바르지 않습니다." },
+        { code: "INVALID_HISTORY", error: "여행 이력 형식이 올바르지 않습니다.", issues: error.issues },
         { status: 400 },
       );
     }

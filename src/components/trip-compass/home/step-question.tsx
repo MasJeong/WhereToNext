@@ -24,9 +24,6 @@ type StepQuestionProps = {
   onBack: () => void;
   onReset: () => void;
   isSubmitting: boolean;
-  nextLabel?: string;
-  onNext?: () => void;
-  nextDisabled?: boolean;
 };
 
 export function StepQuestion({
@@ -41,9 +38,6 @@ export function StepQuestion({
   onBack,
   onReset,
   isSubmitting,
-  nextLabel,
-  onNext,
-  nextDisabled,
 }: StepQuestionProps) {
   const prefersReducedMotion = useReducedMotion();
 
@@ -116,20 +110,6 @@ export function StepQuestion({
               </button>
             ))}
           </div>
-
-          {onNext ? (
-            <div className="mt-6 flex justify-center">
-              <button
-                type="button"
-                data-testid={testIds.home.next}
-                onClick={onNext}
-                disabled={nextDisabled || isSubmitting}
-                className="inline-flex min-h-[3rem] items-center rounded-full bg-[var(--color-action-primary)] px-6 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {nextLabel ?? "다음"}
-              </button>
-            </div>
-          ) : null}
 
           {isSubmitting ? (
             <p className="mt-6 text-sm leading-6 text-[var(--color-funnel-text-soft)]">조건에 맞는 목적지를 정리하고 있어요.</p>

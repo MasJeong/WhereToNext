@@ -1,10 +1,10 @@
-# 검증
+# Verification
 
-## 명령 / 확인 항목
-- 구현 대기 중.
+## Commands / Checks
+- Pending implementation.
 
-## 결과
-- 작업 세션을 시작했고, 전체 계획을 읽은 뒤 구현 수준의 추적 가능한 작업으로 분해했다.
+## Result
+- Work session started; full plan read and decomposed into implementation-level tracked tasks.
 
-## 남은 리스크
-- shell scaffolding과 route 작업이 구현되기 전까지 검증은 대기 상태로 남아 있다.
+## Open Risks
+- Verification remains pending until shell scaffolding and route work are implemented.

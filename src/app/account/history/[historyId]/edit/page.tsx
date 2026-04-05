@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 
 import { AccountHistoryCreateExperience } from "@/components/trip-compass/account-history-create-experience";
-import { requireSession } from "@/lib/auth-session";
+import { getSessionOrNull, redirectToAuth } from "@/lib/auth-session";
+import { listDestinationCatalog } from "@/lib/catalog/service";
 import { readUserDestinationHistory } from "@/lib/profile/service";
 
 export const dynamic = "force-dynamic";
@@ -16,13 +17,21 @@ export default async function AccountHistoryEditPage({
 }: {
   params: Promise<{ historyId: string }>;
 }) {
-  const session = await requireSession();
   const { historyId } = await params;
-  const entry = await readUserDestinationHistory(session.user.id, historyId);
+  const session = await getSessionOrNull();
+
+  if (!session) {
+    redirectToAuth(`/account/history/${historyId}/edit`, "account");
+  }
+
+  const [entry, destinations] = await Promise.all([
+    readUserDestinationHistory(session.user.id, historyId),
+    listDestinationCatalog({ activeOnly: true }),
+  ]);
 
   if (!entry) {
     notFound();
   }
 
-  return <AccountHistoryCreateExperience mode="edit" initialEntry={entry} />;
+  return <AccountHistoryCreateExperience mode="edit" initialEntry={entry} destinations={destinations} />;
 }

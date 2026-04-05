@@ -11,7 +11,7 @@ jobs:
   quality:
     name: Lint, Unit, Build
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 15
 
     steps:
       - name: Checkout repository
@@ -31,8 +31,6 @@ jobs:
 
       - name: Run unit tests
         run: npm run test:unit
-        env:
-          NODE_OPTIONS: --max-old-space-size=6144
 
       - name: Run production build
         run: npm run build

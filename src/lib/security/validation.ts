@@ -3,6 +3,7 @@ import { z } from "zod";
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import {
   comparisonSnapshotSchema,
+  destinationAffiliateClickInputSchema,
   recommendationQuerySchema,
   recommendationSnapshotSchema,
   snapshotStatusSchema,
@@ -38,6 +39,7 @@ export const updateRecommendationSnapshotBodySchema = z.object({
 
 export type RecommendationQuery = z.infer<typeof recommendationQuerySchema>;
 export type CreateSnapshotBody = z.infer<typeof createSnapshotBodySchema>;
+export type DestinationAffiliateClickInput = z.infer<typeof destinationAffiliateClickInputSchema>;
 export type UserDestinationHistoryInput = z.infer<typeof userDestinationHistoryInputSchema>;
 export type UserFutureTripInput = z.infer<typeof userFutureTripInputSchema>;
 export type UserPreferenceProfileUpdate = z.infer<typeof userPreferenceProfileUpdateSchema>;
@@ -55,6 +57,7 @@ const defaultSocialVideoQuery: RecommendationQuery = {
   pace: "balanced",
   flightTolerance: "medium",
   vibes: ["romance"],
+  excludedCountryCodes: [],
 };
 
 /**
@@ -68,6 +71,11 @@ export function parseRecommendationQuery(params: URLSearchParams): Recommendatio
     ?.split(",")
     .map((value) => value.trim())
     .filter(Boolean);
+  const excludedCountryCodes = params
+    .get("excludedCountryCodes")
+    ?.split(",")
+    .map((value) => value.trim().toUpperCase())
+    .filter(Boolean);
 
   return recommendationQuerySchema.parse({
     partyType: params.get("partyType"),
@@ -79,6 +87,7 @@ export function parseRecommendationQuery(params: URLSearchParams): Recommendatio
     pace: params.get("pace"),
     flightTolerance: params.get("flightTolerance"),
     vibes,
+    excludedCountryCodes,
   });
 }
 
@@ -117,6 +126,11 @@ export function parseSocialVideoQuery(params: URLSearchParams): SocialVideoReque
     ?.split(",")
     .map((value) => value.trim())
     .filter(Boolean);
+  const excludedCountryCodes = params
+    .get("excludedCountryCodes")
+    ?.split(",")
+    .map((value) => value.trim().toUpperCase())
+    .filter(Boolean);
 
   return socialVideoRequestSchema
     .refine((value) => destinationIdSet.has(value.destinationId), {
@@ -138,6 +152,10 @@ export function parseSocialVideoQuery(params: URLSearchParams): SocialVideoReque
           vibes && vibes.length > 0
             ? vibes
             : defaultSocialVideoQuery.vibes,
+        excludedCountryCodes:
+          excludedCountryCodes && excludedCountryCodes.length > 0
+            ? excludedCountryCodes
+            : defaultSocialVideoQuery.excludedCountryCodes,
       }),
       leadEvidence:
         leadEvidenceLabel && leadEvidenceDetail && leadEvidenceSourceLabel
@@ -193,4 +211,18 @@ export function parseUserFutureTripInput(body: unknown): UserFutureTripInput {
  */
 export function parseUserPreferenceProfileUpdate(body: unknown): UserPreferenceProfileUpdate {
   return userPreferenceProfileUpdateSchema.parse(body);
+}
+
+/**
+ * 제휴 클릭 로그 요청 바디를 검증한다.
+ * @param body 요청 바디 원문
+ * @returns 검증된 제휴 클릭 입력
+ */
+export function parseDestinationAffiliateClickInput(body: unknown): DestinationAffiliateClickInput {
+  return destinationAffiliateClickInputSchema
+    .refine((value) => destinationIdSet.has(value.destinationId), {
+      message: "UNKNOWN_DESTINATION",
+      path: ["destinationId"],
+    })
+    .parse(body);
 }

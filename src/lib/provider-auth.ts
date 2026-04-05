@@ -44,6 +44,11 @@ function buildDisplayName(identity: NormalizedProviderIdentity): string {
   return identity.name ?? "여행자";
 }
 
+function getStoredUserDisplayName(name: string | null | undefined): string {
+  const normalizedName = name?.trim();
+  return normalizedName ? normalizedName : "여행자";
+}
+
 export async function signInWithProviderIdentity(input: {
   identity: NormalizedProviderIdentity;
   requestHeaders?: Headers;
@@ -90,7 +95,7 @@ export async function signInWithProviderIdentity(input: {
           data: await rotateSessionForUser({
             user: {
               id: matchedUser.id,
-              name: matchedUser.name,
+              name: getStoredUserDisplayName(matchedUser.name),
               email: matchedUser.email,
             },
             requestHeaders: input.requestHeaders,
@@ -135,7 +140,7 @@ export async function signInWithProviderIdentity(input: {
         data: await rotateSessionForUser({
           user: {
             id: nextUser.id,
-            name: nextUser.name,
+            name: getStoredUserDisplayName(nextUser.name),
             email: nextUser.email,
           },
           requestHeaders: input.requestHeaders,
@@ -171,7 +176,7 @@ export async function signInWithProviderIdentity(input: {
         data: await rotateSessionForUser({
           user: {
             id: matchedUser.id,
-            name: matchedUser.name,
+            name: getStoredUserDisplayName(matchedUser.name),
             email: matchedUser.email,
           },
           requestHeaders: input.requestHeaders,
@@ -250,12 +255,25 @@ export async function signInWithProviderIdentity(input: {
       })
       .where(eq(account.id, matchedAccount.id));
 
+    await db
+      .update(user)
+      .set({
+        name: buildDisplayName(input.identity),
+        image: input.identity.image,
+        email: input.identity.email ?? matchedUser.email,
+        emailVerified: input.identity.email ? input.identity.emailVerified : matchedUser.emailVerified,
+        status: "active",
+        lastLoginAt: new Date(),
+        updatedAt: new Date(),
+      })
+      .where(eq(user.id, matchedUser.id));
+
     return {
       data: await rotateSessionForUser({
         user: {
           id: matchedUser.id,
-          name: matchedUser.name,
-          email: matchedUser.email,
+          name: buildDisplayName(input.identity),
+          email: input.identity.email ?? matchedUser.email,
         },
         requestHeaders: input.requestHeaders,
         ipAddress: input.ipAddress,
@@ -281,6 +299,8 @@ export async function signInWithProviderIdentity(input: {
       email: input.identity.email,
       emailVerified: input.identity.emailVerified,
       image: input.identity.image,
+      status: "active",
+      lastLoginAt: new Date(),
       createdAt: new Date(),
       updatedAt: new Date(),
     });

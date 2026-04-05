@@ -64,6 +64,13 @@
       "when": 1775004851427,
       "tag": "0008_sudden_master_chief",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1775200923449,
+      "tag": "0009_loving_groot",
+      "breakpoints": true
     }
   ]
 }

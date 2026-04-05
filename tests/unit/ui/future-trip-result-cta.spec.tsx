@@ -176,10 +176,9 @@ describe("HomeExperience future-trip result CTA", () => {
     fireEvent.click(screen.getByTestId(getSaveSnapshotTestId(0)));
 
     await waitFor(() => {
-      expect(screen.getByTestId(getSaveSnapshotTestId(0))).toHaveTextContent("여행 담김");
+      expect(screen.getAllByRole("link", { name: "계정에서 보기" }).length).toBeGreaterThan(0);
     });
 
-    expect(screen.getByTestId(getSaveSnapshotTestId(0))).toBeDisabled();
     expect(screen.getByTestId(testIds.home.resultPage)).toBeInTheDocument();
     expect(mockPush).not.toHaveBeenCalled();
 
@@ -252,10 +251,8 @@ describe("HomeExperience future-trip result CTA", () => {
     fireEvent.click(screen.getByTestId(getSaveSnapshotTestId(0)));
 
     await waitFor(() => {
-      expect(screen.getByTestId(getSaveSnapshotTestId(0))).toHaveTextContent("여행 담김");
+      expect(screen.getAllByRole("link", { name: "계정에서 보기" }).length).toBeGreaterThan(0);
     });
-
-    fireEvent.click(screen.getByTestId(getSaveSnapshotTestId(0)));
 
     expect(fetchSpy.mock.calls.filter(([input]) => String(input).includes("/api/snapshots"))).toHaveLength(1);
     expect(fetchSpy.mock.calls.filter(([input]) => String(input).includes("/api/me/future-trips"))).toHaveLength(1);
@@ -336,5 +333,6 @@ async function expectResultCard() {
   await waitFor(() => {
     expect(screen.getByTestId(testIds.home.resultPage)).toBeInTheDocument();
     expect(screen.getByTestId(testIds.result.card0)).toBeInTheDocument();
+    expect(screen.getByTestId(getSaveSnapshotTestId(0))).toBeInTheDocument();
   });
 }

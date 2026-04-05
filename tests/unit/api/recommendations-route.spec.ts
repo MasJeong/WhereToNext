@@ -22,14 +22,6 @@ vi.mock("@/lib/travel-support/service", () => ({
       precipitationProbability: 10,
       observedAt: "2026-03-27T00:00:00.000Z",
     },
-    travelMonthWeather: {
-      travelMonth: 10,
-      summary: "10월엔 걷기 무난한 편이고 비 변수는 낮은 편이에요.",
-      averageMinTemperatureC: 13.2,
-      averageMaxTemperatureC: 21.4,
-      rainyDayRatio: 18,
-      basedOnYears: 5,
-    },
     fetchedAt: "2026-03-27T00:00:00.000Z",
   })),
 }));
@@ -52,7 +44,6 @@ describe("GET /api/recommendations", () => {
     expect(data.recommendations[0]?.scoreBreakdown.total).toBeGreaterThan(0);
     expect(data.meta.scoringVersion).toBe("mvp-v1");
     expect(data.leadSupplement?.location?.countryCode).toBeTruthy();
-    expect(data.leadSupplement?.travelMonthWeather?.travelMonth).toBe(10);
   });
 
   it("rejects invalid queries with a stable code", async () => {

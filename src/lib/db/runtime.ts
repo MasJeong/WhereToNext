@@ -1,6 +1,7 @@
 import { existsSync, mkdirSync } from "node:fs";
 import { readdir, readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { PGlite } from "@electric-sql/pglite";
 import { inArray } from "drizzle-orm";
@@ -27,6 +28,30 @@ declare global {
  */
 function getMigrationsFolder(): string {
   return resolve(process.cwd(), "drizzle");
+}
+
+const DEFAULT_PGLITE_DATA_DIR = ".data/trip-compass";
+
+/**
+ * 서버 런타임에서 사용할 PGlite 데이터 디렉터리를 문자열 경로로 정규화한다.
+ * CI/production에서 기본 생성자 경로 추론에 의존하지 않도록 항상 명시 경로를 반환한다.
+ * @returns 테스트 외 런타임용 PGlite 디렉터리 또는 null
+ */
+export function resolvePGliteDataDir(): string | null {
+  if (process.env.NODE_ENV === "test") {
+    return null;
+  }
+
+  const rawDataDir = process.env.PGLITE_DATA_DIR?.trim() || DEFAULT_PGLITE_DATA_DIR;
+  if (!rawDataDir) {
+    return null;
+  }
+
+  if (rawDataDir.startsWith("file:")) {
+    return fileURLToPath(new URL(rawDataDir));
+  }
+
+  return resolve(process.cwd(), rawDataDir);
 }
 
 /**
@@ -111,10 +136,7 @@ async function createRuntimeDatabase() {
     };
   }
 
-  const localDataDir =
-    process.env.PGLITE_DATA_DIR?.trim() && process.env.NODE_ENV !== "test"
-      ? resolve(process.cwd(), process.env.PGLITE_DATA_DIR.trim())
-      : null;
+  const localDataDir = resolvePGliteDataDir();
 
   if (localDataDir && !existsSync(localDataDir)) {
     mkdirSync(localDataDir, { recursive: true });

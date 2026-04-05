@@ -5,7 +5,6 @@ import {
   applyAcquisitionCorsHeaders,
   createAcquisitionPreflightResponse,
 } from "@/lib/security/cors";
-import { getSessionFromHeaders } from "@/lib/auth";
 import { createSnapshot } from "@/lib/snapshots/service";
 import { parseCreateSnapshotBody } from "@/lib/security/validation";
 
@@ -20,31 +19,13 @@ export async function OPTIONS(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const body = parseCreateSnapshotBody((await request.json()) as unknown);
-    const session = await getSessionFromHeaders(request.headers);
-    const visibility = body.visibility ?? "public";
-
-    if (visibility === "private" && !session?.user.id) {
-      return applyAcquisitionCorsHeaders(
-        request,
-        NextResponse.json(
-          { code: "AUTH_REQUIRED", error: "저장하려면 로그인이 필요해요." },
-          { status: 401 },
-        ),
-      );
-    }
-
-    const snapshot = await createSnapshot(body, {
-      visibility,
-      ownerUserId: visibility === "private" ? session?.user.id ?? null : null,
-    });
+    const snapshot = await createSnapshot(parseCreateSnapshotBody((await request.json()) as unknown));
 
     return applyAcquisitionCorsHeaders(
       request,
       NextResponse.json({
         snapshotId: snapshot.id,
         kind: snapshot.kind,
-        visibility: snapshot.visibility,
         createdAt: snapshot.createdAt,
       }),
     );
