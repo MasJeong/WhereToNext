@@ -1,6 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 import { and, desc, eq, inArray } from "drizzle-orm";
+import { z } from "zod";
 
 import { getRuntimeDatabase } from "@/lib/db/runtime";
 import { recommendationSnapshots, trendSnapshots } from "@/lib/db/schema";
@@ -48,12 +49,18 @@ type ComparisonStoredSnapshot = {
 
 type StoredSnapshot = RecommendationStoredSnapshot | ComparisonStoredSnapshot;
 
+const snapshotIdSchema = z.string().uuid();
+
 function canReadSnapshot(snapshot: StoredSnapshot, viewerUserId?: string | null): boolean {
   if (snapshot.visibility === "public") {
     return true;
   }
 
   return Boolean(viewerUserId && snapshot.ownerUserId === viewerUserId);
+}
+
+function isValidSnapshotId(snapshotId: string): boolean {
+  return snapshotIdSchema.safeParse(snapshotId).success;
 }
 
 /**
@@ -270,6 +277,10 @@ export async function createSnapshot(
  * @returns 저장된 스냅샷 또는 null
  */
 export async function readSnapshot(snapshotId: string, viewerUserId?: string | null): Promise<StoredSnapshot | null> {
+  if (!isValidSnapshotId(snapshotId)) {
+    return null;
+  }
+
   if (!usePersistentDatabase) {
     if (useLocalFileStore) {
       const store = await readLocalStore();

@@ -20,7 +20,8 @@ async function submitQuickRecommendation(page: import("@playwright/test").Page) 
   await page.getByTestId("home-step-choice-0").click();
   await page.getByTestId("home-step-next").click();
   await page.getByTestId("home-step-choice-0").click();
-  await expect(page.getByTestId("home-top-summary")).toBeVisible({ timeout: 10000 });
+  await page.getByTestId("home-step-next").click();
+  await expect(page.getByTestId("result-filter-bar")).toBeVisible({ timeout: 10000 });
   await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 10000 });
 }
 
