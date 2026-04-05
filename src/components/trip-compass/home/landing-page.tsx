@@ -70,11 +70,9 @@ export function LandingPage({ testId, heroTestId, onStart, trendingDestinations,
             data-testid={testIds.home.cta}
             onClick={onStart}
             aria-label="내 여행지 찾기"
-            className="group relative inline-flex min-h-[3.75rem] items-center justify-center overflow-hidden rounded-full border border-[var(--color-action-primary-border)] bg-[linear-gradient(135deg,var(--color-action-primary),var(--color-action-primary-strong))] px-10 py-3 text-[0.95rem] font-semibold text-white shadow-[var(--shadow-hero)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_24px_42px_rgb(11_99_206_/_0.2)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-action-primary)]"
+            className="inline-flex items-center justify-center rounded-full bg-[var(--color-action-primary)] px-8 py-3.5 text-[0.92rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-[var(--color-action-primary)]"
           >
             내 여행지 찾기
-            {/* Shine sweep */}
-            <span className="pointer-events-none absolute inset-0 -translate-x-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.2),transparent)] transition-transform duration-700 group-hover:translate-x-full" />
           </button>
 
           {/* Time + effort indicator */}
@@ -123,7 +121,7 @@ export function LandingPage({ testId, heroTestId, onStart, trendingDestinations,
         <button
           type="button"
           onClick={onStart}
-          className="w-full rounded-full bg-[linear-gradient(135deg,var(--color-action-primary),var(--color-action-primary-strong))] py-3.5 text-[0.9rem] font-semibold text-white shadow-[var(--shadow-hero)]"
+          className="w-full rounded-full bg-[var(--color-action-primary)] py-3.5 text-[0.9rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
         >
           내 여행지 찾기
         </button>

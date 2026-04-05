@@ -1667,8 +1667,8 @@ export function HomeExperience() {
         leadTitle={leadCard ? leadCard.destination.nameKo : isSubmitting ? "추천 결과를 정리하고 있어요." : "다시 맞는 후보를 찾고 있어요."}
         leadReason={leadCard?.recommendation.reasons[0] ?? "결과가 나오면 가장 먼저 볼 목적지를 짧게 정리해 드릴게요."}
         leadDescription={leadCard ? leadCard.recommendation.whyThisFits : queryNarrative}
-        leadTags={leadCard ? leadCard.destination.vibeTags.slice(0, 3).map((tag) => formatResultVibeLabel(tag)) : []}
-        leadFacts={leadCard ? buildRecommendationDecisionFacts(leadCard.destination) : []}
+        leadTags={[]}
+        leadFacts={leadCard ? buildRecommendationDecisionFacts(leadCard.destination).filter((f) => f.id === "best-months") : []}
         leadSupportSlot={
           leadCard ? (
             <LeadSocialVideoPanel

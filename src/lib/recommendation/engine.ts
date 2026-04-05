@@ -353,7 +353,7 @@ function buildRecommendationResult(
     destinationId: destination.id,
     destinationKind: destination.kind,
     reasons,
-    whyThisFits: `${destination.nameKo}에서 ${reasons[0]}`,
+    whyThisFits: destination.summary,
     watchOuts: destination.watchOuts,
     confidence: Math.min(98, Math.round(scoreBreakdown.total)),
     scoreBreakdown,

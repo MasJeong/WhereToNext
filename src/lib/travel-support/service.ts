@@ -144,27 +144,25 @@ function buildTravelMonthWeatherSummary(
 ) {
   const averageTemperature = (averageMinTemperatureC + averageMaxTemperatureC) / 2;
 
-  let temperatureTone = "가볍게 덥고";
+  let tone = "더워요, 가벼운 옷 추천";
 
   if (averageTemperature < 5) {
-    temperatureTone = "제법 춥고";
+    tone = "추워요, 패딩 필수";
   } else if (averageTemperature < 12) {
-    temperatureTone = "서늘한 편이고";
+    tone = "쌀쌀해요, 겉옷 필요";
   } else if (averageTemperature < 20) {
-    temperatureTone = "걷기 무난한 편이고";
+    tone = "돌아다니기 좋은 날씨";
   } else if (averageTemperature < 27) {
-    temperatureTone = "조금 덥지만 움직이기 괜찮고";
+    tone = "살짝 더운 편";
   }
-
-  let rainTone = "비 변수는 낮은 편이에요.";
 
   if (rainyDayRatio >= 50) {
-    rainTone = "비를 염두에 두고 동선을 짜는 편이 좋아요.";
+    tone += ", 비 잦음";
   } else if (rainyDayRatio >= 30) {
-    rainTone = "비 올 가능성을 조금 보고 움직이면 좋아요.";
+    tone += ", 비 가끔";
   }
 
-  return `${travelMonth}월엔 ${temperatureTone} ${rainTone}`;
+  return `${travelMonth}월 — ${tone}`;
 }
 
 /**

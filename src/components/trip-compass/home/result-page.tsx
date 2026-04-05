@@ -82,43 +82,43 @@ export function ResultPage({
         </div>
       ) : null}
 
-      {/* Lead card — video + simplified info */}
-      <article
+      {/* Lead — 2-column: videos left, sticky info right */}
+      <div
         data-testid={testIds.home.topSummary}
-        className="overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white shadow-[0_12px_36px_rgba(15,23,42,0.05)]"
+        className="grid items-start gap-4 lg:grid-cols-[minmax(0,1.15fr)_minmax(18rem,0.85fr)]"
       >
-        <div className="grid gap-0 lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,0.9fr)]">
-          {/* Left — YouTube video panel */}
-          <div className="border-b border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] lg:border-b-0 lg:border-r">
-            {leadSupportSlot ? (
-              <div className="p-3 sm:p-4">{leadSupportSlot}</div>
-            ) : (
-              <div className="flex min-h-[16rem] items-center justify-center p-5 lg:min-h-full">
-                <div className="text-center">
-                  <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                    YouTube
-                  </p>
-                  <p className="mt-2 text-sm text-[var(--color-funnel-text-soft)]">
-                    영상을 불러오고 있어요
-                  </p>
-                </div>
+        {/* Left — YouTube video panel */}
+        <div className="min-w-0">
+          {leadSupportSlot ? (
+            leadSupportSlot
+          ) : (
+            <div className="flex min-h-[16rem] items-center justify-center rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)]">
+              <div className="text-center">
+                <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                  YouTube
+                </p>
+                <p className="mt-2 text-sm text-[var(--color-funnel-text-soft)]">
+                  영상을 불러오고 있어요
+                </p>
               </div>
-            )}
-          </div>
+            </div>
+          )}
+        </div>
 
-          {/* Right — title, reason, tags, CTA only */}
-          <div
-            data-testid={testIds.result.card0}
-            className="flex flex-col justify-between p-5 sm:p-6"
-          >
+        {/* Right — sticky info panel */}
+        <div
+          data-testid={testIds.result.card0}
+          className="lg:sticky lg:top-4"
+        >
+          <div className="space-y-4 rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white p-5 shadow-[0_12px_36px_rgba(15,23,42,0.05)] sm:p-6">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-[var(--color-action-primary)] px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-white">
+                가장 잘 맞는 추천
+              </span>
+            </div>
+
             <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-[var(--color-action-primary)] px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-white">
-                  가장 잘 맞는 추천
-                </span>
-              </div>
-
-              <h2 className="mt-4 text-[1.75rem] font-semibold leading-[1] tracking-[-0.04em] text-[var(--color-funnel-text)] sm:text-[2.25rem]">
+              <h2 className="text-[1.75rem] font-semibold leading-[1] tracking-[-0.04em] text-[var(--color-funnel-text)] sm:text-[2.25rem]">
                 {leadTitle}
               </h2>
               <p className="mt-3 text-[0.95rem] font-semibold leading-7 text-[var(--color-funnel-text)]">
@@ -127,50 +127,45 @@ export function ResultPage({
               <p className="mt-1.5 line-clamp-2 text-[0.88rem] leading-6 text-[var(--color-funnel-text-soft)]">
                 {leadDescription}
               </p>
-
-              {leadTags.length > 0 ? (
-                <div className="mt-3.5 flex flex-wrap gap-1.5">
-                  {leadTags.map((tag) => (
-                    <span
-                      key={tag}
-                      className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)]"
-                    >
-                      #{tag}
-                    </span>
-                  ))}
-                </div>
-              ) : null}
-
-              {/* Key facts — compact inline */}
-              {leadFacts.length > 0 ? (
-                <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1.5">
-                  {leadFacts.slice(0, 3).map((fact) => (
-                    <span
-                      key={fact.id}
-                      className="text-[0.78rem] text-[var(--color-funnel-text-soft)]"
-                    >
-                      {fact.label}{" "}
-                      <span className="font-semibold text-[var(--color-funnel-text)]">
-                        {fact.value}
-                      </span>
-                    </span>
-                  ))}
-                </div>
-              ) : null}
             </div>
 
-            {/* CTA area */}
-            <div className="mt-5">{leadDetails}</div>
+            {leadTags.length > 0 ? (
+              <div className="flex flex-wrap gap-1.5">
+                {leadTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)]"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+
+            {/* Key facts */}
+            {leadFacts.length > 0 ? (
+              <div className="divide-y divide-[color:var(--color-funnel-border)] rounded-[0.75rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)]">
+                {leadFacts.slice(0, 3).map((fact) => (
+                  <div key={fact.id} className="flex items-center justify-between px-3.5 py-2.5">
+                    <span className="text-[0.72rem] text-[var(--color-funnel-text-soft)]">
+                      {fact.label}
+                    </span>
+                    <span className="text-[0.82rem] font-semibold text-[var(--color-funnel-text)]">
+                      {fact.value}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
+
+            {/* Weather */}
+            {leadWeatherSlot ? <div>{leadWeatherSlot}</div> : null}
+
+            {/* CTA */}
+            <div>{leadDetails}</div>
           </div>
         </div>
-
-        {/* Weather — collapsed below main card if present */}
-        {leadWeatherSlot ? (
-          <div className="border-t border-[color:var(--color-funnel-border)] px-5 py-4 sm:px-6">
-            {leadWeatherSlot}
-          </div>
-        ) : null}
-      </article>
+      </div>
 
       {statusSlot}
       {filtersSlot}
