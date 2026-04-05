@@ -6,6 +6,7 @@ import type {
   RecommendationResult,
   TrendEvidenceSnapshot,
 } from "@/lib/domain/contracts";
+import { getCountryMetadata } from "@/lib/travel-support/country-metadata";
 
 type QueryOptionValue = string | number;
 
@@ -112,6 +113,7 @@ export const defaultRecommendationQuery: RecommendationQuery = {
   pace: "balanced",
   flightTolerance: "medium",
   vibes: ["food"],
+  excludedCountryCodes: [],
 };
 
 export const partyOptions: QueryOption<RecommendationQuery["partyType"]>[] = [
@@ -361,7 +363,20 @@ export function buildRecommendationSearchParams(query: RecommendationQuery): URL
   params.set("pace", query.pace);
   params.set("flightTolerance", query.flightTolerance);
   params.set("vibes", query.vibes.join(","));
+  if (query.excludedCountryCodes && query.excludedCountryCodes.length > 0) {
+    params.set("excludedCountryCodes", query.excludedCountryCodes.join(","));
+  }
   return params;
+}
+
+function formatExcludedCountryList(countryCodes: string[] | undefined): string {
+  if (!countryCodes || countryCodes.length === 0) {
+    return "";
+  }
+
+  return countryCodes
+    .map((countryCode) => getCountryMetadata(countryCode)?.countryNameKo ?? countryCode)
+    .join(", ");
 }
 
 /**
@@ -780,7 +795,11 @@ export function buildRecommendationPriorityBadge(totalScore: number): string {
  * @returns Human-readable query summary
  */
 export function buildQueryNarrative(query: RecommendationQuery): string {
-  return `${formatTravelMonth(query.travelMonth)}에 떠나는 ${formatTripLengthBand(query.tripLengthDays)} ${formatPartyType(query.partyType)} 일정이에요. 예산은 ${formatBudgetBand(query.budgetBand)}, 이동 부담은 ${formatFlightTolerance(query.flightTolerance)} 기준으로 맞췄고 여행 스타일은 ${formatResultVibeList(query.vibes)} 쪽에 가깝게 잡았어요.`;
+  const exclusionSentence = query.excludedCountryCodes && query.excludedCountryCodes.length > 0
+    ? ` ${formatExcludedCountryList(query.excludedCountryCodes)}은 이번 추천에서 뺐어요.`
+    : "";
+
+  return `${formatTravelMonth(query.travelMonth)}에 떠나는 ${formatTripLengthBand(query.tripLengthDays)} ${formatPartyType(query.partyType)} 일정이에요. 예산은 ${formatBudgetBand(query.budgetBand)}, 이동 부담은 ${formatFlightTolerance(query.flightTolerance)} 기준으로 맞췄고 여행 스타일은 ${formatResultVibeList(query.vibes)} 쪽에 가깝게 잡았어요.${exclusionSentence}`;
 }
 
 /**

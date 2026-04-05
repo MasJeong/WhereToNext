@@ -1,9 +1,9 @@
 import { expect, test } from "@playwright/test";
 
-test("shows the 떠나볼래 smoke shell and immediate search entry", async ({ page }) => {
+test("shows the 떠나볼까? smoke shell and immediate search entry", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page).toHaveTitle("떠나볼래?");
+  await expect(page).toHaveTitle("떠나볼까?");
   await expect(page.getByTestId("home-landing")).toBeVisible();
   await expect(
     page.getByRole("heading", {
@@ -22,7 +22,7 @@ test("shows the 떠나볼래 smoke shell and immediate search entry", async ({ p
 test("shows the home header with auth and account shortcuts", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("link", { name: /떠나볼래.*홈으로/i })).toBeVisible();
+  await expect(page.getByRole("link", { name: /떠나볼까.*홈으로/i })).toBeVisible();
   await expect(page.getByLabel("주요 메뉴").getByRole("link", { name: "추천 받기" })).toBeVisible();
   await expect(page.getByLabel("주요 메뉴").getByRole("link", { name: "내 여행" })).toBeVisible();
   await expect(page.getByTestId("account-link")).toHaveCount(0);
@@ -44,7 +44,7 @@ test("resets to landing when the logo is clicked from the home funnel", async ({
   await page.getByRole("link", { name: "추천 받기" }).click();
   await expect(page.getByTestId("home-step-question")).toBeVisible({ timeout: 10000 });
 
-  await page.getByRole("link", { name: /떠나볼래.*홈으로/i }).click();
+  await page.getByRole("link", { name: /떠나볼까.*홈으로/i }).click();
   await expect(page.getByTestId("home-landing")).toBeVisible();
   await expect(page.getByTestId("home-step-question")).toHaveCount(0);
 });
@@ -57,6 +57,18 @@ test("hides auth and account navigation in ios shell mode", async ({ page }) => 
   await expect(page.getByTestId("account-link")).toHaveCount(0);
   await expect(page.getByTestId("auth-cta")).toHaveCount(0);
   await expect(page.getByTestId("home-cta")).toBeVisible();
+});
+
+test("redirects auth and account routes back to home in ios shell mode", async ({ page }) => {
+  test.skip(process.env.NEXT_PUBLIC_IOS_SHELL !== "true", "Runs only in ios shell mode.");
+
+  await page.goto("/auth?next=%2Faccount&intent=account");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByTestId("home-landing")).toBeVisible();
+
+  await page.goto("/account");
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByTestId("home-landing")).toBeVisible();
 });
 
 test("shows a social-only auth entry that keeps browsing optional", async ({ page }) => {

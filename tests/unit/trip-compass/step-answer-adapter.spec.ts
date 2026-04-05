@@ -4,6 +4,8 @@ import { recommendationQuerySchema } from "@/lib/domain/contracts";
 import {
   defaultHomeStepAnswers,
   deriveRecommendationQueryFromHomeStepAnswers,
+  filterHomeExcludedCountryOptions,
+  homeStepExcludedCountryOptions,
   homeStepTravelWindowOptions,
   homeStepTravelStyleOptions,
   resolveTravelMonthFromHomeWindow,
@@ -37,6 +39,7 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
       pace: "packed",
       flightTolerance: "short",
       vibes: ["city", "shopping", "food"],
+      excludedCountryCodes: [],
     });
   });
 
@@ -57,7 +60,17 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
       pace: "slow",
       flightTolerance: "medium",
       vibes: ["nature"],
+      excludedCountryCodes: [],
     });
+  });
+
+  it("keeps excluded countries in the derived recommendation query", () => {
+    const query = deriveRecommendationQueryFromHomeStepAnswers({
+      excludedCountryCodes: ["CN", "HK"],
+      travelStyle: ["foodie"],
+    });
+
+    expect(recommendationQuerySchema.parse(query).excludedCountryCodes).toEqual(["CN", "HK"]);
   });
 
   it("keeps the default answer snapshot aligned to the strict question flow", () => {
@@ -67,6 +80,7 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
       tripLength: 5,
       travelStyle: [],
       flightPreference: "medium",
+      excludedCountryCodes: [],
       budgetFeel: "mid",
     });
     expect(defaultHomeStepAnswers).not.toHaveProperty("departureChoice");
@@ -88,6 +102,18 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
       "shopping",
       "foodie",
     ]);
+  });
+
+  it("exposes only active catalog countries as exclusion options", () => {
+    expect(homeStepExcludedCountryOptions.some((option) => option.value === "CN")).toBe(true);
+    expect(homeStepExcludedCountryOptions.some((option) => option.value === "JP")).toBe(true);
+    expect(homeStepExcludedCountryOptions.every((option) => option.description.includes("이번 추천에서 빼고"))).toBe(true);
+  });
+
+  it("filters exclusion country options by country name and code", () => {
+    expect(filterHomeExcludedCountryOptions("중국").map((option) => option.value)).toEqual(["CN"]);
+    expect(filterHomeExcludedCountryOptions("cn").map((option) => option.value)).toEqual(["CN"]);
+    expect(filterHomeExcludedCountryOptions("상하이")).toEqual([]);
   });
 
   it("exposes every month as a selectable departure window", () => {

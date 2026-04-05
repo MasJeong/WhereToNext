@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { ExperienceShell } from "@/components/trip-compass/experience-shell";
+import { isIosShellMode } from "@/lib/runtime/shell";
 
 export const dynamic = "force-static";
 
@@ -28,6 +29,8 @@ const policySections = [
 ] as const;
 
 export default function PrivacyPage() {
+  const hideAccountSettingsLink = isIosShellMode();
+
   return (
     <ExperienceShell
       eyebrow="정책"
@@ -61,12 +64,14 @@ export default function PrivacyPage() {
             정책 문의나 삭제 요청 전 확인이 필요하면 계정 화면에서 먼저 현재 저장 상태를 확인해 주세요.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Link
-              href="/account/settings"
-              className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-[0.8rem] font-semibold"
-            >
-              계정 설정으로
-            </Link>
+            {hideAccountSettingsLink ? null : (
+              <Link
+                href="/account/settings"
+                className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-[0.8rem] font-semibold"
+              >
+                계정 설정으로
+              </Link>
+            )}
             <Link
               href="/"
               className="rounded-full border border-[var(--color-frame-soft)] px-4 py-2 text-[0.8rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)]"

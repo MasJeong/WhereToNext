@@ -1,4 +1,6 @@
+import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import type { RecommendationQuery } from "@/lib/domain/contracts";
+import { getCountryMetadata } from "@/lib/travel-support/country-metadata";
 import {
   defaultRecommendationQuery,
   flightToleranceOptions,
@@ -40,6 +42,7 @@ export type HomeStepAnswers = {
   tripLength: RecommendationQuery["tripLengthDays"];
   travelStyle: HomeStepTravelStyle[];
   flightPreference: RecommendationQuery["flightTolerance"];
+  excludedCountryCodes: string[];
 };
 
 type HomeStepAnswerDefaults = HomeStepAnswers & {
@@ -93,6 +96,7 @@ const defaultQuestionFlowAnswers: HomeStepAnswers = {
   tripLength: defaultRecommendationQuery.tripLengthDays,
   travelStyle: [],
   flightPreference: defaultRecommendationQuery.flightTolerance,
+  excludedCountryCodes: defaultRecommendationQuery.excludedCountryCodes ?? [],
 };
 
 const fallbackTravelStyles: HomeStepTravelStyle[] = ["foodie"];
@@ -216,6 +220,95 @@ export const homeStepTravelStyleOptions: HomeStepOption<HomeStepTravelStyle>[] =
   },
 ];
 
+const homeStepExcludedCountryCodes = Array.from(
+  new Set(
+    launchCatalog
+      .filter((destination) => destination.active)
+      .map((destination) => destination.countryCode),
+  ),
+).sort((left, right) => {
+  const leftLabel = getCountryMetadata(left)?.countryNameKo ?? left;
+  const rightLabel = getCountryMetadata(right)?.countryNameKo ?? right;
+  return leftLabel.localeCompare(rightLabel, "ko");
+});
+
+export const homeStepExcludedCountryOptions: HomeStepOption<string>[] = homeStepExcludedCountryCodes.map(
+  (countryCode) => {
+    const metadata = getCountryMetadata(countryCode);
+    const countryNameKo = metadata?.countryNameKo ?? countryCode;
+
+    return {
+      value: countryCode,
+      label: countryNameKo,
+      description: `${countryNameKo} 목적지는 이번 추천에서 빼고 볼게요.`,
+    };
+  },
+);
+
+function normalizeHomeCountrySearchValue(value: string): string {
+  return value.trim().toLocaleLowerCase();
+}
+
+function matchesExcludedCountrySearch(countryCode: string, normalizedQuery: string): boolean {
+  const metadata = getCountryMetadata(countryCode);
+  const searchTargets = [
+    normalizeHomeCountrySearchValue(countryCode),
+    normalizeHomeCountrySearchValue(metadata?.countryNameKo ?? ""),
+    normalizeHomeCountrySearchValue(metadata?.countryName ?? ""),
+  ];
+
+  if (normalizedQuery.length === 1) {
+    return searchTargets.some((value) => value.startsWith(normalizedQuery));
+  }
+
+  return searchTargets.some((value) => value.includes(normalizedQuery));
+}
+
+function rankExcludedCountrySearch(countryCode: string, normalizedQuery: string): number {
+  const metadata = getCountryMetadata(countryCode);
+  const searchTargets = [
+    normalizeHomeCountrySearchValue(countryCode),
+    normalizeHomeCountrySearchValue(metadata?.countryNameKo ?? ""),
+    normalizeHomeCountrySearchValue(metadata?.countryName ?? ""),
+  ];
+
+  if (searchTargets.some((value) => value === normalizedQuery)) {
+    return 0;
+  }
+
+  if (searchTargets.some((value) => value.startsWith(normalizedQuery))) {
+    return 1;
+  }
+
+  return 2;
+}
+
+/**
+ * 국가 배제 단계에서 검색어와 일치하는 국가 옵션만 반환한다.
+ * @param searchQuery 사용자 입력 검색어
+ * @returns 검색 결과에 맞는 국가 옵션 목록
+ */
+export function filterHomeExcludedCountryOptions(searchQuery: string): HomeStepOption<string>[] {
+  const normalizedQuery = normalizeHomeCountrySearchValue(searchQuery);
+
+  if (!normalizedQuery) {
+    return homeStepExcludedCountryOptions;
+  }
+
+  return homeStepExcludedCountryOptions
+    .filter((option) => matchesExcludedCountrySearch(option.value, normalizedQuery))
+    .sort((left, right) => {
+      const leftRank = rankExcludedCountrySearch(left.value, normalizedQuery);
+      const rightRank = rankExcludedCountrySearch(right.value, normalizedQuery);
+
+      if (leftRank !== rightRank) {
+        return leftRank - rightRank;
+      }
+
+      return left.label.localeCompare(right.label, "ko");
+    });
+}
+
 export function resolveTravelMonthFromHomeWindow(window: HomeStepTravelWindow): RecommendationQuery["travelMonth"] {
   if (window === "soon") {
     return resolveRelativeTravelMonth();
@@ -245,5 +338,6 @@ export function deriveRecommendationQueryFromHomeStepAnswers(
     pace: derivePaceFromTravelStyles(travelStyles),
     flightTolerance: mergedAnswers.flightPreference,
     vibes: deriveVibesFromTravelStyles(travelStyles),
+    excludedCountryCodes: mergedAnswers.excludedCountryCodes.slice(0, 3),
   };
 }

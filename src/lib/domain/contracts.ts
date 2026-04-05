@@ -102,6 +102,7 @@ export const recommendationQuerySchema = z.object({
   pace: paceSchema,
   flightTolerance: flightToleranceSchema,
   vibes: z.array(vibeSchema).min(1).max(3),
+  excludedCountryCodes: z.array(z.string().length(2)).max(3).optional(),
 });
 
 export const trendEvidenceSnapshotSchema = z.object({
@@ -366,7 +367,7 @@ export const userDestinationHistorySchema = z.object({
   tags: z.array(vibeSchema).min(1).max(4),
   customTags: z
     .array(userDestinationHistoryCustomTagSchema)
-    .max(4)
+    .max(10)
     .nullish()
     .transform((value) => value ?? []),
   wouldRevisit: z.boolean(),
@@ -383,7 +384,7 @@ export const userDestinationHistoryInputSchema = z.object({
   tags: z.array(vibeSchema).min(1).max(4),
   customTags: z
     .array(userDestinationHistoryCustomTagSchema)
-    .max(4)
+    .max(10)
     .nullish()
     .transform((value) => value ?? []),
   wouldRevisit: z.boolean(),

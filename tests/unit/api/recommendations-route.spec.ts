@@ -41,7 +41,7 @@ describe("GET /api/recommendations", () => {
 
   it("returns ranked results for a valid query", async () => {
     const request = new Request(
-      `${TEST_BASE_URL}/api/recommendations?partyType=couple&partySize=2&budgetBand=mid&tripLengthDays=5&departureAirport=ICN&travelMonth=10&pace=balanced&flightTolerance=medium&vibes=romance,food`,
+      `${TEST_BASE_URL}/api/recommendations?partyType=couple&partySize=2&budgetBand=mid&tripLengthDays=5&departureAirport=ICN&travelMonth=10&pace=balanced&flightTolerance=medium&vibes=romance,food&excludedCountryCodes=CN,HK`,
     );
 
     const response = await GET(request);
@@ -53,6 +53,7 @@ describe("GET /api/recommendations", () => {
     expect(data.meta.scoringVersion).toBe("mvp-v1");
     expect(data.leadSupplement?.location?.countryCode).toBeTruthy();
     expect(data.leadSupplement?.travelMonthWeather?.travelMonth).toBe(10);
+    expect(data.query.excludedCountryCodes).toEqual(["CN", "HK"]);
   });
 
   it("rejects invalid queries with a stable code", async () => {

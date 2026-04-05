@@ -31,11 +31,14 @@ import {
   savePostAuthIntent,
 } from "@/lib/post-auth-intent";
 import { buildApiUrl } from "@/lib/runtime/url";
+import { isIosShellMode } from "@/lib/runtime/shell";
 import { parseRecommendationQuery } from "@/lib/security/validation";
 import {
   deriveRecommendationQueryFromHomeStepAnswers,
+  filterHomeExcludedCountryOptions,
   formatHomeStepTravelWindowLabel,
   homeStepCompanionOptions,
+  homeStepExcludedCountryOptions,
   homeStepFlightPreferenceOptions,
   homeStepTravelStyleOptions,
   homeStepTravelWindowValues,
@@ -113,7 +116,17 @@ type HomeFlowStep = {
   options: StepOptionView[];
   onSelect: (value: StepOptionValue) => void;
   onNext?: () => void;
+  nextLabel?: string;
   nextDisabled?: boolean;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
+  selectedChips?: Array<{
+    id: string;
+    label: string;
+    onRemove: () => void;
+  }>;
 };
 
 type SavedSnapshotCompactItemProps = {
@@ -122,6 +135,7 @@ type SavedSnapshotCompactItemProps = {
   selected: boolean;
   onToggle: (snapshotId: string) => void;
   onCopy: (shareUrl: string) => void;
+  hideAccountActions?: boolean;
 };
 
 type CompactRecommendationItemProps = {
@@ -131,6 +145,7 @@ type CompactRecommendationItemProps = {
   saveState: SaveState;
   onSave: (card: RecommendationCardView) => void;
   onCopy: (shareUrl: string) => void;
+  hideAccountActions?: boolean;
 };
 
 type ResultFilterKey = "all" | "short-flight" | "city" | "rest" | "balanced-budget";
@@ -148,6 +163,7 @@ const homeTravelWindowParam = "travelWindow";
 const homeTripLengthParam = "tripLength";
 const homeTravelStyleParam = "travelStyle";
 const homeFlightPreferenceParam = "flightPreference";
+const homeExcludedCountryCodesParam = "excludedCountryCodes";
 const minimumRecommendationLoadingMs = process.env.NODE_ENV === "test" ? 200 : 5000;
 
 const resultFilterOptions: Array<{ key: ResultFilterKey; label: string; description: string }> = [
@@ -163,7 +179,8 @@ const travelWindowValueSet = new Set<HomeStepTravelWindow>(homeStepTravelWindowV
 const tripLengthValueSet = new Set(homeStepTripLengthOptions.map((option) => option.value));
 const flightPreferenceValueSet = new Set(homeStepFlightPreferenceOptions.map((option) => option.value));
 const travelStyleValueSet = new Set(homeStepTravelStyleOptions.map((option) => option.value));
-const homeQuestionStepCount = 5;
+const excludedCountryCodeValueSet = new Set(homeStepExcludedCountryOptions.map((option) => option.value));
+const homeQuestionStepCount = 6;
 
 function getNextRelaxedOption<TValue extends string | number>(
   currentValue: TValue,
@@ -255,7 +272,7 @@ function getFirstIncompleteStepIndex(answers: Partial<HomeStepAnswers>): number 
     return 4;
   }
 
-  return 4;
+  return 5;
 }
 
 function clampQuestionStepIndex(stepIndex: number, answers: Partial<HomeStepAnswers>, totalSteps: number): number {
@@ -269,6 +286,12 @@ function parseQuestionAnswersFromSearchParams(searchParams: URLSearchParams): Pa
   const travelWindow = searchParams.get(homeTravelWindowParam);
   const tripLength = Number(searchParams.get(homeTripLengthParam));
   const flightPreference = searchParams.get(homeFlightPreferenceParam);
+  const excludedCountryCodes = searchParams
+    .get(homeExcludedCountryCodesParam)
+    ?.split(",")
+    .map((value) => value.trim().toUpperCase())
+    .filter((value) => excludedCountryCodeValueSet.has(value))
+    .slice(0, 3);
   const travelStyle = searchParams
     .get(homeTravelStyleParam)
     ?.split(",")
@@ -298,6 +321,10 @@ function parseQuestionAnswersFromSearchParams(searchParams: URLSearchParams): Pa
     restoredAnswers.flightPreference = flightPreference as HomeStepAnswers["flightPreference"];
   }
 
+  if (excludedCountryCodes && excludedCountryCodes.length > 0) {
+    restoredAnswers.excludedCountryCodes = excludedCountryCodes;
+  }
+
   return restoredAnswers;
 }
 
@@ -324,6 +351,10 @@ function buildQuestionSearchParams(stepIndex: number, answers: Partial<HomeStepA
 
   if (answers.flightPreference) {
     params.set(homeFlightPreferenceParam, answers.flightPreference);
+  }
+
+  if (answers.excludedCountryCodes && answers.excludedCountryCodes.length > 0) {
+    params.set(homeExcludedCountryCodesParam, answers.excludedCountryCodes.join(","));
   }
 
   return params;
@@ -439,6 +470,7 @@ function SavedSnapshotCompactItem({
   selected,
   onToggle,
   onCopy,
+  hideAccountActions = false,
 }: SavedSnapshotCompactItemProps) {
   return (
     <article
@@ -461,12 +493,14 @@ function SavedSnapshotCompactItem({
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <Link
-          href="/account?tab=saved"
-          className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em]"
-        >
-          계정에서 보기
-        </Link>
+        {hideAccountActions ? null : (
+          <Link
+            href="/account?tab=saved"
+            className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em]"
+          >
+            계정에서 보기
+          </Link>
+        )}
         <button
           type="button"
           onClick={() => onCopy(snapshot.shareUrl)}
@@ -486,6 +520,7 @@ function CompactRecommendationItem({
   saveState,
   onSave,
   onCopy,
+  hideAccountActions = false,
 }: CompactRecommendationItemProps) {
   const leadReason = card.recommendation.reasons[0] ?? card.recommendation.whyThisFits;
   const decisionFacts = buildRecommendationDecisionFacts(card.destination);
@@ -537,7 +572,7 @@ function CompactRecommendationItem({
         </div>
 
         <div className="flex flex-wrap gap-2 sm:justify-end">
-          {saveState.status === "saved" ? (
+          {hideAccountActions ? null : saveState.status === "saved" ? (
             <Link
               href={accountSavedPath}
               className="inline-flex min-h-[2.25rem] items-center rounded-full bg-[var(--color-action-primary)] px-3 py-2 text-[0.72rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
@@ -599,6 +634,8 @@ export function HomeExperience() {
   const [trendingDestinations, setTrendingDestinations] = useState<string[] | null>(null);
   const [trendingLoading, setTrendingLoading] = useState(true);
   const [todayRecommendationCount, setTodayRecommendationCount] = useState(0);
+  const [excludedCountrySearchQuery, setExcludedCountrySearchQuery] = useState("");
+  const hideAccountActions = isIosShellMode();
   const activeRecommendationRequestRef = useRef(0);
   const localRouteSyncRef = useRef<string | null>(null);
   const pendingRecommendationQueryRef = useRef<string | null>(null);
@@ -608,6 +645,14 @@ export function HomeExperience() {
   const replayedIntentRef = useRef<string | null>(null);
 
   const currentQuery = useMemo(() => deriveRecommendationQueryFromHomeStepAnswers(answers), [answers]);
+  const filteredExcludedCountryOptions = useMemo(
+    () => filterHomeExcludedCountryOptions(excludedCountrySearchQuery),
+    [excludedCountrySearchQuery],
+  );
+  const selectedExcludedCountryOptions = useMemo(
+    () => homeStepExcludedCountryOptions.filter((option) => (answers.excludedCountryCodes ?? []).includes(option.value)),
+    [answers.excludedCountryCodes],
+  );
   const resultQuery = results?.query ?? currentQuery;
   const queryNarrative = useMemo(() => buildQueryNarrative(resultQuery), [resultQuery]);
   const briefItems = useMemo(() => {
@@ -899,6 +944,55 @@ export function HomeExperience() {
         }));
       },
     },
+    {
+      id: "excluded-countries",
+      question: "이번엔 빼고 싶은 나라가 있나요?",
+      helper: "없으면 그대로 추천할게요. 최대 3개까지 빼둘 수 있어요.",
+      selectedValue: answers.excludedCountryCodes ?? [],
+      options: (
+        excludedCountrySearchQuery.trim().length > 0
+          ? filteredExcludedCountryOptions.filter(
+              (option) => !(answers.excludedCountryCodes ?? []).includes(option.value),
+            )
+          : []
+      ).map((option) => ({
+        id: `excluded-country-${option.value}`,
+        value: option.value,
+        label: option.label,
+        description: option.description,
+      })),
+      onSelect: (value) => {
+        setAnswers((currentState) => ({
+          ...currentState,
+          excludedCountryCodes: toggleExcludedCountryOption(
+            currentState.excludedCountryCodes ?? [],
+            value as string,
+          ),
+        }));
+      },
+      onNext: () => {
+        void requestRecommendations(deriveRecommendationQueryFromHomeStepAnswers(answers));
+      },
+      nextLabel: "추천 보기",
+      searchValue: excludedCountrySearchQuery,
+      onSearchChange: setExcludedCountrySearchQuery,
+      searchPlaceholder: "나라명이나 국가코드로 검색",
+      emptyMessage: excludedCountrySearchQuery.trim().length > 0
+        ? "맞는 나라가 없어요. 다른 이름이나 국가코드로 검색해 보세요."
+        : undefined,
+      selectedChips: selectedExcludedCountryOptions.map((option) => ({
+        id: option.value,
+        label: option.label,
+        onRemove: () => {
+          setAnswers((currentState) => ({
+            ...currentState,
+            excludedCountryCodes: (currentState.excludedCountryCodes ?? []).filter(
+              (countryCode) => countryCode !== option.value,
+            ),
+          }));
+        },
+      })),
+    },
   ];
 
   const currentStep = steps[currentStepIndex] ?? steps[0];
@@ -911,6 +1005,12 @@ export function HomeExperience() {
   useEffect(() => {
     setRouteSearchParamString(searchParams.toString());
   }, [searchParams]);
+
+  useEffect(() => {
+    if (currentStep?.id !== "excluded-countries" && excludedCountrySearchQuery) {
+      setExcludedCountrySearchQuery("");
+    }
+  }, [currentStep?.id, excludedCountrySearchQuery]);
 
   useEffect(() => {
     const controller = new AbortController();
@@ -1269,6 +1369,10 @@ export function HomeExperience() {
   }, [futureTripStates, savedSnapshots, session.data?.user, snapshotReferences]);
 
   const saveCard = useCallback(async (card: RecommendationCardView) => {
+    if (hideAccountActions) {
+      return;
+    }
+
     if (!results) {
       return;
     }
@@ -1335,7 +1439,7 @@ export function HomeExperience() {
     if (session.data?.user) {
       void registerFutureTrip(card, createdSnapshotReference ?? undefined);
     }
-  }, [createSnapshotReference, promoteSavedSnapshot, registerFutureTrip, results, router, savedSnapshots, session.data?.user, snapshotReferences]);
+  }, [createSnapshotReference, hideAccountActions, promoteSavedSnapshot, registerFutureTrip, results, router, savedSnapshots, session.data?.user, snapshotReferences]);
 
   function toggleCompareSelection(snapshotId: string) {
     setCompareError(null);
@@ -1542,6 +1646,10 @@ export function HomeExperience() {
       return "travelStyle";
     }
 
+    if (stepId === "excluded-countries") {
+      return "excludedCountryCodes";
+    }
+
     return "flightPreference";
   }
 
@@ -1558,6 +1666,21 @@ export function HomeExperience() {
     }
 
     return [...currentStyles, nextStyle];
+  }
+
+  function toggleExcludedCountryOption(
+    currentCountryCodes: HomeStepAnswers["excludedCountryCodes"],
+    nextCountryCode: string,
+  ): HomeStepAnswers["excludedCountryCodes"] {
+    if (currentCountryCodes.includes(nextCountryCode)) {
+      return currentCountryCodes.filter((countryCode) => countryCode !== nextCountryCode);
+    }
+
+    if (currentCountryCodes.length >= 3) {
+      return [...currentCountryCodes.slice(1), nextCountryCode];
+    }
+
+    return [...currentCountryCodes, nextCountryCode];
   }
 
   function handleStepSelect(stepIndex: number, value: StepOptionValue) {
@@ -1577,6 +1700,19 @@ export function HomeExperience() {
       };
       setAnswers(nextTravelStyleAnswers);
       syncQuestionRoute(stepIndex, nextTravelStyleAnswers, "replace");
+      return;
+    }
+
+    if (step.id === "excluded-countries") {
+      const nextExcludedCountryAnswers = {
+        ...answers,
+        excludedCountryCodes: toggleExcludedCountryOption(
+          answers.excludedCountryCodes ?? [],
+          value as string,
+        ),
+      };
+      setAnswers(nextExcludedCountryAnswers);
+      syncQuestionRoute(stepIndex, nextExcludedCountryAnswers, "replace");
       return;
     }
 
@@ -1637,9 +1773,14 @@ export function HomeExperience() {
         onBack={goToPreviousStep}
         onReset={resetFunnel}
         isSubmitting={isSubmitting}
-        nextLabel="다음"
+        nextLabel={currentStep.nextLabel ?? "다음"}
         onNext={currentStep.onNext}
         nextDisabled={currentStep.nextDisabled}
+        searchValue={currentStep.searchValue}
+        onSearchChange={currentStep.onSearchChange}
+        searchPlaceholder={currentStep.searchPlaceholder}
+        emptyMessage={currentStep.emptyMessage}
+        selectedChips={currentStep.selectedChips}
         options={currentStep.options.map((option, index) => ({
           id: option.id,
           label: option.label,
@@ -1689,7 +1830,7 @@ export function HomeExperience() {
                 <div className="space-y-3" data-testid={getInstagramVibeTestId(0)}>
                   {/* Primary action row */}
                   <div className="flex flex-wrap items-center gap-2">
-                    {saveState.status === "saved" ? (
+                    {hideAccountActions ? null : saveState.status === "saved" ? (
                       <Link
                         href="/account?tab=saved"
                         className="inline-flex min-h-[2.75rem] items-center rounded-full bg-[var(--color-action-primary)] px-5 py-2.5 text-[0.82rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
@@ -1951,6 +2092,7 @@ export function HomeExperience() {
                       index={cardIndex}
                       query={results?.query ?? currentQuery}
                       saveState={saveState}
+                      hideAccountActions={hideAccountActions}
                       onSave={(nextCard) => {
                         void saveCard(nextCard);
                       }}
@@ -2002,6 +2144,7 @@ export function HomeExperience() {
                       snapshot={snapshot}
                       index={index}
                       selected={selectedCompareIds.includes(snapshot.snapshotId)}
+                      hideAccountActions={hideAccountActions}
                       onToggle={toggleCompareSelection}
                       onCopy={(shareUrl) => {
                         void copyShareUrl(shareUrl);

@@ -27,6 +27,15 @@ type StepQuestionProps = {
   nextLabel?: string;
   onNext?: () => void;
   nextDisabled?: boolean;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
+  selectedChips?: Array<{
+    id: string;
+    label: string;
+    onRemove: () => void;
+  }>;
 };
 
 export function StepQuestion({
@@ -44,6 +53,11 @@ export function StepQuestion({
   nextLabel,
   onNext,
   nextDisabled,
+  searchValue,
+  onSearchChange,
+  searchPlaceholder,
+  emptyMessage,
+  selectedChips,
 }: StepQuestionProps) {
   const prefersReducedMotion = useReducedMotion();
 
@@ -92,8 +106,39 @@ export function StepQuestion({
             {helper}
           </p>
 
+          {onSearchChange ? (
+            <div className="mt-8 w-full max-w-2xl">
+              <input
+                type="text"
+                value={searchValue ?? ""}
+                onChange={(event) => onSearchChange(event.target.value)}
+                placeholder={searchPlaceholder ?? "검색"}
+                autoComplete="off"
+                spellCheck={false}
+                aria-label={searchPlaceholder ?? "검색"}
+                className="w-full rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-3 text-[0.95rem] text-[var(--color-funnel-text)] outline-none transition-colors focus:border-[color:var(--color-action-primary)] focus:ring-2 focus:ring-[var(--color-action-primary)]/15"
+              />
+            </div>
+          ) : null}
+
+          {selectedChips && selectedChips.length > 0 ? (
+            <div className="mt-4 flex w-full max-w-2xl flex-wrap gap-2">
+              {selectedChips.map((chip) => (
+                <button
+                  key={chip.id}
+                  type="button"
+                  onClick={chip.onRemove}
+                  className="inline-flex min-h-[2.5rem] items-center gap-2 rounded-full border border-[color:var(--color-action-primary)] bg-[var(--color-selected)] px-3.5 py-2 text-[0.84rem] font-medium text-[var(--color-funnel-text)] transition-colors hover:bg-[var(--color-funnel-muted)]"
+                >
+                  <span>{chip.label}</span>
+                  <span className="text-[0.8rem] text-[var(--color-funnel-text-soft)]">삭제</span>
+                </button>
+              ))}
+            </div>
+          ) : null}
+
           <div className="mt-10 grid w-full gap-3 sm:grid-cols-2">
-            {options.map((option) => (
+            {options.length > 0 ? options.map((option) => (
               <button
                 key={option.id}
                 type="button"
@@ -114,7 +159,11 @@ export function StepQuestion({
                   {option.description}
                 </span>
               </button>
-            ))}
+            )) : emptyMessage ? (
+              <p className="col-span-full rounded-[1.35rem] border border-dashed border-[color:var(--color-funnel-border)] bg-white px-5 py-8 text-center text-[0.92rem] leading-6 text-[var(--color-funnel-text-soft)]">
+                {emptyMessage ?? "검색 결과가 없어요."}
+              </p>
+            ) : null}
           </div>
 
           {onNext ? (

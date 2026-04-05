@@ -42,6 +42,10 @@ function getMonthDistance(from: number, to: number): number {
  * @returns 적격 여부와 탈락 사유
  */
 function getEligibility(destination: DestinationProfile, query: RecommendationQuery) {
+  if (query.excludedCountryCodes?.includes(destination.countryCode)) {
+    return { eligible: false, reason: "excluded-country" } as const;
+  }
+
   if (query.flightTolerance === "short" && destination.flightBand === "long") {
     return { eligible: false, reason: "short-flight-cap" } as const;
   }

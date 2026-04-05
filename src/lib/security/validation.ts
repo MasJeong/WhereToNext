@@ -57,6 +57,7 @@ const defaultSocialVideoQuery: RecommendationQuery = {
   pace: "balanced",
   flightTolerance: "medium",
   vibes: ["romance"],
+  excludedCountryCodes: [],
 };
 
 /**
@@ -70,6 +71,11 @@ export function parseRecommendationQuery(params: URLSearchParams): Recommendatio
     ?.split(",")
     .map((value) => value.trim())
     .filter(Boolean);
+  const excludedCountryCodes = params
+    .get("excludedCountryCodes")
+    ?.split(",")
+    .map((value) => value.trim().toUpperCase())
+    .filter(Boolean);
 
   return recommendationQuerySchema.parse({
     partyType: params.get("partyType"),
@@ -81,6 +87,7 @@ export function parseRecommendationQuery(params: URLSearchParams): Recommendatio
     pace: params.get("pace"),
     flightTolerance: params.get("flightTolerance"),
     vibes,
+    excludedCountryCodes,
   });
 }
 
@@ -119,6 +126,11 @@ export function parseSocialVideoQuery(params: URLSearchParams): SocialVideoReque
     ?.split(",")
     .map((value) => value.trim())
     .filter(Boolean);
+  const excludedCountryCodes = params
+    .get("excludedCountryCodes")
+    ?.split(",")
+    .map((value) => value.trim().toUpperCase())
+    .filter(Boolean);
 
   return socialVideoRequestSchema
     .refine((value) => destinationIdSet.has(value.destinationId), {
@@ -140,6 +152,10 @@ export function parseSocialVideoQuery(params: URLSearchParams): SocialVideoReque
           vibes && vibes.length > 0
             ? vibes
             : defaultSocialVideoQuery.vibes,
+        excludedCountryCodes:
+          excludedCountryCodes && excludedCountryCodes.length > 0
+            ? excludedCountryCodes
+            : defaultSocialVideoQuery.excludedCountryCodes,
       }),
       leadEvidence:
         leadEvidenceLabel && leadEvidenceDetail && leadEvidenceSourceLabel

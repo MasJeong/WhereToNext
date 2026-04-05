@@ -31,6 +31,23 @@ describe("recommendationQuerySchema", () => {
     });
   });
 
+  it("accepts up to three excluded country codes", () => {
+    const parsed = recommendationQuerySchema.parse({
+      partyType: "couple",
+      partySize: 2,
+      budgetBand: "mid",
+      tripLengthDays: 5,
+      departureAirport: "ICN",
+      travelMonth: 10,
+      pace: "balanced",
+      flightTolerance: "medium",
+      vibes: ["food"],
+      excludedCountryCodes: ["CN", "HK", "MO"],
+    });
+
+    expect(parsed.excludedCountryCodes).toEqual(["CN", "HK", "MO"]);
+  });
+
   it("rejects invalid ranges and too many vibes", () => {
     const result = recommendationQuerySchema.safeParse({
       partyType: "couple",

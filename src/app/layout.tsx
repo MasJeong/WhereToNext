@@ -1,31 +1,7 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, JetBrains_Mono, Manrope, Noto_Sans_KR } from "next/font/google";
+import type { CSSProperties } from "react";
 import { brandDisplayName } from "@/lib/brand";
 import "./globals.css";
-
-const bodyFont = Manrope({
-  variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-});
-
-const koFont = Noto_Sans_KR({
-  variable: "--font-ko",
-  subsets: ["latin"],
-  weight: ["300", "400", "500", "600", "700"],
-});
-
-const displayFont = Cormorant_Garamond({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-});
-
-const monoFont = JetBrains_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-});
 
 export const metadata: Metadata = {
   title: brandDisplayName,
@@ -55,7 +31,15 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body
-        className={`${bodyFont.variable} ${koFont.variable} ${displayFont.variable} ${monoFont.variable} compass-app-body antialiased`}
+        style={
+          {
+            "--font-body": "\"Avenir Next\", \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "--font-ko": "\"Apple SD Gothic Neo\", \"Malgun Gothic\", \"Noto Sans KR\", sans-serif",
+            "--font-display": "\"Iowan Old Style\", \"Palatino Linotype\", \"Times New Roman\", serif",
+            "--font-mono": "\"SFMono-Regular\", \"JetBrains Mono\", Consolas, \"Liberation Mono\", monospace",
+          } as CSSProperties
+        }
+        className="compass-app-body antialiased"
       >
         <div className="compass-app-frame compass-app-shell">
           <div className="compass-route-stage">{children}</div>

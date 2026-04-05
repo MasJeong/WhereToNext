@@ -1,6 +1,6 @@
-# 떠나볼래?
+# 떠나볼까?
 
-> 제품명: `떠나볼래?`
+> 제품명: `떠나볼까?`
 > 저장소 이름: `WhereToNext`
 
 [![CI](https://github.com/MasJeong/WhereToNext/actions/workflows/ci.yml/badge.svg)](https://github.com/MasJeong/WhereToNext/actions/workflows/ci.yml)
