@@ -63,24 +63,29 @@ async function handleCallback(request: Request, provider: OAuthProviderId) {
     return buildAuthRedirect(request, transaction.next, "OAUTH_CODE_MISSING");
   }
 
-  const identity = await exchangeOAuthCallback({
-    provider,
-    code: callback.code,
-    codeVerifier: transaction.codeVerifier,
-    nonce: transaction.nonce,
-    redirectUri: `${new URL(request.url).origin}/api/auth/oauth/${provider}/callback`,
-  });
-
   const allowIosShell = transaction.clientType === "ios-shell" || isTrustedIosShellRequest(request);
 
-  const result = await signInWithProviderIdentity({
-    identity,
-    requestHeaders: request.headers,
-    ipAddress: request.headers.get("x-real-ip"),
-    userAgent: request.headers.get("user-agent"),
-    clientType: allowIosShell ? "ios-shell" : undefined,
-    allowIosShell,
-  });
+  let result;
+  try {
+    const identity = await exchangeOAuthCallback({
+      provider,
+      code: callback.code,
+      codeVerifier: transaction.codeVerifier,
+      nonce: transaction.nonce,
+      redirectUri: `${new URL(request.url).origin}/api/auth/oauth/${provider}/callback`,
+    });
+
+    result = await signInWithProviderIdentity({
+      identity,
+      requestHeaders: request.headers,
+      ipAddress: request.headers.get("x-real-ip"),
+      userAgent: request.headers.get("user-agent"),
+      clientType: allowIosShell ? "ios-shell" : undefined,
+      allowIosShell,
+    });
+  } catch {
+    return buildAuthRedirect(request, transaction.next, "OAUTH_CALLBACK_FAILED");
+  }
 
   if (result.error || !result.data || !result.data.token) {
     return buildAuthRedirect(request, transaction.next, result.error?.code ?? "OAUTH_CALLBACK_FAILED");

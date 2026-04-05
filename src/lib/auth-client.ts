@@ -19,6 +19,12 @@ type AuthResponse = {
   };
 };
 
+type MutationResponse = {
+  ok: boolean;
+  status: number;
+  payload: AuthResponse;
+};
+
 /**
  * 인증 세션을 조회하는 클라이언트 훅이다.
  * @returns 세션 데이터와 로딩 상태
@@ -105,7 +111,11 @@ export const authClient = {
       credentials: "same-origin",
     });
 
-    return (await response.json()) as AuthResponse;
+    return {
+      ok: response.ok,
+      status: response.status,
+      payload: (await response.json()) as AuthResponse,
+    } satisfies MutationResponse;
   },
   deleteAccount: async () => {
     const response = await fetch(buildApiUrl("/api/me/account"), {
