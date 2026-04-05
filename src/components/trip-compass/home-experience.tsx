@@ -4,7 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import type {
   ComparisonSnapshot,
@@ -505,7 +505,47 @@ export function HomeExperience() {
   const [selectedCompareIds, setSelectedCompareIds] = useState<string[]>([]);
   const [compareError, setCompareError] = useState<string | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
+  const [trendingDestinations, setTrendingDestinations] = useState<string[]>([]);
+  const [trendingLoading, setTrendingLoading] = useState(true);
+  const [todayRecommendationCount, setTodayRecommendationCount] = useState(0);
   const activeRecommendationRequestRef = useRef(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+
+    async function loadTrendingDestinations() {
+      try {
+        const response = await fetch(buildApiUrl("/api/trending-destinations"), {
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          setTrendingLoading(false);
+          return;
+        }
+
+        const payload = (await response.json()) as {
+          destinations?: Array<{ nameKo: string }>;
+          todayCount?: number;
+        };
+
+        setTrendingDestinations(payload.destinations?.map((destination) => destination.nameKo) ?? []);
+        setTodayRecommendationCount(typeof payload.todayCount === "number" ? payload.todayCount : 0);
+      } catch {
+        if (controller.signal.aborted) {
+          return;
+        }
+      } finally {
+        if (!controller.signal.aborted) {
+          setTrendingLoading(false);
+        }
+      }
+    }
+
+    void loadTrendingDestinations();
+
+    return () => controller.abort();
+  }, []);
 
   const currentQuery = useMemo(() => deriveRecommendationQueryFromHomeStepAnswers(answers), [answers]);
   const resultQuery = results?.query ?? currentQuery;
@@ -944,6 +984,9 @@ export function HomeExperience() {
       testId={testIds.home.landing}
       heroTestId={testIds.home.heroVisual}
       onStart={startFunnel}
+      trendingDestinations={trendingDestinations}
+      trendingLoading={trendingLoading}
+      todayCount={todayRecommendationCount}
     />
   );
 
