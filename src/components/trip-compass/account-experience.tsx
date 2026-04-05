@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import type {
@@ -18,7 +19,12 @@ import {
   getAccountHistoryEditTestId,
   getAccountHistoryEntryTestId,
   getAccountHistoryGalleryImageTestId,
+  getAccountHistoryLightboxImageTestId,
   getAccountHistoryGalleryToggleTestId,
+  getSavedSnapshotDeleteCancelTestId,
+  getSavedSnapshotDeleteConfirmTestId,
+  getSavedSnapshotDeleteDialogTestId,
+  getSavedSnapshotDeleteTestId,
   getSavedSnapshotPlanTestId,
   getSavedSnapshotTestId,
   testIds,
@@ -146,8 +152,15 @@ export function AccountExperience({
   const [error, setError] = useState<string | null>(null);
   const [isSavingPreference, setIsSavingPreference] = useState(false);
   const [updatingSnapshotId, setUpdatingSnapshotId] = useState<string | null>(null);
+  const [deletingSavedSnapshotId, setDeletingSavedSnapshotId] = useState<string | null>(null);
+  const [savedDeleteDialogSnapshotId, setSavedDeleteDialogSnapshotId] = useState<string | null>(null);
   const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
   const [openHistoryGalleryId, setOpenHistoryGalleryId] = useState<string | null>(null);
+  const [historyLightboxState, setHistoryLightboxState] = useState<{
+    entryId: string;
+    imageIndex: number;
+  } | null>(null);
+  const [isClient, setIsClient] = useState(false);
 
   const summary = useMemo(() => {
     const totalRating = historyEntries.reduce((sum, entry) => sum + entry.rating, 0);
@@ -178,6 +191,10 @@ export function AccountExperience({
     () => savedSnapshots.filter((snapshot) => getSnapshotStatus(snapshot.payload) === "saved"),
     [savedSnapshots],
   );
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   /**
    * 취향 모드를 저장한다.
@@ -273,6 +290,62 @@ export function AccountExperience({
     } finally {
       setUpdatingSnapshotId((currentId) => (currentId === snapshotId ? null : currentId));
     }
+  }
+
+  async function deleteSavedSnapshot(snapshotId: string) {
+    setDeletingSavedSnapshotId(snapshotId);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/me/snapshots/${snapshotId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("saved-snapshot-delete-failed");
+      }
+
+      setSavedSnapshots((currentSnapshots) =>
+        currentSnapshots.filter((snapshot) => snapshot.id !== snapshotId),
+      );
+      setSavedDeleteDialogSnapshotId((currentId) => (currentId === snapshotId ? null : currentId));
+    } catch {
+      setError("저장한 추천을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setDeletingSavedSnapshotId((currentId) => (currentId === snapshotId ? null : currentId));
+    }
+  }
+
+  function openHistoryLightbox(entryId: string, imageIndex: number) {
+    setHistoryLightboxState({ entryId, imageIndex });
+  }
+
+  function closeHistoryLightbox() {
+    setHistoryLightboxState(null);
+  }
+
+  function moveHistoryLightbox(step: -1 | 1) {
+    setHistoryLightboxState((currentState) => {
+      if (!currentState) {
+        return null;
+      }
+
+      const entry = historyEntries.find((item) => item.id === currentState.entryId);
+      if (!entry || entry.images.length === 0) {
+        return null;
+      }
+
+      const nextIndex = currentState.imageIndex + step;
+      if (nextIndex < 0 || nextIndex >= entry.images.length) {
+        return currentState;
+      }
+
+      return {
+        entryId: currentState.entryId,
+        imageIndex: nextIndex,
+      };
+    });
   }
 
   const tabItems: Array<{ key: AccountTab; label: string; testId: string; count?: number }> = [
@@ -527,9 +600,13 @@ export function AccountExperience({
                           <div className="rounded-xl border border-[var(--color-frame-soft)] bg-slate-50/60 p-3">
                             <div className="flex gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory pb-1">
                               {entry.images.map((image, imageIndex) => (
-                                <div
+                                <button
+                                  type="button"
                                   key={`${entry.id}-gallery-${imageIndex}`}
                                   data-testid={getAccountHistoryGalleryImageTestId(imageIndex)}
+                                  onClick={() => {
+                                    openHistoryLightbox(entry.id, imageIndex);
+                                  }}
                                   className="relative h-48 w-[min(16rem,75vw)] shrink-0 snap-start overflow-hidden rounded-xl bg-slate-100"
                                 >
                                   <Image
@@ -543,11 +620,88 @@ export function AccountExperience({
                                   <div className="absolute left-2.5 top-2.5 rounded-full bg-white/90 px-2.5 py-0.5 text-[0.7rem] font-semibold text-[var(--color-ink)] backdrop-blur-sm">
                                     {imageIndex + 1} / {entry.images.length}
                                   </div>
-                                </div>
+                                </button>
                               ))}
                             </div>
                           </div>
                         ) : null}
+
+                        {isClient && historyLightboxState?.entryId === entry.id && entry.images[historyLightboxState.imageIndex]
+                          ? createPortal(
+                              <div
+                                data-testid={testIds.account.historyLightbox}
+                                onClick={closeHistoryLightbox}
+                                className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgb(15_23_42_/_0.18)] p-4 backdrop-blur-md"
+                              >
+                                <div className="relative w-full max-w-4xl px-2">
+                                  <div
+                                    className="overflow-hidden rounded-[1.5rem] border border-[var(--color-frame-soft)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,251,255,0.96))] shadow-[0_28px_60px_rgba(15,23,42,0.18)]"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                    }}
+                                  >
+                                    <button
+                                      type="button"
+                                      data-testid={testIds.account.historyLightboxClose}
+                                      onClick={closeHistoryLightbox}
+                                      className="absolute right-5 top-5 z-10 rounded-full border border-[var(--color-frame-soft)] bg-white/92 px-3 py-1.5 text-[0.78rem] font-semibold text-[var(--color-ink)] shadow-[var(--shadow-paper)] backdrop-blur-sm transition-colors hover:bg-white"
+                                    >
+                                      닫기
+                                    </button>
+                                    <div
+                                      data-testid={getAccountHistoryLightboxImageTestId(historyLightboxState.imageIndex)}
+                                      className="relative aspect-[4/5] w-full bg-[linear-gradient(180deg,#f8fafc,#eef4fb)] sm:aspect-[16/10]"
+                                    >
+                                      <Image
+                                        src={entry.images[historyLightboxState.imageIndex]!.dataUrl}
+                                        alt={`${destination.nameKo} 기록 사진 크게 보기 ${historyLightboxState.imageIndex + 1}`}
+                                        fill
+                                        unoptimized
+                                        sizes="100vw"
+                                        className="object-contain"
+                                        draggable={false}
+                                      />
+                                      {entry.images.length > 1 ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            data-testid={testIds.account.historyLightboxPrev}
+                                            onClick={() => {
+                                              moveHistoryLightbox(-1);
+                                            }}
+                                            className="absolute left-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/42 text-lg font-semibold text-white shadow-[0_10px_24px_rgba(15,23,42,0.24)] backdrop-blur-sm transition-colors hover:bg-black/56"
+                                            aria-label="이전 사진 보기"
+                                          >
+                                            ‹
+                                          </button>
+                                          <button
+                                            type="button"
+                                            data-testid={testIds.account.historyLightboxNext}
+                                            onClick={() => {
+                                              moveHistoryLightbox(1);
+                                            }}
+                                            className="absolute right-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/42 text-lg font-semibold text-white shadow-[0_10px_24px_rgba(15,23,42,0.24)] backdrop-blur-sm transition-colors hover:bg-black/56"
+                                            aria-label="다음 사진 보기"
+                                          >
+                                            ›
+                                          </button>
+                                        </>
+                                      ) : null}
+                                    </div>
+                                    <div className="flex items-center justify-between gap-3 border-t border-[var(--color-frame-soft)] bg-white/94 px-4 py-3 text-[var(--color-ink)]">
+                                      <div>
+                                        <p className="text-[0.85rem] font-semibold">{destination.nameKo} 사진</p>
+                                        <p className="text-[0.75rem] text-[var(--color-ink-soft)]">
+                                          {historyLightboxState.imageIndex + 1} / {entry.images.length}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>,
+                              document.body,
+                            )
+                          : null}
                       </div>
                     </div>
                   </article>
@@ -679,6 +833,52 @@ export function AccountExperience({
                         >
                           {isUpdating ? "이동 중..." : "예정 여행으로"}
                         </button>
+                      </div>
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          data-testid={getSavedSnapshotDeleteTestId(index)}
+                          onClick={() => {
+                            setSavedDeleteDialogSnapshotId((currentId) => currentId === snapshot.id ? null : snapshot.id);
+                          }}
+                          className="text-[0.78rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:text-red-500"
+                        >
+                          삭제
+                        </button>
+                        {savedDeleteDialogSnapshotId === snapshot.id ? (
+                          <div
+                            data-testid={getSavedSnapshotDeleteDialogTestId(index)}
+                            className="mt-3 rounded-xl border border-[var(--color-frame-soft)] bg-[var(--color-surface-muted)] p-3"
+                          >
+                            <p className="text-[0.82rem] font-semibold text-[var(--color-ink)]">저장한 추천을 삭제할까요?</p>
+                            <p className="mt-1 text-[0.78rem] text-[var(--color-ink-soft)]">
+                              삭제하면 이 추천은 저장 목록과 예정된 여행에서 함께 사라져요.
+                            </p>
+                            <div className="mt-3 flex gap-2">
+                              <button
+                                type="button"
+                                data-testid={getSavedSnapshotDeleteCancelTestId(index)}
+                                onClick={() => {
+                                  setSavedDeleteDialogSnapshotId(null);
+                                }}
+                                className="rounded-lg border border-[var(--color-frame-soft)] px-3 py-2 text-[0.78rem] font-medium text-[var(--color-ink-soft)]"
+                              >
+                                취소
+                              </button>
+                              <button
+                                type="button"
+                                data-testid={getSavedSnapshotDeleteConfirmTestId(index)}
+                                disabled={deletingSavedSnapshotId === snapshot.id}
+                                onClick={() => {
+                                  void deleteSavedSnapshot(snapshot.id);
+                                }}
+                                className="rounded-lg bg-[var(--color-warning-text)] px-3 py-2 text-[0.78rem] font-semibold text-white disabled:opacity-50"
+                              >
+                                {deletingSavedSnapshotId === snapshot.id ? "삭제 중..." : "삭제"}
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
                       </div>
                     </article>
                   );

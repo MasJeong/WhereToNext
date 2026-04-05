@@ -4,15 +4,18 @@ import { useEffect, useState } from "react";
 import { HeroAnimation } from "./hero-animation";
 import { testIds } from "@/lib/test-ids";
 
+const FALLBACK_DESTINATIONS = ["다낭", "오사카", "방콕"];
+
 type LandingPageProps = {
   testId: string;
   heroTestId: string;
   onStart: () => void;
+  trendingDestinations?: string[] | null;
+  trendingLoading?: boolean;
+  todayCount?: number;
 };
 
-const trendingDestinations = ["다낭", "오사카", "방콕"];
-
-export function LandingPage({ testId, heroTestId, onStart }: LandingPageProps) {
+export function LandingPage({ testId, heroTestId, onStart, trendingDestinations, trendingLoading, todayCount }: LandingPageProps) {
   const prefersReducedMotion = useReducedMotion();
   const [showSticky, setShowSticky] = useState(false);
 
@@ -24,27 +27,32 @@ export function LandingPage({ testId, heroTestId, onStart }: LandingPageProps) {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  const displayDestinations =
+    trendingDestinations && trendingDestinations.length > 0
+      ? trendingDestinations
+      : FALLBACK_DESTINATIONS;
+
   return (
     <motion.section
       data-testid={testId}
-      className="relative mx-auto flex min-h-screen max-w-4xl flex-col items-center justify-center overflow-hidden px-6 py-10 sm:px-8"
+      className="relative mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center overflow-hidden px-5 py-10 sm:px-8"
       initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={prefersReducedMotion ? undefined : { opacity: 0, y: -16 }}
       transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.26, ease: "easeOut" }}
     >
-      <div className="relative w-full max-w-2xl text-center">
+      <div className="relative w-full max-w-3xl text-center">
         {/* Headline — pain-point driven */}
         <h1
           aria-label="다음 여행, 아직 정하지 못했다면"
-          className="text-[2rem] font-semibold leading-[1.1] tracking-[-0.06em] text-[var(--color-funnel-text)] sm:text-[3.2rem] sm:leading-[1.05]"
+          className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.04em] text-[var(--color-funnel-text)] sm:text-[2.5rem] sm:leading-[1.1]"
         >
           다음 여행,
           <br /> 아직 정하지 못했다면
         </h1>
 
         {/* Subtext — benefit + time cost */}
-        <p className="mx-auto mt-4 max-w-md text-[0.95rem] leading-6 text-[var(--color-funnel-text-soft)] sm:text-[1rem] sm:leading-7">
+        <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-6 text-[var(--color-funnel-text-soft)] sm:text-[1rem] sm:leading-7">
           취향, 일정, 예산에 맞는 여행지를 찾아드려요.
           <br />
           날씨, 환율, 유튜브 영상까지 한눈에.
@@ -73,22 +81,34 @@ export function LandingPage({ testId, heroTestId, onStart }: LandingPageProps) {
           <p className="text-[0.72rem] tracking-[-0.01em] text-[var(--color-funnel-text-soft)]">
             무료 · 약 1분 · 로그인 불필요
           </p>
+          {todayCount != null && todayCount >= 10 ? (
+            <p className="text-[0.72rem] tracking-[-0.01em] text-[var(--color-funnel-text-soft)]">
+              오늘 <span className="font-semibold text-[var(--color-funnel-text)]">{todayCount.toLocaleString()}명</span>이 여행지를 찾았어요
+            </p>
+          ) : null}
         </div>
 
         {/* Social proof — trending */}
         <div className="mt-8 flex flex-col items-center gap-2">
           <p className="text-[0.72rem] font-medium tracking-[-0.01em] text-[var(--color-funnel-text-soft)]">
-            이번 달 인기 추천
+            최근 인기 여행지
           </p>
           <div className="flex gap-2">
-            {trendingDestinations.map((dest) => (
-              <span
-                key={dest}
-                className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1 text-[0.72rem] font-semibold text-[var(--color-funnel-text)]"
-              >
-                {dest}
-              </span>
-            ))}
+            {trendingLoading
+              ? Array.from({ length: 3 }, (_, i) => (
+                  <span
+                    key={i}
+                    className="h-[1.625rem] w-14 animate-pulse rounded-full bg-[var(--color-funnel-muted)]"
+                  />
+                ))
+              : displayDestinations.map((dest) => (
+                  <span
+                    key={dest}
+                    className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1 text-[0.72rem] font-semibold text-[var(--color-funnel-text)]"
+                  >
+                    {dest}
+                  </span>
+                ))}
           </div>
         </div>
       </div>

@@ -596,6 +596,9 @@ export function HomeExperience() {
   const [selectedCompareIds, setSelectedCompareIds] = useState<string[]>([]);
   const [compareError, setCompareError] = useState<string | null>(null);
   const [compareLoading, setCompareLoading] = useState(false);
+  const [trendingDestinations, setTrendingDestinations] = useState<string[] | null>(null);
+  const [trendingLoading, setTrendingLoading] = useState(true);
+  const [todayRecommendationCount, setTodayRecommendationCount] = useState(0);
   const activeRecommendationRequestRef = useRef(0);
   const localRouteSyncRef = useRef<string | null>(null);
   const pendingRecommendationQueryRef = useRef<string | null>(null);
@@ -908,6 +911,25 @@ export function HomeExperience() {
   useEffect(() => {
     setRouteSearchParamString(searchParams.toString());
   }, [searchParams]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(buildApiUrl("/api/trending-destinations"), { signal: controller.signal })
+      .then((res) => res.json())
+      .then((data: { destinations?: Array<{ nameKo: string }>; todayCount?: number }) => {
+        if (data.destinations) {
+          setTrendingDestinations(data.destinations.map((d) => d.nameKo));
+        }
+        if (typeof data.todayCount === "number") {
+          setTodayRecommendationCount(data.todayCount);
+        }
+        setTrendingLoading(false);
+      })
+      .catch(() => {
+        setTrendingLoading(false);
+      });
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     const currentRoute = buildCurrentRoute("/", homeSearchParams);
@@ -1596,6 +1618,9 @@ export function HomeExperience() {
       testId={testIds.home.landing}
       heroTestId={testIds.home.heroVisual}
       onStart={startFunnel}
+      trendingDestinations={trendingDestinations}
+      trendingLoading={trendingLoading}
+      todayCount={todayRecommendationCount}
     />
   );
 

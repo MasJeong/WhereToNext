@@ -107,4 +107,17 @@ export const authClient = {
 
     return (await response.json()) as AuthResponse;
   },
+  deleteAccount: async () => {
+    const response = await fetch(buildApiUrl("/api/me/account"), {
+      method: "DELETE",
+      credentials: "same-origin",
+    });
+    const payload = await response.json();
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      payload,
+    };
+  },
 };

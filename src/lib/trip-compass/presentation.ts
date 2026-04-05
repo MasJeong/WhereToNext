@@ -260,7 +260,7 @@ export const travelMonthOptions: QueryOption<RecommendationQuery["travelMonth"]>
 export const primaryVibeOptions: QueryOption<RecommendationQuery["vibes"][number]>[] = [
   {
     value: "romance",
-    label: "로맨틱",
+    label: "분위기",
     description: "야경, 산책, 분위기 좋은 식사가 중요한 여행이에요.",
   },
   {
@@ -899,7 +899,7 @@ export function formatMonthList(months: number[]): string {
  */
 export function formatVibeLabel(vibe: string): string {
   if (vibe === "romance") {
-    return "로맨틱";
+    return "분위기";
   }
 
   if (vibe === "food") {

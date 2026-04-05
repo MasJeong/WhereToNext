@@ -551,3 +551,67 @@ export async function updateOwnedRecommendationSnapshotStatus(
     destinationIds: updated.destinationIds,
   };
 }
+
+/**
+ * 로그인 사용자가 소유한 private 추천 스냅샷을 삭제한다.
+ * @param userId 사용자 ID
+ * @param snapshotId 추천 스냅샷 ID
+ * @returns 삭제 성공 여부
+ */
+export async function deleteOwnedRecommendationSnapshot(
+  userId: string,
+  snapshotId: string,
+): Promise<boolean> {
+  if (!usePersistentDatabase) {
+    if (useLocalFileStore) {
+      const store = await readLocalStore();
+      const snapshot = store.snapshots[snapshotId];
+
+      if (
+        !snapshot ||
+        snapshot.kind !== "recommendation" ||
+        snapshot.visibility !== "private" ||
+        snapshot.ownerUserId !== userId
+      ) {
+        return false;
+      }
+
+      delete store.snapshots[snapshotId];
+      await writeLocalStore(store);
+      return true;
+    }
+
+    const snapshot = memoryStore.snapshots.get(snapshotId);
+    if (
+      !snapshot ||
+      snapshot.kind !== "recommendation" ||
+      snapshot.visibility !== "private" ||
+      snapshot.ownerUserId !== userId
+    ) {
+      return false;
+    }
+
+    memoryStore.snapshots.delete(snapshotId);
+    return true;
+  }
+
+  const { db } = await getRuntimeDatabase();
+  const hit = await db.query.recommendationSnapshots.findFirst({
+    where: and(
+      eq(recommendationSnapshots.id, snapshotId),
+      eq(recommendationSnapshots.kind, "recommendation"),
+      eq(recommendationSnapshots.visibility, "private"),
+      eq(recommendationSnapshots.ownerUserId, userId),
+    ),
+  });
+
+  if (!hit) {
+    return false;
+  }
+
+  await db
+    .delete(recommendationSnapshots)
+    .where(eq(recommendationSnapshots.id, snapshotId));
+
+  return true;
+}

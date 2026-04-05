@@ -5,6 +5,7 @@ export const testIds = {
     authCta: "auth-cta",
     accountLink: "account-link",
     personalizedNote: "personalized-note",
+    privacyLink: "footer-privacy-link",
   },
   home: {
     landing: "home-landing",
@@ -109,10 +110,17 @@ export const testIds = {
   },
   account: {
     root: "my-taste-root",
+    settingsRoot: "account-settings-root",
+    settingsLink: "account-settings-link",
     tabHistory: "account-tab-history",
     tabFutureTrips: "account-tab-future-trips",
     tabSaved: "account-tab-saved",
     tabPreferences: "account-tab-preferences",
+    privacyLink: "account-privacy-link",
+    deleteAccountOpen: "account-delete-open",
+    deleteAccountDialog: "account-delete-dialog",
+    deleteAccountCancel: "account-delete-cancel",
+    deleteAccountConfirm: "account-delete-confirm",
     tasteMode: "my-taste-mode",
     tasteSummary: "my-taste-summary",
     addHistoryCta: "add-history-cta",
@@ -149,6 +157,15 @@ export const testIds = {
     futureTripDelete0: "future-trip-delete-0",
     futureTripEmptyState: "future-trip-empty-state",
     savedPlan0: "saved-plan-0",
+    savedDelete0: "saved-delete-0",
+    savedDeleteDialog0: "saved-delete-dialog-0",
+    savedDeleteCancel0: "saved-delete-cancel-0",
+    savedDeleteConfirm0: "saved-delete-confirm-0",
+    historyLightbox: "history-lightbox",
+    historyLightboxImage: "history-lightbox-image",
+    historyLightboxClose: "history-lightbox-close",
+    historyLightboxPrev: "history-lightbox-prev",
+    historyLightboxNext: "history-lightbox-next",
   },
 } as const;
 
@@ -290,6 +307,26 @@ export function getAccountFutureTripDeleteTestId(index: number): string {
 
 export function getSavedSnapshotPlanTestId(index: number): string {
   return index === 0 ? testIds.account.savedPlan0 : `saved-plan-${index}`;
+}
+
+export function getSavedSnapshotDeleteTestId(index: number): string {
+  return index === 0 ? testIds.account.savedDelete0 : `saved-delete-${index}`;
+}
+
+export function getSavedSnapshotDeleteDialogTestId(index: number): string {
+  return index === 0 ? testIds.account.savedDeleteDialog0 : `saved-delete-dialog-${index}`;
+}
+
+export function getSavedSnapshotDeleteCancelTestId(index: number): string {
+  return index === 0 ? testIds.account.savedDeleteCancel0 : `saved-delete-cancel-${index}`;
+}
+
+export function getSavedSnapshotDeleteConfirmTestId(index: number): string {
+  return index === 0 ? testIds.account.savedDeleteConfirm0 : `saved-delete-confirm-${index}`;
+}
+
+export function getAccountHistoryLightboxImageTestId(index: number): string {
+  return index === 0 ? testIds.account.historyLightboxImage : `history-lightbox-image-${index}`;
 }
 
 export function getDestinationTasteTagTestId(index: number): string {

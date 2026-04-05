@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { isIosShellMode } from "@/lib/runtime/shell";
@@ -124,6 +125,25 @@ export function ExperienceShell({
             {children}
           </div>
         )}
+
+        <footer className="compass-stage-reveal compass-stage-reveal-slower px-4 pb-4 pt-6 sm:px-5">
+          <div className="flex flex-col gap-2 text-[0.72rem] text-[var(--color-ink-soft)] sm:flex-row sm:items-center sm:justify-between">
+            <p>
+              <span className="font-semibold text-[var(--color-ink)]">떠나볼까?</span>
+              {" "}취향 기반 여행지 추천
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href="/privacy"
+                data-testid={testIds.shell.privacyLink}
+                className="transition-colors hover:text-[var(--color-ink)]"
+              >
+                개인정보처리방침
+              </Link>
+              <span>&copy; {new Date().getFullYear()} 떠나볼까?</span>
+            </div>
+          </div>
+        </footer>
       </div>
     </main>
   );

@@ -8,6 +8,8 @@ import {
   getAccountHistoryEntryTestId,
   getAccountHistoryGalleryImageTestId,
   getAccountHistoryGalleryToggleTestId,
+  getAccountHistoryLightboxImageTestId,
+  testIds,
 } from "@/lib/test-ids";
 
 const { mockPush, mockRefresh, mockSignOut } = vi.hoisted(() => ({
@@ -97,5 +99,32 @@ describe("AccountExperience history gallery", () => {
     expect(screen.getByTestId(getAccountHistoryGalleryImageTestId(2))).toBeInTheDocument();
     expect(screen.getByText("#late-night")).toBeInTheDocument();
     expect(screen.getByText("#hanriver")).toBeInTheDocument();
+  });
+
+  it("opens a full-size lightbox and lets the user move between images", () => {
+    render(
+      <AccountExperience
+        userName="테스트 사용자"
+        initialTab="history"
+        initialProfile={profile}
+        initialHistory={[historyEntry]}
+        initialSavedSnapshots={[]}
+      />,
+    );
+
+    fireEvent.click(screen.getByTestId(getAccountHistoryGalleryToggleTestId(0)));
+    fireEvent.click(screen.getByTestId(getAccountHistoryGalleryImageTestId(1)));
+
+    expect(screen.getByTestId(testIds.account.historyLightbox)).toBeInTheDocument();
+    expect(screen.getByTestId(getAccountHistoryLightboxImageTestId(1))).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId(testIds.account.historyLightboxNext));
+    expect(screen.getByTestId(getAccountHistoryLightboxImageTestId(2))).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId(testIds.account.historyLightboxPrev));
+    expect(screen.getByTestId(getAccountHistoryLightboxImageTestId(1))).toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId(testIds.account.historyLightboxClose));
+    expect(screen.queryByTestId(testIds.account.historyLightbox)).not.toBeInTheDocument();
   });
 });
