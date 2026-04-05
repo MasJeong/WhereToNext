@@ -1,6 +1,6 @@
-# 떠나볼래 Route Inventory — Shell v1 Scope
+# SooGo Route Inventory — Shell v1 Scope
 
-이 문서는 떠나볼래 앱의 모든 사용자-facing 라우트를 분류하고, iOS Shell v1에서 어떤 라우트가 지원되는지 정의합니다.
+이 문서는 SooGo 앱의 모든 사용자-facing 라우트를 분류하고, iOS Shell v1에서 어떤 라우트가 지원되는지 정의합니다.
 
 ## 분류 기준
 
@@ -46,8 +46,8 @@ Shell app에서 URL을 생성할 때는 다음 규칙을 따릅니다:
 // src/lib/runtime/url.ts
 
 // Canonical public URL (hosted web용)
-buildPublicUrl('/s/snapshot123')     // → https://tteonabolrae.example.com/s/snapshot123
-buildPublicUrl('/compare/snap123')   // → https://tteonabolrae.example.com/compare/snap123
+buildPublicUrl('/s/snapshot123')     // → https://soogo.example.com/s/snapshot123
+buildPublicUrl('/compare/snap123')   // → https://soogo.example.com/compare/snap123
 
 // Shell app internal routing
 // - snapshotId는 query parameter로 전달: /restore?snapshotId=snapshot123

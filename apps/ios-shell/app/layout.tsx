@@ -2,7 +2,7 @@ import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 
 export const metadata: Metadata = {
-  title: "WhereToNext iOS Shell",
+  title: "SooGo iOS Shell",
   description: "Static export shell for iOS packaging verification.",
 };
 
