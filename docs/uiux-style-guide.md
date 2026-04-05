@@ -1,444 +1,453 @@
-# 떠나볼래 UI/UX Style Guide
+# 떠나볼래 UI/UX 스타일 가이드
 
-Reference note: `docs/designus-reference-notes.md`
+참고 문서: `docs/designus-reference-notes.md`
 
-## 1. Product stance
+## 1. 제품의 기본 입장
 
-떠나볼래 is not a search engine and not a booking-first OTA.
-It is a `discovery-first destination recommendation service` for Korean outbound travelers.
+떠나볼래는 검색 엔진도 아니고, 예약을 먼저 밀어붙이는 OTA도 아닙니다.
+이 서비스는 한국 출발 해외여행 사용자를 위한 `목적지 발견형 추천 서비스`입니다.
 
-The UI should therefore optimize for three moments:
+그래서 UI는 아래 세 순간에 가장 잘 작동해야 합니다.
 
-1. `Fast discovery`
-2. `Trust and understanding`
-3. `Save and compare`
+1. `빠른 발견`
+2. `신뢰와 이해`
+3. `저장과 비교`
 
-If a screen looks beautiful but makes destination choice slower, it is wrong for this product.
+화면이 예쁘더라도 목적지 선택 속도를 늦춘다면, 이 제품에는 맞지 않는 UI입니다.
 
-## 2. Core UX principle
+## 2. 핵심 사용 경험 원칙
 
-The service should feel like:
+서비스 경험은 아래처럼 느껴져야 합니다.
 
-- `magazine cover` at the top
-- `decision workspace` in the middle
-- `comparison board` at the bottom
+- 상단은 `잡지 표지 같은 도입부`
+- 중간은 `결정 공간`
+- 하단은 `비교 보드`
 
-The user should feel inspired first, then reassured, then ready to decide.
+사용자는 먼저 끌리고, 그다음 안심하고, 마지막에 결정할 준비가 되어야 합니다.
 
-## 3. Who we are designing for
+## 3. 누구를 위해 설계하는가
 
-Primary users:
+핵심 사용자는 다음과 같습니다.
 
-- Korean users in their 20s and 30s
-- planning a short overseas trip such as `4 nights / 5 days`
-- not sure where to go yet
-- comparing mood, budget, season, and flight burden
+- 한국의 20대, 30대 사용자
+- `4박 5일` 같은 짧은 해외여행을 계획 중인 사람
+- 아직 어디로 갈지 정하지 못한 사람
+- 분위기, 예산, 계절, 비행 부담을 함께 비교하는 사람
 
-This means the product must prioritize:
+즉, 제품은 긴 목적지 스토리텔링보다 아래 정보를 먼저 우선해야 합니다.
 
-- departure airport
-- trip length
-- season fit
-- budget feel
-- flight fatigue
-- companion fit
+- 출발 공항
+- 여행 기간
+- 계절 적합도
+- 예산 체감
+- 비행 피로도
+- 동행 적합도
 
-before long-form destination storytelling.
+## 4. 우리가 아닌 것
 
-## 4. What we are not
+떠나볼래가 아래처럼 느껴지면 안 됩니다.
 
-Do not make 떠나볼래 feel like:
+- 텅 빈 검색 페이지
+- 지도를 먼저 내세우는 탐색 도구
+- 예약 버튼이 화면을 덮는 OTA
+- 결정 지원이 약한 라이프스타일 피드
+- 계정 설정 중심의 평범한 대시보드
 
-- a blank search page
-- a map-first exploration tool
-- an OTA with booking buttons everywhere
-- a lifestyle feed with weak decision support
-- a generic dashboard for account settings
+## 5. 시각 방향
 
-## 5. Visual direction
+권장하는 미감 방향은 다음과 같습니다.
 
-Recommended aesthetic direction:
+`따뜻한 편집형 여행 계획 책상`
 
-`Warm editorial planning desk`
+의미는 이렇습니다.
 
-Meaning:
+- 차가운 SaaS 블루보다 따뜻한 중성 톤을 쓴다
+- 번쩍이는 럭셔리보다 차분한 프리미엄에 가깝다
+- 결정이 일어나는 영역은 종이 질감이 느껴지는 표면을 쓴다
+- 강한 도입부 구역 하나를 두고, 그 아래는 더 가벼운 작업 표면으로 정리한다
 
-- warm neutrals instead of cold SaaS blues
-- premium but calm, not flashy-luxury
-- tactile paper-like surfaces for decision areas
-- one strong editorial hero, then lighter work surfaces
+현재 제품의 문제는 다음과 같습니다.
 
-Current issue in the product:
+- 너무 많은 표면이 같은 어두운 유리 질감 처리에 묶여 있다
+- 도입부, 입력 폼, 결과, 계정 섹션이 시각적으로 지나치게 비슷하다
+- 정보 위계가 필요한 것보다 더 평평하다
 
-- too many surfaces share the same dark glass treatment
-- hero, form, result, and account sections feel too visually similar
-- information hierarchy is flatter than it should be
+보정 목표는 아래와 같습니다.
 
-Target correction:
+- 상단 도입부의 분위기는 유지한다
+- 추천과 비교 표면은 더 밝고, 더 또렷하고, 더 빨리 훑어볼 수 있게 만든다
 
-- keep the top hero atmospheric
-- make recommendation and compare surfaces brighter, clearer, and easier to scan
+## 6. 색상 시스템
 
-## 6. Color system
+색상은 역할이 분명하게 읽히도록 써야 합니다.
 
-Use color with role clarity.
+- `paper`: 읽기 표면과 기본 배경
+- `ink`: 본문 텍스트와 이성적 판단 레이어
+- `sand`: 메타데이터, 섹션 라벨, 부담이 적은 안내
+- `accent`: 행동 유도 전용
 
-- `paper`: reading surface and primary background
-- `ink`: primary text and rational decision layers
-- `sand`: metadata, section labels, low-pressure guidance
-- `accent`: action only
+규칙은 다음과 같습니다.
 
-Rules:
+- accent가 추천 카드를 지배하면 안 된다
+- Instagram류 무드 컬러가 신뢰 정보를 덮으면 안 된다
+- 신뢰 레이어는 분위기 레이어보다 더 깨끗하고 조용하게 느껴져야 한다
 
-- do not let accent dominate recommendation cards
-- do not use Instagram-like mood colors to overpower trust information
-- trust layers should feel cleaner and quieter than mood layers
+### 권장 팔레트 방향
 
-### Preferred palette direction
+떠나볼래는 아래 색에서 출발하는 따뜻하고 식감 있는 팔레트를 사용해야 합니다.
 
-떠나볼래 should use a warm, edible palette built from:
+- `화이트 / 아이보리` (`white / ivory`)
+- `부드러운 옐로` (`soft yellow`)
+- `오렌지` (`orange`)
+- `브라운` (`brown`)
 
-- `white / ivory`
-- `soft yellow`
-- `orange`
-- `brown`
+이 팔레트가 맞는 이유는 다음과 같습니다.
 
-This palette fits the product because:
+- 흰색과 아이보리는 읽기 좋은 계획 표면을 만든다
+- 노란색은 부담이 적은 안내와 친근한 추진력을 만든다
+- 주황색은 오류처럼 보이지 않으면서 행동을 유도한다
+- 갈색은 신뢰, 성숙함, 결정의 무게를 받쳐 준다
 
-- white and ivory create readable planning surfaces
-- yellow creates low-pressure guidance and friendly momentum
-- orange signals action and attraction without looking like an error state
-- brown anchors trust, maturity, and decision seriousness
+### 역할 기반 색상 배치
 
-### Role-based color assignment
+색을 기능별로 붙이지 말고 역할별로 붙입니다.
 
-Do not assign color by feature. Assign it by role.
-
-| Role | Meaning | Suggested palette direction | Usage |
+| 역할 | 의미 | 권장 팔레트 방향 | 사용처 |
 |---|---|---|---|
-| `surface-base` | page base, long-read background | deep brown / dark ink-brown | app background |
-| `surface-elevated` | cards and sections | warm ivory / soft paper | recommendation surfaces |
-| `surface-muted` | low-priority grouped blocks | pale yellow-tinted ivory | helper rails, subtle grouping |
-| `text-primary` | main reading content | dark brown / ink | headings, verdicts, main facts |
-| `text-secondary` | supporting explanation | softened brown | helper text, captions |
-| `meta-label` | section labels and small metadata | muted ochre / sand | section eyebrow, key labels |
-| `action-primary` | main CTA only | saturated orange | start, save, compare primary actions |
-| `action-secondary` | non-primary actions | light brown border + ivory fill | secondary buttons |
-| `selected-state` | currently chosen chip/filter | strong warm yellow with dark text | selected chips and toggles |
-| `decision-highlight` | verdict or priority summary | pale yellow / ivory with warm border | verdict box, decision summary |
-| `trust-info` | trust and evidence blocks | ivory + brown text, low chroma | season/flight/source signals |
-| `warning` | caution, watch-outs | deeper ochre / muted orange | watch-outs, “check again” states |
-| `error` | blocked or failed actions | reserved burnt orange-red | actual errors only |
+| `surface-base` | 페이지 기본 바탕, 긴 읽기 배경 | deep brown / dark ink-brown | 앱 배경 |
+| `surface-elevated` | 카드와 섹션 | warm ivory / soft paper | 추천 표면 |
+| `surface-muted` | 우선순위가 낮은 묶음 블록 | pale yellow-tinted ivory | 보조 레일, 은은한 그룹화 |
+| `text-primary` | 핵심 읽기 콘텐츠 | dark brown / ink | 제목, 판정, 핵심 정보 |
+| `text-secondary` | 보조 설명 | softened brown | 보조 문구, 캡션 |
+| `meta-label` | 섹션 라벨, 작은 메타정보 | muted ochre / sand | 섹션 머리표, 핵심 라벨 |
+| `action-primary` | 대표 CTA 전용 | saturated orange | 시작, 저장, 비교 같은 핵심 행동 |
+| `action-secondary` | 보조 행동 | light brown border + ivory fill | 보조 버튼 |
+| `selected-state` | 현재 선택된 chip/filter | strong warm yellow with dark text | 선택된 chip, toggle |
+| `decision-highlight` | 판정, 우선순위 요약 | pale yellow / ivory with warm border | 판정 상자, 결정 요약 |
+| `trust-info` | 신뢰와 근거 블록 | ivory + brown text, low chroma | 계절/비행/출처 신호 |
+| `warning` | 주의, 확인 필요 항목 | deeper ochre / muted orange | 확인할 점, “다시 확인” 상태 |
+| `error` | 막힘, 실패 상태 | reserved burnt orange-red | 실제 오류에만 사용 |
 
-### Hard rules
+### 강한 규칙
 
-- `action-primary` and `selected-state` must not use the same exact color treatment.
-- `decision-highlight` must not look clickable.
-- `warning` must not share the same look as `action-primary`.
-- `mood evidence` must not use stronger color than `trust-info` or `decision-highlight`.
-- if a user can infer “click this now” from a box, it should not be a verdict summary box.
+- `action-primary`와 `selected-state`는 같은 색 처리로 보이면 안 됩니다.
+- `decision-highlight`는 클릭 가능한 요소처럼 보여선 안 됩니다.
+- `warning`은 `action-primary`와 같은 인상이어선 안 됩니다.
+- `mood evidence`는 `trust-info`나 `decision-highlight`보다 강한 색을 쓰면 안 됩니다.
+- 사용자가 어떤 박스를 보고 "지금 누르라는 뜻이네"라고 느낀다면, 그 박스는 판정 요약 상자가 아니어야 합니다.
 
-### Implementation guidance
+### 구현 가이드
 
-Map the current token system toward role-based use:
+현재 token 시스템은 역할 중심으로 아래처럼 매핑합니다.
 
-- `--color-paper`, `--color-paper-sheet`, `--color-paper-elevated` -> surfaces only
-- `--color-ink`, `--color-ink-soft` -> text only
-- `--color-sand`, `--color-sand-deep` -> labels and secondary structure
-- `--color-accent` -> primary action only
-- `--color-paper-soft` should stop acting as both selected state and decision summary highlight
+- `--color-paper`, `--color-paper-sheet`, `--color-paper-elevated` -> 표면 전용
+- `--color-ink`, `--color-ink-soft` -> 글자 전용
+- `--color-sand`, `--color-sand-deep` -> 라벨과 보조 구조 전용
+- `--color-accent` -> 대표 행동 전용
+- `--color-paper-soft`는 selected state와 decision summary highlight를 동시에 맡지 않도록 분리해야 합니다
 
-If needed, split it into separate tokens such as:
+필요하면 아래처럼 token을 쪼갭니다.
 
 - `--color-action-primary`
 - `--color-selected`
 - `--color-decision-highlight`
 - `--color-warning-soft`
 
-## 7. Typography
+## 7. 타이포그래피
 
-Korean must be treated as first-class typography, not fallback text.
+한국어는 대체용 문구가 아니라 1순위 타이포그래피로 다뤄야 합니다.
 
-Rules:
+규칙은 다음과 같습니다.
 
-- Korean headings should be strong, readable, and compact
-- display typography can be expressive, but must not reduce Korean readability
-- reduce unnecessary all-caps micro-labels in Korean-first screens
-- mixed English labels should be removed unless they are brand language or unavoidable proper nouns
+- 한국어 제목은 강하고, 읽기 쉽고, 압축감 있게 간다
+- 강조용 큰 글자는 개성이 있어도 되지만 한국어 가독성을 해치면 안 된다
+- 한국어 우선 화면에서는 불필요한 영문 대문자 짧은 라벨을 줄인다
+- 브랜드 언어나 피할 수 없는 고유명사가 아니라면 혼합 영어 라벨은 걷어낸다
 
-Bad examples to avoid:
+피해야 할 예시는 다음과 같습니다.
 
 - `Why Sign In`
 - `Trust First`
 - `Optional Identity`
 
-Use Korean-first labels instead.
+대신 한국어 우선 라벨을 씁니다.
 
-## 8. Information architecture
+## 8. 정보 구조
 
-The main flow should always read as:
+메인 플로우는 항상 아래 순서로 읽혀야 합니다.
 
-1. `Trip intent`
-2. `Top 3 recommendations`
-3. `Why this fits`
-4. `Trust signals`
-5. `Save / Compare`
-6. `Mood evidence`
-7. `More options or relax filters`
+1. `여행 의도`
+2. `상위 3개 추천`
+3. `왜 잘 맞는지`
+4. `신뢰 신호`
+5. `저장 / 비교`
+6. `분위기 근거`
+7. `더 보기 또는 조건 완화`
 
-Feed logic should follow:
+피드 로직도 아래 흐름을 따라야 합니다.
 
-- `attract -> explain -> narrow -> compare`
-- not `search -> list -> booking`
+- `끌기 -> 설명 -> 좁히기 -> 비교`
+- `검색 -> 목록 -> 예약` 흐름이 아님
 
-Important:
+중요한 점은 다음과 같습니다.
 
-- mood is supporting proof, not ranking authority
-- explanation must appear before the user needs to scroll far
-- compare should feel central, not optional decoration
+- 분위기 근거는 보조 근거이지 순위 판단 기준이 아니다
+- 설명은 사용자가 한참 스크롤하기 전에 보여야 한다
+- 비교는 장식 기능이 아니라 중심 기능처럼 느껴져야 한다
 
-## 9. Home screen structure
+## 9. 홈 화면 구조
 
-The home page should have these zones in order:
+홈은 아래 구역 순서로 구성합니다.
 
-### Hero
-- one clear editorial proposition
-- one-line explanation of how recommendations work
-- optional identity card as a side module, not the hero itself
+### 히어로
+- 하나의 분명한 핵심 제안
+- 추천이 어떻게 동작하는지 설명하는 한 줄
+- 선택형 계정 안내 카드는 보조 모듈로 두고, 히어로 자체가 되게 하지 않는다
 
-### Intent selection
-- chips and guided steps, not a giant search bar
-- quick-start prompts should feel like travel intent
-- examples:
+### 의도 선택
+- 거대한 검색창 대신 chip과 안내형 단계를 쓴다
+- 빠른 시작 문구는 여행 의도로 읽혀야 한다
+- 예시:
   - `첫 유럽 여행`
   - `커플 4박 5일`
   - `비행 짧은 도시 여행`
   - `휴양보다 도시 구경`
 
-### Recommendation block
-- top 3 cards only by default
-- one clear “show more” action
-- compare tray should become visible as soon as saved cards exist
+### 추천 블록
+- 기본값은 상위 3개 카드만 보여 준다
+- “더 보기” 행동은 하나만 분명하게 둔다
+- 저장된 카드가 생기면 비교 보관함이 바로 보여야 한다
 
-### Discovery rails
-- organize later expansion into themed rails, not generic lists
-- examples:
+### 탐색 레일
+- 이후 확장 영역은 일반 목록이 아니라 주제형 레일로 정리한다
+- 예시:
   - `이번 달 서울 출발로 가기 좋은 곳`
   - `4박 5일 커플 여행`
   - `같은 분위기, 더 낮은 예산`
   - `짧은 비행으로 가는 도시 여행`
 
-### Recovery / refinement
-- empty state must suggest one-tap relaxations
-- never leave the user with a dead-end “no results” message
+### 복구 / 정교화
+- 빈 상태는 한 번에 누를 수 있는 완화 행동을 제안해야 한다
+- 사용자를 막다른 `결과 없음` 문구에 남겨 두면 안 된다
 
-## 10. Recommendation card structure
+## 10. 추천 카드 구조
 
-Each recommendation card should always follow this order:
+추천 카드는 항상 아래 순서를 따릅니다.
 
-1. destination identity
-2. trust summary
-3. recommendation reason
-4. trip facts
-5. mood evidence
-6. watch-outs
-7. next actions
+1. 여행지 정체성
+2. 신뢰 요약
+3. 추천 이유 (`recommendation reason`)
+4. 여행 핵심 정보 (`trip facts`)
+5. 무드 근거 (`mood evidence`)
+6. 확인할 점 (`watch-outs`)
+7. 다음 행동 (`next actions`)
 
-The card should answer:
+카드는 아래 질문에 답해야 합니다.
 
-- Why is this here?
-- Why should I trust it?
-- What tradeoff should I know?
-- What can I do next?
+- 왜 이 카드가 여기 있는가?
+- 왜 믿어도 되는가?
+- 어떤 상충점을 알아야 하는가?
+- 다음에 무엇을 할 수 있는가?
 
-Recommendation mix rule for discovery surfaces:
+탐색 표면의 추천 비율 규칙은 다음과 같습니다.
 
-- `70%` safe-fit
-- `20%` adjacent stretch
-- `10%` wildcard / unexpected but plausible
+- `70%` 무난하게 잘 맞는 추천
+- `20%` 살짝 넓혀 보는 추천
+- `10%` 뜻밖이지만 납득 가능한 추천
 
-This keeps the product feeling like discovery, not rigid filtering.
+이 비율이 있어야 제품이 딱딱한 필터가 아니라 발견형 추천으로 느껴집니다.
 
-## 11. Trust-first design rules
+## 11. 신뢰 우선 디자인 규칙
 
-떠나볼래 wins if users trust the recommendation before they admire the aesthetic.
+떠나볼래는 사용자가 미감을 감탄하기 전에 추천을 먼저 신뢰할 때 이깁니다.
 
-Trust signals should include:
+신뢰 신호에는 아래 정보가 포함되어야 합니다.
 
-- score or match quality
-- season fit
-- flight fit
-- evidence source type
-- evidence freshness
-- evidence count
-- concise reason tags
+- 점수 또는 적합도
+- 계절 적합도
+- 비행 적합도
+- 근거 출처 유형
+- 근거 최신성
+- 근거 개수
+- 짧은 이유 태그
 
-Do not hide these behind taps.
+이 정보는 탭 뒤에 숨기지 않습니다.
 
-Social or editorial evidence should come after trust is established.
+소셜 또는 편집형 근거는 신뢰가 먼저 형성된 뒤에 나와야 합니다.
 
-## 12. Mood evidence rules
+## 12. 무드 근거 규칙
 
-The “Instagram / YouTube-like” layer should attract attention, but remain clearly secondary.
+`Instagram / YouTube-like` 레이어는 시선을 끌어도 되지만, 분명히 보조 위치에 머물러야 합니다.
 
-Use it for:
+사용 목적은 다음과 같습니다.
 
-- emotional imagination
-- place vibe confirmation
-- social proof texture
+- 감정적 상상 보조
+- 장소 분위기 확인
+- 사회적 신뢰감의 결 표현
 
-Do not use it for:
+반대로 아래 용도로 쓰면 안 됩니다.
 
-- ranking order explanation
-- replacing recommendation logic
-- overpowering trust signals visually
+- 순위 설명
+- 추천 로직 대체
+- 신뢰 신호를 시각적으로 덮어버리기
 
-## 13. Compare-first behavior
+## 13. 비교 우선 동작 원칙
 
-Comparison is a core feature, not a utility.
+비교는 부가 기능이 아니라 핵심 기능입니다.
 
-Rules:
+규칙은 다음과 같습니다.
 
-- saved cards should naturally feed comparison
-- compare tray must remain obvious on mobile
-- compare board should behave like aligned criteria rows, not stacked story cards
-- every 4-6 cards in a longer feed should create a narrowing moment: save, skip, compare, or relax filters
+- 저장된 카드는 자연스럽게 비교로 이어져야 한다
+- 비교 보관함은 모바일에서 항상 눈에 띄어야 한다
+- 비교 보드는 이야기 카드 적층이 아니라 정렬된 기준 행처럼 동작해야 한다
+- 긴 피드에서는 카드 4개에서 6개마다 저장, 넘기기, 비교, 조건 완화 같은 좁히기 순간이 생겨야 한다
 
-Compare criteria should prioritize:
+비교 기준은 아래 우선순위를 가집니다.
 
-- budget feel
-- flight burden
-- best season
-- trip vibe
-- why this fits
-- watch-outs
-- mood summary
+- 예산 체감
+- 비행 부담
+- 최적 시기
+- 여행 분위기
+- 잘 맞는 이유
+- 확인할 점
+- 분위기 요약
 
-## 14. Account / identity UX
+## 14. 계정 / 정체성 사용 경험
 
-Identity is optional, memory is the value.
+정체성 입력은 선택이고, 핵심 가치는 여행 기록입니다.
 
-Therefore:
+그래서 아래 원칙을 따릅니다.
 
-- do not present login as a barrier
-- do present login as a way to keep travel memory
-- account pages should feel like a “travel memory studio,” not a generic settings page
+- 로그인은 장벽처럼 보여 주지 않는다
+- 로그인은 여행 기억을 남기는 수단으로 보여 준다
+- 계정 페이지는 평범한 설정 페이지가 아니라 `여행 기록 작업실`처럼 느껴져야 한다
 
-The message is:
+사용자에게 전해야 할 메시지는 단순합니다.
 
-- anonymous use is normal
-- login only adds memory and personalization
+- 익명 사용은 자연스럽다
+- 로그인은 기록 보관과 개인화만 더해 준다
 
-## 15. UX writing rules
+## 15. 사용 문구 규칙
 
-Based on product fit and the referenced UX writing guidance:
+제품 적합성과 참고 문구 가이드를 기준으로 아래 원칙을 지킵니다.
 
-- write for action, not for explanation alone
-- reduce anxiety, especially on auth, compare, and empty states
-- every microcopy block should help users decide what to do next
+- 설명만 쓰지 말고 행동으로 이어지게 쓴다
+- 특히 로그인, 비교, 빈 상태에서 불안을 줄인다
+- 모든 짧은 안내 문구는 사용자가 다음에 무엇을 할지 판단하는 데 도움을 줘야 한다
 
-### CTA writing
-- use action-centered language
-- prefer “what happens next” over feature names
+### CTA 문구
+- 행동 중심 언어를 쓴다
+- 기능 이름보다 “누르면 무슨 일이 일어나는지”를 우선한다
 
-Good:
+좋은 예시:
 - `이 조건으로 여행지 추천 받기`
 - `저장하고 비교하기`
 - `이 조건 조금 완화하기`
 
-### Error writing
-- never blame the user
-- include recovery direction when possible
+### 오류 문구
+- 사용자를 탓하지 않는다
+- 가능하면 복구 방향을 함께 준다
 
-Good pattern:
-- what happened
-- how to recover
+좋은 패턴:
+- 무슨 일이 있었는지
+- 어떻게 복구할 수 있는지
 
-### Empty state writing
-- acknowledge the gap
-- offer one-tap next actions
-- do not make the user rethink everything from zero
+### 빈 상태 문구
+- 왜 비어 있는지 먼저 인정한다
+- 한 번에 누를 수 있는 다음 행동을 제안한다
+- 사용자가 처음부터 다시 생각하게 만들지 않는다
 
-## 16. Mobile-first rules
+## 16. 모바일 우선 규칙
 
-This is a mobile web product first.
+이 제품은 모바일 웹이 우선입니다.
 
-Prioritize:
+우선할 것:
 
-- one-thumb actions
-- sticky compare tray
-- short card sections
-- clear “next action” placement
-- minimal horizontal scanning
+- 한 손가락으로 닿는 행동
+- 고정 비교 보관함
+- 짧은 카드 구역
+- 분명한 `다음 행동` 배치
+- 가로 스캔 최소화
 
-Avoid:
+피할 것:
 
-- dense multi-column content above the fold
-- hidden critical actions
-- giant filter panels that feel like forms
+- 첫 화면 위쪽에 빽빽한 다단 컬럼 콘텐츠
+- 숨겨진 핵심 행동
+- 폼처럼 느껴지는 거대한 필터 패널
 
-## 17. What to remove or avoid
+## 17. 제거하거나 피할 것
 
-Avoid these common travel-app mistakes:
+아래 여행 앱의 흔한 실수는 피합니다.
 
-- giant global search as the main hero
-- early map obsession
-- booking CTAs before recommendation trust is formed
-- too many filters in MVP
-- review-score overload with weak explanation
-- feed interruptions that look like ads
-- “inspiration-only” visuals without decision support
+- 메인 히어로를 차지하는 거대한 통합 검색창
+- 너무 이른 지도 집착
+- 추천 신뢰가 생기기 전에 나오는 예약 CTA
+- MVP 단계에서 과도한 필터
+- 설명은 약하고 후기 점수만 많은 화면
+- 광고처럼 보이는 피드 끊김
+- 결정 지원 없이 영감만 주는 비주얼
 
-## 18. Monetization-safe UX rules
+## 18. 수익화에 안전한 사용 경험 규칙
 
-Ads should not touch the recommendation core in MVP.
+MVP 단계에서는 광고가 추천의 핵심을 건드리면 안 됩니다.
 
-Later safe placements:
+추후에 안전한 배치 위치는 아래와 같습니다.
 
-- one clearly labeled sponsored card below top organic recommendations
-- one sponsored row on the compare page
-- partner offer modules on destination detail or booking-intent surfaces
+- 상위 자연 추천 아래에 명확히 표시된 유료 카드 1개
+- 비교 페이지의 유료 행 1개
+- 여행지 상세 또는 booking-intent surface의 제휴 제안 모듈
+- 추천 결과 직전 `생성 중` 전용 화면의 소형 파트너 슬롯 1개
 
-Ad placement posture:
+광고 배치 태도는 아래를 따릅니다.
 
-- `adjacent, labeled, relevant`
-- never `hidden, ranking-changing, interruptive`
+- `옆에 두기, 명확히 표기하기, 관련성 유지하기`
+- 절대 `숨기기, 순위 바꾸기, 흐름 끊기`가 되면 안 된다
 
-Rules:
+규칙은 다음과 같습니다.
 
-- always label with `Sponsored`, `Partner`, or equivalent Korean plain language
-- never insert paid content into the top 1-3 organic recommendation slots
-- never phrase sponsored inventory as 떠나볼래’s neutral recommendation
-- never let payment silently change ranking logic
-- never break scroll rhythm with interstitial-style interruptions in the discovery feed
+- 항상 `Sponsored`, `Partner` 또는 같은 의미의 쉬운 한국어 표기를 붙인다
+- 유료 콘텐츠를 상위 1~3개 자연 추천 칸에 끼워 넣지 않는다
+- 유료 노출 지면을 떠나볼래의 중립 추천처럼 쓰지 않는다
+- 결제가 추천 순위 로직을 조용히 바꾸게 두지 않는다
+- 발견형 피드의 스크롤 리듬을 중간 삽입 광고처럼 끊지 않는다
 
-## 19. MVP screen list
+추천 결과 직전 `생성 중` 화면에 광고를 붙일 때는 아래 추가 규칙을 따른다.
 
-Keep MVP to:
+- 생성 중 화면은 결과 화면과 분리된 별도 단계로 유지한다
+- 광고는 `로딩바 위 보조 슬롯` 또는 `로딩바 옆 소형 슬롯` 중 하나만 쓴다
+- 광고 높이는 본문 생성 메시지보다 커지지 않게 유지한다
+- 모바일에서는 본문 아래 소형 카드 1개까지만 허용한다
+- 데스크톱에서도 결과를 기다리는 핵심 메시지보다 시선을 더 강하게 가져가면 안 된다
+- 생성 중 광고는 여행 준비 맥락과 관련된 제휴만 허용한다
+- 광고 클릭 유도 문구는 `예약 보장`, `최저가 확정`처럼 제품이 보장하지 않는 표현을 쓰지 않는다
 
-- Home / discovery
-- Recommendation results
-- Saved card restore
-- Compare board
-- Optional auth
-- Travel profile / memory
+## 19. MVP 화면 목록
 
-Do not add yet:
+MVP는 아래 범위로 유지합니다.
 
-- map-first search
-- itinerary planner
-- booking engine
-- chat transcript UI
-- review community
-- loyalty or membership layers
+- 홈 / 탐색
+- 추천 결과
+- 저장 카드 복원
+- 비교 보드
+- 선택형 로그인
+- 여행 프로필 / 기록
 
-## 20. Decision filter for future UI work
+아직 넣지 않을 것:
 
-Before approving a UI change, ask:
+- 지도 우선 검색
+- 일정 계획기
+- 예약 엔진
+- 채팅 기록 UI
+- 후기 커뮤니티
+- loyalty 또는 membership layer
 
-1. Does this help users discover a destination faster?
-2. Does this make the recommendation more trustworthy?
-3. Does this make save/compare easier?
-4. Does this keep the product discovery-first rather than search-first?
+## 20. 앞으로의 UI 의사결정 필터
 
-If the answer is no, the UI idea is probably off-strategy.
+새 UI 변경안을 승인하기 전에 아래를 묻습니다.
+
+1. 이 변경이 사용자가 목적지를 더 빨리 발견하게 돕는가?
+2. 이 변경이 추천을 더 신뢰하게 만드는가?
+3. 이 변경이 저장과 비교를 더 쉽게 만드는가?
+4. 이 변경이 제품을 검색 우선이 아니라 발견 우선으로 유지하는가?
+
+대답이 아니오라면, 그 UI 아이디어는 전략에서 벗어났을 가능성이 큽니다.

@@ -6,6 +6,7 @@ import type {
   RecommendationResult,
   TrendEvidenceSnapshot,
 } from "@/lib/domain/contracts";
+import { getCountryMetadata } from "@/lib/travel-support/country-metadata";
 
 type QueryOptionValue = string | number;
 
@@ -111,7 +112,8 @@ export const defaultRecommendationQuery: RecommendationQuery = {
   travelMonth: 10,
   pace: "balanced",
   flightTolerance: "medium",
-  vibes: ["romance"],
+  vibes: ["food"],
+  excludedCountryCodes: [],
 };
 
 export const partyOptions: QueryOption<RecommendationQuery["partyType"]>[] = [
@@ -158,31 +160,97 @@ export const budgetOptions: QueryOption<RecommendationQuery["budgetBand"]>[] = [
 export const tripLengthOptions: QueryOption<RecommendationQuery["tripLengthDays"]>[] = [
   {
     value: 3,
-    label: "3일",
-    description: "짧지만 확실하게 쉬고 오는 일정이에요.",
+    label: "2~3일",
+    description: "주말이나 짧은 연차로 가볍게 다녀오기 좋은 일정이에요.",
   },
   {
     value: 5,
-    label: "5일",
-    description: "연차 부담과 만족감의 균형이 좋은 길이예요.",
+    label: "4~6일",
+    description: "가장 일반적인 짧은 해외 휴가에 잘 맞는 기간이에요.",
   },
   {
     value: 8,
-    label: "8일",
-    description: "장거리나 여러 동선을 여유 있게 담기 좋은 일정이에요.",
+    label: "7~10일",
+    description: "장거리나 여러 동선을 비교적 여유 있게 담기 좋은 일정이에요.",
+  },
+  {
+    value: 15,
+    label: "11일 이상",
+    description: "장기 휴가나 한달살기처럼 충분한 시간을 쓰는 여행에 가까워요.",
   },
 ];
 
+export function formatTripLengthBand(tripLengthDays: RecommendationQuery["tripLengthDays"]): string {
+  if (tripLengthDays <= 3) {
+    return "2~3일";
+  }
+
+  if (tripLengthDays <= 6) {
+    return "4~6일";
+  }
+
+  if (tripLengthDays <= 10) {
+    return "7~10일";
+  }
+
+  return "11일 이상";
+}
+
 export const travelMonthOptions: QueryOption<RecommendationQuery["travelMonth"]>[] = [
+  {
+    value: 1,
+    label: "1월",
+    description: "새해 무드와 겨울 시즌 분위기를 기대하기 좋은 시기예요.",
+  },
+  {
+    value: 2,
+    label: "2월",
+    description: "짧은 겨울 여행이나 설 연휴 주변 일정을 떠올리기 쉬운 시기예요.",
+  },
+  {
+    value: 3,
+    label: "3월",
+    description: "초봄 공기와 가벼운 일정 감각을 떠올리기 좋은 시기예요.",
+  },
+  {
+    value: 4,
+    label: "4월",
+    description: "봄꽃과 산책 중심 여행을 생각하기 좋은 대표 봄 시즌이에요.",
+  },
+  {
+    value: 5,
+    label: "5월",
+    description: "야외 일정이 많아지는 황금연휴 감각의 대표 시즌이에요.",
+  },
+  {
+    value: 6,
+    label: "6월",
+    description: "초여름 분위기에서 한적하게 다녀오고 싶을 때 떠올리기 쉬워요.",
+  },
   {
     value: 7,
     label: "7월",
     description: "여름 휴가철 분위기와 활기가 살아나는 시기예요.",
   },
   {
+    value: 8,
+    label: "8월",
+    description: "성수기 한가운데에서 확실한 휴가 일정을 잡기 쉬운 달이에요.",
+  },
+  {
+    value: 9,
+    label: "9월",
+    description: "늦여름에서 초가을로 넘어가며 이동하기 편해지는 시기예요.",
+  },
+  {
     value: 10,
     label: "10월",
     description: "날씨와 이동감이 안정적인 대표 성수기예요.",
+  },
+  {
+    value: 11,
+    label: "11월",
+    description: "붐비는 시기를 조금 피해 차분하게 다녀오기 좋은 달이에요.",
   },
   {
     value: 12,
@@ -194,7 +262,7 @@ export const travelMonthOptions: QueryOption<RecommendationQuery["travelMonth"]>
 export const primaryVibeOptions: QueryOption<RecommendationQuery["vibes"][number]>[] = [
   {
     value: "romance",
-    label: "로맨틱",
+    label: "분위기",
     description: "야경, 산책, 분위기 좋은 식사가 중요한 여행이에요.",
   },
   {
@@ -295,7 +363,20 @@ export function buildRecommendationSearchParams(query: RecommendationQuery): URL
   params.set("pace", query.pace);
   params.set("flightTolerance", query.flightTolerance);
   params.set("vibes", query.vibes.join(","));
+  if (query.excludedCountryCodes && query.excludedCountryCodes.length > 0) {
+    params.set("excludedCountryCodes", query.excludedCountryCodes.join(","));
+  }
   return params;
+}
+
+function formatExcludedCountryList(countryCodes: string[] | undefined): string {
+  if (!countryCodes || countryCodes.length === 0) {
+    return "";
+  }
+
+  return countryCodes
+    .map((countryCode) => getCountryMetadata(countryCode)?.countryNameKo ?? countryCode)
+    .join(", ");
 }
 
 /**
@@ -382,7 +463,7 @@ export function buildRecommendationVerdict(
     .map((item) => item.label);
 
   const context = query
-    ? `${formatTravelMonth(query.travelMonth)} ${query.tripLengthDays}일 일정 기준`
+    ? `${formatTravelMonth(query.travelMonth)} ${formatTripLengthBand(query.tripLengthDays)} 일정 기준`
     : `${formatMonthList(card.destination.bestMonths)} 여행 기준`;
   const support = `${context} ${strengthAreas.join(" · ")} 쪽이 특히 안정적이에요.`;
 
@@ -420,9 +501,9 @@ export function buildStructuredTripBrief(
   return [
     {
       id: "travel-window",
-      label: "여행 창",
-      value: `${formatTravelMonth(query.travelMonth)} · ${query.tripLengthDays}일`,
-      detail: `${formatDepartureAirport(query.departureAirport)} 출발 기준으로 ${formatPartyType(query.partyType)} 리듬을 잡고 있어요.`,
+      label: "출발 시기",
+      value: `${formatTravelMonth(query.travelMonth)} · ${formatTripLengthBand(query.tripLengthDays)}`,
+      detail: `${formatPartyType(query.partyType)} 일정 기준으로 현실적인 여행 길이를 먼저 맞추고 있어요.`,
     },
     {
       id: "budget-pace",
@@ -438,11 +519,11 @@ export function buildStructuredTripBrief(
     },
     {
       id: "vibes",
-      label: "핵심 분위기",
-      value: formatVibeList(query.vibes),
+      label: "여행 스타일",
+      value: formatResultVibeList(query.vibes),
       detail: query.vibes[1]
-        ? "대표 분위기와 보조 분위기를 함께 맞춰 설명 가능한 후보만 남겨요."
-        : "대표 분위기 하나로 먼저 넓게 보고, 저장 후 비교 단계에서 더 좁혀요.",
+        ? "핵심 여행 스타일과 보조 성향을 함께 맞춰 설명 가능한 후보만 남겨요."
+        : "실제 여행 스타일 하나를 먼저 잡고, 저장 후 비교 단계에서 더 좁혀요.",
     },
   ];
 }
@@ -479,11 +560,11 @@ export function buildRecommendationTrustSignals(
     },
     {
       id: "evidence-trust",
-      label: "근거",
-      value: primaryEvidence ? describeSourceBadge(primaryEvidence) : "근거 준비 중",
+      label: "참고 정보",
+      value: primaryEvidence ? describeSourceBadge(primaryEvidence) : "참고 정보 준비 중",
       detail: primaryEvidence
         ? `${primaryEvidence.sourceLabel} · ${formatFreshnessState(primaryEvidence.freshnessState)}`
-        : "아직 대표 근거가 많지 않아 핵심 정보와 체크할 점을 먼저 보세요.",
+        : "아직 대표 참고 정보가 많지 않아 핵심 정보와 체크할 점을 먼저 보세요.",
     },
   ];
 }
@@ -495,9 +576,9 @@ export function buildRecommendationEvidenceLead(
 
   if (!primaryEvidence) {
     return {
-      label: "근거 준비 중",
-      detail: "아직 대표 근거가 충분하지 않아 핵심 정보와 체크할 점을 먼저 보여줘요.",
-      sourceLabel: "추가 근거 수집 중",
+      label: "메모 준비 중",
+      detail: "아직 대표 메모가 충분하지 않아 핵심 정보와 체크할 점을 먼저 보여줘요.",
+      sourceLabel: "추가 참고 정리 중",
       sourceUrl: null,
     };
   }
@@ -714,7 +795,11 @@ export function buildRecommendationPriorityBadge(totalScore: number): string {
  * @returns Human-readable query summary
  */
 export function buildQueryNarrative(query: RecommendationQuery): string {
-  return `${formatDepartureAirport(query.departureAirport)}에서 ${formatTravelMonth(query.travelMonth)}에 떠나는 ${query.tripLengthDays}일 ${formatPartyType(query.partyType)} 일정이에요. 예산은 ${formatBudgetBand(query.budgetBand)}, 분위기는 ${formatVibeList(query.vibes)} 중심으로 맞췄어요.`;
+  const exclusionSentence = query.excludedCountryCodes && query.excludedCountryCodes.length > 0
+    ? ` ${formatExcludedCountryList(query.excludedCountryCodes)}은 이번 추천에서 뺐어요.`
+    : "";
+
+  return `${formatTravelMonth(query.travelMonth)}에 떠나는 ${formatTripLengthBand(query.tripLengthDays)} ${formatPartyType(query.partyType)} 일정이에요. 예산은 ${formatBudgetBand(query.budgetBand)}, 이동 부담은 ${formatFlightTolerance(query.flightTolerance)} 기준으로 맞췄고 여행 스타일은 ${formatResultVibeList(query.vibes)} 쪽에 가깝게 잡았어요.${exclusionSentence}`;
 }
 
 /**
@@ -833,7 +918,7 @@ export function formatMonthList(months: number[]): string {
  */
 export function formatVibeLabel(vibe: string): string {
   if (vibe === "romance") {
-    return "로맨틱";
+    return "분위기";
   }
 
   if (vibe === "food") {
@@ -880,6 +965,19 @@ export function formatVibeLabel(vibe: string): string {
 }
 
 /**
+ * 결과 페이지에서 쓰는 vibe 라벨을 더 구매/행동 친화적인 표현으로 변환한다.
+ * @param vibe Destination or query vibe
+ * @returns Result-page friendly vibe label
+ */
+export function formatResultVibeLabel(vibe: string): string {
+  if (vibe === "nature") {
+    return "아웃도어";
+  }
+
+  return formatVibeLabel(vibe);
+}
+
+/**
  * 일정 밀도 값을 한국어 라벨로 변환한다.
  * @param pace 일정 밀도 값
  * @returns 한국어 라벨
@@ -912,6 +1010,15 @@ export function formatPaceList(paces: RecommendationQuery["pace"][]): string {
  */
 export function formatVibeList(vibes: string[]): string {
   return vibes.map((vibe) => formatVibeLabel(vibe)).join(" + ");
+}
+
+/**
+ * 결과 페이지용 vibe 목록을 합친다.
+ * @param vibes Destination or query vibes
+ * @returns Joined result-page vibe label string
+ */
+export function formatResultVibeList(vibes: string[]): string {
+  return vibes.map((vibe) => formatResultVibeLabel(vibe)).join(" + ");
 }
 
 /**

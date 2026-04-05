@@ -55,4 +55,23 @@ describe("rankDestinations", () => {
 
     expect(results.some((result) => result.destinationId === "paris")).toBe(false);
   });
+
+  it("writes recommendation reasons as product copy instead of raw vibe tags", () => {
+    const [topResult] = rankDestinations({
+      partyType: "couple",
+      partySize: 2,
+      budgetBand: "mid",
+      tripLengthDays: 5,
+      departureAirport: "ICN",
+      travelMonth: 10,
+      pace: "balanced",
+      flightTolerance: "medium",
+      vibes: ["beach", "culture"],
+    });
+
+    expect(topResult?.reasons[0]).toBe("쉬는 시간과 로컬 결을 한 번에 담기 좋습니다.");
+    expect(topResult?.whyThisFits).toBe("풀빌라와 해변, 요가와 카페 감성이 함께 있는 휴양형 여행지입니다.");
+    expect(topResult?.whyThisFits).not.toContain("분위기와 잘 맞습니다");
+    expect(topResult?.whyThisFits).not.toContain("은(는)");
+  });
 });

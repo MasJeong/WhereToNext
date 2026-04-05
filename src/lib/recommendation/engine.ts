@@ -42,6 +42,10 @@ function getMonthDistance(from: number, to: number): number {
  * @returns 적격 여부와 탈락 사유
  */
 function getEligibility(destination: DestinationProfile, query: RecommendationQuery) {
+  if (query.excludedCountryCodes?.includes(destination.countryCode)) {
+    return { eligible: false, reason: "excluded-country" } as const;
+  }
+
   if (query.flightTolerance === "short" && destination.flightBand === "long") {
     return { eligible: false, reason: "short-flight-cap" } as const;
   }
@@ -230,6 +234,44 @@ function scoreSourceConfidence(evidence: TrendEvidenceSnapshot[]): number {
   );
 }
 
+function buildVibeReason(vibes: RecommendationQuery["vibes"]): string {
+  const [primary, secondary] = vibes;
+
+  if (primary === "beach" && secondary === "culture") {
+    return "쉬는 시간과 로컬 결을 한 번에 담기 좋습니다.";
+  }
+
+  if (primary === "beach") {
+    return "쉬는 시간을 중심에 두고 하루를 느슨하게 쓰기 좋습니다.";
+  }
+
+  if (primary === "food") {
+    return "하루 동선을 식사와 카페 중심으로 묶기 좋습니다.";
+  }
+
+  if (primary === "city") {
+    return "도시 동선을 따라 보고 먹고 걷는 흐름이 자연스럽습니다.";
+  }
+
+  if (primary === "nature") {
+    return "풍경을 오래 보고 바깥 시간을 크게 쓰기 좋습니다.";
+  }
+
+  if (primary === "romance") {
+    return "둘만의 장면이 남는 저녁 동선을 만들기 좋습니다.";
+  }
+
+  if (primary === "culture") {
+    return "전시, 골목, 오래된 공간을 천천히 이어 보기 좋습니다.";
+  }
+
+  if (primary === "shopping") {
+    return "시장과 편집숍, 쇼핑 동선을 메인으로 짜기 좋습니다.";
+  }
+
+  return "이번 여행에서 먼저 챙기고 싶은 시간을 만들기 좋습니다.";
+}
+
 /**
  * 사용자에게 보여줄 핵심 이유 문장을 만든다.
  * @param destination 목적지 프로필
@@ -245,7 +287,7 @@ function buildReasons(
   const reasons: string[] = [];
 
   if (breakdown.vibeMatch >= 13) {
-    reasons.push(`${query.vibes.join(" · ")} 분위기와 잘 맞습니다.`);
+    reasons.push(buildVibeReason(query.vibes));
   }
 
   if (breakdown.seasonFit >= 10) {
@@ -315,7 +357,7 @@ function buildRecommendationResult(
     destinationId: destination.id,
     destinationKind: destination.kind,
     reasons,
-    whyThisFits: `${destination.nameKo}은(는) ${reasons[0]}`,
+    whyThisFits: destination.summary,
     watchOuts: destination.watchOuts,
     confidence: Math.min(98, Math.round(scoreBreakdown.total)),
     scoreBreakdown,

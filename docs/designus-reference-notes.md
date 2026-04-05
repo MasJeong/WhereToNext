@@ -1,101 +1,101 @@
-# Designus Reference Notes
+# Designus 참고 메모
 
-## Purpose
+## 목적
 
-This note exists to make the Designus-inspired part of the 떠나볼래 redesign auditable.
-The request was not only to improve the UI, but to research `https://ko.designus.design/` and reflect useful patterns.
+이 문서는 떠나볼래 리디자인에서 Designus 참고 방향을 어떻게 반영했는지 추적 가능하게 남기기 위해 작성했습니다.
+요청 범위는 단순히 UI를 개선하는 데서 끝나지 않았고, `https://ko.designus.design/`를 조사해 유효한 패턴을 제품에 반영하는 것이었습니다.
 
-This file records the specific UI/UX observations that were taken from that reference direction and how they were translated into 떠나볼래.
+이 파일에는 그 참고 방향에서 가져온 구체적인 UI/UX 관찰 내용과, 그것을 떠나볼래에 어떻게 옮겼는지 기록합니다.
 
-## Observed Designus-style patterns
+## Designus 스타일에서 관찰한 패턴
 
-The reference direction was useful not because 떠나볼래 should visually imitate Designus, but because it shows several product-level UI behaviors clearly.
+이 참고 방향이 유효했던 이유는 떠나볼래가 Designus를 겉모습까지 따라 해야 해서가 아니라, 제품 레벨의 UI 동작을 여러 면에서 분명하게 보여 줬기 때문입니다.
 
-### 1. Clear section framing with strong content grouping
-- Information is chunked into clearly bounded sections.
-- Long pages are still readable because each block has a distinct job.
-- Sections do not compete equally for attention.
+### 1. 강한 콘텐츠 묶음과 분명한 섹션 프레이밍
+- 정보가 경계가 분명한 섹션으로 끊겨 있다.
+- 긴 페이지도 각 블록의 역할이 뚜렷해서 읽기 쉽다.
+- 모든 섹션이 같은 강도로 경쟁하지 않는다.
 
-### 2. Editorial surface hierarchy
-- Hero zones feel like an introduction, not a dashboard.
-- Supporting blocks are calmer and more document-like.
-- Reading rhythm is created through contrast between strong lead sections and quieter utility sections.
+### 2. 편집형 표면 위계
+- 히어로 구역이 대시보드가 아니라 도입부처럼 느껴진다.
+- 보조 블록은 더 차분하고 문서형에 가깝다.
+- 강한 리드 섹션과 조용한 유틸리티 섹션의 대비로 읽기 리듬이 생긴다.
 
-### 3. Dense information without visual chaos
-- Multiple pieces of information can live on one page if they are grouped by role.
-- The page does not rely on loud accent colors everywhere.
-- Priority is communicated by spacing, surface treatment, and typographic contrast before decoration.
+### 3. 시각적 혼잡 없이 정보 밀도를 유지하는 방식
+- 역할 기준으로 잘 묶으면 한 페이지에 여러 정보가 함께 있어도 된다.
+- 페이지가 강한 강조 색에만 의존하지 않는다.
+- 우선순위는 장식보다 spacing, surface treatment, typography contrast로 먼저 전달된다.
 
-### 4. Action is separated from explanation
-- The main action is visually obvious.
-- Explanatory or trust blocks do not look clickable.
-- “What to do” and “why to trust this” are visually different layers.
+### 4. 행동과 설명의 분리
+- 메인 행동은 시각적으로 분명하다.
+- 설명 블록이나 신뢰 블록은 클릭 가능해 보이지 않는다.
+- “무엇을 해야 하는가”와 “왜 믿어야 하는가”가 서로 다른 시각 레이어로 나뉜다.
 
-### 5. Calm premium tone
-- The interface feels warm and intentional rather than loud.
-- Premium impression comes from restraint and hierarchy, not from many decorative tricks.
+### 5. 차분한 프리미엄 톤
+- 인터페이스가 시끄럽기보다 따뜻하고 의도적으로 느껴진다.
+- 프리미엄 인상은 장식 트릭의 양이 아니라 절제와 위계에서 나온다.
 
-## How these findings were applied to 떠나볼래
+## 이 관찰을 떠나볼래에 적용한 방식
 
-### Home / recommendation-start flow
-- Applied pattern: clear section framing + editorial hero
-- 떠나볼래 change:
-  - Home was restructured into an editorial hero plus a guided recommendation-start flow.
-  - The page now reads as a start surface, not as a filter-heavy workspace.
-- Relevant files:
+### 홈 / 추천 시작 흐름
+- 적용한 패턴: 분명한 섹션 프레이밍 + 편집형 히어로(`editorial hero`)
+- 떠나볼래에 반영한 변경:
+  - 홈을 편집형 히어로와 안내형 추천 시작 흐름(`guided recommendation-start flow`)으로 다시 구성했다.
+  - 이제 이 페이지는 필터가 많은 작업 화면이 아니라 추천 시작 표면처럼 읽힌다.
+- 관련 파일:
   - `src/components/trip-compass/home-experience.tsx`
   - `src/components/trip-compass/experience-shell.tsx`
 
-### Recommendation card
-- Applied pattern: action separated from explanation
-- 떠나볼래 change:
-  - Recommendation cards were changed to verdict-first hierarchy.
-  - The strongest block is now the decision verdict, followed by concise reasons and trust signals.
-  - Mood evidence was demoted into a later, supporting layer.
-- Relevant files:
+### 추천 카드
+- 적용한 패턴: 행동과 설명의 분리
+- 떠나볼래에 반영한 변경:
+  - 추천 카드를 판정 우선 위계(`verdict-first hierarchy`)로 바꿨다.
+  - 가장 강한 블록은 이제 결정 판정(`decision verdict`)이고, 그다음에 짧은 이유와 신뢰 신호가 따라온다.
+  - 분위기 근거(`Mood evidence`)는 뒤쪽의 보조 레이어로 내렸다.
+- 관련 파일:
   - `src/components/trip-compass/recommendation-card.tsx`
   - `src/lib/trip-compass/presentation.ts`
 
-### Compare board
-- Applied pattern: dense information without visual chaos
-- 떠나볼래 change:
-  - Compare was redesigned into a row-based decision board instead of stacked story cards.
-  - The user now scans by criterion, not by decorative card chunk.
-  - Mobile 2-up compare and differences-only mode were added to reduce scanning burden.
-- Relevant files:
+### 비교 보드
+- 적용한 패턴: 시각적 혼잡 없이 정보 밀도 유지
+- 떠나볼래에 반영한 변경:
+  - 비교 화면을 stacked story card 대신 행 기준 결정 보드(`row-based decision board`)로 다시 설계했다.
+  - 사용자는 장식적 카드 덩어리가 아니라 기준 행을 따라 훑어보게 됐다.
+  - 스캔 부담을 줄이기 위해 모바일 2칸 비교와 차이만 보기 모드를 추가했다.
+- 관련 파일:
   - `src/components/trip-compass/compare-board.tsx`
   - `src/app/compare/[snapshotId]/page.tsx`
 
-### Color system
-- Applied pattern: calm premium tone + role-first emphasis
-- 떠나볼래 change:
-  - Color tokens were redefined to express role, not mood.
-  - White/ivory became reading surfaces, yellow became selected/decision emphasis, orange became action, brown became text/anchoring structure.
-  - The same warm tone is no longer overloaded for CTA, selected state, trust summaries, and warnings.
-- Relevant files:
+### 색상 시스템
+- 적용한 패턴: 차분한 프리미엄 톤 + 역할 우선 강조
+- 떠나볼래에 반영한 변경:
+  - 색상 token을 분위기가 아니라 역할을 표현하도록 다시 정의했다.
+  - White/ivory는 읽기 표면, yellow는 선택과 결정 강조, orange는 행동, brown은 텍스트와 구조 받침 역할로 나눴다.
+  - CTA, selected state, trust summary, warning이 같은 warm tone에 과하게 묶이지 않게 정리했다.
+- 관련 파일:
   - `src/app/globals.css`
   - `docs/uiux-style-guide.md`
 
-## What was intentionally NOT copied
+## 의도적으로 가져오지 않은 것
 
-- No attempt was made to visually clone Designus.
-- 떠나볼래 did not adopt marketplace, commerce, or portfolio-style content structures.
-- Decorative surface behavior was translated only where it improved recommendation clarity.
+- Designus를 시각적으로 복제하려는 시도는 하지 않았다.
+- 떠나볼래는 장터형, 상거래형, 포트폴리오형 콘텐츠 구조를 채택하지 않았다.
+- 장식적인 표면 동작(`surface behavior`)도 추천 명확성을 높이는 경우에만 옮겼다.
 
-The rule was:
+기준은 단순했습니다.
 
-- keep the structural strengths
-- discard anything that makes 떠나볼래 look like a content marketplace instead of a recommendation product
+- 구조적 강점은 가져온다
+- 떠나볼래를 추천 제품이 아니라 콘텐츠 장터처럼 보이게 만드는 요소는 버린다
 
-## Why this matters for 떠나볼래
+## 왜 떠나볼래에 중요한가
 
-떠나볼래 is not a booking-first service and not a search-first service.
-It needs to feel trustworthy, compact, and deliberate.
+떠나볼래는 예약 우선 서비스도 아니고 검색 우선 서비스도 아닙니다.
+그래서 신뢰할 수 있고, 압축돼 있고, 신중하게 설계된 제품처럼 느껴져야 합니다.
 
-Designus was useful as a reference because it demonstrates:
+Designus가 참고 자료로 유효했던 이유는 아래를 잘 보여 주기 때문입니다.
 
-- how to separate hero from work surface
-- how to make long content easier to scan
-- how to make premium UI feel calm instead of loud
+- hero와 작업 표면을 어떻게 분리하는지
+- 긴 콘텐츠를 어떻게 더 쉽게 훑게 만드는지
+- 프리미엄 UI를 어떻게 요란하지 않고 차분하게 느끼게 만드는지
 
-Those are exactly the behaviors 떠나볼래 needed.
+이 세 가지가 바로 떠나볼래에 필요했던 동작입니다.

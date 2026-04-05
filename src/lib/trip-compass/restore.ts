@@ -78,8 +78,9 @@ export async function hydrateRecommendationSnapshot(
  */
 export async function hydrateComparisonSnapshot(
   snapshot: ComparisonSnapshot,
+  viewerUserId?: string | null,
 ): Promise<ComparisonColumnView[]> {
-  const recommendationSnapshots = await readRecommendationSnapshots(snapshot.snapshotIds);
+  const recommendationSnapshots = await readRecommendationSnapshots(snapshot.snapshotIds, viewerUserId);
   const snapshotIndex = new Map(recommendationSnapshots.map((item) => [item.id, item]));
 
   return snapshot.snapshotIds.map((snapshotId) => {
