@@ -368,7 +368,7 @@ export function AccountExperience({
         <nav
           role="tablist"
           aria-label="계정 탭"
-          className="grid grid-cols-2 gap-2 border-b border-[var(--color-frame-soft)] pb-2 sm:flex sm:gap-1 sm:overflow-x-auto sm:pb-0"
+          className="grid grid-cols-2 gap-2 overflow-y-hidden border-b border-[var(--color-frame-soft)] pb-2 sm:flex sm:gap-1 sm:overflow-x-auto sm:pb-0"
         >
           {tabItems.map((tab) => (
             <button
@@ -399,7 +399,7 @@ export function AccountExperience({
                 ) : null}
               </span>
               {activeTab === tab.key ? (
-                <span className="absolute inset-x-0 -bottom-px h-[2px] rounded-full bg-[var(--color-sand-deep)]" />
+                <span className="absolute inset-x-0 bottom-0 h-[2px] rounded-full bg-[var(--color-sand-deep)]" />
               ) : null}
             </button>
           ))}
@@ -550,7 +550,7 @@ export function AccountExperience({
 
                         {isGalleryOpen && entry.images.length > 0 ? (
                           <div className="rounded-xl border border-[var(--color-frame-soft)] bg-slate-50/60 p-3">
-                            <div className="flex gap-3 overflow-x-auto snap-x snap-mandatory pb-1">
+                            <div className="flex gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory pb-1">
                               {entry.images.map((image, imageIndex) => (
                                 <div
                                   key={`${entry.id}-gallery-${imageIndex}`}
