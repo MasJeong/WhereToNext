@@ -1,10 +1,10 @@
-# 떠나볼래 UI/UX Style Guide
+# SooGo UI/UX Style Guide
 
 Reference note: `docs/designus-reference-notes.md`
 
 ## 1. Product stance
 
-떠나볼래 is not a search engine and not a booking-first OTA.
+SooGo is not a search engine and not a booking-first OTA.
 It is a `discovery-first destination recommendation service` for Korean outbound travelers.
 
 The UI should therefore optimize for three moments:
@@ -47,7 +47,7 @@ before long-form destination storytelling.
 
 ## 4. What we are not
 
-Do not make 떠나볼래 feel like:
+Do not make SooGo feel like:
 
 - a blank search page
 - a map-first exploration tool
@@ -96,7 +96,7 @@ Rules:
 
 ### Preferred palette direction
 
-떠나볼래 should use a warm, edible palette built from:
+SooGo should use a warm, edible palette built from:
 
 - `white / ivory`
 - `soft yellow`
@@ -261,7 +261,7 @@ This keeps the product feeling like discovery, not rigid filtering.
 
 ## 11. Trust-first design rules
 
-떠나볼래 wins if users trust the recommendation before they admire the aesthetic.
+SooGo wins if users trust the recommendation before they admire the aesthetic.
 
 Trust signals should include:
 
@@ -408,7 +408,7 @@ Rules:
 
 - always label with `Sponsored`, `Partner`, or equivalent Korean plain language
 - never insert paid content into the top 1-3 organic recommendation slots
-- never phrase sponsored inventory as 떠나볼래’s neutral recommendation
+- never phrase sponsored inventory as SooGo’s neutral recommendation
 - never let payment silently change ranking logic
 - never break scroll rhythm with interstitial-style interruptions in the discovery feed
 

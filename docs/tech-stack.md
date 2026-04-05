@@ -1,8 +1,8 @@
-# 떠나볼래 Tech Stack
+# SooGo Tech Stack
 
 ## 개요
 
-떠나볼래는 `Next.js App Router` 기반의 풀스택 웹 애플리케이션입니다.
+SooGo는 `Next.js App Router` 기반의 풀스택 웹 애플리케이션입니다.
 추천 UI, API, 데이터 접근, 테스트, 배포를 하나의 TypeScript 코드베이스에서 관리합니다.
 
 ## 핵심 스택

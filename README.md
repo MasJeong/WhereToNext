@@ -1,14 +1,12 @@
-# 떠나볼래?
+# SooGo
 
-> Repository name: `WhereToNext`
-
-[![CI](https://github.com/MasJeong/WhereToNext/actions/workflows/ci.yml/badge.svg)](https://github.com/MasJeong/WhereToNext/actions/workflows/ci.yml)
+[![CI](https://github.com/MasJeong/SooGo/actions/workflows/ci.yml/badge.svg)](https://github.com/MasJeong/SooGo/actions/workflows/ci.yml)
 
 SooGo는 로그인 없이 바로 사용하는 해외 여행지 추천 플랫폼입니다.
 사용자가 동행, 예산, 일정, 여행 시기, 분위기를 선택하면 설명 가능한 추천 엔진이 목적지를 제안하고,
 각 결과 카드에는 Instagram vibe 근거와 저장/공유/비교 흐름이 함께 붙습니다.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MasJeong/WhereToNext)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MasJeong/SooGo)
 
 ## 핵심 특징
 
@@ -44,7 +42,6 @@ GOOGLE_MAPS_API_KEY=
 EXCHANGERATE_HOST_ACCESS_KEY=
 ```
 
-> 참고: 현재 GitHub 원격 저장소 slug는 `MasJeong/WhereToNext`입니다.
 `DATABASE_URL`이 없으면 `PGlite` fallback을 사용합니다.
 로컬 개발에서 `PGLITE_DATA_DIR`가 설정되어 있으면 해당 디렉터리에 데이터를 유지하고, 테스트에서는 메모리 기반 `PGlite`를 사용합니다.
 배포 환경에서는 반드시 외부 Postgres를 연결하세요.
