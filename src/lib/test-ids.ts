@@ -173,6 +173,11 @@ export function getHomeChoiceTestId(index: number): string {
   return `home-step-choice-${index}`;
 }
 
+/**
+ * Returns a stable result card selector for a given index.
+ * @param index Result card index
+ * @returns Card test id
+ */
 export function getResultCardTestId(index: number): string {
   return index === 0 ? testIds.result.card0 : `result-card-${index}`;
 }
@@ -181,22 +186,47 @@ export function getFutureTripCtaTestId(index: number): string {
   return index === 0 ? testIds.result.futureTripCta0 : `future-trip-cta-${index}`;
 }
 
+/**
+ * Returns a stable Instagram vibe selector for a given index.
+ * @param index Result card index
+ * @returns Instagram vibe block test id
+ */
 export function getInstagramVibeTestId(index: number): string {
   return index === 0 ? testIds.result.instagramVibe0 : `instagram-vibe-${index}`;
 }
 
+/**
+ * Returns a stable save snapshot selector for a given index.
+ * @param index Result card index
+ * @returns Save button test id
+ */
 export function getSaveSnapshotTestId(index: number): string {
   return index === 0 ? testIds.snapshot.saveSnapshot : `save-snapshot-${index}`;
 }
 
+/**
+ * Returns a stable saved snapshot selector for a given index.
+ * @param index Saved snapshot index
+ * @returns Saved snapshot test id
+ */
 export function getSavedSnapshotTestId(index: number): string {
   return index === 0 ? testIds.snapshot.savedSnapshot0 : `saved-snapshot-${index}`;
 }
 
+/**
+ * Returns a stable compare column selector for a given index.
+ * @param index Compare column index
+ * @returns Compare column test id
+ */
 export function getCompareColumnTestId(index: number): string {
   return index === 0 ? testIds.compare.column0 : `compare-column-${index}`;
 }
 
+/**
+ * Returns a stable empty-state relaxation selector for a given index.
+ * @param index Relaxation action index
+ * @returns Relaxation action test id
+ */
 export function getRelaxFilterActionTestId(index: number): string {
   return index === 0 ? testIds.result.relaxFilterAction0 : `relax-filter-action-${index}`;
 }
@@ -209,18 +239,38 @@ export function getResultFilterChipTestId(index: number): string {
   return index === 0 ? testIds.result.filterChip0 : `result-filter-chip-${index}`;
 }
 
+/**
+ * Returns a stable account history card selector for a given index.
+ * @param index History entry index
+ * @returns History entry test id
+ */
 export function getAccountHistoryEntryTestId(index: number): string {
   return index === 0 ? testIds.account.historyEntry0 : `history-entry-${index}`;
 }
 
+/**
+ * Returns a stable account history save selector for a given index.
+ * @param index History entry index
+ * @returns Save action test id
+ */
 export function getAccountHistorySaveTestId(index: number): string {
   return index === 0 ? testIds.account.historySave0 : `history-save-${index}`;
 }
 
+/**
+ * Returns a stable account history delete selector for a given index.
+ * @param index History entry index
+ * @returns Delete action test id
+ */
 export function getAccountHistoryDeleteTestId(index: number): string {
   return index === 0 ? testIds.account.historyDelete0 : `history-delete-${index}`;
 }
 
+/**
+ * Returns a stable account history edit selector for a given index.
+ * @param index 여행 기록 카드 인덱스
+ * @returns 수정 버튼 test id
+ */
 export function getAccountHistoryEditTestId(index: number): string {
   return index === 0 ? testIds.account.historyEdit0 : `history-edit-${index}`;
 }

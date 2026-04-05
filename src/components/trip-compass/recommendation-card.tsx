@@ -156,7 +156,7 @@ export function RecommendationCard({
               data-testid={getInstagramVibeTestId(index)}
               className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4"
             >
-              <p className="compass-editorial-kicker">분위기 근거</p>
+              <p className="compass-editorial-kicker">분위기 메모</p>
               <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">{primaryEvidence.label}</p>
               <p className="mt-1.5 text-xs leading-5 text-[var(--color-ink-soft)]">{primaryEvidence.detail}</p>
             </section>

@@ -9,9 +9,7 @@ function getAllowedShellOrigins(): string[] {
     .map((origin) => origin.trim())
     .filter(Boolean);
 
-  return configuredOrigins && configuredOrigins.length > 0
-    ? configuredOrigins
-    : [DEFAULT_SHELL_ORIGIN];
+  return configuredOrigins && configuredOrigins.length > 0 ? configuredOrigins : [DEFAULT_SHELL_ORIGIN];
 }
 
 /**

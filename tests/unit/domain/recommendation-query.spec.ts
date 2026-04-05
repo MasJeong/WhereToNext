@@ -14,7 +14,7 @@ describe("recommendationQuerySchema", () => {
       travelMonth: 10,
       pace: "balanced",
       flightTolerance: "medium",
-      vibes: ["romance", "food"],
+      vibes: ["romance", "food", "nature"],
       ignoredField: "should strip",
     });
 
@@ -27,8 +27,25 @@ describe("recommendationQuerySchema", () => {
       travelMonth: 10,
       pace: "balanced",
       flightTolerance: "medium",
-      vibes: ["romance", "food"],
+      vibes: ["romance", "food", "nature"],
     });
+  });
+
+  it("accepts up to three excluded country codes", () => {
+    const parsed = recommendationQuerySchema.parse({
+      partyType: "couple",
+      partySize: 2,
+      budgetBand: "mid",
+      tripLengthDays: 5,
+      departureAirport: "ICN",
+      travelMonth: 10,
+      pace: "balanced",
+      flightTolerance: "medium",
+      vibes: ["food"],
+      excludedCountryCodes: ["CN", "HK", "MO"],
+    });
+
+    expect(parsed.excludedCountryCodes).toEqual(["CN", "HK", "MO"]);
   });
 
   it("rejects invalid ranges and too many vibes", () => {
@@ -41,7 +58,7 @@ describe("recommendationQuerySchema", () => {
       travelMonth: 13,
       pace: "balanced",
       flightTolerance: "medium",
-      vibes: ["romance", "food", "nature"],
+      vibes: ["romance", "food", "nature", "city"],
     });
 
     expect(result.success).toBe(false);
@@ -57,6 +74,10 @@ describe("recommendationQuerySchema", () => {
     expect(testIds.result.filterBar).toBe("result-filter-bar");
     expect(testIds.result.filterChip0).toBe("result-filter-chip-0");
     expect(testIds.result.instagramVibe0).toBe("instagram-vibe-0");
+    expect(testIds.socialVideo.block).toBe("social-video-block");
+    expect(testIds.socialVideo.thumbnail).toBe("social-video-thumbnail");
+    expect(testIds.socialVideo.title).toBe("social-video-title");
+    expect(testIds.socialVideo.link).toBe("social-video-link");
     expect(testIds.detail.tasteSubmit).toBe("destination-taste-submit");
     expect(testIds.account.root).toBe("my-taste-root");
     expect(testIds.snapshot.saveSnapshot).toBe("save-snapshot");

@@ -7,6 +7,7 @@ import { testIds } from "@/lib/test-ids";
 import { ShellAuthNav } from "./shell-auth-nav";
 import { ShellPrimaryNav } from "./shell-primary-nav";
 
+/* Compass icon for 추천 받기 */
 function CompassIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none" className="h-[14px] w-[14px]" aria-hidden="true">
@@ -16,6 +17,7 @@ function CompassIcon() {
   );
 }
 
+/* Suitcase icon for 내 여행 */
 function SuitcaseIcon() {
   return (
     <svg viewBox="0 0 16 16" fill="none" className="h-[14px] w-[14px]" aria-hidden="true">
@@ -26,7 +28,7 @@ function SuitcaseIcon() {
   );
 }
 
-const primaryNavItems: readonly { label: string; href: string; icon: ReactNode }[] = [
+const primaryNavItems: readonly { label: string; href: string; icon: React.ReactNode }[] = [
   { label: "추천 받기", href: "/?stage=question&step=1", icon: <CompassIcon /> },
   { label: "내 여행", href: "/account", icon: <SuitcaseIcon /> },
 ];
@@ -74,6 +76,7 @@ export function ExperienceShell({
           >
             <div className="compass-shell-topbar-layout min-h-[2.75rem]">
               <ShellPrimaryNav items={primaryNavItems} />
+
               {hideAuthNavigation ? null : <ShellAuthNav />}
             </div>
           </div>

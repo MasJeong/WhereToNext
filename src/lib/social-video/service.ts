@@ -40,12 +40,14 @@ const evidenceStopwords = new Set([
   "장면",
   "클립",
   "리뷰",
+  "한국인",
+  "korean",
   "travel",
   "video",
   "youtube",
 ]);
 
-const socialVideoHintTerms = ["한국어", "shorts", "쇼츠"];
+const socialVideoHintTerms = ["한국인", "한국어", "korean", "shorts", "쇼츠"];
 const YOUTUBE_SEARCH_ENDPOINT = "https://www.googleapis.com/youtube/v3/search";
 const YOUTUBE_VIDEOS_ENDPOINT = "https://www.googleapis.com/youtube/v3/videos";
 const SOCIAL_VIDEO_CACHE_TTL_SECONDS = 10_800;

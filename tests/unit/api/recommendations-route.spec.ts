@@ -22,6 +22,14 @@ vi.mock("@/lib/travel-support/service", () => ({
       precipitationProbability: 10,
       observedAt: "2026-03-27T00:00:00.000Z",
     },
+    travelMonthWeather: {
+      travelMonth: 10,
+      summary: "10월엔 걷기 무난한 편이고 비 변수는 낮은 편이에요.",
+      averageMinTemperatureC: 13.2,
+      averageMaxTemperatureC: 21.4,
+      rainyDayRatio: 18,
+      basedOnYears: 5,
+    },
     fetchedAt: "2026-03-27T00:00:00.000Z",
   })),
 }));
@@ -33,7 +41,7 @@ describe("GET /api/recommendations", () => {
 
   it("returns ranked results for a valid query", async () => {
     const request = new Request(
-      `${TEST_BASE_URL}/api/recommendations?partyType=couple&partySize=2&budgetBand=mid&tripLengthDays=5&departureAirport=ICN&travelMonth=10&pace=balanced&flightTolerance=medium&vibes=romance,food`,
+      `${TEST_BASE_URL}/api/recommendations?partyType=couple&partySize=2&budgetBand=mid&tripLengthDays=5&departureAirport=ICN&travelMonth=10&pace=balanced&flightTolerance=medium&vibes=romance,food&excludedCountryCodes=CN,HK`,
     );
 
     const response = await GET(request);
@@ -44,6 +52,8 @@ describe("GET /api/recommendations", () => {
     expect(data.recommendations[0]?.scoreBreakdown.total).toBeGreaterThan(0);
     expect(data.meta.scoringVersion).toBe("mvp-v1");
     expect(data.leadSupplement?.location?.countryCode).toBeTruthy();
+    expect(data.leadSupplement?.travelMonthWeather?.travelMonth).toBe(10);
+    expect(data.query.excludedCountryCodes).toEqual(["CN", "HK"]);
   });
 
   it("rejects invalid queries with a stable code", async () => {

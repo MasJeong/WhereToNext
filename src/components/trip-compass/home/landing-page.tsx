@@ -15,14 +15,7 @@ type LandingPageProps = {
   todayCount?: number;
 };
 
-export function LandingPage({
-  testId,
-  heroTestId,
-  onStart,
-  trendingDestinations,
-  trendingLoading,
-  todayCount,
-}: LandingPageProps) {
+export function LandingPage({ testId, heroTestId, onStart, trendingDestinations, trendingLoading, todayCount }: LandingPageProps) {
   const prefersReducedMotion = useReducedMotion();
   const [showSticky, setShowSticky] = useState(false);
 
@@ -30,13 +23,14 @@ export function LandingPage({
     function handleScroll() {
       setShowSticky(window.scrollY > 260);
     }
-
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   const displayDestinations =
-    trendingDestinations && trendingDestinations.length > 0 ? trendingDestinations : FALLBACK_DESTINATIONS;
+    trendingDestinations && trendingDestinations.length > 0
+      ? trendingDestinations
+      : FALLBACK_DESTINATIONS;
 
   return (
     <motion.section
@@ -48,6 +42,7 @@ export function LandingPage({
       transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.26, ease: "easeOut" }}
     >
       <div className="relative w-full max-w-3xl text-center">
+        {/* Headline — pain-point driven */}
         <h1
           aria-label="다음 여행, 아직 정하지 못했다면"
           className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.04em] text-[var(--color-funnel-text)] sm:text-[2.5rem] sm:leading-[1.1]"
@@ -56,16 +51,19 @@ export function LandingPage({
           <br /> 아직 정하지 못했다면
         </h1>
 
+        {/* Subtext — benefit + time cost */}
         <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-6 text-[var(--color-funnel-text-soft)] sm:text-[1rem] sm:leading-7">
           취향, 일정, 예산에 맞는 여행지를 찾아드려요.
           <br />
           날씨, 환율, 유튜브 영상까지 한눈에.
         </p>
 
+        {/* Hero showcase */}
         <div className="mt-8 flex justify-center">
           <HeroAnimation testId={heroTestId} />
         </div>
 
+        {/* CTA button with shine effect */}
         <div className="mt-8 flex flex-col items-center gap-3">
           <button
             type="button"
@@ -77,41 +75,43 @@ export function LandingPage({
             내 여행지 찾기
           </button>
 
+          {/* Time + effort indicator */}
           <p className="text-[0.72rem] tracking-[-0.01em] text-[var(--color-funnel-text-soft)]">
             무료 · 약 1분 · 로그인 불필요
           </p>
           {todayCount != null && todayCount >= 10 ? (
             <p className="text-[0.72rem] tracking-[-0.01em] text-[var(--color-funnel-text-soft)]">
-              오늘 <span className="font-semibold text-[var(--color-funnel-text)]">{todayCount.toLocaleString()}명</span>
-              이 여행지를 찾았어요
+              오늘 <span className="font-semibold text-[var(--color-funnel-text)]">{todayCount.toLocaleString()}명</span>이 여행지를 찾았어요
             </p>
           ) : null}
         </div>
 
+        {/* Social proof — trending */}
         <div className="mt-8 flex flex-col items-center gap-2">
           <p className="text-[0.72rem] font-medium tracking-[-0.01em] text-[var(--color-funnel-text-soft)]">
             최근 인기 여행지
           </p>
           <div className="flex gap-2">
             {trendingLoading
-              ? Array.from({ length: 3 }, (_, index) => (
+              ? Array.from({ length: 3 }, (_, i) => (
                   <span
-                    key={index}
+                    key={i}
                     className="h-[1.625rem] w-14 animate-pulse rounded-full bg-[var(--color-funnel-muted)]"
                   />
                 ))
-              : displayDestinations.map((destination) => (
+              : displayDestinations.map((dest) => (
                   <span
-                    key={destination}
+                    key={dest}
                     className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1 text-[0.72rem] font-semibold text-[var(--color-funnel-text)]"
                   >
-                    {destination}
+                    {dest}
                   </span>
                 ))}
           </div>
         </div>
       </div>
 
+      {/* Mobile sticky bottom CTA */}
       <motion.div
         className="fixed inset-x-0 bottom-0 z-50 border-t border-[color:var(--color-funnel-border)] bg-white/90 px-5 pb-[env(safe-area-inset-bottom,0.5rem)] pt-3 backdrop-blur-md sm:hidden"
         initial={{ y: 80 }}
