@@ -52,7 +52,7 @@ export function LandingPage({ testId, heroTestId, onStart, trendingDestinations,
           취향에 맞는 여행지를 찾아드려요
         </p>
 
-        <div className="mt-8 flex justify-center">
+        <div className="mt-10 flex justify-center">
           <HeroAnimation testId={heroTestId} />
         </div>
 

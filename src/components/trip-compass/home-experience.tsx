@@ -1937,7 +1937,7 @@ export function HomeExperience() {
   );
 
   return (
-    <ExperienceShell eyebrow="" title="" intro="" capsule="" hideHeader bareBody>
+    <ExperienceShell eyebrow="" title="" intro="" capsule="" hideHeader hideTopbar bareBody>
       <div
         className={`-mx-3 min-h-screen bg-white sm:-mx-4 ${savedSnapshots.length > 0 && effectiveStage === "result" ? "pb-28 md:pb-0" : ""}`}
       >

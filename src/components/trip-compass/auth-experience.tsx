@@ -199,6 +199,7 @@ export function AuthExperience() {
               <span className="absolute left-[2.48rem] top-[1.48rem] h-[0.42rem] w-[0.42rem] rounded-full bg-[rgb(255_212_72)] shadow-[0_0_0_4px_rgb(255_212_72_/_0.16)]" />
             </div>
           </div>
+        </aside>
 
           <div className="mt-5">
             <p className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-soft)]">

@@ -1,4 +1,6 @@
 # AGENTS.md
+Agent guide for the `SooGo` repository.
+Scope: entire repository.
 
 `떠나볼까?` 제품을 다루는 `WhereToNext` 저장소용 에이전트 작업 가이드입니다.
 적용 범위는 저장소 전체입니다.
@@ -32,17 +34,12 @@
 - 테스트: `Vitest`, `Playwright`
 - 린트: `ESLint 9`
 
-## 4) 중요한 경로
-- 앱 라우트: `src/app/`
-- API 라우트: `src/app/api/**/route.ts`
-- 주요 UI: `src/components/trip-compass/`
-- 도메인/비즈니스 로직: `src/lib/`
-- 계약 정의: `src/lib/domain/contracts.ts`
-- 검증 파서: `src/lib/security/validation.ts`
-- 추천 엔진: `src/lib/recommendation/engine.ts`
-- 복원/라우트 조립: `src/lib/trip-compass/route-data.ts`, `src/lib/trip-compass/restore.ts`
-- 테스트 ID: `src/lib/test-ids.ts`
-- 전역 스타일/미들웨어: `src/app/globals.css`, `middleware.ts`
+## 5) Branch and Command Sources
+- Treat `main` as production and `dev` as integration; prefer `feature/*` branches for work.
+- Treat `package.json` as the canonical source for scripts.
+- Treat `vitest.config.ts` as the source of truth for unit-test runner behavior.
+- Treat `playwright.config.ts` as the source of truth for e2e runner behavior.
+- Use `README.md`, `docs/deployment.md`, and `docs/ios-release-preflight.md` as supporting docs, not as substitutes for config files.
 
 ## 5) `.sisyphus/`와 `memory/`의 역할
 - `.sisyphus/`는 내부 계획과 스크래치 공간입니다. 공개 기록을 대신하면 안 됩니다.
@@ -75,21 +72,18 @@
 - 스모크 검증: `npm run test:smoke`
 - iOS 셸 빌드: `npm run shell:build`
 
-## 8) 단일 테스트 실행 명령
-- Vitest 파일 1개: `npx vitest run tests/unit/snapshots/service.spec.ts`
-- Vitest 이름 1개: `npx vitest run tests/unit/recommendation/golden-cases.spec.ts -t "keeps the top recommendations stable"`
-- Playwright 파일 1개: `npx playwright test tests/e2e/recommendation-flow.spec.ts`
-- Playwright 제목 1개: `npx playwright test -g "restores a saved recommendation snapshot"`
-- WebKit 1개 파일: `npx playwright test tests/e2e/ios-acquisition-flow.spec.ts --project=webkit`
-- Mobile Safari 1개 파일: `npx playwright test tests/e2e/ios-acquisition-flow.spec.ts --project="Mobile Safari"`
+## 9) Required Verification Before Finishing
+- Minimum for code changes: `npm run lint && npm run test:unit && npm run build`.
+- Run `npm run test:e2e` when the change affects user-visible flows, routing, or browser behavior.
+- When touching a specific domain module, run the closest single-file or named test first, then the broader suite.
 
-## 9) 테스트 러너 메모
-- Vitest include 범위는 `tests/unit/**/*.spec.ts`, `tests/unit/**/*.spec.tsx`입니다.
-- Playwright testDir는 `tests/e2e`입니다.
-- Playwright는 `http://localhost:4010`을 기준으로 `npm run start`를 webServer로 띄웁니다.
-- Playwright는 `workers: 1`, `fullyParallel: false`라 병렬 실행을 가정하지 않습니다.
-- e2e를 로컬에서 돌릴 때는 보통 `npm run build && npm run test:e2e`가 가장 안전합니다.
-- `test:smoke`는 `npm run lint`, `vitest run tests/unit/smoke.spec.tsx`, `npm run build`를 묶어서 실행합니다.
+## 10) Formatting and General Style
+- Follow existing ESLint + Next formatting; do not assume Prettier is active.
+- Match the current style: double quotes, semicolons, trailing commas, and 2-space indentation.
+- Keep diffs focused; avoid drive-by refactors during bug fixes.
+- Prefer small pure helpers for domain logic and thin route handlers for transport concerns.
+- Add concise JSDoc to every new or materially changed function.
+- Match surrounding documentation language: core/business files often use Korean JSDoc, UI files often use English JSDoc.
 
 ## 10) 작업 완료 전 최소 검증
 - 코드 변경의 최소 기준은 `npm run lint && npm run test:unit && npm run build`입니다.
@@ -130,12 +124,14 @@
 - snapshot `kind` 같은 discriminated union은 깨지지 않게 유지합니다.
 - `allowJs`가 켜져 있어도 새 코드는 기본적으로 `.ts`/`.tsx`를 사용합니다.
 
-## 14) 명명 규칙
-- React 컴포넌트 export는 `PascalCase`를 사용합니다.
-- 함수, 변수, hook, local helper는 `camelCase`를 사용합니다.
-- 상수는 진짜 상수일 때만 `UPPER_SNAKE_CASE`를 사용합니다.
-- 파일명은 주로 kebab-case를 따릅니다.
-- 타입 이름은 설명적이어야 하며, 한 파일에만 의미가 있으면 로컬 타입으로 둡니다.
+## 15) Validation, Errors, and API Behavior
+- Validate all external input with Zod; prefer shared parsers in `src/lib/security/validation.ts`.
+- Return structured JSON errors from API routes.
+- Preserve stable error `code` values where a route already defines them.
+- Keep user-facing errors safe and generic; never leak stack traces or internal details.
+- Preserve rate-limit headers where already used.
+- Catch blocks must end in an intentional fallback, null state, boolean failure, or safe user message.
+- In route handlers, prefer early returns for auth, validation, and rate-limit failures.
 
 ## 15) Next.js / React 패턴
 - `src/app/` 아래는 기본적으로 Server Component로 유지합니다.

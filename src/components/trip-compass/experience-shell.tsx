@@ -67,7 +67,6 @@ import { brandDisplayName } from "@/lib/brand";
 import { isIosShellMode } from "@/lib/runtime/shell";
 import { testIds } from "@/lib/test-ids";
 
-import { brandDisplayName } from "@/lib/brand";
 import { isIosShellMode } from "@/lib/runtime/shell";
 import { testIds } from "@/lib/test-ids";
 

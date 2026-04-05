@@ -19,7 +19,7 @@ test("shows the 떠나볼까? smoke shell and immediate search entry", async ({ 
   await expect(page.getByTestId("home-step-progress")).toBeVisible({ timeout: 10000 });
 });
 
-test("shows the home header with auth and account shortcuts", async ({ page }) => {
+test("keeps the bare home shell without auth and account shortcuts", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByRole("link", { name: /떠나볼까.*홈으로/i })).toBeVisible();
