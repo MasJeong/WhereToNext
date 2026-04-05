@@ -512,19 +512,19 @@ function scoreFreshness(candidate: SocialVideoCandidate) {
   const elapsedDays = Math.max(0, (Date.now() - publishedAt.getTime()) / 86_400_000);
 
   if (elapsedDays <= 7) {
-    return 10;
-  }
-
-  if (elapsedDays <= 30) {
-    return 8;
-  }
-
-  if (elapsedDays <= 90) {
     return 5;
   }
 
-  if (elapsedDays <= 180) {
+  if (elapsedDays <= 30) {
+    return 4;
+  }
+
+  if (elapsedDays <= 90) {
     return 3;
+  }
+
+  if (elapsedDays <= 180) {
+    return 2;
   }
 
   return 1;
@@ -553,11 +553,11 @@ function scoreEngagementQuality(candidate: SocialVideoCandidate) {
   const engagementPerDay = ((likes * 2.5) + (comments * 4)) / elapsedDays;
   const viewVelocity = Math.log10(Math.max(views / elapsedDays, 1));
   const rawScore =
-    (absoluteReach * 1.8) +
-    (viewVelocity * 1.6) +
-    Math.log10(Math.max(engagementPerDay, 1)) * 2.4;
+    (absoluteReach * 3.4) +
+    (viewVelocity * 1.3) +
+    (Math.log10(Math.max(engagementPerDay, 1)) * 1.8);
 
-  return Math.max(0, Math.min(16, Math.round(rawScore)));
+  return Math.max(0, Math.min(22, Math.round(rawScore)));
 }
 
 /**
@@ -717,20 +717,6 @@ export function selectSocialVideoCandidate(
   return bestCandidate;
 }
 
-function hasRecentPublishedAt(candidate: SocialVideoCandidate) {
-  if (!candidate.publishedAt) {
-    return false;
-  }
-
-  const publishedAt = new Date(candidate.publishedAt);
-
-  if (Number.isNaN(publishedAt.getTime())) {
-    return false;
-  }
-
-  return Date.now() - publishedAt.getTime() <= 30 * 86_400_000;
-}
-
 function pickDiverseCandidate(
   rankedCandidates: SocialVideoScoredCandidate[],
   selectedVideoIds: Set<string>,
@@ -792,38 +778,6 @@ export function selectSocialVideoCandidates(
   const selectedChannelIds = new Set(
     primaryCandidate.candidate.channelId ? [primaryCandidate.candidate.channelId] : [],
   );
-
-  const recentCandidate = pickDiverseCandidate(
-    rankedCandidates,
-    selectedVideoIds,
-    selectedChannelIds,
-    minScore,
-    (candidate) => hasRecentPublishedAt(candidate.candidate),
-  );
-
-  if (recentCandidate) {
-    selected.push(recentCandidate);
-    selectedVideoIds.add(recentCandidate.candidate.id);
-    if (recentCandidate.candidate.channelId) {
-      selectedChannelIds.add(recentCandidate.candidate.channelId);
-    }
-  }
-
-  const shortCandidate = pickDiverseCandidate(
-    rankedCandidates,
-    selectedVideoIds,
-    selectedChannelIds,
-    minScore,
-    (candidate) => (candidate.candidate.durationSeconds ?? Number.POSITIVE_INFINITY) <= 90,
-  );
-
-  if (shortCandidate) {
-    selected.push(shortCandidate);
-    selectedVideoIds.add(shortCandidate.candidate.id);
-    if (shortCandidate.candidate.channelId) {
-      selectedChannelIds.add(shortCandidate.candidate.channelId);
-    }
-  }
 
   while (selected.length < 3) {
     const fallbackCandidate = pickDiverseCandidate(

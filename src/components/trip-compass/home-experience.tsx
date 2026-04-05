@@ -16,6 +16,7 @@ import {
   buildStructuredTripBrief,
   createRecommendationCards,
   formatDepartureAirport,
+  formatDestinationWithCountry,
   formatEvidenceMode,
   formatResultVibeLabel,
   formatTripLengthBand,
@@ -66,7 +67,7 @@ import { LandingPage } from "./home/landing-page";
 import { ResultLoadingPanel } from "./home/result-loading-panel";
 import { ResultPage } from "./home/result-page";
 import { StepQuestion } from "./home/step-question";
-import { LeadSocialVideoPanel } from "./social-video-panel";
+import { CompactSocialVideoPanel, LeadSocialVideoPanel } from "./social-video-panel";
 import { TravelSupportPanel } from "./travel-support-panel";
 
 type FunnelStage = "landing" | "question" | "loading" | "result";
@@ -550,7 +551,7 @@ function CompactRecommendationItem({
               data-testid={getResultTopItemTestId(index)}
               className="text-[1.05rem] font-semibold leading-none tracking-[-0.02em] text-[var(--color-funnel-text)]"
             >
-              {card.destination.nameKo}
+              {formatDestinationWithCountry(card.destination)}
             </h3>
             <span className="text-[0.78rem] text-[var(--color-funnel-text-soft)]">
               {formatDepartureAirport(query.departureAirport)} 출발
@@ -569,6 +570,13 @@ function CompactRecommendationItem({
               </span>
             ))}
           </div>
+
+          <CompactSocialVideoPanel
+            destinationId={card.destination.id}
+            destinationName={card.destination.nameKo}
+            leadReason={leadReason}
+            query={query}
+          />
         </div>
 
         <div className="flex flex-wrap gap-2 sm:justify-end">

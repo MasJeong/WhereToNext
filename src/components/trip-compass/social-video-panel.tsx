@@ -14,6 +14,13 @@ type LeadSocialVideoPanelProps = {
   query: RecommendationQuery;
 };
 
+type CompactSocialVideoPanelProps = {
+  destinationId: string;
+  destinationName: string;
+  leadReason: string;
+  query: RecommendationQuery;
+};
+
 type SocialVideoPanelState = {
   requestKey: string;
   items: SocialVideoItem[];
@@ -218,6 +225,17 @@ function decodeHtmlEntities(value: string) {
 }
 
 /**
+ * 로딩 중일 때 카드에 보여 줄 준비 단계 문구를 만든다.
+ * @param isMain 메인 슬롯 여부
+ * @returns 준비 단계 문구 목록
+ */
+function buildLoadingSteps(isMain: boolean): string[] {
+  return isMain
+    ? ["추천 결과와 결이 맞는 영상 고르는 중", "가장 먼저 볼 영상부터 정리", "다른 관점 영상은 이어서 붙이는 중"]
+    : ["메인 옆에 둘 보조 영상 고르는 중", "최근성·다른 관점까지 함께 살피는 중"];
+}
+
+/**
  * 하나의 영상 슬롯을 메인 또는 서브 카드로 렌더한다.
  * @param props 영상 슬롯 정보
  * @returns 영상 슬롯 카드
@@ -236,66 +254,122 @@ function SocialVideoSlot({
   const resolvedChannelTitle = item ? decodeHtmlEntities(item.channelTitle) : "";
 
   if (!item) {
+    const loadingSteps = buildLoadingSteps(isMain);
+
     return (
       <article
         className={[
-          "overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)]",
+          "overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#fffdf8_0%,#fff7ed_100%)] shadow-[0_14px_30px_rgba(15,23,42,0.04)]",
           isMain ? "min-h-[18rem] sm:min-h-[24rem]" : "min-h-[12.5rem]",
         ].join(" ")}
       >
         <div
           className={[
             "flex h-full flex-col justify-between gap-4 p-4 sm:p-5",
-            isMain ? "sm:flex-row sm:items-end" : "",
+            isMain ? "sm:flex-row sm:items-stretch" : "",
           ].join(" ")}
         >
-          <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-[var(--color-funnel-muted)] px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-              YouTube
-            </span>
-            <span className="text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)]">
-              {isResolved ? "영상 없음" : "불러오는 중"}
-            </span>
+          <div className={isMain ? "flex min-w-0 flex-1 flex-col justify-between gap-4" : "flex min-w-0 flex-1 flex-col gap-4"}>
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="rounded-full bg-white px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)] shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+                YouTube
+              </span>
+              <span
+                className={[
+                  "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[0.72rem] font-semibold",
+                  isResolved
+                    ? "border-[color:var(--color-funnel-border)] bg-white text-[var(--color-funnel-text-soft)]"
+                    : "border-amber-200 bg-amber-50 text-amber-700",
+                ].join(" ")}
+              >
+                <span className={isResolved ? "h-1.5 w-1.5 rounded-full bg-[var(--color-funnel-text-soft)]" : "h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"} />
+                {isResolved ? "영상 없음" : "영상 생성 중"}
+              </span>
+            </div>
+
+            <div className={isMain ? "max-w-xl space-y-2.5" : "space-y-2"}>
+              <p
+                className={[
+                  "font-semibold tracking-[-0.05em] text-[var(--color-funnel-text)]",
+                  isMain ? "text-[1.8rem] leading-[1] sm:text-[2.35rem]" : "text-[1.05rem] leading-6",
+                ].join(" ")}
+              >
+                {isMain ? `${destinationName}에서 바로 감이 오는 영상을 고르고 있어요` : `${destinationName}를 더 입체적으로 볼 영상을 고르고 있어요`}
+              </p>
+              <p className={isMain ? "text-[0.98rem] font-semibold leading-7 text-[var(--color-funnel-text)]" : "text-sm font-semibold leading-6 text-[var(--color-funnel-text)]"}>
+                {isMain ? leadReason : fallbackNote}
+              </p>
+              <p className="max-w-xl text-sm leading-6 text-[var(--color-funnel-text-soft)] sm:text-[0.96rem]">
+                {isMain
+                  ? isResolved
+                    ? "지금은 메인으로 보여줄 영상을 바로 찾지 못했어요. 아래 보조 영상이나 검색 링크로 바로 이어서 둘러볼 수 있어요."
+                    : "추천 결과는 이미 정리됐고, 지금은 그 분위기를 가장 잘 보여 주는 영상을 앞에 붙이고 있어요."
+                  : isResolved
+                    ? fallbackNote
+                    : "메인 영상을 본 뒤 비교해서 볼 수 있게, 결이 다른 후보를 함께 정리하고 있어요."}
+              </p>
+            </div>
+
+            <div className="grid gap-2.5 sm:grid-cols-2">
+              {loadingSteps.map((step, index) => (
+                <article
+                  key={`${title || destinationName}-loading-step-${index}`}
+                  className={[
+                    "rounded-[1.1rem] border px-4 py-3",
+                    index === 0
+                      ? "border-amber-200 bg-white"
+                      : "border-[color:var(--color-funnel-border)] bg-white/75",
+                  ].join(" ")}
+                >
+                  <div className="flex items-center gap-2">
+                    <span
+                      className={[
+                        "h-2 w-2 rounded-full",
+                        index === 0 && !isResolved ? "bg-amber-500 animate-pulse" : "bg-[var(--color-funnel-border)]",
+                      ].join(" ")}
+                    />
+                    <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                      {index === 0 ? "지금 보는 단계" : `이어서 ${index}`}
+                    </p>
+                  </div>
+                  <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">{step}</p>
+                </article>
+              ))}
+            </div>
           </div>
 
-          <div className={isMain ? "max-w-xl space-y-2" : "space-y-2"}>
-            <p
-              className={[
-                "font-semibold tracking-[-0.05em] text-[var(--color-funnel-text)]",
-                isMain ? "text-[1.8rem] leading-[1] sm:text-[2.35rem]" : "text-[1.05rem] leading-6",
-              ].join(" ")}
-            >
-              {isMain ? destinationName : destinationName}
-            </p>
-            <p className={isMain ? "text-[0.98rem] font-semibold leading-7 text-[var(--color-funnel-text)]" : "text-sm font-semibold leading-6 text-[var(--color-funnel-text)]"}>
-              {isMain ? leadReason : fallbackNote}
-            </p>
-            <p className="max-w-xl text-sm leading-6 text-[var(--color-funnel-text-soft)] sm:text-[0.96rem]">
-              {isMain
-                ? isResolved
-                  ? "지금은 메인으로 보여줄 영상이 아직 없어요. 아래 서브 슬롯은 준비되는 대로 채워집니다."
-                  : "가장 먼저 보면 좋은 영상을 하나만 앞에 두었어요."
-                : fallbackNote}
-            </p>
-          </div>
-
-          <div className="grid gap-2.5 sm:grid-cols-2">
-            <article className="rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-3">
+          <div
+            className={[
+              "grid gap-2.5",
+              isMain ? "sm:w-[16.5rem] sm:grid-cols-1" : "sm:grid-cols-2",
+            ].join(" ")}
+          >
+            <article className="rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-white/90 px-4 py-3">
               <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
                 선택 기준
               </p>
               <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">
-                {isMain ? "관련성·설명력 우선" : "최근성·보완 관점 우선"}
+                {isMain ? "추천 이유를 가장 잘 설명하는 순서" : "최근성·보완 관점까지 함께 반영"}
               </p>
             </article>
-            <article className="rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-3">
+            <article className="rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-white/90 px-4 py-3">
               <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
                 노출 방식
               </p>
               <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">
-                {isMain ? "큰 카드 1개" : "작은 보조 카드"}
+                {isMain ? "대표 영상부터 먼저 보여주기" : "짧게 훑는 보조 카드로 정리"}
               </p>
             </article>
+            {isMain ? (
+              <article className="rounded-[1.1rem] border border-amber-200 bg-amber-50 px-4 py-3">
+                <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-amber-700">
+                  로딩 안내
+                </p>
+                <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">
+                  추천 결과는 먼저 보여 드리고, 영상은 뒤에서 자연스럽게 이어 붙이고 있어요.
+                </p>
+              </article>
+            ) : null}
           </div>
         </div>
       </article>
@@ -409,6 +483,168 @@ function buildSocialVideoSearchParams({
   searchParams.set("vibes", query.vibes.join(","));
 
   return searchParams;
+}
+
+/**
+ * 2위 이하 추천 카드에 붙는 경량 YouTube 보조 카드다.
+ * @param props 목적지와 추천 질의
+ * @returns 작은 영상 링크 카드 또는 fallback 링크
+ */
+export function CompactSocialVideoPanel({
+  destinationId,
+  destinationName,
+  leadReason,
+  query,
+}: CompactSocialVideoPanelProps) {
+  const requestIdRef = useRef(0);
+  const requestKey = buildSocialVideoSearchParams({ destinationId, leadReason, query }).toString();
+  const [state, setState] = useState<SocialVideoPanelState>({
+    requestKey: "",
+    items: [],
+    resolved: false,
+    fallback: null,
+    status: null,
+  });
+
+  useEffect(() => {
+    const controller = new AbortController();
+    const requestId = ++requestIdRef.current;
+
+    async function loadSocialVideo() {
+      try {
+        const response = await fetch(buildApiUrl(`/api/social-video?${requestKey}`), {
+          method: "GET",
+          cache: "no-store",
+          signal: controller.signal,
+        });
+
+        if (!response.ok) {
+          if (!controller.signal.aborted && requestIdRef.current === requestId) {
+            setState({
+              requestKey,
+              items: [],
+              resolved: true,
+              fallback: buildClientSideFallback(destinationName),
+              status: "fallback",
+            });
+          }
+          return;
+        }
+
+        const payload = (await response.json()) as SocialVideoResponse;
+
+        if (requestIdRef.current !== requestId) {
+          return;
+        }
+
+        setState({
+          requestKey,
+          items: extractSocialVideoItems(payload),
+          resolved: true,
+          fallback: extractSocialVideoFallback(payload),
+          status: payload.status,
+        });
+      } catch {
+        if (!controller.signal.aborted && requestIdRef.current === requestId) {
+          setState({
+            requestKey,
+            items: [],
+            resolved: true,
+            fallback: buildClientSideFallback(destinationName),
+            status: "fallback",
+          });
+        }
+      }
+    }
+
+    void loadSocialVideo();
+
+    return () => {
+      controller.abort();
+    };
+  }, [destinationName, requestKey]);
+
+  const isCurrentRequest = state.requestKey === requestKey;
+  const item = isCurrentRequest ? state.items[0] ?? null : null;
+  const fallback = isCurrentRequest ? state.fallback : null;
+
+  if (!item && !fallback) {
+    return (
+      <div className="mt-3 rounded-[0.9rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-3">
+        <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+          YouTube
+        </p>
+        <p className="mt-1.5 text-[0.82rem] text-[var(--color-funnel-text-soft)]">
+          관련 영상을 찾는 중이에요.
+        </p>
+      </div>
+    );
+  }
+
+  if (!item) {
+    const search = fallback?.searches[0] ?? null;
+
+    if (!search) {
+      return null;
+    }
+
+    return (
+      <a
+        href={search.url}
+        target="_blank"
+        rel="noreferrer"
+        className="mt-3 flex items-center justify-between gap-3 rounded-[0.9rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-3 transition-colors duration-200 hover:bg-white"
+      >
+        <div className="min-w-0">
+          <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+            YouTube
+          </p>
+          <p className="mt-1 line-clamp-1 text-[0.86rem] font-semibold text-[var(--color-funnel-text)]">
+            {search.label}
+          </p>
+        </div>
+        <span className="shrink-0 text-[0.72rem] font-semibold text-[var(--color-action-primary)]">
+          바로 보기
+        </span>
+      </a>
+    );
+  }
+
+  const resolvedTitle = decodeHtmlEntities(item.title);
+  const resolvedChannelTitle = decodeHtmlEntities(item.channelTitle);
+  const viewCountLabel = formatViewCountLabel(item.viewCount);
+
+  return (
+    <a
+      href={item.videoUrl}
+      target="_blank"
+      rel="noreferrer"
+      className="mt-3 flex gap-3 rounded-[0.9rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] p-2.5 transition-colors duration-200 hover:bg-white"
+    >
+      <div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-[0.75rem] bg-[var(--color-funnel-border)]">
+        <Image
+          src={item.thumbnailUrl}
+          alt={`${resolvedTitle} 썸네일`}
+          fill
+          unoptimized
+          sizes="128px"
+          className="object-cover"
+        />
+      </div>
+      <div className="min-w-0">
+        <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+          YouTube 보조 영상
+        </p>
+        <p className="mt-1 line-clamp-2 text-[0.86rem] font-semibold leading-5 text-[var(--color-funnel-text)]">
+          {resolvedTitle}
+        </p>
+        <p className="mt-1 line-clamp-1 text-[0.74rem] text-[var(--color-funnel-text-soft)]">
+          {resolvedChannelTitle}
+          {viewCountLabel ? ` · ${viewCountLabel}` : ""}
+        </p>
+      </div>
+    </a>
+  );
 }
 
 /**

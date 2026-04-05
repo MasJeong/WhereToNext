@@ -1,7 +1,7 @@
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-import { LeadSocialVideoPanel } from "@/components/trip-compass/social-video-panel";
+import { CompactSocialVideoPanel, LeadSocialVideoPanel } from "@/components/trip-compass/social-video-panel";
 import { defaultRecommendationQuery } from "@/lib/trip-compass/presentation";
 
 describe("LeadSocialVideoPanel fallback", () => {
@@ -94,5 +94,72 @@ describe("LeadSocialVideoPanel fallback", () => {
 
     expect(await screen.findByText("Tokyo Food & Night Walk")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Trips & Eats 채널/ })).toBeInTheDocument();
+  });
+
+  it("shows staged loading copy before the API resolves", () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(
+        () =>
+          new Promise<Response>(() => {
+            return undefined;
+          }),
+      ),
+    );
+
+    render(
+      <LeadSocialVideoPanel
+        destinationId="tokyo"
+        destinationName="도쿄"
+        leadReason="먹고 걷는 일정과 잘 맞아요"
+        query={defaultRecommendationQuery}
+      />,
+    );
+
+    expect(screen.getByText("도쿄에서 바로 감이 오는 영상을 고르고 있어요")).toBeInTheDocument();
+    expect(screen.getAllByText("영상 생성 중").length).toBeGreaterThan(0);
+    expect(screen.getByText("추천 결과와 결이 맞는 영상 고르는 중")).toBeInTheDocument();
+  });
+
+  it("renders a compact supporting video card for secondary recommendations", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            status: "ok",
+            items: [
+              {
+                provider: "youtube",
+                videoId: "tokyo-support",
+                title: "Tokyo Cafes &amp; City Walk",
+                channelTitle: "Trips &amp; Eats",
+                channelUrl: "https://www.youtube.com/channel/trips-and-eats",
+                videoUrl: "https://www.youtube.com/watch?v=tokyo-support",
+                thumbnailUrl: "https://img.youtube.com/vi/tokyo-support/hqdefault.jpg",
+                publishedAt: "2026-03-28T00:00:00.000Z",
+                durationSeconds: 95,
+                viewCount: 182000,
+              },
+            ],
+          }),
+        ),
+      ),
+    );
+
+    render(
+      <CompactSocialVideoPanel
+        destinationId="tokyo"
+        destinationName="도쿄"
+        leadReason="먹고 걷는 일정과 잘 맞아요"
+        query={defaultRecommendationQuery}
+      />,
+    );
+
+    expect(await screen.findByText("Tokyo Cafes & City Walk")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Tokyo Cafes & City Walk/ })).toHaveAttribute(
+      "href",
+      "https://www.youtube.com/watch?v=tokyo-support",
+    );
   });
 });

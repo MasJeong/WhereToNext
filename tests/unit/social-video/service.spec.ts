@@ -154,6 +154,36 @@ describe("social-video service", () => {
     expect(selected).toHaveLength(2);
   });
 
+  it("prefers a strong high-view video over a merely newer one when both are still recent enough", () => {
+    const context = buildTestContext();
+    const highViewCandidate = buildCandidate({
+      id: "high-view",
+      title: "도쿄 여행 가이드",
+      channelTitle: "도쿄 제대로 보기",
+      durationSeconds: 210,
+      description: "도쿄 일정과 맛집, 동선을 자세히 정리",
+      publishedAt: "2026-02-20T00:00:00.000Z",
+      viewCount: 420000,
+      likeCount: 8200,
+      commentCount: 480,
+    });
+    const newerCandidate = buildCandidate({
+      id: "newer",
+      title: "도쿄 여행 쇼츠",
+      channelTitle: "빠른 여행 컷",
+      durationSeconds: 58,
+      description: "도쿄 하이라이트를 짧게 모음",
+      publishedAt: "2026-03-28T00:00:00.000Z",
+      viewCount: 28000,
+      likeCount: 420,
+      commentCount: 32,
+    });
+
+    const selected = selectSocialVideoCandidate([newerCandidate, highViewCandidate], context);
+
+    expect(selected?.candidate.id).toBe("high-view");
+  });
+
   it("falls back to a relevant standard video when short-form quality is low", () => {
     const context = buildTestContext();
     const weakShortCandidate = buildCandidate({
