@@ -46,7 +46,7 @@ function RestoreTrustPanel({
           href="#restore-detail"
           className="compass-action-primary compass-soft-press inline-flex rounded-full px-5 py-2.5 text-sm font-semibold tracking-[0.04em]"
         >
-          저장한 여행 다시 보기
+          저장 결과 펼쳐 보기
         </a>
         <p className="text-xs leading-5 text-[var(--color-ink-soft)]">비교가 필요하면 홈에서 여러 후보를 다시 담아 비교 보드로 이어갈 수 있어요.</p>
       </div>
@@ -85,7 +85,7 @@ export function SnapshotRestoreView({ data }: SnapshotRestoreViewProps) {
       eyebrow="내 일정"
       title={`${data.card.destination.nameKo} 저장 결과를 다시 보고 있어요.`}
       intro="저장 당시 기준과 결과를 그대로 확인하는 페이지예요. 아래에서 담아 둔 이유를 먼저 보고 상세 정보를 이어서 읽어 보세요."
-      capsule="익명 공유 링크 · 재계산 없음 · 저장한 판단 그대로 복원"
+      capsule="익명 공유 링크 · 재계산 없음 · 저장 당시 판단 그대로"
       headerAside={
         <RestoreTrustPanel
           destinationName={data.card.destination.nameKo}

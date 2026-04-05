@@ -128,7 +128,6 @@ test("supports back navigation during the one-question-per-screen funnel", async
 
   await page.getByRole("button", { name: /10~12월/ }).click();
   await page.getByTestId("home-step-choice-1").click();
-  await page.getByRole("button", { name: /7~9월/ }).click();
   await page.getByTestId("home-step-choice-8").click();
   await page.getByTestId("home-step-next").click();
   await page.getByTestId("home-step-choice-0").click();

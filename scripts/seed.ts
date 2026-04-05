@@ -1,36 +1,20 @@
-import "dotenv/config";
+import { config as loadEnv } from "dotenv";
 
-import { activeScoringVersion } from "../src/lib/catalog/scoring-version";
-import { launchCatalog } from "../src/lib/catalog/launch-catalog";
-import { createDatabaseClient } from "../src/lib/db/config";
-import { destinationProfiles, scoringVersions } from "../src/lib/db/schema";
+import { getRuntimeDatabase } from "../src/lib/db/runtime";
+
+loadEnv({ path: ".env.local" });
+loadEnv();
 
 /**
- * MVP 카탈로그와 활성 스코어 버전을 데이터베이스에 적재한다.
+ * 런타임 DB 초기화 경로를 재사용해 migration과 seed를 함께 보장한다.
  * @returns Promise<void>
  */
 async function seedDatabase() {
-  const { db, sql } = createDatabaseClient();
-
-  try {
-    await db
-      .insert(scoringVersions)
-      .values(activeScoringVersion)
-      .onConflictDoUpdate({
-        target: scoringVersions.id,
-        set: {
-          label: activeScoringVersion.label,
-          active: activeScoringVersion.active,
-          weights: activeScoringVersion.weights,
-          tieBreakerCap: activeScoringVersion.tieBreakerCap,
-          shoulderWindowMonths: activeScoringVersion.shoulderWindowMonths,
-        },
-      });
-
-    await db.insert(destinationProfiles).values(launchCatalog).onConflictDoNothing();
-  } finally {
-    await sql.end();
-  }
+  const runtime = await getRuntimeDatabase();
+  await runtime.close();
 }
 
-await seedDatabase();
+void seedDatabase().catch((error) => {
+  console.error(error);
+  process.exitCode = 1;
+});

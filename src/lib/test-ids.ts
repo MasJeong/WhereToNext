@@ -70,6 +70,8 @@ export const testIds = {
     root: "destination-detail-root",
     coreFacts: "destination-core-facts",
     travelSupport: "destination-travel-support",
+    flightAffiliate: "destination-flight-affiliate",
+    flightAffiliateCta: "destination-flight-affiliate-cta",
     fitReason: "destination-fit-reason",
     evidence: "destination-evidence",
     watchOuts: "destination-watch-outs",

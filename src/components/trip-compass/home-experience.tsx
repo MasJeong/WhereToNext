@@ -10,7 +10,6 @@ import type {
   UserFutureTrip,
 } from "@/lib/domain/contracts";
 import {
-  buildDestinationDetailPath,
   buildQueryNarrative,
   buildRecommendationDecisionFacts,
   buildRecommendationSearchParams,
@@ -149,7 +148,7 @@ const homeTravelWindowParam = "travelWindow";
 const homeTripLengthParam = "tripLength";
 const homeTravelStyleParam = "travelStyle";
 const homeFlightPreferenceParam = "flightPreference";
-const minimumRecommendationLoadingMs = process.env.NODE_ENV === "test" ? 0 : 5000;
+const minimumRecommendationLoadingMs = process.env.NODE_ENV === "test" ? 200 : 5000;
 
 const resultFilterOptions: Array<{ key: ResultFilterKey; label: string; description: string }> = [
   { key: "all", label: "전체", description: "지금 조건과 맞는 순서대로 봐요." },
@@ -463,10 +462,10 @@ function SavedSnapshotCompactItem({
 
       <div className="mt-3 flex flex-wrap gap-2">
         <Link
-          href={snapshot.sharePath}
+          href="/account?tab=saved"
           className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em]"
         >
-          저장 페이지
+          계정에서 보기
         </Link>
         <button
           type="button"
@@ -488,10 +487,10 @@ function CompactRecommendationItem({
   onSave,
   onCopy,
 }: CompactRecommendationItemProps) {
-  const detailPath = buildDestinationDetailPath(card.destination, query, saveState.snapshotId);
   const leadReason = card.recommendation.reasons[0] ?? card.recommendation.whyThisFits;
   const decisionFacts = buildRecommendationDecisionFacts(card.destination);
   const tags = card.destination.vibeTags.slice(0, 3).map((tag) => formatResultVibeLabel(tag));
+  const accountSavedPath = "/account?tab=saved";
 
   return (
     <article
@@ -538,25 +537,24 @@ function CompactRecommendationItem({
         </div>
 
         <div className="flex flex-wrap gap-2 sm:justify-end">
-          <Link
-            href={detailPath}
-            className="inline-flex min-h-[2.25rem] items-center rounded-full bg-[var(--color-action-primary)] px-3 py-2 text-[0.72rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
-          >
-            상세 보기
-          </Link>
-          <button
-            type="button"
-            data-testid={getSaveSnapshotTestId(index)}
-            onClick={() => onSave(card)}
-            disabled={saveState.status === "saving" || saveState.status === "saved"}
-            className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {saveState.status === "saving"
-              ? "담는 중..."
-              : saveState.status === "saved"
-                ? "담김"
-                : "담기"}
-          </button>
+          {saveState.status === "saved" ? (
+            <Link
+              href={accountSavedPath}
+              className="inline-flex min-h-[2.25rem] items-center rounded-full bg-[var(--color-action-primary)] px-3 py-2 text-[0.72rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
+            >
+              계정에서 보기
+            </Link>
+          ) : (
+            <button
+              type="button"
+              data-testid={getSaveSnapshotTestId(index)}
+              onClick={() => onSave(card)}
+              disabled={saveState.status === "saving"}
+              className="inline-flex min-h-[2.25rem] items-center rounded-full bg-[var(--color-action-primary)] px-3 py-2 text-[0.72rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {saveState.status === "saving" ? "담는 중..." : "내 여행에 담기"}
+            </button>
+          )}
           {saveState.shareUrl ? (
             <button
               type="button"
@@ -957,10 +955,20 @@ export function HomeExperience() {
       }
 
       if (submitError) {
+        if (pendingRecommendationQueryRef.current === serializedQuery) {
+          pendingRecommendationQueryRef.current = null;
+        }
         return;
       }
 
       if (pendingRecommendationQueryRef.current === serializedQuery) {
+        if (results) {
+          const serializedResultQuery = buildRecommendationSearchParams(results.query).toString();
+
+          if (serializedResultQuery === serializedQuery) {
+            pendingRecommendationQueryRef.current = null;
+          }
+        }
         return;
       }
 
@@ -1442,7 +1450,6 @@ export function HomeExperience() {
         }
       }
 
-      pendingRecommendationQueryRef.current = null;
       setStage("result");
       setResults(payload);
       setCards(createRecommendationCards(payload.recommendations));
@@ -1451,6 +1458,8 @@ export function HomeExperience() {
       setShowAllResults(false);
       if (syncRoute) {
         syncResultRoute(payload.query, "push");
+      } else {
+        pendingRecommendationQueryRef.current = null;
       }
       requestAnimationFrame(() => {
         scrollToPageTop("auto");
@@ -1460,11 +1469,22 @@ export function HomeExperience() {
         return;
       }
 
-      pendingRecommendationQueryRef.current = null;
+      if (syncRoute) {
+        await waitForMinimumRecommendationLoading(loadingStartedAt);
+        if (activeRecommendationRequestRef.current !== requestId) {
+          return;
+        }
+      }
+
       setStage("result");
       setResults(null);
       setCards([]);
       setSubmitError("지금은 추천 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+      if (syncRoute) {
+        syncResultRoute(nextQuery, "push");
+      } else {
+        pendingRecommendationQueryRef.current = null;
+      }
       requestAnimationFrame(() => {
         scrollToPageTop("auto");
       });
@@ -1635,38 +1655,39 @@ export function HomeExperience() {
             />
           ) : null
         }
-        leadDetails={
+          leadDetails={
           leadCard ? (
             (() => {
               const saveState = saveStates[leadCard.destination.id] ?? { status: "idle" };
-              const detailPath = buildDestinationDetailPath(leadCard.destination, results?.query ?? currentQuery, saveState.snapshotId);
 
               return (
                 <div className="space-y-4">
                   <section data-testid={getInstagramVibeTestId(0)} className="space-y-2.5">
                     <div className="flex flex-wrap gap-2">
-                      <Link
-                        href={detailPath}
-                        className="inline-flex min-h-[2.9rem] items-center rounded-full bg-[var(--color-action-primary)] px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
-                      >
-                        상세 보기
-                      </Link>
-                      <button
-                        type="button"
-                        data-testid={getSaveSnapshotTestId(0)}
-                        onClick={() => {
-                          void saveCard(leadCard);
-                        }}
-                        disabled={saveState.status === "saving" || saveState.status === "saved"}
-                        className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-                      >
-                        {saveState.status === "saving"
-                          ? "담는 중..."
-                          : saveState.status === "saved"
-                            ? "여행 담김"
-                            : "여행 담기"}
-                      </button>
+                      {saveState.status === "saved" ? (
+                        <Link
+                          href="/account?tab=saved"
+                          className="inline-flex min-h-[2.9rem] items-center rounded-full bg-[var(--color-action-primary)] px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
+                        >
+                          계정에서 보기
+                        </Link>
+                      ) : (
+                        <button
+                          type="button"
+                          data-testid={getSaveSnapshotTestId(0)}
+                          onClick={() => {
+                            void saveCard(leadCard);
+                          }}
+                          disabled={saveState.status === "saving"}
+                          className="inline-flex min-h-[2.9rem] items-center rounded-full bg-[var(--color-action-primary)] px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {saveState.status === "saving" ? "담는 중..." : "내 여행에 담기"}
+                        </button>
+                      )}
                     </div>
+                    <p className="text-xs leading-5 text-[var(--color-funnel-text-soft)]">
+                      저장한 추천은 계정의 <span className="font-semibold text-[var(--color-funnel-text)]">저장한 추천</span> 탭에서 다시 볼 수 있어요.
+                    </p>
                   </section>
 
                   <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--color-funnel-text-soft)]">

@@ -121,6 +121,16 @@ function getSnapshotStatus(payload: RecommendationSnapshot): "saved" | "planned"
   return payload.meta?.status ?? "saved";
 }
 
+/**
+ * 저장한 추천 카드에서 다시 보여줄 한 줄 요약을 만든다.
+ * @param payload 저장된 추천 payload
+ * @returns 다시 보기 전용 요약 문구
+ */
+function getSavedSnapshotSummary(payload: RecommendationSnapshot): string {
+  const leadResult = payload.results[0];
+  return leadResult?.reasons[0] ?? leadResult?.whyThisFits ?? "결정 이유를 다시 보면서 다음 행동을 이어갈 수 있어요.";
+}
+
 export function AccountExperience({
   userName,
   initialTab,
@@ -278,7 +288,7 @@ export function AccountExperience({
   const tabItems: Array<{ key: AccountTab; label: string; testId: string; count?: number }> = [
     { key: "history", label: "여행 기록", testId: testIds.account.tabHistory, count: summary.count },
     { key: "future-trips", label: "예정된 여행", testId: testIds.account.tabFutureTrips, count: plannedSnapshots.length },
-    { key: "saved", label: "저장 목록", testId: testIds.account.tabSaved, count: savedCandidateSnapshots.length },
+    { key: "saved", label: "저장한 추천", testId: testIds.account.tabSaved, count: savedCandidateSnapshots.length },
     { key: "preferences", label: "추천 설정", testId: testIds.account.tabPreferences },
   ];
 
@@ -651,13 +661,14 @@ export function AccountExperience({
         {activeTab === "saved" ? (
           <section role="tabpanel" id="tabpanel-saved" aria-labelledby="tab-saved">
             <p className="mb-4 text-[0.85rem] text-[var(--color-ink-soft)]">
-              관심 있는 추천을 한곳에서 비교하세요.
+              결과 화면에서 담아 둔 추천을 여기서 다시 보고 정리하세요.
             </p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {savedCandidateSnapshots.length > 0 ? (
                 savedCandidateSnapshots.map((snapshot, index) => {
                   const destination = findDestinationCopy(snapshot.payload.destinationIds[0]);
                   const isUpdating = updatingSnapshotId === snapshot.id;
+                  const summaryCopy = getSavedSnapshotSummary(snapshot.payload);
 
                   return (
                     <article
@@ -671,13 +682,16 @@ export function AccountExperience({
                         <p className="mt-2 text-[0.78rem] text-[var(--color-ink-soft)]">
                           {formatRelativeDate(snapshot.createdAt)} 저장
                         </p>
+                        <p className="mt-2 text-[0.84rem] leading-6 text-[var(--color-ink)]">
+                          {summaryCopy}
+                        </p>
                       </div>
                       <div className="mt-4 flex gap-2">
                         <Link
                           href={`/s/${snapshot.id}`}
                           className="compass-action-primary compass-soft-press rounded-lg px-4 py-2 text-[0.78rem] font-semibold"
                         >
-                          다시 보기
+                          공유 페이지
                         </Link>
                         <button
                           type="button"

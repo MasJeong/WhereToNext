@@ -32,6 +32,9 @@ export const snapshotKindValues = ["recommendation", "comparison"] as const;
 export const snapshotVisibilityValues = ["public", "private"] as const;
 export const snapshotStatusValues = ["saved", "planned"] as const;
 export const explorationPreferenceValues = ["repeat", "balanced", "discover"] as const;
+export const affiliatePartnerValues = ["skyscanner", "trip-com"] as const;
+export const affiliateCategoryValues = ["flight"] as const;
+export const affiliatePageTypeValues = ["destination-detail"] as const;
 
 export const destinationKindSchema = z.enum(destinationKindValues);
 export const budgetBandSchema = z.enum(budgetBandValues);
@@ -48,6 +51,9 @@ export const snapshotKindSchema = z.enum(snapshotKindValues);
 export const snapshotVisibilitySchema = z.enum(snapshotVisibilityValues);
 export const snapshotStatusSchema = z.enum(snapshotStatusValues);
 export const explorationPreferenceSchema = z.enum(explorationPreferenceValues);
+export const affiliatePartnerSchema = z.enum(affiliatePartnerValues);
+export const affiliateCategorySchema = z.enum(affiliateCategoryValues);
+export const affiliatePageTypeSchema = z.enum(affiliatePageTypeValues);
 
 export const scoringWeightsSchema = z.object({
   vibeMatch: z.literal(25),
@@ -406,6 +412,33 @@ export const userFutureTripInputSchema = z.object({
   sourceSnapshotId: z.string().uuid(),
 });
 
+export const destinationAffiliateClickSchema = z.object({
+  id: z.string().uuid(),
+  destinationId: z.string().min(1),
+  partner: affiliatePartnerSchema,
+  category: affiliateCategorySchema,
+  pageType: affiliatePageTypeSchema,
+  departureAirport: departureAirportSchema.nullable(),
+  travelMonth: z.number().int().min(1).max(12).nullable(),
+  tripLengthDays: z.number().int().min(2).max(21).nullable(),
+  flightTolerance: flightToleranceSchema.nullable(),
+  userId: z.string().min(1).nullable(),
+  sessionId: z.string().min(1).nullable(),
+  clickedAt: z.string().datetime(),
+});
+
+export const destinationAffiliateClickInputSchema = z.object({
+  destinationId: z.string().min(1),
+  partner: affiliatePartnerSchema,
+  category: affiliateCategorySchema,
+  pageType: affiliatePageTypeSchema,
+  departureAirport: departureAirportSchema.nullish().transform((value) => value ?? null),
+  travelMonth: z.number().int().min(1).max(12).nullish().transform((value) => value ?? null),
+  tripLengthDays: z.number().int().min(2).max(21).nullish().transform((value) => value ?? null),
+  flightTolerance: flightToleranceSchema.nullish().transform((value) => value ?? null),
+  sessionId: z.string().min(1).nullish().transform((value) => value ?? null),
+});
+
 export const recommendationPersonalizationContextSchema = z.object({
   explorationPreference: explorationPreferenceSchema,
   history: z.array(userDestinationHistorySchema),
@@ -435,6 +468,11 @@ export type UserDestinationHistory = z.infer<typeof userDestinationHistorySchema
 export type UserDestinationHistoryInput = z.infer<typeof userDestinationHistoryInputSchema>;
 export type UserFutureTrip = z.infer<typeof userFutureTripSchema>;
 export type UserFutureTripInput = z.infer<typeof userFutureTripInputSchema>;
+export type DestinationAffiliateClick = z.infer<typeof destinationAffiliateClickSchema>;
+export type DestinationAffiliateClickInput = z.infer<typeof destinationAffiliateClickInputSchema>;
+export type AffiliatePartner = z.infer<typeof affiliatePartnerSchema>;
+export type AffiliateCategory = z.infer<typeof affiliateCategorySchema>;
+export type AffiliatePageType = z.infer<typeof affiliatePageTypeSchema>;
 export type RecommendationPersonalizationContext = z.infer<
   typeof recommendationPersonalizationContextSchema
 >;

@@ -215,8 +215,8 @@ async function lookupStoredSessionByToken(token: string): Promise<StoredAuthSess
         sessionRecord: localSession,
         user: {
           id: localUser.id,
-          name: localUser.name,
-          email: localUser.email ?? "",
+          name: getDisplayName(localUser.name),
+          email: localUser.email,
         },
       };
     }
@@ -236,7 +236,7 @@ async function lookupStoredSessionByToken(token: string): Promise<StoredAuthSess
       sessionRecord: memorySession,
       user: {
         id: memoryUser.id,
-        name: memoryUser.name,
+        name: getDisplayName(memoryUser.name),
         email: memoryUser.email,
       },
     };
@@ -257,15 +257,15 @@ async function lookupStoredSessionByToken(token: string): Promise<StoredAuthSess
     return null;
   }
 
-  return {
-    storage: "database",
-    sessionRecord: sessionRow,
-    user: {
-      id: userRow.id,
-      name: userRow.name,
-      email: userRow.email ?? "",
-    },
-  };
+    return {
+      storage: "database",
+      sessionRecord: sessionRow,
+      user: {
+        id: userRow.id,
+        name: getDisplayName(userRow.name),
+        email: userRow.email,
+      },
+    };
 }
 
 async function refreshStoredSession(sessionState: StoredAuthSession, now: Date): Promise<StoredAuthSession> {
@@ -349,6 +349,11 @@ type AuthSession = {
     expiresAt: string;
   };
 };
+
+function getDisplayName(name: string | null | undefined): string {
+  const normalizedName = name?.trim();
+  return normalizedName ? normalizedName : "여행자";
+}
 
 /**
  * cookie 헤더 문자열에서 현재 세션 토큰을 파싱한다.
@@ -532,8 +537,8 @@ function buildAuthSession(
   return {
     user: {
       id: userRow.id,
-      name: userRow.name,
-      email: userRow.email ?? "",
+      name: getDisplayName(userRow.name),
+      email: userRow.email,
     },
     session: {
       id: sessionRow.id,
@@ -788,6 +793,8 @@ export async function signUpWithEmailPassword(input: {
           email,
           emailVerified: false,
           image: null,
+          status: "active",
+          lastLoginAt: now,
           createdAt: now,
           updatedAt: now,
         })
@@ -909,8 +916,8 @@ export async function signInWithEmailPassword(input: {
         data: {
           user: {
             id: localUser.id,
-            name: localUser.name,
-            email: localUser.email ?? "",
+            name: getDisplayName(localUser.name),
+            email: localUser.email,
           },
           session: {
             id: nextSessionId,
@@ -956,7 +963,7 @@ export async function signInWithEmailPassword(input: {
       data: {
         user: {
           id: memoryUser.id,
-          name: memoryUser.name,
+          name: getDisplayName(memoryUser.name),
           email: memoryUser.email,
         },
         session: {
@@ -1014,8 +1021,23 @@ export async function signInWithEmailPassword(input: {
     })
     .returning();
 
+  await db
+    .update(user)
+    .set({
+      lastLoginAt: now,
+      updatedAt: now,
+    })
+    .where(eq(user.id, userRow.id));
+
   return {
-    data: buildAuthSession(userRow, createdSession),
+    data: buildAuthSession(
+      {
+        ...userRow,
+        lastLoginAt: now,
+        updatedAt: now,
+      },
+      createdSession,
+    ),
     token: sessionToken,
   };
 }

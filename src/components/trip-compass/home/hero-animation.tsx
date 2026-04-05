@@ -1,4 +1,5 @@
 import Image from "next/image";
+import type { PanInfo } from "framer-motion";
 import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
 import { useCallback, useEffect, useState } from "react";
 
@@ -20,19 +21,39 @@ const blurredPreviews = [
   { rank: 3, label: "3순위 추천", score: "84", tags: ["#문화", "#자연"] },
 ];
 
+const dragThreshold = 60;
+
 export function HeroAnimation({ testId }: HeroAnimationProps) {
   const prefersReducedMotion = useReducedMotion();
   const [current, setCurrent] = useState(0);
 
-  const advance = useCallback(() => {
+  const showNext = useCallback(() => {
     setCurrent((prev) => (prev + 1) % destinations.length);
   }, []);
 
+  const showPrevious = useCallback(() => {
+    setCurrent((prev) => (prev - 1 + destinations.length) % destinations.length);
+  }, []);
+
+  const handleDragEnd = useCallback(
+    (_event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+      if (info.offset.x <= -dragThreshold) {
+        showNext();
+        return;
+      }
+
+      if (info.offset.x >= dragThreshold) {
+        showPrevious();
+      }
+    },
+    [showNext, showPrevious],
+  );
+
   useEffect(() => {
     if (prefersReducedMotion) return;
-    const timer = setInterval(advance, 4000);
+    const timer = setInterval(showNext, 4000);
     return () => clearInterval(timer);
-  }, [advance, prefersReducedMotion]);
+  }, [prefersReducedMotion, showNext]);
 
   const dest = destinations[current];
 
@@ -44,16 +65,22 @@ export function HeroAnimation({ testId }: HeroAnimationProps) {
           <motion.div
             key={dest.nameEn}
             className="absolute inset-0"
+            drag="x"
+            dragConstraints={{ left: 0, right: 0 }}
+            dragElastic={0.18}
+            onDragEnd={handleDragEnd}
             initial={prefersReducedMotion ? false : { opacity: 0, scale: 1.04 }}
             animate={{ opacity: 1, scale: 1 }}
             exit={prefersReducedMotion ? undefined : { opacity: 0 }}
             transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.8, ease: "easeInOut" }}
+            whileDrag={prefersReducedMotion ? undefined : { scale: 0.985 }}
+            style={{ touchAction: "pan-y" }}
           >
             <Image
               src={dest.image}
               alt={`${dest.name} 여행 풍경`}
               fill
-              className="object-cover"
+              className="cursor-grab object-cover active:cursor-grabbing"
               priority
             />
             <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-black/10" />
