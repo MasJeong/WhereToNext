@@ -185,4 +185,36 @@ describe("social-video service", () => {
 
     expect(selectSocialVideoCandidate(unrelatedCandidates, context)).toBeNull();
   });
+
+  it("rejects foreign-language creator videos from auto-selection even when destination relevance is high", () => {
+    const context = buildTestContext();
+    const foreignAirportSecurityCandidate = buildCandidate({
+      id: "foreign-airport-security",
+      title: "Nairobi airport security guide",
+      channelTitle: "Africa Travel Stories",
+      description: "What to expect at Nairobi airport and security lines",
+      languageHint: "en",
+      creatorCountryCode: "KE",
+      durationSeconds: 84,
+      viewCount: 210000,
+      likeCount: 3100,
+      commentCount: 220,
+    });
+    const koreanCandidate = buildCandidate({
+      id: "korean-nairobi",
+      title: "나이로비 여행 브이로그",
+      channelTitle: "지훈의 여행일기",
+      description: "나이로비 일정과 이동 팁을 한국어로 정리",
+      languageHint: "ko",
+      creatorCountryCode: "KR",
+      durationSeconds: 140,
+      viewCount: 54000,
+      likeCount: 880,
+      commentCount: 64,
+    });
+
+    const selected = selectSocialVideoCandidate([foreignAirportSecurityCandidate, koreanCandidate], context);
+
+    expect(selected?.candidate.id).toBe("korean-nairobi");
+  });
 });

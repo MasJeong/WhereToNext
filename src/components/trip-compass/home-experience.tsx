@@ -1661,35 +1661,44 @@ export function HomeExperience() {
               const saveState = saveStates[leadCard.destination.id] ?? { status: "idle" };
 
               return (
-                <div className="space-y-4">
-                  <section data-testid={getInstagramVibeTestId(0)} className="space-y-2.5">
-                    <div className="flex flex-wrap gap-2">
-                      {saveState.status === "saved" ? (
-                        <Link
-                          href="/account?tab=saved"
-                          className="inline-flex min-h-[2.9rem] items-center rounded-full bg-[var(--color-action-primary)] px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
-                        >
-                          계정에서 보기
-                        </Link>
-                      ) : (
-                        <button
-                          type="button"
-                          data-testid={getSaveSnapshotTestId(0)}
-                          onClick={() => {
-                            void saveCard(leadCard);
-                          }}
-                          disabled={saveState.status === "saving"}
-                          className="inline-flex min-h-[2.9rem] items-center rounded-full bg-[var(--color-action-primary)] px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)] disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {saveState.status === "saving" ? "담는 중..." : "내 여행에 담기"}
-                        </button>
-                      )}
-                    </div>
-                    <p className="text-xs leading-5 text-[var(--color-funnel-text-soft)]">
-                      저장한 추천은 계정의 <span className="font-semibold text-[var(--color-funnel-text)]">저장한 추천</span> 탭에서 다시 볼 수 있어요.
-                    </p>
-                  </section>
+                <div className="space-y-3" data-testid={getInstagramVibeTestId(0)}>
+                  {/* Primary action row */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    {saveState.status === "saved" ? (
+                      <Link
+                        href="/account?tab=saved"
+                        className="inline-flex min-h-[2.75rem] items-center rounded-full bg-[var(--color-action-primary)] px-5 py-2.5 text-[0.82rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
+                      >
+                        계정에서 보기
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        data-testid={getSaveSnapshotTestId(0)}
+                        onClick={() => {
+                          void saveCard(leadCard);
+                        }}
+                        disabled={saveState.status === "saving"}
+                        className="inline-flex min-h-[2.75rem] items-center rounded-full bg-[var(--color-action-primary)] px-5 py-2.5 text-[0.82rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {saveState.status === "saving" ? "담는 중..." : "내 여행에 담기"}
+                      </button>
+                    )}
+                    {saveState.shareUrl ? (
+                      <button
+                        type="button"
+                        data-testid={testIds.snapshot.copyShareLink}
+                        onClick={() => {
+                          void copyShareUrl(saveState.shareUrl ?? "");
+                        }}
+                        className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-[0.82rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+                      >
+                        링크 복사
+                      </button>
+                    ) : null}
+                  </div>
 
+                  {/* Secondary actions */}
                   <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--color-funnel-text-soft)]">
                     <button
                       type="button"
@@ -1699,28 +1708,16 @@ export function HomeExperience() {
                       다시 고르기
                     </button>
                     <button type="button" onClick={resetFunnel} className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]">
-                      처음부터 다시 하기
+                      처음부터
                     </button>
                     {saveState.shareUrl ? (
-                      <>
-                        <Link
-                          data-testid={testIds.snapshot.shareLink}
-                          href={`/s/${saveState.snapshotId ?? ""}`}
-                          className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]"
-                        >
-                          공유 페이지 보기
-                        </Link>
-                        <button
-                          type="button"
-                          data-testid={testIds.snapshot.copyShareLink}
-                          onClick={() => {
-                            void copyShareUrl(saveState.shareUrl ?? "");
-                          }}
-                          className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]"
-                        >
-                          링크 복사
-                        </button>
-                      </>
+                      <Link
+                        data-testid={testIds.snapshot.shareLink}
+                        href={`/s/${saveState.snapshotId ?? ""}`}
+                        className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]"
+                      >
+                        공유 페이지
+                      </Link>
                     ) : null}
                   </div>
                 </div>

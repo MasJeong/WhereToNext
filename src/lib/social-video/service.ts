@@ -470,6 +470,24 @@ function scoreKoreanSignals(candidate: SocialVideoCandidate) {
 }
 
 /**
+ * 자동 추천에 쓸 만큼 한국어 제작 신호가 충분한지 확인한다.
+ * @param candidate 검토할 후보
+ * @returns 자동 추천 허용 여부
+ */
+function hasStrongKoreanPublishingSignals(candidate: SocialVideoCandidate) {
+  const title = candidate.title;
+  const description = candidate.description ?? "";
+  const channelTitle = candidate.channelTitle;
+  const languageHint = candidate.languageHint?.toLowerCase() ?? "";
+
+  if (hasHangul(title) || hasHangul(description) || hasHangul(channelTitle)) {
+    return true;
+  }
+
+  return languageHint === "ko" || languageHint.startsWith("ko-");
+}
+
+/**
  * 게시 시점을 바탕으로 최근성 점수를 계산한다.
  * @param candidate 검토할 후보
  * @returns 최근성 점수
@@ -616,6 +634,7 @@ export function rankSocialVideoCandidates(
   context: SocialVideoSearchContext,
 ): SocialVideoScoredCandidate[] {
   return candidates
+    .filter((candidate) => hasStrongKoreanPublishingSignals(candidate))
     .map((candidate) => ({
       candidate,
       score: scoreSocialVideoCandidate(candidate, context),
