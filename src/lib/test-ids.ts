@@ -5,15 +5,12 @@ export const testIds = {
     authCta: "auth-cta",
     accountLink: "account-link",
     personalizedNote: "personalized-note",
-    privacyLink: "footer-privacy-link",
   },
   home: {
     landing: "home-landing",
     searchEntry: "home-search-entry",
     cta: "home-cta",
     heroVisual: "home-hero-visual",
-    loadingState: "home-result-loading",
-    loadingSponsor: "home-loading-sponsor",
     resultPage: "home-result-page",
     progress: "home-step-progress",
     question: "home-step-question",
@@ -36,18 +33,12 @@ export const testIds = {
     passwordInput: "auth-password-input",
     submit: "auth-submit",
     error: "auth-error",
-    providerKakao: "auth-provider-kakao",
-    providerGoogle: "auth-provider-google",
-    providerApple: "auth-provider-apple",
-    returnBanner: "auth-return-banner",
-    collisionError: "auth-collision-error",
   },
   query: {
     submitRecommendation: "submit-recommendation",
   },
   result: {
     card0: "result-card-0",
-    futureTripCta0: "future-trip-cta-0",
     filterBar: "result-filter-bar",
     filterChip0: "result-filter-chip-0",
     instagramVibe0: "instagram-vibe-0",
@@ -59,20 +50,10 @@ export const testIds = {
     relaxableFilters: "relaxable-filters",
     relaxFilterAction0: "relax-filter-action-0",
   },
-  socialVideo: {
-    block: "social-video-block",
-    thumbnail: "social-video-thumbnail",
-    title: "social-video-title",
-    link: "social-video-link",
-    fallbackBlock: "social-video-fallback",
-    fallbackLink0: "social-video-fallback-link-0",
-  },
   detail: {
     root: "destination-detail-root",
     coreFacts: "destination-core-facts",
     travelSupport: "destination-travel-support",
-    flightAffiliate: "destination-flight-affiliate",
-    flightAffiliateCta: "destination-flight-affiliate-cta",
     fitReason: "destination-fit-reason",
     evidence: "destination-evidence",
     watchOuts: "destination-watch-outs",
@@ -80,9 +61,6 @@ export const testIds = {
     tasteLogger: "destination-taste-logger",
     tasteRating: "destination-taste-rating",
     tasteTag0: "destination-taste-tag-0",
-    tasteCustomTagInput: "destination-taste-custom-tag-input",
-    tasteCustomTagAdd: "destination-taste-custom-tag-add",
-    tasteCustomTagRemove0: "destination-taste-custom-tag-remove-0",
     tasteRevisit: "destination-taste-revisit",
     tasteDate: "destination-taste-date",
     tasteSubmit: "destination-taste-submit",
@@ -110,62 +88,17 @@ export const testIds = {
   },
   account: {
     root: "my-taste-root",
-    settingsRoot: "account-settings-root",
-    settingsLink: "account-settings-link",
-    tabHistory: "account-tab-history",
-    tabFutureTrips: "account-tab-future-trips",
-    tabSaved: "account-tab-saved",
-    tabPreferences: "account-tab-preferences",
-    privacyLink: "account-privacy-link",
-    deleteAccountOpen: "account-delete-open",
-    deleteAccountDialog: "account-delete-dialog",
-    deleteAccountCancel: "account-delete-cancel",
-    deleteAccountConfirm: "account-delete-confirm",
     tasteMode: "my-taste-mode",
     tasteSummary: "my-taste-summary",
-    addHistoryCta: "add-history-cta",
     preferenceRepeat: "preference-repeat",
     preferenceBalanced: "preference-balanced",
     preferenceDiscover: "preference-discover",
-    newHistoryDestinationSearch: "new-history-destination-search",
-    newHistoryDestinationResult0: "new-history-destination-result-0",
+    newHistoryDestination: "new-history-destination",
     newHistoryDate: "new-history-date",
-    newHistoryBack: "new-history-back",
-    newHistoryCancel: "new-history-cancel",
-    newHistoryCancelDialog: "new-history-cancel-dialog",
-    newHistoryCancelStay: "new-history-cancel-stay",
-    newHistoryCancelLeave: "new-history-cancel-leave",
-    newHistoryNext: "new-history-next",
-    newHistoryStep: "new-history-step",
-    newHistoryImageInput: "new-history-image-input",
-    newHistoryImagePreview: "new-history-image-preview",
-    newHistoryImageThumb0: "new-history-image-thumb-0",
-    newHistoryImageRemove0: "new-history-image-remove-0",
-    newHistoryCustomTagInput: "new-history-custom-tag-input",
-    newHistoryCustomTagAdd: "new-history-custom-tag-add",
-    newHistoryCustomTagRemove0: "new-history-custom-tag-remove-0",
-    newHistoryMemo: "new-history-memo",
     newHistorySubmit: "new-history-submit",
     historyEntry0: "history-entry-0",
     historySave0: "history-save-0",
-    historyEdit0: "history-edit-0",
     historyDelete0: "history-delete-0",
-    historyGalleryToggle0: "history-gallery-toggle-0",
-    historyGalleryImage0: "history-gallery-image-0",
-    futureTripList: "future-trip-list",
-    futureTripEntry0: "future-trip-entry-0",
-    futureTripDelete0: "future-trip-delete-0",
-    futureTripEmptyState: "future-trip-empty-state",
-    savedPlan0: "saved-plan-0",
-    savedDelete0: "saved-delete-0",
-    savedDeleteDialog0: "saved-delete-dialog-0",
-    savedDeleteCancel0: "saved-delete-cancel-0",
-    savedDeleteConfirm0: "saved-delete-confirm-0",
-    historyLightbox: "history-lightbox",
-    historyLightboxImage: "history-lightbox-image",
-    historyLightboxClose: "history-lightbox-close",
-    historyLightboxPrev: "history-lightbox-prev",
-    historyLightboxNext: "history-lightbox-next",
   },
 } as const;
 
@@ -180,10 +113,6 @@ export function getHomeChoiceTestId(index: number): string {
  */
 export function getResultCardTestId(index: number): string {
   return index === 0 ? testIds.result.card0 : `result-card-${index}`;
-}
-
-export function getFutureTripCtaTestId(index: number): string {
-  return index === 0 ? testIds.result.futureTripCta0 : `future-trip-cta-${index}`;
 }
 
 /**
@@ -266,81 +195,6 @@ export function getAccountHistoryDeleteTestId(index: number): string {
   return index === 0 ? testIds.account.historyDelete0 : `history-delete-${index}`;
 }
 
-/**
- * Returns a stable account history edit selector for a given index.
- * @param index 여행 기록 카드 인덱스
- * @returns 수정 버튼 test id
- */
-export function getAccountHistoryEditTestId(index: number): string {
-  return index === 0 ? testIds.account.historyEdit0 : `history-edit-${index}`;
-}
-
-export function getAccountHistoryDestinationResultTestId(index: number): string {
-  return index === 0
-    ? testIds.account.newHistoryDestinationResult0
-    : `new-history-destination-result-${index}`;
-}
-
-export function getAccountHistoryImageThumbTestId(index: number): string {
-  return index === 0 ? testIds.account.newHistoryImageThumb0 : `new-history-image-thumb-${index}`;
-}
-
-export function getAccountHistoryImageRemoveTestId(index: number): string {
-  return index === 0 ? testIds.account.newHistoryImageRemove0 : `new-history-image-remove-${index}`;
-}
-
-export function getAccountHistoryGalleryToggleTestId(index: number): string {
-  return index === 0 ? testIds.account.historyGalleryToggle0 : `history-gallery-toggle-${index}`;
-}
-
-export function getAccountHistoryGalleryImageTestId(index: number): string {
-  return index === 0 ? testIds.account.historyGalleryImage0 : `history-gallery-image-${index}`;
-}
-
-export function getAccountFutureTripEntryTestId(index: number): string {
-  return index === 0 ? testIds.account.futureTripEntry0 : `future-trip-entry-${index}`;
-}
-
-export function getAccountFutureTripDeleteTestId(index: number): string {
-  return index === 0 ? testIds.account.futureTripDelete0 : `future-trip-delete-${index}`;
-}
-
-export function getSavedSnapshotPlanTestId(index: number): string {
-  return index === 0 ? testIds.account.savedPlan0 : `saved-plan-${index}`;
-}
-
-export function getSavedSnapshotDeleteTestId(index: number): string {
-  return index === 0 ? testIds.account.savedDelete0 : `saved-delete-${index}`;
-}
-
-export function getSavedSnapshotDeleteDialogTestId(index: number): string {
-  return index === 0 ? testIds.account.savedDeleteDialog0 : `saved-delete-dialog-${index}`;
-}
-
-export function getSavedSnapshotDeleteCancelTestId(index: number): string {
-  return index === 0 ? testIds.account.savedDeleteCancel0 : `saved-delete-cancel-${index}`;
-}
-
-export function getSavedSnapshotDeleteConfirmTestId(index: number): string {
-  return index === 0 ? testIds.account.savedDeleteConfirm0 : `saved-delete-confirm-${index}`;
-}
-
-export function getAccountHistoryLightboxImageTestId(index: number): string {
-  return index === 0 ? testIds.account.historyLightboxImage : `history-lightbox-image-${index}`;
-}
-
 export function getDestinationTasteTagTestId(index: number): string {
   return index === 0 ? testIds.detail.tasteTag0 : `destination-taste-tag-${index}`;
-}
-
-export function getDestinationTasteCustomTagRemoveTestId(index: number): string {
-  return index === 0
-    ? testIds.detail.tasteCustomTagRemove0
-    : `destination-taste-custom-tag-remove-${index}`;
-}
-
-export function getAccountHistoryCustomTagRemoveTestId(index: number): string {
-  return index === 0
-    ? testIds.account.newHistoryCustomTagRemove0
-    : `new-history-custom-tag-remove-${index}`;
 }

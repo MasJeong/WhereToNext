@@ -24,15 +24,6 @@ type OpenMeteoForecastResponse = {
   };
 };
 
-type OpenMeteoArchiveResponse = {
-  daily?: {
-    time?: string[];
-    temperature_2m_max?: number[];
-    temperature_2m_min?: number[];
-    precipitation_sum?: number[];
-  };
-};
-
 type UnsplashSearchResponse = {
   results?: Array<{
     alt_description?: string | null;
@@ -63,12 +54,6 @@ type ExchangeRateLiveResponse = {
   success?: boolean;
   timestamp?: number;
   quotes?: Record<string, number>;
-};
-
-type OpenErApiResponse = {
-  result?: string;
-  time_last_update_unix?: number;
-  rates?: Record<string, number>;
 };
 
 type LocationMeta = {
@@ -122,47 +107,6 @@ function roundTemperature(value: number | undefined) {
   }
 
   return Math.round(value);
-}
-
-function roundAverage(value: number) {
-  return Math.round(value * 10) / 10;
-}
-
-function average(values: number[]) {
-  if (values.length === 0) {
-    return null;
-  }
-
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-function buildTravelMonthWeatherSummary(
-  travelMonth: number,
-  averageMinTemperatureC: number,
-  averageMaxTemperatureC: number,
-  rainyDayRatio: number,
-) {
-  const averageTemperature = (averageMinTemperatureC + averageMaxTemperatureC) / 2;
-
-  let tone = "더워요, 가벼운 옷 추천";
-
-  if (averageTemperature < 5) {
-    tone = "추워요, 패딩 필수";
-  } else if (averageTemperature < 12) {
-    tone = "쌀쌀해요, 겉옷 필요";
-  } else if (averageTemperature < 20) {
-    tone = "돌아다니기 좋은 날씨";
-  } else if (averageTemperature < 27) {
-    tone = "살짝 더운 편";
-  }
-
-  if (rainyDayRatio >= 50) {
-    tone += ", 비 잦음";
-  } else if (rainyDayRatio >= 30) {
-    tone += ", 비 가끔";
-  }
-
-  return `${travelMonth}월 — ${tone}`;
 }
 
 /**
@@ -334,85 +278,6 @@ async function getWeatherSnapshot(
   };
 }
 
-async function getTravelMonthWeatherSnapshot(
-  location: LocationMeta,
-  travelMonth: number,
-): Promise<DestinationTravelSupplement["travelMonthWeather"] | undefined> {
-  const now = new Date();
-  const startDate = `${String(now.getUTCFullYear() - 5)}-01-01`;
-  const endDate = `${String(now.getUTCFullYear() - 1)}-12-31`;
-  const searchParams = new URLSearchParams({
-    latitude: String(location.latitude),
-    longitude: String(location.longitude),
-    start_date: startDate,
-    end_date: endDate,
-    daily: "temperature_2m_max,temperature_2m_min,precipitation_sum",
-    timezone: "auto",
-  });
-
-  const response = await fetch(`https://archive-api.open-meteo.com/v1/archive?${searchParams.toString()}`, {
-    ...DEFAULT_REQUEST_OPTIONS,
-    next: {
-      revalidate: 86400,
-    },
-  });
-
-  if (!response.ok) {
-    return undefined;
-  }
-
-  const payload = (await response.json()) as OpenMeteoArchiveResponse;
-  const dates = payload.daily?.time ?? [];
-  const maxTemperatures = payload.daily?.temperature_2m_max ?? [];
-  const minTemperatures = payload.daily?.temperature_2m_min ?? [];
-  const precipitation = payload.daily?.precipitation_sum ?? [];
-
-  const matchingIndexes = dates
-    .map((value, index) => ({ value, index }))
-    .filter(({ value }) => {
-      const date = new Date(value);
-      return !Number.isNaN(date.getTime()) && date.getUTCMonth() + 1 === travelMonth;
-    })
-    .map(({ index }) => index);
-
-  if (matchingIndexes.length === 0) {
-    return undefined;
-  }
-
-  const monthMaxTemperatures = matchingIndexes
-    .map((index) => maxTemperatures[index])
-    .filter((value): value is number => typeof value === "number" && !Number.isNaN(value));
-  const monthMinTemperatures = matchingIndexes
-    .map((index) => minTemperatures[index])
-    .filter((value): value is number => typeof value === "number" && !Number.isNaN(value));
-  const rainyDays = matchingIndexes.filter((index) => (precipitation[index] ?? 0) >= 1);
-  const averageMaxTemperatureC = average(monthMaxTemperatures);
-  const averageMinTemperatureC = average(monthMinTemperatures);
-
-  if (averageMaxTemperatureC === null || averageMinTemperatureC === null) {
-    return undefined;
-  }
-
-  const basedOnYears = new Set(
-    matchingIndexes.map((index) => dates[index]?.slice(0, 4)).filter((value): value is string => Boolean(value)),
-  ).size;
-  const rainyDayRatio = Math.round((rainyDays.length / matchingIndexes.length) * 100);
-
-  return {
-    travelMonth,
-    summary: buildTravelMonthWeatherSummary(
-      travelMonth,
-      roundAverage(averageMinTemperatureC),
-      roundAverage(averageMaxTemperatureC),
-      rainyDayRatio,
-    ),
-    averageMinTemperatureC: roundAverage(averageMinTemperatureC),
-    averageMaxTemperatureC: roundAverage(averageMaxTemperatureC),
-    rainyDayRatio,
-    basedOnYears,
-  };
-}
-
 /**
  * Google Places에서 주변 장소를 짧게 찾는다.
  * @param destination 목적지
@@ -515,58 +380,18 @@ function getMapEmbed(
 
 /**
  * 환율을 원화 기준 참고값으로 가져온다.
- * open.er-api.com (무료, 키 불필요)을 우선 사용하고,
- * 실패 시 exchangerate.host(키 필요)로 폴백한다.
+ * @param currencyCode 목적지 통화 코드
+ * @param accessKey exchangerate.host access key
+ * @returns 환율 요약 또는 undefined
  */
 async function getExchangeRate(
   currencyCode: string,
   accessKey: string,
 ): Promise<DestinationTravelSupplement["exchangeRate"] | undefined> {
-  if (currencyCode === "KRW") {
+  if (!accessKey || currencyCode === "KRW") {
     return undefined;
   }
 
-  const result = await getExchangeRateFromOpenErApi(currencyCode);
-  if (result) return result;
-
-  if (!accessKey) return undefined;
-  return getExchangeRateFromHost(currencyCode, accessKey);
-}
-
-async function getExchangeRateFromOpenErApi(
-  currencyCode: string,
-): Promise<DestinationTravelSupplement["exchangeRate"] | undefined> {
-  try {
-    const response = await fetch(`https://open.er-api.com/v6/latest/KRW`, {
-      ...DEFAULT_REQUEST_OPTIONS,
-      next: { revalidate: 86400 },
-    });
-
-    if (!response.ok) return undefined;
-
-    const payload = (await response.json()) as OpenErApiResponse;
-    const quote = payload.rates?.[currencyCode];
-
-    if (payload.result !== "success" || !quote || !payload.time_last_update_unix) {
-      return undefined;
-    }
-
-    return {
-      baseCurrency: "KRW",
-      quoteCurrency: currencyCode,
-      quote,
-      summary: `1,000원당 약 ${(quote * 1000).toFixed(currencyCode === "JPY" ? 0 : 2)} ${currencyCode}`,
-      observedAt: new Date(payload.time_last_update_unix * 1000).toISOString(),
-    };
-  } catch {
-    return undefined;
-  }
-}
-
-async function getExchangeRateFromHost(
-  currencyCode: string,
-  accessKey: string,
-): Promise<DestinationTravelSupplement["exchangeRate"] | undefined> {
   const searchParams = new URLSearchParams({
     access_key: accessKey,
     source: "KRW",
@@ -575,10 +400,14 @@ async function getExchangeRateFromHost(
 
   const response = await fetch(`https://api.exchangerate.host/live?${searchParams.toString()}`, {
     ...DEFAULT_REQUEST_OPTIONS,
-    next: { revalidate: 1800 },
+    next: {
+      revalidate: 1800,
+    },
   });
 
-  if (!response.ok) return undefined;
+  if (!response.ok) {
+    return undefined;
+  }
 
   const payload = (await response.json()) as ExchangeRateLiveResponse;
   const quote = payload.quotes?.[`KRW${currencyCode}`];
@@ -603,7 +432,6 @@ async function getExchangeRateFromHost(
  */
 export async function getDestinationTravelSupplement(
   destination: DestinationProfile,
-  travelMonth?: number,
 ): Promise<DestinationTravelSupplement | null> {
   const metadata = getCountryMetadata(destination.countryCode);
 
@@ -623,12 +451,9 @@ export async function getDestinationTravelSupplement(
       return null;
     }
 
-    const [heroImage, weather, travelMonthWeather, nearbyPlaces, exchangeRate] = await Promise.all([
+    const [heroImage, weather, nearbyPlaces, exchangeRate] = await Promise.all([
       getHeroImage(destination, metadata.countryName, providerConfig.unsplashAccessKey).catch(() => undefined),
       getWeatherSnapshot(location).catch(() => undefined),
-      typeof travelMonth === "number"
-        ? getTravelMonthWeatherSnapshot(location, travelMonth).catch(() => undefined)
-        : Promise.resolve(undefined),
       getNearbyPlaces(destination, location, providerConfig.googleMapsApiKey).catch(() => undefined),
       getExchangeRate(location.currencyCode, providerConfig.exchangeRateHostAccessKey).catch(() => undefined),
     ]);
@@ -637,7 +462,6 @@ export async function getDestinationTravelSupplement(
       location,
       heroImage,
       weather,
-      travelMonthWeather,
       nearbyPlaces,
       mapEmbed: getMapEmbed(destination, location, providerConfig.googleMapsApiKey),
       exchangeRate,

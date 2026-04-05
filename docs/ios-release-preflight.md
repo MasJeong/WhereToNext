@@ -1,171 +1,81 @@
-# 한눈에 보기
+# iOS Release Preflight
 
-- 2026-04-05 현재 `떠나볼까?`는 iOS shell 생성 단계가 아니라 `Xcode 업로드 + App Store Connect 입력` 단계다.
-- 저장소 안 기준으로는 `capacitor.config.ts`, `apps/ios-shell/out`, `ios/App/**`가 이미 존재한다.
-- 오늘 2시간 안에 현실적으로 노릴 수 있는 목표는 `TestFlight 내부 배포 업로드 완료`다.
-- App Store 심사 제출까지도 같은 흐름으로 이어갈 수 있지만, `메타데이터`, `스크린샷`, `App Privacy`, `리뷰 정보` 입력 속도에 따라 2시간을 넘길 수 있다.
+이 문서는 SooGo의 iOS 출시 준비 상태를 점검하는 체크리스트다.
+현재 기준으로는 **모바일 웹/PWA + shell-safe 웹 계약 정리**까지 완료했고, **실제 Capacitor native shell 생성과 Universal Links 구성은 아직 차단 상태**다.
 
-# iOS 출시 전 점검
+## 1. 현재 완료된 기반
 
-## 1. 현재 저장소 기준 상태
+- [x] WebKit / Mobile Safari acquisition 흐름 검증
+- [x] 공유 링크 canonical public origin 정리 (`NEXT_PUBLIC_APP_ORIGIN`)
+- [x] API base 분리 (`NEXT_PUBLIC_API_BASE_URL`)
+- [x] PWA manifest / install icons / apple touch icon / viewport theme color 반영
+- [x] 추천 실패 시 retry UI 추가
+- [x] snapshot/detail 링크 복사 실패 시 manual-copy fallback 추가
+- [x] acquisition API에 shell-origin CORS 허용 추가 (`capacitor://localhost` 기본)
+- [x] restore / compare / destination detail route data를 재사용 가능한 serializable contract로 분리
+- [x] `NEXT_PUBLIC_IOS_SHELL=true`일 때 auth/account CTA 숨김 검증
 
-### 이미 준비된 것
-- [x] `capacitor.config.ts` 존재
-- [x] `webDir`가 `apps/ios-shell/out`을 가리킴
-- [x] `apps/ios-shell/out` 정적 산출물 존재
-- [x] `ios/App/**` iOS native scaffold 존재
-- [x] `CFBundleDisplayName = 떠나볼까?`
-- [x] `PRODUCT_BUNDLE_IDENTIFIER = kr.soogo.tteonabolkka`
-- [x] `MARKETING_VERSION = 1.0`
-- [x] `CURRENT_PROJECT_VERSION = 1`
-- [x] shell-safe 웹 흐름, restore/share 계약, shell mode 가드 구현
+## 2. 현재 차단 상태
 
-### 아직 코드/프로젝트에서 직접 확인되지 않은 것
-- [ ] Xcode signing에 필요한 `DEVELOPMENT_TEAM`
-- [ ] App Store Connect 앱 레코드 생성 여부
-- [ ] App Privacy 입력 완료 여부
-- [ ] `Support URL`, `Privacy Policy URL`, 리뷰 연락처, `review notes`
-- [ ] iPhone용 제출 스크린샷 업로드
-- [ ] Xcode Organizer archive / upload 성공 여부
+### Architecture Blocked
+- [ ] Capacitor가 소비할 실제 static `webDir` 산출물이 아직 없다.
+- [ ] 현재 Next 16 App Router 앱은 일반 `next build`만으로는 Capacitor production bundle용 정적 HTML 번들을 만들지 않는다.
+- [ ] dynamic routes, API handlers, middleware를 유지한 채 어떤 export target을 native shell에 넣을지 별도 아키텍처 결정이 필요하다.
 
-## 2. 오늘 목표를 이렇게 잡아야 함
+### Environment Blocked
+- [ ] 이 작업 환경에는 full Xcode / iOS simulator tooling이 없어 `xcodebuild` / `simctl` 기반 검증을 수행할 수 없다.
 
-### 2시간 안 목표
-- 1순위: `TestFlight 내부 배포 업로드 완료`
-- 2순위: App Store Connect 메타데이터 초안 완료
-- 3순위: 가능하면 외부 테스터 또는 심사 제출까지 진행
+## 3. TestFlight 이전 필수 조건
 
-### 과하게 잡으면 안 되는 목표
-- 오늘 안에 `심사 승인`까지 받는 것
-- 네이티브 기능 확장이나 Universal Links까지 새로 붙이는 것
-- shell 범위를 늘려 auth/account/history를 앱 안에 다시 넣는 것
+### Web / PWA 계약
+- [x] `npm run lint`
+- [x] `npm run build`
+- [x] `npx vitest run tests/unit/runtime/url.spec.ts`
+- [x] `npx playwright test tests/e2e/recommendation-flow.spec.ts -g "shows a retry path when recommendation loading fails|shows a manual-copy fallback when snapshot clipboard copy fails|shows a manual-copy fallback when detail clipboard copy fails"`
+- [x] `npx playwright test tests/e2e/smoke.spec.ts -g "keeps auth and account navigation in standard web mode"`
+- [x] `NEXT_PUBLIC_IOS_SHELL=true npx playwright test tests/e2e/smoke.spec.ts -g "hides auth and account navigation in ios shell mode"`
+- [x] `npx playwright test tests/e2e/ios-acquisition-flow.spec.ts --project=webkit`
+- [x] `npx playwright test tests/e2e/ios-acquisition-flow.spec.ts --project="Mobile Safari"`
 
-## 3. 지금 남은 진짜 차단 항목
+### Shell transport 계약
+- [x] shell-origin preflight returns `204`
+- [x] `Origin: capacitor://localhost` acquisition API responses include:
+  - `Access-Control-Allow-Origin: capacitor://localhost`
+  - `Access-Control-Allow-Credentials: true`
 
-### 로컬/Xcode
-- [ ] Mac에 로그인된 Apple Developer 계정
-- [ ] Xcode에서 `Signing & Capabilities` 설정
-- [ ] `Team` 선택으로 `DEVELOPMENT_TEAM` 반영
-- [ ] 실제 기기 또는 시뮬레이터에서 최소 1회 smoke 확인
-- [ ] `Product > Archive` 성공
+## 4. Native shell 전환 전에 해야 할 일
 
-### App Store Connect
-- [ ] 앱 생성 또는 기존 앱 레코드 확인
-- [ ] `Privacy Policy URL`
-- [ ] `Support URL`
-- [ ] `App Privacy`
-- [ ] `Age Rating`
-- [ ] `Export Compliance`
-- [ ] `App Review Information`
-- [ ] iPhone screenshots
+- [ ] Capacitor용 실제 static shell/web bundle 전략 결정
+- [ ] `capacitor.config.ts`의 `webDir`가 실제 static output을 가리키도록 구성
+- [ ] production에서 `server.url`을 사용하지 않도록 유지
+- [ ] `ios/App/**` 생성 후 `npx cap sync ios`
+- [ ] full Xcode 환경에서 simulator build 검증
+- [ ] shell deep link / universal link app identifier 확정
+- [ ] AASA 파일과 iOS associated domains 구성
 
-## 4. 2026-04-05 기준 2시간 실행 순서
+## 5. App Review 메모
 
-### 0~20분
-1. `npm run shell:ios:sync`로 최신 웹 산출물을 iOS 프로젝트에 동기화한다.
-2. `open ios/App/App.xcodeproj`로 Xcode를 연다.
-3. Xcode에서 `Signing & Capabilities`로 들어가 `Team`을 지정한다.
-4. Bundle ID가 App Store Connect의 앱 레코드와 일치하는지 확인한다.
+- 단순 웹뷰 래핑처럼 보이지 않도록 acquisition flow의 앱다운 가치가 설명 가능해야 한다.
+- v1 shell 범위는 anonymous acquisition flow로 제한한다.
+- broken auth/account/history 진입점은 shell mode에서 숨긴다.
+- 공유 링크, restore flow, compare flow, detail flow가 fail-closed로 동작해야 한다.
+- clipboard failure / recommendation failure 상황에서도 blank state 없이 recovery path가 있어야 한다.
 
-### 20~45분
-1. 시뮬레이터 또는 연결된 iPhone에서 1회 실행한다.
-2. 아래 핵심 화면만 빠르게 확인한다.
-   - 홈 진입
-   - 추천 생성
-   - 결과 화면
-   - 저장된 snapshot 링크 열기
-   - destination detail
-3. 웹뷰처럼 깨지거나 blank screen이 없는지만 본다.
+## 6. 관련 파일
 
-### 45~75분
-1. Xcode에서 `Product > Archive`
-2. Organizer에서 `Distribute App > App Store Connect > Upload`
-3. 업로드가 끝나면 App Store Connect의 TestFlight 빌드 처리 대기
+- Runtime URL contract: `src/lib/runtime/url.ts`
+- Shell flag: `src/lib/runtime/shell.ts`
+- Shell nav guard: `src/components/trip-compass/experience-shell.tsx`
+- Route data split: `src/lib/trip-compass/route-data.ts`
+- Restore views: `src/components/trip-compass/snapshot-restore-view.tsx`, `src/components/trip-compass/compare-restore-view.tsx`
+- Acquisition CORS: `src/lib/security/cors.ts`, `src/app/api/recommendations/route.ts`, `src/app/api/snapshots/route.ts`, `src/app/api/snapshots/[snapshotId]/route.ts`, `src/app/api/auth/session/route.ts`
+- PWA metadata: `src/app/layout.tsx`, `public/manifest.webmanifest`, `public/icon-192.png`, `public/icon-512.png`, `public/apple-touch-icon.png`
 
-### 75~120분
-1. App Store Connect에서 아래 메타데이터를 채운다.
-   - `Privacy Policy URL`
-   - `Support URL`
-   - `App Privacy`
-   - `Age Rating`
-   - `Export Compliance`
-   - `App Review Information`
-2. iPhone screenshots를 올린다.
-3. 내부 테스터용 TestFlight 배포를 켠다.
-4. 시간이 남으면 리뷰 제출까지 이어간다.
+## 7. 현재 결론
 
-## 5. Xcode에서 바로 확인할 것
+지금 저장소는 **iOS 출시 준비를 위한 웹 계약 정리 단계는 완료**했지만,
+**실제 App Store/TestFlight용 native shell 생성은 아직 시작하면 안 되는 상태**다.
 
-### Signing
-- `Team`이 비어 있으면 업로드가 막힌다.
-- `Bundle Identifier`는 `kr.soogo.tteonabolkka`를 그대로 쓸지, 실제 배포용 식별자로 바꿀지 먼저 결정해야 한다.
+다음 진짜 게이트는 하나다:
 
-### Versioning
-- 현재 프로젝트 값은 `1.0 (1)`이다.
-- 오늘 첫 업로드면 그대로 가능하다.
-- 기존에 같은 bundle id로 업로드한 적이 있으면 build number 충돌 여부를 확인해야 한다.
-
-### Build target
-- `ios/App/App.xcodeproj`를 열고 `App` scheme으로 archive 한다.
-
-## 6. App Store Connect에 넣을 정보
-
-### 필수
-- `Privacy Policy URL`
-- `Support URL`
-- `App Privacy`
-- `Age Rating`
-- `Export Compliance`
-- `App Review Information`
-- iPhone screenshots
-
-### App Review Information에 바로 넣을 내용
-- 앱 핵심 기능은 로그인 없이 여행지 추천과 결과 탐색이 가능하다는 점
-- 로그인은 저장/기록 같은 보조 기능용이라는 점
-- 외부 링크가 있다면 어디로 이동하는지
-- 심사 중 테스트해야 할 핵심 경로
-
-### demo account
-- 계정 기능 검토가 필요한 경우 제공한다.
-- 단, 현재 v1 핵심 플로우가 비로그인 추천 중심이면 심사 메모에서 그 점을 분명히 적는 것이 우선이다.
-
-## 7. Export Compliance 판단 메모
-
-- Apple 공식 문서상 앱이 암호화를 사용하거나 접근하면 export compliance 판단이 필요하다.
-- 일반적인 HTTPS/TLS 사용 앱도 App Store Connect에서 질문에 답해야 한다.
-- 이 항목은 `Info.plist`보다 App Store Connect 입력이 먼저다.
-- 비표준 암호화를 직접 구현하지 않았다면 대개 표준 암호화 사용 여부와 면제 범위를 기준으로 답하게 된다.
-
-## 8. 오늘 바로 쓸 리뷰 메모 초안
-
-```text
-떠나볼까?는 여행지 추천과 결과 탐색을 빠르게 제공하는 앱입니다.
-핵심 추천 플로우는 로그인 없이 사용할 수 있습니다.
-로그인은 저장과 기록 같은 보조 기능에서만 사용됩니다.
-앱의 주요 경로는 홈 > 추천 조건 선택 > 추천 결과 > 목적지 상세 보기입니다.
-개인정보처리방침은 앱 내부와 제출 메타데이터의 URL에서 모두 확인할 수 있습니다.
-```
-
-## 9. 로컬에서 확인한 사실
-
-- `capacitor.config.ts`의 `webDir`는 `apps/ios-shell/out`이다.
-- `apps/ios-shell/out/index.html`이 존재한다.
-- `ios/App/App.xcodeproj/project.pbxproj`에는 `MARKETING_VERSION = 1.0`, `CURRENT_PROJECT_VERSION = 1`, `PRODUCT_BUNDLE_IDENTIFIER = kr.soogo.tteonabolkka`가 있다.
-- 같은 파일에서 `DEVELOPMENT_TEAM`은 아직 확인되지 않았다.
-
-## 10. 현재 결론
-
-지금은 `iOS native shell 생성 전` 단계가 아니다.
-지금은 `Xcode signing + archive/upload + App Store Connect 메타데이터 입력` 단계다.
-
-오늘 2026-04-05 안에 가장 현실적인 목표는:
-
-> Xcode archive와 TestFlight 내부 배포 업로드를 끝내고, App Store Connect 필수 입력을 같은 세션에서 정리하는 것.
-
-## 11. 공식 참고 링크
-
-- App Privacy Details: https://developer.apple.com/app-store/app-privacy-details/
-- Upload builds: https://developer.apple.com/help/app-store-connect/manage-builds/upload-builds
-- App Review Information: https://developer.apple.com/help/app-store-connect/reference/app-review-information
-- Screenshot specifications: https://developer.apple.com/help/app-store-connect/reference/screenshot-specifications
-- Overview of export compliance: https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance
+> Capacitor가 사용할 수 있는 진짜 static `webDir`를 먼저 정의하고 검증할 것.

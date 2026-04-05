@@ -1,11 +1,5 @@
 import { expect, test } from "@playwright/test";
 
-async function signInWithMockGoogle(page: import("@playwright/test").Page) {
-  await page.goto("/auth");
-  await page.getByTestId("auth-provider-google").click();
-  await expect(page).toHaveURL(/\/account/);
-}
-
 /**
  * Runs the quick-entry recommendation flow used by anonymous iOS acquisition tests.
  */
@@ -15,13 +9,11 @@ async function submitQuickRecommendation(page: import("@playwright/test").Page) 
   await page.getByTestId("home-cta").click();
   await expect(page.getByTestId("home-step-question")).toBeVisible();
   await page.getByTestId("home-step-choice-0").click();
-  await page.getByRole("button", { name: /10~12월/ }).click();
+  await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-0").click();
-  await page.getByTestId("home-step-next").click();
   await page.getByTestId("home-step-choice-0").click();
-  await page.getByTestId("home-step-next").click();
-  await expect(page.getByTestId("result-filter-bar")).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId("home-top-summary")).toBeVisible({ timeout: 10000 });
   await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 10000 });
 }
 
@@ -61,8 +53,7 @@ async function saveSnapshotAndCaptureShareUrl(
 }
 
 
-test("restores a saved recommendation snapshot after social login on acquisition flow", async ({ page }) => {
-  await signInWithMockGoogle(page);
+test("restores a saved recommendation snapshot on anonymous acquisition flow", async ({ page }) => {
   await submitQuickRecommendation(page);
 
   const href = await saveSnapshotAndCaptureShareUrl(page, page.getByTestId("save-snapshot"), 0);
@@ -73,8 +64,7 @@ test("restores a saved recommendation snapshot after social login on acquisition
   await expect(page.getByText("저장 당시 조건")).toBeVisible();
 });
 
-test("builds a compare board from saved snapshots after social login on acquisition flow", async ({ page }) => {
-  await signInWithMockGoogle(page);
+test("builds a compare board from saved snapshots in anonymous flow", async ({ page }) => {
   await submitQuickRecommendation(page);
 
   await saveSnapshotAndCaptureShareUrl(page, page.getByTestId("save-snapshot"), 0);
@@ -86,8 +76,8 @@ test("builds a compare board from saved snapshots after social login on acquisit
   await page.getByTestId("compare-snapshot").click();
 
   await expect(page).toHaveURL(/\/compare\//);
-  await expect(page.getByTestId("compare-summary")).toBeVisible({ timeout: 10000 });
-  await expect(page.getByTestId("compare-column-0")).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId("compare-summary")).toBeVisible();
+  await expect(page.getByTestId("compare-column-0")).toBeVisible();
 });
 
 test("shows restore error for an invalid snapshot id", async ({ page }) => {
