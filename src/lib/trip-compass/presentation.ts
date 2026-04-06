@@ -387,7 +387,15 @@ function formatExcludedCountryList(countryCodes: string[] | undefined): string {
 export function createRecommendationCards(
   recommendations: RecommendationResult[],
 ): RecommendationCardView[] {
+  const seen = new Set<string>();
+
   return recommendations.flatMap((recommendation) => {
+    if (seen.has(recommendation.destinationId)) {
+      return [];
+    }
+
+    seen.add(recommendation.destinationId);
+
     const destination = destinationIndex.get(recommendation.destinationId);
 
     if (!destination) {
@@ -396,6 +404,21 @@ export function createRecommendationCards(
 
     return [{ destination, recommendation }];
   });
+}
+
+/**
+ * 결과 카드와 상세 헤더에서 읽기 쉬운 목적지 + 국가 표기를 만든다.
+ * @param destination 목적지 프로필
+ * @returns 예: "도쿄 · 일본"
+ */
+export function formatDestinationWithCountry(destination: DestinationProfile): string {
+  const countryNameKo = getCountryMetadata(destination.countryCode)?.countryNameKo;
+
+  if (!countryNameKo || countryNameKo === destination.nameKo) {
+    return destination.nameKo;
+  }
+
+  return `${destination.nameKo} · ${countryNameKo}`;
 }
 
 /**

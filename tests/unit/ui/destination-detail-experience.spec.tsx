@@ -60,6 +60,7 @@ describe("DestinationDetailExperience", () => {
     );
 
     expect(screen.getByTestId(testIds.detail.root)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "도쿄 · 일본" })).toBeInTheDocument();
     expect(screen.getByTestId(testIds.detail.watchOuts)).toBeInTheDocument();
     expect(screen.queryByTestId(testIds.detail.fitReason)).not.toBeInTheDocument();
     expect(screen.queryByTestId(testIds.detail.evidence)).not.toBeInTheDocument();

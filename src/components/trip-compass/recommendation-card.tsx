@@ -9,6 +9,7 @@ import {
   buildRecommendationEvidenceLead,
   buildRecommendationSceneCopy,
   buildRecommendationVerdict,
+  formatDestinationWithCountry,
   formatVibeList,
   type RecommendationCardView,
 } from "@/lib/trip-compass/presentation";
@@ -83,7 +84,7 @@ export function RecommendationCard({
             <div data-testid={getResultTopItemTestId(index)} className="min-w-0">
               <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-white/72">{sceneCopy.eyebrow}</p>
               <h2 className="mt-2 font-display text-[1.38rem] leading-[0.92] tracking-[-0.05em] sm:text-[1.6rem]">
-                {destination.nameKo}
+                {formatDestinationWithCountry(destination)}
               </h2>
               <p className="mt-1 text-sm text-white/76">{destination.nameEn}</p>
             </div>

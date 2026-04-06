@@ -22,6 +22,7 @@ import {
   buildRecommendationDecisionFacts,
   buildRecommendationSceneCopy,
   describeSourceBadge,
+  formatDestinationWithCountry,
   formatDepartureAirport,
   formatFreshnessState,
   formatTravelMonth,
@@ -179,7 +180,7 @@ export function DestinationDetailExperience({
 
         <div className="mt-4 space-y-2">
           <h2 className="font-display text-[1.62rem] leading-[0.96] tracking-[-0.05em] text-[var(--color-ink)] sm:text-[2rem]">
-            {destination.nameKo}
+            {formatDestinationWithCountry(destination)}
           </h2>
           <p className="text-base font-semibold leading-6 tracking-[-0.02em] text-[var(--color-ink)]">
             {sceneCopy?.headline ?? destination.summary}
