@@ -17,7 +17,7 @@
 - 로그인 없이 바로 추천, 저장 링크, 비교 링크 생성
 - 결정형 추천 엔진 기반의 설명 가능한 결과
 - 인스타그램은 추천 엔진이 아니라 분위기/최신성 증거 레이어로만 사용
-- 대표 추천 1곳에는 여행지 이미지, 날씨, 작은 지도, 주변 장소, 환율 참고 정보가 함께 붙음
+- 대표 추천 1곳에는 여행지 이미지, 날씨, 인터랙티브 지도, 주변 장소, 환율 참고 정보가 함께 붙음
 - 대표 추천 1곳에는 YouTube 우선 소셜 비디오 블록이 선택적으로 붙음
 - 소셜 비디오는 한국어/한국인 업로드 후보를 우선하고, 짧은 형식 영상을 선호하되 적절한 후보가 없으면 일반 여행 영상도 허용함
 - 저장 링크 `/s/[snapshotId]`, 비교 링크 `/compare/[snapshotId]`
@@ -43,6 +43,7 @@ npm run dev
 ```bash
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/trip_compass
 PGLITE_DATA_DIR=.data/trip-compass
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
 UNSPLASH_ACCESS_KEY=
 GOOGLE_MAPS_API_KEY=
 EXCHANGERATE_HOST_ACCESS_KEY=
@@ -61,6 +62,7 @@ MOCK_OAUTH_PROVIDER=false
 로컬 개발에서 `PGLITE_DATA_DIR`가 설정되어 있으면 해당 디렉터리에 데이터를 유지하고, 테스트에서는 메모리 기반 `PGlite`를 사용합니다.
 배포 환경에서는 반드시 외부 Postgres를 연결하세요.
 외부 여행 보조 데이터는 대표 추천 1곳에만 붙고, 공유 링크를 열면 이미지/날씨/지도/환율을 다시 조회합니다. 공급자 키가 없거나 일부 호출이 실패하면 해당 블록만 숨기고 추천 결과 자체는 그대로 보여줍니다.
+인터랙티브 지도는 `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`를 사용하고, 서버에서 주변 장소 검색을 할 때는 `GOOGLE_MAPS_API_KEY`를 사용합니다. 공개 지도 키는 반드시 localhost와 실제 도메인 기준 referrer 제한을 걸어 두세요.
 YouTube 소셜 비디오는 서버에서 `YOUTUBE_API_KEY`를 사용해 조회하며, 키가 없거나 후보 품질이 낮으면 블록을 숨기고 추천 결과는 그대로 유지합니다.
 소셜 로그인은 Google / Kakao / Apple 공급자를 사용하며, 각 공급자의 콜백 URL은 `/api/auth/oauth/[provider]/callback` 형식으로 맞춰야 합니다.
 Playwright 기반 소셜 로그인 E2E는 `MOCK_OAUTH_PROVIDER=true`일 때 로컬 모의 authorize 라우트를 사용합니다.
@@ -97,8 +99,9 @@ npm run db:seed
 1. GitHub 저장소를 가져옵니다.
 2. 프레임워크는 Next.js로 자동 인식됩니다.
 3. 환경 변수에 `DATABASE_URL`을 추가합니다.
-4. 첫 배포 전에 `npm run db:generate` 결과가 커밋되어 있는지 확인합니다.
-5. 배포 후 `/`, `/s/[snapshotId]`, `/compare/[snapshotId]`, `/api/recommendations`가 정상 응답하는지 확인합니다.
+4. 인터랙티브 지도를 쓰려면 `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, 주변 장소까지 쓰려면 `GOOGLE_MAPS_API_KEY`도 함께 추가합니다.
+5. 첫 배포 전에 `npm run db:generate` 결과가 커밋되어 있는지 확인합니다.
+6. 배포 후 `/`, `/s/[snapshotId]`, `/compare/[snapshotId]`, `/api/recommendations`가 정상 응답하는지 확인합니다.
 
 GitHub Actions로 자동 배포하려면 아래 GitHub Secrets가 필요합니다.
 

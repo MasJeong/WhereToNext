@@ -134,7 +134,10 @@ export async function resolveSnapshotRestorePageData(
       card: restored.primaryCard,
       query: restored.query,
       evidence: restored.primaryCard.recommendation.trendEvidence,
-      supplement: await getDestinationTravelSupplement(restored.primaryCard.destination),
+      supplement: await getDestinationTravelSupplement(
+        restored.primaryCard.destination,
+        restored.query.travelMonth,
+      ),
     };
   } catch {
     return {
@@ -244,11 +247,15 @@ export async function resolveDestinationDetailPageData(
     }
   }
 
-  const [evidenceResult, recommendationContext, supplement] = await Promise.all([
+  const recommendationContextPromise = resolveRecommendationContext();
+  const [evidenceResult, recommendationContext] = await Promise.all([
     getDestinationEvidence(destination),
-    resolveRecommendationContext(),
-    getDestinationTravelSupplement(destination),
+    recommendationContextPromise,
   ]);
+  const supplement = await getDestinationTravelSupplement(
+    destination,
+    recommendationContext.query?.travelMonth ?? undefined,
+  );
 
   return {
     destination,

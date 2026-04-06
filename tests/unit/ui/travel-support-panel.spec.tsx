@@ -33,10 +33,21 @@ describe("TravelSupportPanel", () => {
             rainyDayRatio: 12,
             basedOnYears: 5,
           },
-          mapEmbed: {
-            src: "https://www.google.com/maps/embed/v1/place?key=test&q=Bali%2C%20Indonesia",
+          map: {
+            latitude: -8.34,
+            longitude: 115.09,
+            zoom: 11,
             title: "발리 지도",
+            googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=-8.34%2C115.09",
           },
+          nearbyPlaces: [
+            {
+              id: "place-1",
+              name: "우붓 왕궁",
+              shortAddress: "Ubud, Gianyar Regency",
+              googleMapsUrl: "https://maps.google.com/?cid=1",
+            },
+          ],
           fetchedAt: "2026-03-29T00:00:00.000Z",
         }}
       />,
@@ -79,10 +90,27 @@ describe("TravelSupportPanel", () => {
             rainyDayRatio: 12,
             basedOnYears: 5,
           },
-          mapEmbed: {
-            src: "https://www.google.com/maps/embed/v1/place?key=test&q=Bali%2C%20Indonesia",
+          map: {
+            latitude: -8.34,
+            longitude: 115.09,
+            zoom: 11,
             title: "발리 지도",
+            googleMapsUrl: "https://www.google.com/maps/search/?api=1&query=-8.34%2C115.09",
           },
+          nearbyPlaces: [
+            {
+              id: "place-1",
+              name: "우붓 왕궁",
+              shortAddress: "Ubud, Gianyar Regency",
+              googleMapsUrl: "https://maps.google.com/?cid=1",
+            },
+            {
+              id: "place-2",
+              name: "뜨갈랄랑 라이스 테라스",
+              shortAddress: "Tegallalang, Gianyar Regency",
+              googleMapsUrl: "https://maps.google.com/?cid=2",
+            },
+          ],
           fetchedAt: "2026-03-29T00:00:00.000Z",
         }}
       />,
@@ -91,14 +119,17 @@ describe("TravelSupportPanel", () => {
     expect(screen.getByText("10월 날씨")).toBeInTheDocument();
     expect(screen.getByText("10월엔 조금 덥지만 움직이기 괜찮고 비 변수는 낮은 편이에요.")).toBeInTheDocument();
     expect(screen.queryByText("환율 참고")).not.toBeInTheDocument();
-    expect(screen.queryByText("주변 장소")).not.toBeInTheDocument();
     expect(screen.getByText("평균 최고 30.2° / 최저 24.1°")).toBeInTheDocument();
     expect(screen.getByText("비 오는 날 비중 약 12%")).toBeInTheDocument();
     expect(screen.getByText("지금 29° · 체감 31° · 맑아요")).toBeInTheDocument();
-    expect(screen.getByText("위치")).toBeInTheDocument();
-    expect(screen.getByTitle("발리 지도")).toHaveAttribute(
-      "src",
-      "https://www.google.com/maps/embed/v1/place?key=test&q=Bali%2C%20Indonesia",
+    expect(screen.getByText("지도")).toBeInTheDocument();
+    expect(screen.getByText("발리가 어디에 붙어 있는지 먼저 감 잡아보세요.")).toBeInTheDocument();
+    expect(screen.getByText("먼저 볼 만한 곳")).toBeInTheDocument();
+    expect(screen.getByText("우붓 왕궁")).toBeInTheDocument();
+    expect(screen.getByText("뜨갈랄랑 라이스 테라스")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "지도 새 탭에서 열기" })).toHaveAttribute(
+      "href",
+      "https://www.google.com/maps/search/?api=1&query=-8.34%2C115.09",
     );
   });
 

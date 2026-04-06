@@ -27,6 +27,7 @@ import {
   vibeValues,
   type ComparisonSnapshot,
   type DestinationProfile,
+  type DestinationTravelSupplement,
   type RecommendationQuery,
   type RecommendationSnapshot,
   type ScoringVersion,
@@ -251,4 +252,16 @@ export const destinationAffiliateClicks = pgTable("destination_affiliate_clicks"
   userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
   sessionId: text("session_id"),
   clickedAt: timestamp("clicked_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const destinationTravelSupplementCache = pgTable("destination_travel_supplement_cache", {
+  cacheKey: text("cache_key").primaryKey(),
+  destinationId: text("destination_id")
+    .notNull()
+    .references(() => destinationProfiles.id, { onDelete: "cascade" }),
+  travelMonth: integer("travel_month"),
+  payload: jsonb("payload").$type<DestinationTravelSupplement>().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

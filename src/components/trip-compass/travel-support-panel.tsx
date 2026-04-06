@@ -5,6 +5,8 @@ import Image from "next/image";
 import type { DestinationTravelSupplement } from "@/lib/domain/contracts";
 import { testIds } from "@/lib/test-ids";
 
+import { InteractiveDestinationMapCard } from "./interactive-destination-map-card";
+
 type TravelSupportPanelProps = {
   supplement: DestinationTravelSupplement | null | undefined;
   destinationName: string;
@@ -110,23 +112,42 @@ export function TravelSupportPanel({
             ) : null}
           </div>
 
-          {supplement.mapEmbed ? (
-            <article className="overflow-hidden rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white">
-              <div className="border-b border-[color:var(--color-funnel-border)] px-3.5 py-3">
-                <p className="text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                  위치
-                </p>
-                <p className="mt-1 text-sm font-semibold text-[var(--color-funnel-text)]">
-                  {destinationName}가 어느 쪽에 있는지 먼저 감 잡아보세요.
-                </p>
+          {supplement.map ? (
+            <InteractiveDestinationMapCard map={supplement.map} destinationName={destinationName} />
+          ) : null}
+
+          {supplement.nearbyPlaces && supplement.nearbyPlaces.length > 0 ? (
+            <article className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-3">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                    먼저 볼 만한 곳
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-[var(--color-funnel-text)]">
+                    {destinationName}에서 바로 동선에 넣기 좋은 장소예요.
+                  </p>
+                </div>
+                <span className="rounded-full bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)]">
+                  {supplement.nearbyPlaces.slice(0, 3).length}곳
+                </span>
               </div>
-              <iframe
-                src={supplement.mapEmbed.src}
-                title={supplement.mapEmbed.title}
-                loading="lazy"
-                referrerPolicy="no-referrer-when-downgrade"
-                className="h-40 w-full border-0"
-              />
+              <div className="mt-3 grid gap-2">
+                {supplement.nearbyPlaces.slice(0, 3).map((place, index) => (
+                  <a
+                    key={place.id}
+                    data-testid={index === 0 ? testIds.detail.nearbyPlace0 : undefined}
+                    href={place.googleMapsUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="rounded-[0.9rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-3 transition-colors duration-200 hover:border-[var(--color-action-primary)] hover:bg-white"
+                  >
+                    <p className="text-sm font-semibold text-[var(--color-funnel-text)]">{place.name}</p>
+                    <p className="mt-1 text-xs leading-5 text-[var(--color-funnel-text-soft)]">
+                      {place.shortAddress}
+                    </p>
+                  </a>
+                ))}
+              </div>
             </article>
           ) : null}
         </div>
@@ -230,24 +251,12 @@ export function TravelSupportPanel({
           </article>
         ) : null}
 
-        {supplement.mapEmbed ? (
-          <article className="overflow-hidden rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)]">
-            <div className="border-b border-[color:var(--color-funnel-border)] px-3.5 py-3">
-              <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                지도
-              </p>
-              <p className="mt-1 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-                {destinationName} 위치 감만 짧게 확인해 보세요.
-              </p>
-            </div>
-            <iframe
-              src={supplement.mapEmbed.src}
-              title={supplement.mapEmbed.title}
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="h-40 w-full border-0"
-            />
-          </article>
+        {supplement.map ? (
+          <InteractiveDestinationMapCard
+            map={supplement.map}
+            destinationName={destinationName}
+            className="bg-[var(--color-funnel-muted)]"
+          />
         ) : null}
       </div>
 

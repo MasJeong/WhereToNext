@@ -41,10 +41,13 @@ npm run test:e2e
 
 ### 외부 API 키 제한 체크
 
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`
+  - 클라이언트 인터랙티브 지도에서 직접 로드되므로 `HTTP referrers (websites)` 제한이 필수입니다.
+  - `http://localhost:4010/*`, `http://127.0.0.1:4010/*`, 운영 도메인 `https://.../*`만 허용합니다.
+  - `API restrictions`는 `Maps JavaScript API`만 허용하는 것이 기본입니다.
 - `GOOGLE_MAPS_API_KEY`
-  - 현재 구조는 `Maps Embed API`를 `iframe`으로 쓰므로, 운영 배포 전에는 `HTTP referrers (websites)` 제한으로 바꿉니다.
-  - 로컬 개발용 `http://localhost:4010/*`, `http://127.0.0.1:4010/*`가 남아 있다면 운영 도메인 `https://.../*`를 추가하고 불필요한 로컬 항목은 정리합니다.
-  - `API restrictions`는 `Maps Embed API`만 허용하는 것이 기본입니다.
+  - 서버에서 주변 장소 검색을 호출하므로 공개 키와 분리해 운영합니다.
+  - `API restrictions`는 `Places API`만 허용하는 것이 기본입니다.
 - `YOUTUBE_API_KEY`
   - 운영 배포 전에는 `HTTP referrers (websites)` 또는 실제 사용 구조에 맞는 제한을 다시 확인합니다.
   - 테스트/로컬 도메인만 허용된 상태면 운영 도메인에서 `quotaExceeded`와 별개로 호출이 막힐 수 있으니, 운영 도메인 `https://.../*`를 반드시 추가합니다.
@@ -74,12 +77,14 @@ DATABASE_URL=postgres://...
 아래 값은 기능 활성화 여부에 따라 선택적으로 필요합니다.
 
 ```bash
+NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=...
 YOUTUBE_API_KEY=...
 GOOGLE_MAPS_API_KEY=...
 ```
 
 - `YOUTUBE_API_KEY`가 없으면 추천 결과 YouTube 패널은 fallback 링크만 보여줍니다.
-- `GOOGLE_MAPS_API_KEY`가 없으면 추천 결과와 상세 화면 지도 임베드는 표시되지 않습니다.
+- `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`가 없으면 지도는 정적 프리뷰 + 외부 Google 지도 링크만 보여줍니다.
+- `GOOGLE_MAPS_API_KEY`가 없으면 주변 장소 목록은 비워 두고 지도와 다른 보조 정보만 보여줍니다.
 - `PGLITE_DATA_DIR`는 로컬 파일 대체 경로가 필요할 때만 선택적으로 사용합니다.
 
 ### 2-1. GitHub Actions 자동 배포 시크릿

@@ -40,7 +40,6 @@ type SocialVideoSlotProps = {
   isMain?: boolean;
   isResolved: boolean;
   leadReason: string;
-  destinationName: string;
   fallbackNote: string;
 };
 
@@ -235,7 +234,6 @@ function SocialVideoSlot({
   isMain = false,
   isResolved,
   leadReason,
-  destinationName,
   fallbackNote,
 }: SocialVideoSlotProps) {
   const mainViewCountLabel = isMain ? formatViewCountLabel(item?.viewCount) : null;
@@ -721,7 +719,6 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
         isMain
         isResolved={isResolved}
         leadReason={leadReason}
-        destinationName={destinationName}
         fallbackNote="메인은 추천 결과를 가장 잘 설명하는 영상을 먼저 보여줘요."
       />
 
@@ -731,7 +728,6 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
           title=""
           isResolved={isResolved}
           leadReason={leadReason}
-          destinationName={destinationName}
           fallbackNote="최근성이나 다른 관점에서 함께 보면 좋은 영상이에요."
         />
         <SocialVideoSlot
@@ -739,7 +735,6 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
           title=""
           isResolved={isResolved}
           leadReason={leadReason}
-          destinationName={destinationName}
           fallbackNote="메인과 결이 다른 보조 영상을 함께 붙여요."
         />
       </div>

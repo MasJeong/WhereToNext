@@ -1,3 +1,7 @@
+import { eq } from "drizzle-orm";
+
+import { getRuntimeDatabase } from "@/lib/db/runtime";
+import { destinationTravelSupplementCache } from "@/lib/db/schema";
 import type { DestinationProfile, DestinationTravelSupplement } from "@/lib/domain/contracts";
 import { destinationTravelSupplementSchema } from "@/lib/domain/contracts";
 
@@ -87,6 +91,8 @@ const DEFAULT_REQUEST_OPTIONS = {
     revalidate: 3600,
   },
 } satisfies RequestInit;
+
+const SUPPLEMENT_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
 const WEATHER_CODE_LABELS: Record<number, string> = {
   0: "맑아요",
@@ -484,33 +490,96 @@ async function getNearbyPlaces(
 }
 
 /**
- * Google Maps 임베드용 작은 지도 URL을 만든다.
+ * 인터랙티브 지도에서 재사용할 목적지 지도 메타를 만든다.
  * @param destination 목적지
  * @param location 목적지 좌표
- * @param apiKey Google Maps API key
- * @returns 지도 임베드 정보 또는 undefined
+ * @returns 지도 메타데이터
  */
-function getMapEmbed(
+function buildDestinationMap(
   destination: DestinationProfile,
   location: LocationMeta,
-  apiKey: string,
-): DestinationTravelSupplement["mapEmbed"] | undefined {
-  if (!apiKey) {
-    return undefined;
+): DestinationTravelSupplement["map"] {
+  return {
+    latitude: location.latitude,
+    longitude: location.longitude,
+    zoom: 11,
+    title: `${destination.nameKo} 지도`,
+    googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${location.latitude},${location.longitude}`)}`,
+  };
+}
+
+function buildTravelSupplementCacheKey(destinationId: string, travelMonth?: number) {
+  return `${destinationId}:${typeof travelMonth === "number" ? travelMonth : "all"}`;
+}
+
+function isCacheFresh(expiresAt: string | Date): boolean {
+  const resolvedDate = expiresAt instanceof Date ? expiresAt : new Date(expiresAt);
+  return !Number.isNaN(resolvedDate.getTime()) && resolvedDate.getTime() > Date.now();
+}
+
+async function readDestinationTravelSupplementCache(
+  destinationId: string,
+  travelMonth?: number,
+): Promise<{ payload: DestinationTravelSupplement; expiresAt: Date } | null> {
+  const { db } = await getRuntimeDatabase();
+  const cacheKey = buildTravelSupplementCacheKey(destinationId, travelMonth);
+  const rows = await db
+    .select({
+      payload: destinationTravelSupplementCache.payload,
+      expiresAt: destinationTravelSupplementCache.expiresAt,
+    })
+    .from(destinationTravelSupplementCache)
+    .where(eq(destinationTravelSupplementCache.cacheKey, cacheKey))
+    .limit(1);
+
+  const row = rows[0];
+
+  if (!row) {
+    return null;
   }
 
-  const searchParams = new URLSearchParams({
-    key: apiKey,
-    q: buildDestinationSearchLabel(destination, location.countryName),
-    center: `${location.latitude},${location.longitude}`,
-    zoom: "11",
-    language: "ko",
-  });
-
   return {
-    src: `https://www.google.com/maps/embed/v1/place?${searchParams.toString()}`,
-    title: `${destination.nameKo} 지도`,
+    payload: destinationTravelSupplementSchema.parse(row.payload),
+    expiresAt: row.expiresAt,
   };
+}
+
+async function writeDestinationTravelSupplementCache(
+  destinationId: string,
+  travelMonth: number | undefined,
+  payload: DestinationTravelSupplement,
+) {
+  const { db } = await getRuntimeDatabase();
+  const cacheKey = buildTravelSupplementCacheKey(destinationId, travelMonth);
+  const expiresAt = new Date(Date.now() + SUPPLEMENT_CACHE_TTL_MS);
+
+  await db
+    .insert(destinationTravelSupplementCache)
+    .values({
+      cacheKey,
+      destinationId,
+      travelMonth,
+      payload,
+      expiresAt,
+      updatedAt: new Date(),
+    })
+    .onConflictDoUpdate({
+      target: destinationTravelSupplementCache.cacheKey,
+      set: {
+        payload,
+        expiresAt,
+        updatedAt: new Date(),
+      },
+    });
+}
+
+export async function clearDestinationTravelSupplementCacheForTests() {
+  if (process.env.NODE_ENV !== "test") {
+    return;
+  }
+
+  const { db } = await getRuntimeDatabase();
+  await db.delete(destinationTravelSupplementCache);
 }
 
 /**
@@ -605,45 +674,65 @@ export async function getDestinationTravelSupplement(
   destination: DestinationProfile,
   travelMonth?: number,
 ): Promise<DestinationTravelSupplement | null> {
+  const cached = await readDestinationTravelSupplementCache(destination.id, travelMonth);
+
+  if (cached && isCacheFresh(cached.expiresAt)) {
+    return cached.payload;
+  }
+
   const metadata = getCountryMetadata(destination.countryCode);
 
   if (!metadata) {
-    return null;
+    return cached?.payload ?? null;
   }
 
   try {
     const providerConfig = getProviderConfig();
-    const location = await getDestinationLocation(
-      destination,
-      metadata.countryName,
-      metadata.currencyCode,
-    );
+    const location =
+      cached?.payload.location ??
+      (await getDestinationLocation(
+        destination,
+        metadata.countryName,
+        metadata.currencyCode,
+      ));
 
     if (!location) {
-      return null;
+      return cached?.payload ?? null;
     }
 
     const [heroImage, weather, travelMonthWeather, nearbyPlaces, exchangeRate] = await Promise.all([
-      getHeroImage(destination, metadata.countryName, providerConfig.unsplashAccessKey).catch(() => undefined),
-      getWeatherSnapshot(location).catch(() => undefined),
+      getHeroImage(destination, metadata.countryName, providerConfig.unsplashAccessKey).catch(
+        () => cached?.payload.heroImage,
+      ),
+      getWeatherSnapshot(location).catch(() => cached?.payload.weather),
       typeof travelMonth === "number"
-        ? getTravelMonthWeatherSnapshot(location, travelMonth).catch(() => undefined)
+        ? getTravelMonthWeatherSnapshot(location, travelMonth).catch(
+            () => cached?.payload.travelMonthWeather,
+          )
         : Promise.resolve(undefined),
-      getNearbyPlaces(destination, location, providerConfig.googleMapsApiKey).catch(() => undefined),
-      getExchangeRate(location.currencyCode, providerConfig.exchangeRateHostAccessKey).catch(() => undefined),
+      getNearbyPlaces(destination, location, providerConfig.googleMapsApiKey).catch(
+        () => cached?.payload.nearbyPlaces,
+      ),
+      getExchangeRate(location.currencyCode, providerConfig.exchangeRateHostAccessKey).catch(
+        () => cached?.payload.exchangeRate,
+      ),
     ]);
 
-    return destinationTravelSupplementSchema.parse({
+    const supplement = destinationTravelSupplementSchema.parse({
       location,
       heroImage,
       weather,
       travelMonthWeather,
       nearbyPlaces,
-      mapEmbed: getMapEmbed(destination, location, providerConfig.googleMapsApiKey),
+      map: buildDestinationMap(destination, location),
       exchangeRate,
       fetchedAt: new Date().toISOString(),
     });
+
+    await writeDestinationTravelSupplementCache(destination.id, travelMonth, supplement);
+
+    return supplement;
   } catch {
-    return null;
+    return cached?.payload ?? null;
   }
 }

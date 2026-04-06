@@ -183,9 +183,12 @@ export const destinationNearbyPlaceSchema = z.object({
   googleMapsUrl: z.url(),
 });
 
-export const destinationMapEmbedSchema = z.object({
-  src: z.url(),
+export const destinationMapSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  zoom: z.number().int().min(1).max(20),
   title: z.string().min(1),
+  googleMapsUrl: z.url(),
 });
 
 export const destinationExchangeRateSchema = z.object({
@@ -202,7 +205,7 @@ export const destinationTravelSupplementSchema = z.object({
   weather: destinationWeatherSnapshotSchema.optional(),
   travelMonthWeather: destinationTravelMonthWeatherSchema.optional(),
   nearbyPlaces: z.array(destinationNearbyPlaceSchema).max(5).optional(),
-  mapEmbed: destinationMapEmbedSchema.optional(),
+  map: destinationMapSchema.optional(),
   exchangeRate: destinationExchangeRateSchema.optional(),
   fetchedAt: z.string().datetime(),
 });
