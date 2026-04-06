@@ -33,6 +33,10 @@ describe("TravelSupportPanel", () => {
             rainyDayRatio: 12,
             basedOnYears: 5,
           },
+          mapEmbed: {
+            src: "https://www.google.com/maps/embed/v1/place?key=test&q=Bali%2C%20Indonesia",
+            title: "발리 지도",
+          },
           fetchedAt: "2026-03-29T00:00:00.000Z",
         }}
       />,
@@ -75,6 +79,10 @@ describe("TravelSupportPanel", () => {
             rainyDayRatio: 12,
             basedOnYears: 5,
           },
+          mapEmbed: {
+            src: "https://www.google.com/maps/embed/v1/place?key=test&q=Bali%2C%20Indonesia",
+            title: "발리 지도",
+          },
           fetchedAt: "2026-03-29T00:00:00.000Z",
         }}
       />,
@@ -87,6 +95,11 @@ describe("TravelSupportPanel", () => {
     expect(screen.getByText("평균 최고 30.2° / 최저 24.1°")).toBeInTheDocument();
     expect(screen.getByText("비 오는 날 비중 약 12%")).toBeInTheDocument();
     expect(screen.getByText("지금 29° · 체감 31° · 맑아요")).toBeInTheDocument();
+    expect(screen.getByText("위치")).toBeInTheDocument();
+    expect(screen.getByTitle("발리 지도")).toHaveAttribute(
+      "src",
+      "https://www.google.com/maps/embed/v1/place?key=test&q=Bali%2C%20Indonesia",
+    );
   });
 
   it("shows a fallback summary block when external weather data is unavailable", () => {

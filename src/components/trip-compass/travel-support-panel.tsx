@@ -109,6 +109,26 @@ export function TravelSupportPanel({
               </article>
             ) : null}
           </div>
+
+          {supplement.mapEmbed ? (
+            <article className="overflow-hidden rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white">
+              <div className="border-b border-[color:var(--color-funnel-border)] px-3.5 py-3">
+                <p className="text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                  위치
+                </p>
+                <p className="mt-1 text-sm font-semibold text-[var(--color-funnel-text)]">
+                  {destinationName}가 어느 쪽에 있는지 먼저 감 잡아보세요.
+                </p>
+              </div>
+              <iframe
+                src={supplement.mapEmbed.src}
+                title={supplement.mapEmbed.title}
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+                className="h-40 w-full border-0"
+              />
+            </article>
+          ) : null}
         </div>
       </section>
     );
