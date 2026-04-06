@@ -116,9 +116,8 @@ describe("LeadSocialVideoPanel fallback", () => {
       />,
     );
 
-    expect(screen.getByText("도쿄에서 바로 감이 오는 영상을 고르고 있어요")).toBeInTheDocument();
-    expect(screen.getAllByText("영상 생성 중").length).toBeGreaterThan(0);
-    expect(screen.getByText("추천 결과와 결이 맞는 영상 고르는 중")).toBeInTheDocument();
+    expect(screen.getByText("관련 영상 붙이는 중")).toBeInTheDocument();
+    expect(screen.getAllByText("준비 중").length).toBeGreaterThan(0);
   });
 
   it("renders a compact supporting video card for secondary recommendations", async () => {

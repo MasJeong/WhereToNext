@@ -225,17 +225,6 @@ function decodeHtmlEntities(value: string) {
 }
 
 /**
- * 로딩 중일 때 카드에 보여 줄 준비 단계 문구를 만든다.
- * @param isMain 메인 슬롯 여부
- * @returns 준비 단계 문구 목록
- */
-function buildLoadingSteps(isMain: boolean): string[] {
-  return isMain
-    ? ["추천 결과와 결이 맞는 영상 고르는 중", "가장 먼저 볼 영상부터 정리", "다른 관점 영상은 이어서 붙이는 중"]
-    : ["메인 옆에 둘 보조 영상 고르는 중", "최근성·다른 관점까지 함께 살피는 중"];
-}
-
-/**
  * 하나의 영상 슬롯을 메인 또는 서브 카드로 렌더한다.
  * @param props 영상 슬롯 정보
  * @returns 영상 슬롯 카드
@@ -254,24 +243,21 @@ function SocialVideoSlot({
   const resolvedChannelTitle = item ? decodeHtmlEntities(item.channelTitle) : "";
 
   if (!item) {
-    const loadingSteps = buildLoadingSteps(isMain);
-
     return (
       <article
         className={[
-          "overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#fffdf8_0%,#fff7ed_100%)] shadow-[0_14px_30px_rgba(15,23,42,0.04)]",
-          isMain ? "min-h-[18rem] sm:min-h-[24rem]" : "min-h-[12.5rem]",
+          "overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.04)]",
+          isMain ? "min-h-[16rem] sm:min-h-[20rem]" : "min-h-[8.75rem]",
         ].join(" ")}
       >
         <div
           className={[
             "flex h-full flex-col justify-between gap-4 p-4 sm:p-5",
-            isMain ? "sm:flex-row sm:items-stretch" : "",
           ].join(" ")}
         >
-          <div className={isMain ? "flex min-w-0 flex-1 flex-col justify-between gap-4" : "flex min-w-0 flex-1 flex-col gap-4"}>
+          <div className="flex min-w-0 flex-1 flex-col justify-between gap-4">
             <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-white px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)] shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+              <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
                 YouTube
               </span>
               <span
@@ -279,97 +265,35 @@ function SocialVideoSlot({
                   "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[0.72rem] font-semibold",
                   isResolved
                     ? "border-[color:var(--color-funnel-border)] bg-white text-[var(--color-funnel-text-soft)]"
-                    : "border-amber-200 bg-amber-50 text-amber-700",
+                    : "border-[color:var(--color-funnel-border)] bg-white text-[var(--color-funnel-text-soft)]",
                 ].join(" ")}
               >
-                <span className={isResolved ? "h-1.5 w-1.5 rounded-full bg-[var(--color-funnel-text-soft)]" : "h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse"} />
-                {isResolved ? "영상 없음" : "영상 생성 중"}
+                <span className={isResolved ? "h-1.5 w-1.5 rounded-full bg-[var(--color-funnel-text-soft)]" : "h-1.5 w-1.5 rounded-full bg-[var(--color-action-primary)] animate-pulse"} />
+                {isResolved ? "영상 없음" : "준비 중"}
               </span>
             </div>
 
-            <div className={isMain ? "max-w-xl space-y-2.5" : "space-y-2"}>
-              <p
-                className={[
-                  "font-semibold tracking-[-0.05em] text-[var(--color-funnel-text)]",
-                  isMain ? "text-[1.8rem] leading-[1] sm:text-[2.35rem]" : "text-[1.05rem] leading-6",
-                ].join(" ")}
-              >
-                {isMain ? `${destinationName}에서 바로 감이 오는 영상을 고르고 있어요` : `${destinationName}를 더 입체적으로 볼 영상을 고르고 있어요`}
+            <div className={isMain ? "max-w-xl space-y-2" : "space-y-2"}>
+              <p className={isMain ? "text-[1rem] font-semibold tracking-[-0.03em] text-[var(--color-funnel-text)]" : "text-[0.92rem] font-semibold text-[var(--color-funnel-text)]"}>
+                {isMain ? "관련 영상 붙이는 중" : "보조 영상 찾는 중"}
               </p>
-              <p className={isMain ? "text-[0.98rem] font-semibold leading-7 text-[var(--color-funnel-text)]" : "text-sm font-semibold leading-6 text-[var(--color-funnel-text)]"}>
+              <p className="max-w-xl text-sm leading-6 text-[var(--color-funnel-text-soft)]">
                 {isMain ? leadReason : fallbackNote}
               </p>
-              <p className="max-w-xl text-sm leading-6 text-[var(--color-funnel-text-soft)] sm:text-[0.96rem]">
-                {isMain
-                  ? isResolved
-                    ? "지금은 메인으로 보여줄 영상을 바로 찾지 못했어요. 아래 보조 영상이나 검색 링크로 바로 이어서 둘러볼 수 있어요."
-                    : "추천 결과는 이미 정리됐고, 지금은 그 분위기를 가장 잘 보여 주는 영상을 앞에 붙이고 있어요."
-                  : isResolved
-                    ? fallbackNote
-                    : "메인 영상을 본 뒤 비교해서 볼 수 있게, 결이 다른 후보를 함께 정리하고 있어요."}
-              </p>
             </div>
 
-            <div className="grid gap-2.5 sm:grid-cols-2">
-              {loadingSteps.map((step, index) => (
-                <article
-                  key={`${title || destinationName}-loading-step-${index}`}
-                  className={[
-                    "rounded-[1.1rem] border px-4 py-3",
-                    index === 0
-                      ? "border-amber-200 bg-white"
-                      : "border-[color:var(--color-funnel-border)] bg-white/75",
-                  ].join(" ")}
-                >
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={[
-                        "h-2 w-2 rounded-full",
-                        index === 0 && !isResolved ? "bg-amber-500 animate-pulse" : "bg-[var(--color-funnel-border)]",
-                      ].join(" ")}
-                    />
-                    <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                      {index === 0 ? "지금 보는 단계" : `이어서 ${index}`}
-                    </p>
-                  </div>
-                  <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">{step}</p>
-                </article>
-              ))}
+            <div className={isMain ? "grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_11rem]" : "grid gap-2"}>
+              <div className="space-y-2 rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3">
+                <div className="h-3 w-24 rounded-full bg-white" />
+                <div className="h-3 w-full rounded-full bg-white" />
+                <div className="h-3 w-5/6 rounded-full bg-white" />
+              </div>
+              {isMain ? (
+                <div className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3">
+                  <div className="aspect-[4/3] rounded-[0.8rem] bg-white" />
+                </div>
+              ) : null}
             </div>
-          </div>
-
-          <div
-            className={[
-              "grid gap-2.5",
-              isMain ? "sm:w-[16.5rem] sm:grid-cols-1" : "sm:grid-cols-2",
-            ].join(" ")}
-          >
-            <article className="rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-white/90 px-4 py-3">
-              <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                선택 기준
-              </p>
-              <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">
-                {isMain ? "추천 이유를 가장 잘 설명하는 순서" : "최근성·보완 관점까지 함께 반영"}
-              </p>
-            </article>
-            <article className="rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-white/90 px-4 py-3">
-              <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                노출 방식
-              </p>
-              <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">
-                {isMain ? "대표 영상부터 먼저 보여주기" : "짧게 훑는 보조 카드로 정리"}
-              </p>
-            </article>
-            {isMain ? (
-              <article className="rounded-[1.1rem] border border-amber-200 bg-amber-50 px-4 py-3">
-                <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-amber-700">
-                  로딩 안내
-                </p>
-                <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">
-                  추천 결과는 먼저 보여 드리고, 영상은 뒤에서 자연스럽게 이어 붙이고 있어요.
-                </p>
-              </article>
-            ) : null}
           </div>
         </div>
       </article>

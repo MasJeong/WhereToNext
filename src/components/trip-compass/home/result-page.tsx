@@ -92,47 +92,34 @@ export function ResultPage({
           {leadSupportSlot ? (
             leadSupportSlot
           ) : (
-            <div className="overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#fffdf8_0%,#fff7ed_100%)] shadow-[0_14px_30px_rgba(15,23,42,0.04)]">
+            <div className="overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
               <div className="flex min-h-[16rem] flex-col justify-between gap-4 p-5 sm:min-h-[18rem] sm:p-6">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="rounded-full bg-white px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)] shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
+                  <p className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
                     YouTube
                   </p>
-                  <span className="inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-3 py-1 text-[0.72rem] font-semibold text-amber-700">
-                    <span className="h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse" />
-                    영상 생성 중
+                  <span className="inline-flex items-center gap-2 rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1 text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-action-primary)] animate-pulse" />
+                    준비 중
                   </span>
                 </div>
-                <div className="space-y-2.5">
-                  <p className="text-[1.35rem] font-semibold leading-tight tracking-[-0.04em] text-[var(--color-funnel-text)] sm:text-[1.6rem]">
-                    추천 결과를 더 실감 나게 볼 영상을 고르고 있어요
+                <div className="space-y-2">
+                  <p className="text-[1rem] font-semibold tracking-[-0.03em] text-[var(--color-funnel-text)]">
+                    관련 영상을 붙이는 중입니다
                   </p>
                   <p className="max-w-xl text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-                    목적지는 이미 정리됐고, 지금은 추천 이유가 바로 읽히는 YouTube 영상을 메인부터 차례로 붙이는 중이에요.
+                    결과는 먼저 보여드리고, 영상은 뒤에서 조용히 이어 붙입니다.
                   </p>
                 </div>
-                <div className="grid gap-2.5 sm:grid-cols-2">
-                  <article className="rounded-[1.1rem] border border-amber-200 bg-white px-4 py-3">
-                    <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                      지금 보는 단계
-                    </p>
-                    <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">
-                      가장 먼저 볼 영상부터 정리
-                    </p>
-                  </article>
-                  <article className="rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-white/80 px-4 py-3">
-                    <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                      이어서
-                    </p>
-                    <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">
-                      비교해서 볼 보조 영상까지 이어서 정리
-                    </p>
-                  </article>
-                </div>
-                <div className="space-y-2">
-                  <div className="h-3 w-32 rounded-full bg-white/90" />
-                  <div className="h-3 w-full rounded-full bg-white/70" />
-                  <div className="h-3 w-4/5 rounded-full bg-white/70" />
+                <div className="grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_11rem]">
+                  <div className="space-y-2 rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3">
+                    <div className="h-3 w-24 rounded-full bg-white" />
+                    <div className="h-3 w-full rounded-full bg-white" />
+                    <div className="h-3 w-5/6 rounded-full bg-white" />
+                  </div>
+                  <div className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3">
+                    <div className="aspect-[4/3] rounded-[0.8rem] bg-white" />
+                  </div>
                 </div>
               </div>
             </div>
