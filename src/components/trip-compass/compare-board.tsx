@@ -198,11 +198,11 @@ export function CompareBoard({ columns }: CompareBoardProps) {
             gridTemplateColumns: `minmax(5.8rem, 6.4rem) repeat(${mobileColumns.length}, minmax(0, 1fr))`,
           }}
         >
-          <div className="compass-compare-label px-3 py-3 text-xs font-semibold">비교 질문</div>
+          <div className="compass-compare-label px-3 py-3 text-xs font-semibold">비교 항목</div>
           {mobileColumns.map((column) => (
             <div key={`mobile-header-${column.snapshotId}`} className="compass-compare-column px-3 py-3">
               <div className="compass-compare-header-block">
-                <p className="compass-editorial-kicker">보드 후보</p>
+                <p className="compass-editorial-kicker">비교 후보</p>
                 <p className="text-[0.98rem] font-semibold leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
                   {column.card.destination.nameKo}
                 </p>
@@ -241,11 +241,11 @@ export function CompareBoard({ columns }: CompareBoardProps) {
             gridTemplateColumns: `minmax(9rem, 11rem) repeat(${columns.length}, minmax(14rem, 1fr))`,
           }}
         >
-          <div className="compass-compare-label px-4 py-3.5 text-sm font-semibold">비교 질문</div>
+          <div className="compass-compare-label px-4 py-3.5 text-sm font-semibold">비교 항목</div>
           {columns.map((column, index) => (
             <div key={`desktop-header-${column.snapshotId}`} className="compass-compare-column px-4 py-3.5">
               <div className="compass-compare-header-block">
-                <p className="compass-editorial-kicker">보드 후보 {index + 1}</p>
+                <p className="compass-editorial-kicker">비교 후보 {index + 1}</p>
                 <p className="text-[1.02rem] font-semibold leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
                   {column.card.destination.nameKo}
                 </p>

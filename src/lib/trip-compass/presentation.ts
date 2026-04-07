@@ -1057,14 +1057,14 @@ export function formatFreshnessState(
   freshnessState: TrendEvidenceSnapshot["freshnessState"],
 ): string {
   if (freshnessState === "fresh") {
-    return "최근 반응";
+    return "요즘 많이 보는 내용";
   }
 
   if (freshnessState === "aging") {
-    return "조금 지난 반응";
+    return "조금 지난 내용";
   }
 
-  return "꾸준한 반응";
+  return "계속 많이 보는 내용";
 }
 
 /**
@@ -1097,10 +1097,10 @@ export function formatDepartureAirport(
  */
 export function formatEvidenceMode(mode: RecommendationApiResponse["sourceSummary"]["mode"]): string {
   if (mode === "live") {
-    return "실시간";
+    return "바로 모은 정보";
   }
 
-  return "대체";
+  return "미리 정리한 정보";
 }
 
 /**
@@ -1110,18 +1110,18 @@ export function formatEvidenceMode(mode: RecommendationApiResponse["sourceSummar
  */
 export function describeSourceBadge(evidence: TrendEvidenceSnapshot): string {
   if (evidence.sourceType === "partner_account") {
-    return "공식 계정";
+    return "공식 채널";
   }
 
   if (evidence.sourceType === "hashtag_capsule") {
-    return "해시태그 기준";
+    return "많이 본 키워드";
   }
 
   if (evidence.tier === "fallback") {
-    return "대체 소스";
+    return "추가 참고";
   }
 
-  return "큐레이션";
+  return "골라본 내용";
 }
 
 /**

@@ -42,7 +42,7 @@ function CompareRestoreTrustPanel({ columns }: { columns: ComparisonColumnView[]
           href="#compare-board"
           className="compass-action-primary compass-soft-press inline-flex rounded-full px-5 py-2.5 text-sm font-semibold tracking-[0.04em]"
         >
-          비교 보드 바로 보기
+          후보 비교 바로 보기
         </a>
         <p className="text-xs leading-5 text-[var(--color-ink-soft)]">한 줄 판정과 체크할 점부터 보면 마지막 결정이 빨라져요.</p>
       </div>
@@ -80,7 +80,7 @@ export function CompareRestoreView({ data }: CompareRestoreViewProps) {
 
   return (
     <ExperienceShell
-      eyebrow="비교 보드"
+      eyebrow="후보 비교"
       title="저장한 후보를 한 화면에서 다시 좁혀 보세요."
       intro="후보별 차이만 남겨서, 마지막 판단을 빠르게 이어갈 수 있게 정리했어요."
       capsule="저장된 비교 링크 · 후보 2~4곳 · 재계산 없음"
@@ -95,7 +95,7 @@ export function CompareRestoreView({ data }: CompareRestoreViewProps) {
       >
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <p className="compass-editorial-kicker">비교 보드 요약</p>
+            <p className="compass-editorial-kicker">한눈에 보기</p>
             <h2 className="mt-2 text-[1rem] font-semibold leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.14rem]">
               같은 질문을 반복하지 않도록, 결정에 필요한 차이만 남겼어요.
             </h2>
@@ -113,7 +113,7 @@ export function CompareRestoreView({ data }: CompareRestoreViewProps) {
           </article>
           <article className="compass-hero-meta rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3.5">
             <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">읽는 법</p>
-            <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">열은 후보, 행은 비교 질문</p>
+            <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">열은 후보, 행은 비교 항목</p>
             <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">한 줄 판정과 체크할 점부터 보면 빠르게 좁힐 수 있어요.</p>
           </article>
           <article className="compass-hero-meta rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3.5">
@@ -129,7 +129,7 @@ export function CompareRestoreView({ data }: CompareRestoreViewProps) {
 
         <div className="mt-4 flex flex-wrap gap-2">
           <Link href="/" className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-sm font-semibold tracking-[0.04em]">
-            새 비교 보드 만들기
+            새 비교 만들기
           </Link>
         </div>
       </section>

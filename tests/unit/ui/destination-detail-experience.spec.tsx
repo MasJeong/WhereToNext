@@ -62,10 +62,11 @@ describe("DestinationDetailExperience", () => {
     expect(screen.getByTestId(testIds.detail.root)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "도쿄 · 일본" })).toBeInTheDocument();
     expect(screen.getByTestId(testIds.detail.watchOuts)).toBeInTheDocument();
+    expect(screen.getByTestId(testIds.detail.travelSupport)).toBeInTheDocument();
     expect(screen.queryByTestId(testIds.detail.fitReason)).not.toBeInTheDocument();
     expect(screen.queryByTestId(testIds.detail.evidence)).not.toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("세부 정보 보기"));
+    fireEvent.click(screen.getByText("자세히 보기"));
 
     expect(screen.getByTestId(testIds.detail.fitReason)).toBeInTheDocument();
     expect(screen.getByTestId(testIds.detail.evidence)).toBeInTheDocument();
@@ -89,7 +90,7 @@ describe("DestinationDetailExperience", () => {
     );
 
     expect(screen.getByTestId(testIds.detail.flightAffiliate)).toBeInTheDocument();
-    expect(screen.getByText("제휴 링크 포함")).toBeInTheDocument();
+    expect(screen.getByText("외부 예약 링크")).toBeInTheDocument();
     expect(screen.getByText("Skyscanner")).toBeInTheDocument();
 
     const cta = screen.getByTestId(testIds.detail.flightAffiliateCta);

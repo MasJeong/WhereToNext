@@ -564,6 +564,7 @@ export async function upsertUserFutureTrip(
       const existing = Object.values(store.futureTrips).find(
         (entry) => entry.userId === userId && entry.destinationId === parsedInput.destinationId,
       );
+
       const nowIso = new Date().toISOString();
       const saved = userFutureTripSchema.parse({
         id: existing?.id ?? randomUUID(),
@@ -584,6 +585,7 @@ export async function upsertUserFutureTrip(
     const existing = [...memoryStore.futureTrips.values()].find(
       (entry) => entry.userId === userId && entry.destinationId === parsedInput.destinationId,
     );
+
     const nowIso = new Date().toISOString();
     const saved = userFutureTripSchema.parse({
       id: existing?.id ?? randomUUID(),

@@ -100,10 +100,10 @@ function isInstagramSource(sourceUrl: string): boolean {
 
 function buildSourceActionLabel(sourceLabel: string, sourceUrl: string): string {
   if (isInstagramSource(sourceUrl)) {
-    return `${sourceLabel} 보기`;
+    return `${sourceLabel}에서 보기`;
   }
 
-  return "원문 보기";
+  return "바로 보기";
 }
 
 function InstagramSourceIcon() {
@@ -367,7 +367,7 @@ export function DestinationDetailExperience({
                     onClick={() => setShowDetails((current) => !current)}
                     className="compass-action-secondary compass-soft-press min-h-[3rem] rounded-[1rem] px-4 py-3 text-sm font-semibold tracking-[0.02em]"
                   >
-                    {showDetails ? "세부 정보 접기" : "세부 정보 보기"}
+                    {showDetails ? "자세히 접기" : "자세히 보기"}
                   </button>
                   {hasSavedViewLink ? (
                     <Link
@@ -482,7 +482,7 @@ export function DestinationDetailExperience({
               className="rounded-[var(--radius-card)] border border-[color:var(--color-frame-soft)] bg-white px-4 py-4 shadow-[0_14px_32px_rgba(15,23,42,0.05)] sm:px-5 sm:py-5"
             >
               <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
-                <p className="compass-editorial-kicker">분위기 근거</p>
+                <p className="compass-editorial-kicker">이런 느낌이에요</p>
                 <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
                   지금 이 도시가 왜 끌리는지, 실제 신호를 짧게 붙여 뒀어요.
                 </p>
@@ -518,7 +518,7 @@ export function DestinationDetailExperience({
                   ))
                 ) : (
                   <p className="text-sm leading-6 text-[var(--color-ink-soft)]">
-                    지금은 추가 분위기 근거가 많지 않아요.
+                    지금은 참고할 만한 내용이 많지 않아요.
                   </p>
                 )}
               </div>
