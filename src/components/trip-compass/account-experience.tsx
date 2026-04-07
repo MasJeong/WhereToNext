@@ -15,12 +15,14 @@ import type {
 } from "@/lib/domain/contracts";
 import {
   getAccountFutureTripEntryTestId,
+  getAccountFutureTripDeleteTestId,
   getAccountHistoryDeleteTestId,
   getAccountHistoryEditTestId,
   getAccountHistoryEntryTestId,
   getAccountHistoryGalleryImageTestId,
   getAccountHistoryLightboxImageTestId,
   getAccountHistoryGalleryToggleTestId,
+  getAccountFutureTripViewTestId,
   getSavedSnapshotDeleteCancelTestId,
   getSavedSnapshotDeleteConfirmTestId,
   getSavedSnapshotDeleteDialogTestId,
@@ -862,7 +864,7 @@ export function AccountExperience({
               {plannedSnapshots.length > 0 ? (
                 plannedSnapshots.map((snapshot, index) => {
                   const destination = findDestinationCopy(snapshot.payload.destinationIds[0]);
-                  const isUpdating = updatingSnapshotId === snapshot.id;
+                  const isDeleting = deletingSavedSnapshotId === snapshot.id;
 
                   return (
                     <article
@@ -880,18 +882,66 @@ export function AccountExperience({
                         <p className="mt-1 text-[0.82rem] text-[var(--color-ink-soft)]">
                           {destination.nameEn} · {formatRelativeDate(snapshot.createdAt)} 저장
                         </p>
+                        <p className="mt-2 text-[0.8rem] text-[var(--color-ink-soft)]">
+                          저장한 추천에서 올린 여행지입니다. 여기서는 일정 후보만 차분히 모아 보세요.
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+                        <span className="inline-flex items-center justify-center rounded-full bg-[var(--color-selected)] px-3 py-1 text-[0.74rem] font-semibold text-[var(--color-sand-deep)]">
+                          예정된 여행
+                        </span>
+                        <Link
+                          href={`/s/${snapshot.id}`}
+                          data-testid={getAccountFutureTripViewTestId(index)}
+                          className="inline-flex min-h-[36px] items-center justify-center rounded-lg bg-[var(--color-ink)] px-3 py-1.5 text-[0.78rem] font-semibold text-white transition-opacity hover:opacity-85"
+                        >
+                          추천 다시 보기
+                        </Link>
+                        <button
+                          type="button"
+                          data-testid={getAccountFutureTripDeleteTestId(index)}
+                          disabled={isDeleting}
+                          onClick={() => {
+                            setSavedDeleteDialogSnapshotId(snapshot.id);
+                          }}
+                          className="inline-flex min-h-[36px] items-center justify-center rounded-lg border border-[var(--color-frame-soft)] px-3 py-1.5 text-[0.78rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:border-red-300 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isDeleting ? "삭제 중..." : "삭제"}
+                        </button>
                       </div>
 
-                      <button
-                        type="button"
-                        disabled={isUpdating}
-                        onClick={() => {
-                          void updateSnapshotStatus(snapshot.id, "saved");
-                        }}
-                        className="shrink-0 rounded-lg border border-[var(--color-frame-soft)] px-4 py-2 text-[0.8rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-sand)] hover:text-[var(--color-sand-deep)] disabled:cursor-not-allowed disabled:opacity-50"
-                      >
-                        {isUpdating ? "이동 중..." : "저장 목록으로"}
-                      </button>
+                      {savedDeleteDialogSnapshotId === snapshot.id ? (
+                        <div
+                          data-testid={getSavedSnapshotDeleteDialogTestId(index)}
+                          className="sm:col-span-2 rounded-xl border border-[var(--color-frame-soft)] bg-[var(--color-surface-muted)] p-3"
+                        >
+                          <p className="text-[0.82rem] font-semibold text-[var(--color-ink)]">이 예정된 여행을 삭제할까요?</p>
+                          <p className="mt-1 text-[0.78rem] text-[var(--color-ink-soft)]">
+                            삭제하면 저장 목록과 예정된 여행에서 함께 사라져요.
+                          </p>
+                          <div className="mt-3 flex gap-2">
+                            <button
+                              type="button"
+                              data-testid={getSavedSnapshotDeleteCancelTestId(index)}
+                              onClick={() => setSavedDeleteDialogSnapshotId(null)}
+                              className="rounded-lg border border-[var(--color-frame-soft)] px-3 py-2 text-[0.78rem] font-medium text-[var(--color-ink-soft)]"
+                            >
+                              취소
+                            </button>
+                            <button
+                              type="button"
+                              data-testid={getSavedSnapshotDeleteConfirmTestId(index)}
+                              disabled={isDeleting}
+                              onClick={() => {
+                                void deleteSavedSnapshot(snapshot.id);
+                              }}
+                              className="rounded-lg bg-red-500 px-3 py-2 text-[0.78rem] font-semibold text-white disabled:opacity-50"
+                            >
+                              {isDeleting ? "삭제 중..." : "삭제"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
                     </article>
                   );
                 })

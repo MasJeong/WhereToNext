@@ -53,6 +53,29 @@ const evidenceStopwords = new Set([
 ]);
 
 const socialVideoHintTerms = ["한국인", "한국어", "korean"];
+const negativeTravelIntentTerms = [
+  "안전",
+  "위험",
+  "경보",
+  "주의",
+  "치안",
+  "뉴스",
+  "속보",
+  "사기",
+  "범죄",
+  "고어",
+  "news",
+  "scam",
+  "fraud",
+  "crime",
+  "gore",
+  "crime",
+  "danger",
+  "safe",
+  "safety",
+  "warning",
+];
+const positiveTravelIntentTerms = ["여행", "브이로그", "vlog", "휴가", "trip"];
 const YOUTUBE_SEARCH_ENDPOINT = "https://www.googleapis.com/youtube/v3/search";
 const YOUTUBE_VIDEOS_ENDPOINT = "https://www.googleapis.com/youtube/v3/videos";
 const SOCIAL_VIDEO_CACHE_TTL_SECONDS = 10_800;
@@ -123,7 +146,7 @@ export type SocialVideoSearchContext = {
   leadEvidence?: ReadonlyArray<SocialVideoLeadEvidence>;
 };
 
-type SocialVideoFallbackReason = "api-disabled" | "request-failed" | "low-confidence" | "no-candidates";
+type SocialVideoFallbackReason = "api-disabled" | "quota-exceeded" | "request-failed" | "low-confidence" | "no-candidates";
 
 export type SocialVideoCandidate = {
   id: string;
@@ -350,6 +373,8 @@ function buildFallbackMeta(context: SocialVideoSearchContext, reason: SocialVide
     headline:
       reason === "api-disabled"
         ? "지금은 YouTube 연결이 꺼져 있어요"
+        : reason === "quota-exceeded"
+          ? "지금은 YouTube 할당량이 잠시 다 찼어요"
         : reason === "request-failed"
           ? "지금은 영상을 바로 불러오지 못했어요"
           : reason === "low-confidence"
@@ -358,6 +383,8 @@ function buildFallbackMeta(context: SocialVideoSearchContext, reason: SocialVide
     description:
       reason === "api-disabled"
         ? "연결이 복구되면 자동으로 대표 영상을 다시 붙여드릴게요."
+        : reason === "quota-exceeded"
+          ? "오늘 할당량이 다시 열리면 대표 영상을 자동으로 붙여드릴게요. 아래 검색 링크로 바로 이어 볼 수 있어요."
         : reason === "request-failed"
           ? "잠시 후 다시 시도하거나 아래 검색 링크로 바로 찾아볼 수 있어요."
           : reason === "low-confidence"
@@ -428,6 +455,14 @@ function scoreDestinationRelevance(candidate: SocialVideoCandidate, context: Soc
     score += 4;
   }
 
+  if (positiveTravelIntentTerms.some((term) => title.includes(normalizeForSearch(term)))) {
+    score += 8;
+  }
+
+  if (positiveTravelIntentTerms.some((term) => description.includes(normalizeForSearch(term)))) {
+    score += 3;
+  }
+
   if (vibeKeywords.some((term) => term && title.includes(term))) {
     score += 4;
   }
@@ -440,7 +475,15 @@ function scoreDestinationRelevance(candidate: SocialVideoCandidate, context: Soc
     score += 3;
   }
 
-  return Math.min(score, 35);
+  if (negativeTravelIntentTerms.some((term) => title.includes(normalizeForSearch(term)))) {
+    score -= 28;
+  }
+
+  if (negativeTravelIntentTerms.some((term) => description.includes(normalizeForSearch(term)))) {
+    score -= 16;
+  }
+
+  return Math.max(0, Math.min(score, 35));
 }
 
 /**
@@ -520,14 +563,6 @@ function scoreFreshness(candidate: SocialVideoCandidate) {
 
   const elapsedDays = Math.max(0, (Date.now() - publishedAt.getTime()) / 86_400_000);
 
-  if (elapsedDays <= 180) {
-    return 2;
-  }
-
-  if (elapsedDays <= 730) {
-    return 1;
-  }
-
   return 0;
 }
 
@@ -568,10 +603,17 @@ function scoreEngagementQuality(candidate: SocialVideoCandidate) {
   const absoluteReach = Math.log10(Math.max(views, 1));
   const engagementPerDay = ((likes * 2.5) + (comments * 4)) / elapsedDays;
   const viewVelocity = Math.log10(Math.max(views / elapsedDays, 1));
+  const reachBonus =
+    views >= 500_000 ? 8
+    : views >= 200_000 ? 6
+    : views >= 100_000 ? 4
+    : views >= 50_000 ? 2
+    : 0;
   const rawScore =
-    (absoluteReach * 3.4) +
+    (absoluteReach * 3.6) +
     (viewVelocity * 1.3) +
-    (Math.log10(Math.max(engagementPerDay, 1)) * 1.8);
+    (Math.log10(Math.max(engagementPerDay, 1)) * 1.8) +
+    reachBonus;
 
   return Math.max(0, Math.min(22, Math.round(rawScore)));
 }
@@ -681,6 +723,13 @@ export function rankSocialVideoCandidates(
 
       if (right.score.engagementQuality !== left.score.engagementQuality) {
         return right.score.engagementQuality - left.score.engagementQuality;
+      }
+
+      const leftViewCount = left.candidate.viewCount ?? 0;
+      const rightViewCount = right.candidate.viewCount ?? 0;
+
+      if (rightViewCount !== leftViewCount) {
+        return rightViewCount - leftViewCount;
       }
 
       if (right.score.freshness !== left.score.freshness) {
@@ -851,6 +900,12 @@ async function fetchYouTubeSearchResults(
   });
 
   if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+
+    if (response.status === 403 && errorText.includes("quotaExceeded")) {
+      throw new Error("YOUTUBE_QUOTA_EXCEEDED");
+    }
+
     return null;
   }
 
@@ -999,63 +1054,76 @@ export async function getLeadSocialVideoResult(context: SocialVideoSearchContext
     };
   }
 
-  const strictItems = await getLeadSocialVideos(context);
-  if (strictItems.length > 0) {
-    return {
-      status: "ok",
-      item: strictItems[0]!,
-      items: strictItems,
-    };
-  }
-
-  const candidatesById = new Map<string, SocialVideoCandidate>();
-
-  for (const query of buildSocialVideoSearchQueries(context)) {
-    const searchPayload = await fetchYouTubeSearchResults(query, apiKey, { order: "relevance" });
-    if (!searchPayload?.items?.length) {
-      continue;
+  try {
+    const strictItems = await getLeadSocialVideos(context);
+    if (strictItems.length > 0) {
+      return {
+        status: "ok",
+        item: strictItems[0]!,
+        items: strictItems,
+      };
     }
 
-    const videoIds = searchPayload.items
-      .map((item) => item.id?.videoId)
-      .filter((value): value is string => Boolean(value));
-    const detailsMap = await fetchYouTubeVideoDetails(videoIds, apiKey);
+    const candidatesById = new Map<string, SocialVideoCandidate>();
 
-    for (const candidate of hydrateCandidatesFromYouTube(searchPayload, detailsMap)) {
-      candidatesById.set(candidate.id, candidate);
+    for (const query of buildSocialVideoSearchQueries(context)) {
+      const searchPayload = await fetchYouTubeSearchResults(query, apiKey, { order: "relevance" });
+      if (!searchPayload?.items?.length) {
+        continue;
+      }
+
+      const videoIds = searchPayload.items
+        .map((item) => item.id?.videoId)
+        .filter((value): value is string => Boolean(value));
+      const detailsMap = await fetchYouTubeVideoDetails(videoIds, apiKey);
+
+      for (const candidate of hydrateCandidatesFromYouTube(searchPayload, detailsMap)) {
+        candidatesById.set(candidate.id, candidate);
+      }
     }
-  }
 
-  const fallbackSelection = selectSocialVideoCandidates(
-    Array.from(candidatesById.values()),
-    context,
-    SOCIAL_VIDEO_FALLBACK_MIN_SCORE,
-  ).map((selected) => ({
-    provider: "youtube" as const,
-    videoId: selected.candidate.id,
-    title: selected.candidate.title,
-    channelTitle: selected.candidate.channelTitle,
-    channelUrl: formatChannelUrl(selected.candidate.channelId ?? undefined),
-    videoUrl: selected.candidate.url,
-    thumbnailUrl: selected.candidate.thumbnailUrl,
-    publishedAt: selected.candidate.publishedAt ?? new Date(0).toISOString(),
-    durationSeconds: selected.candidate.durationSeconds ?? 1,
-    viewCount: selected.candidate.viewCount ?? undefined,
-  }));
+    const fallbackSelection = selectSocialVideoCandidates(
+      Array.from(candidatesById.values()),
+      context,
+      SOCIAL_VIDEO_FALLBACK_MIN_SCORE,
+    ).map((selected) => ({
+      provider: "youtube" as const,
+      videoId: selected.candidate.id,
+      title: selected.candidate.title,
+      channelTitle: selected.candidate.channelTitle,
+      channelUrl: formatChannelUrl(selected.candidate.channelId ?? undefined),
+      videoUrl: selected.candidate.url,
+      thumbnailUrl: selected.candidate.thumbnailUrl,
+      publishedAt: selected.candidate.publishedAt ?? new Date(0).toISOString(),
+      durationSeconds: selected.candidate.durationSeconds ?? 1,
+      viewCount: selected.candidate.viewCount ?? undefined,
+    }));
 
-  if (fallbackSelection.length > 0) {
+    if (fallbackSelection.length > 0) {
+      return {
+        status: "fallback",
+        item: fallbackSelection[0] ?? null,
+        items: fallbackSelection,
+        fallback: buildFallbackMeta(context, "low-confidence"),
+      };
+    }
+
     return {
       status: "fallback",
-      item: fallbackSelection[0] ?? null,
-      items: fallbackSelection,
-      fallback: buildFallbackMeta(context, "low-confidence"),
+      item: null,
+      items: [],
+      fallback: buildFallbackMeta(context, "no-candidates"),
     };
-  }
+  } catch (error) {
+    if (error instanceof Error && error.message === "YOUTUBE_QUOTA_EXCEEDED") {
+      return {
+        status: "fallback",
+        item: null,
+        items: [],
+        fallback: buildFallbackMeta(context, "quota-exceeded"),
+      };
+    }
 
-  return {
-    status: "fallback",
-    item: null,
-    items: [],
-    fallback: buildFallbackMeta(context, "no-candidates"),
-  };
+    throw error;
+  }
 }

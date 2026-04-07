@@ -245,7 +245,7 @@ function SocialVideoSlot({
       <article
         className={[
           "overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.04)]",
-          isMain ? "min-h-[16rem] sm:min-h-[20rem]" : "min-h-[8.75rem]",
+          isMain ? "min-h-[16rem] sm:min-h-[20rem]" : "h-full min-h-[8.75rem]",
         ].join(" ")}
       >
         <div
@@ -299,7 +299,12 @@ function SocialVideoSlot({
   }
 
   return (
-    <article className="overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white shadow-[0_14px_30px_rgba(15,23,42,0.08)]">
+    <article
+      className={[
+        "overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white shadow-[0_14px_30px_rgba(15,23,42,0.08)]",
+        isMain ? "lg:grid lg:h-full lg:grid-rows-[minmax(0,1fr)_auto]" : "h-full",
+      ].join(" ")}
+    >
       <a
         data-testid={isMain ? testIds.socialVideo.link : undefined}
         href={item.videoUrl}
@@ -311,7 +316,7 @@ function SocialVideoSlot({
         <div
           className={[
             "relative overflow-hidden bg-[var(--color-funnel-muted)]",
-            isMain ? "aspect-[16/10] sm:aspect-[16/9]" : "aspect-[16/9]",
+            isMain ? "aspect-[16/10] lg:h-full lg:aspect-auto" : "aspect-[16/9]",
           ].join(" ")}
         >
           <Image
@@ -420,6 +425,7 @@ export function CompactSocialVideoPanel({
 }: CompactSocialVideoPanelProps) {
   const requestIdRef = useRef(0);
   const requestKey = buildSocialVideoSearchParams({ destinationId, leadReason, query }).toString();
+  const [isActivated, setIsActivated] = useState(false);
   const [state, setState] = useState<SocialVideoPanelState>({
     requestKey: "",
     items: [],
@@ -429,6 +435,10 @@ export function CompactSocialVideoPanel({
   });
 
   useEffect(() => {
+    if (!isActivated) {
+      return;
+    }
+
     const controller = new AbortController();
     const requestId = ++requestIdRef.current;
 
@@ -484,11 +494,36 @@ export function CompactSocialVideoPanel({
     return () => {
       controller.abort();
     };
-  }, [destinationName, requestKey]);
+  }, [destinationName, isActivated, requestKey]);
 
   const isCurrentRequest = state.requestKey === requestKey;
   const item = isCurrentRequest ? state.items[0] ?? null : null;
   const fallback = isCurrentRequest ? state.fallback : null;
+
+  if (!isActivated) {
+    return (
+      <button
+        type="button"
+        onClick={() => setIsActivated(true)}
+        className="mt-3 flex w-full items-center justify-between gap-3 rounded-[0.9rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-3 text-left transition-colors duration-200 hover:bg-white"
+      >
+        <div className="min-w-0">
+          <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+            YouTube
+          </p>
+          <p className="mt-1 text-[0.86rem] font-semibold text-[var(--color-funnel-text)]">
+            {destinationName} 영상 보기
+          </p>
+          <p className="mt-1 text-[0.74rem] leading-5 text-[var(--color-funnel-text-soft)]">
+            눌렀을 때만 영상을 불러와요.
+          </p>
+        </div>
+        <span className="shrink-0 text-[0.72rem] font-semibold text-[var(--color-action-primary)]">
+          열기
+        </span>
+      </button>
+    );
+  }
 
   if (!item && !fallback) {
     return (
@@ -651,7 +686,7 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
 
   if (isResolved && fallback && items.length === 0) {
     return (
-      <section data-testid={testIds.socialVideo.block} className="space-y-4">
+      <section data-testid={testIds.socialVideo.block} className="flex h-full flex-col gap-4">
         <section
           data-testid={testIds.socialVideo.fallbackBlock}
           className="rounded-[1.2rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-4 sm:px-5"
@@ -683,8 +718,8 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
   }
 
   return (
-    <section data-testid={testIds.socialVideo.block} className="space-y-4">
-      {isResolved && fallback ? (
+    <section data-testid={testIds.socialVideo.block} className="flex h-full flex-col gap-4">
+      {isResolved && fallback && items.length === 0 ? (
         <section
           data-testid={testIds.socialVideo.fallbackBlock}
           className="rounded-[1.2rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-4 sm:px-5"
@@ -713,30 +748,34 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
         </section>
       ) : null}
 
-      <SocialVideoSlot
-        item={mainItem}
-        title="가장 먼저 볼 영상"
-        isMain
-        isResolved={isResolved}
-        leadReason={leadReason}
-        fallbackNote="메인은 추천 결과를 가장 잘 설명하는 영상을 먼저 보여줘요."
-      />
+      <div className="grid gap-3 lg:items-stretch lg:grid-cols-[minmax(0,1.22fr)_minmax(15rem,0.78fr)]">
+        <div className="min-w-0 lg:h-full">
+          <SocialVideoSlot
+            item={mainItem}
+            title="가장 먼저 볼 영상"
+            isMain
+            isResolved={isResolved}
+            leadReason={leadReason}
+            fallbackNote="메인은 추천 결과를 가장 잘 설명하는 영상을 먼저 보여줘요."
+          />
+        </div>
 
-      <div className="grid gap-3 lg:grid-cols-2">
-        <SocialVideoSlot
-          item={subOne}
-          title=""
-          isResolved={isResolved}
-          leadReason={leadReason}
-          fallbackNote="최근성이나 다른 관점에서 함께 보면 좋은 영상이에요."
-        />
-        <SocialVideoSlot
-          item={subTwo}
-          title=""
-          isResolved={isResolved}
-          leadReason={leadReason}
-          fallbackNote="메인과 결이 다른 보조 영상을 함께 붙여요."
-        />
+        <div className="grid gap-3 lg:h-full lg:grid-rows-[minmax(0,1fr)_minmax(0,1fr)]">
+          <SocialVideoSlot
+            item={subOne}
+            title=""
+            isResolved={isResolved}
+            leadReason={leadReason}
+            fallbackNote="최근성이나 다른 관점에서 함께 보면 좋은 영상이에요."
+          />
+          <SocialVideoSlot
+            item={subTwo}
+            title=""
+            isResolved={isResolved}
+            leadReason={leadReason}
+            fallbackNote="메인과 결이 다른 보조 영상을 함께 붙여요."
+          />
+        </div>
       </div>
     </section>
   );

@@ -14,6 +14,11 @@ type TravelSupportPanelProps = {
   heroMode?: "hero" | "compact";
   layout?: "full" | "summary";
   rootClassName?: string;
+  showWeatherSummary?: boolean;
+  summaryFacts?: Array<{
+    label: string;
+    value: string;
+  }>;
 };
 
 function formatObservedTime(isoString: string) {
@@ -27,6 +32,70 @@ function formatObservedTime(isoString: string) {
 
 function formatTravelMonth(month: number) {
   return `${month}월`;
+}
+
+function describeAverageTemperature(averageMinTemperatureC: number, averageMaxTemperatureC: number) {
+  const averageTemperature = (averageMinTemperatureC + averageMaxTemperatureC) / 2;
+
+  if (averageTemperature < 5) {
+    return "추운 편";
+  }
+
+  if (averageTemperature < 12) {
+    return "쌀쌀한 편";
+  }
+
+  if (averageTemperature < 20) {
+    return "돌아다니기 좋음";
+  }
+
+  if (averageTemperature < 27) {
+    return "살짝 더운 편";
+  }
+
+  return "더운 편";
+}
+
+function describeRainyDayRatio(rainyDayRatio: number) {
+  if (rainyDayRatio >= 50) {
+    return "비 잦음";
+  }
+
+  if (rainyDayRatio >= 30) {
+    return "비 가끔";
+  }
+
+  if (rainyDayRatio >= 15) {
+    return "비 변수 약간";
+  }
+
+  return "비 걱정 적음";
+}
+
+function describeSeasonCondition(
+  averageMinTemperatureC: number,
+  averageMaxTemperatureC: number,
+  rainyDayRatio: number,
+) {
+  const averageTemperature = (averageMinTemperatureC + averageMaxTemperatureC) / 2;
+
+  if (averageTemperature <= 0) {
+    return "눈 가능성";
+  }
+
+  if (rainyDayRatio >= 50) {
+    return "비 잦음";
+  }
+
+  if (rainyDayRatio >= 30) {
+    return "비 가끔";
+  }
+
+  if (rainyDayRatio >= 15) {
+    return "구름·비 변수";
+  }
+
+  return "맑은 편";
 }
 
 /**
@@ -44,6 +113,8 @@ export function TravelSupportPanel({
   heroMode = "compact",
   layout = "full",
   rootClassName = "",
+  showWeatherSummary = true,
+  summaryFacts = [],
 }: TravelSupportPanelProps) {
   if (!supplement) {
     if (layout !== "summary" || typeof travelMonth !== "number") {
@@ -55,11 +126,8 @@ export function TravelSupportPanel({
         data-testid={testIds.detail.travelSupport}
         className={`rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-4 py-3.5 ${rootClassName}`.trim()}
       >
-        <p className="text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-          {formatTravelMonth(travelMonth)} 날씨
-        </p>
-        <p className="mt-1 text-[0.95rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
-          {formatTravelMonth(travelMonth)} 기준 날씨를 확인하고 있어요.
+        <p className="text-[0.95rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
+          {formatTravelMonth(travelMonth)} · 날씨를 확인하고 있어요.
         </p>
         <p className="mt-1 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
           외부 날씨 데이터를 불러오면 이 자리에서 평균 기온과 비 오는 날 비중까지 바로 보여드릴게요.
@@ -70,87 +138,118 @@ export function TravelSupportPanel({
 
   const leadTravelMonth = supplement.travelMonthWeather?.travelMonth;
   const leadTravelWeatherSummary = supplement.travelMonthWeather?.summary;
+  const compactTravelWeatherSummary = supplement.travelMonthWeather
+    ? `${describeAverageTemperature(
+        supplement.travelMonthWeather.averageMinTemperatureC,
+        supplement.travelMonthWeather.averageMaxTemperatureC,
+      )}, ${describeRainyDayRatio(supplement.travelMonthWeather.rainyDayRatio)}`
+    : undefined;
 
   if (layout === "summary") {
     return (
       <section
         data-testid={testIds.detail.travelSupport}
-        className={`rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-4 py-3.5 ${rootClassName}`.trim()}
+        className={`space-y-3 ${rootClassName}`.trim()}
       >
-        <div className="flex flex-col gap-3">
-          <div className="min-w-0">
-            <p className="text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-              {leadTravelMonth ? `${formatTravelMonth(leadTravelMonth)} 날씨` : "날씨"}
-            </p>
-            <p className="mt-1 text-[0.95rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
-              {leadTravelWeatherSummary ?? `${destinationName}의 시기별 날씨를 함께 보고 결정해 보세요.`}
-            </p>
-          </div>
+        {supplement.map ? (
+          <InteractiveDestinationMapCard
+            map={supplement.map}
+            destinationName={destinationName}
+            size="summary"
+          />
+        ) : null}
 
-          <div className="flex flex-wrap gap-2">
-            {supplement.travelMonthWeather ? (
-              <>
-                <article className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1.5">
-                  <p className="text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
-                    평균 최고 {supplement.travelMonthWeather.averageMaxTemperatureC}° / 최저 {supplement.travelMonthWeather.averageMinTemperatureC}°
+        {showWeatherSummary || summaryFacts.length > 0 ? (
+          <article className="rounded-[0.95rem] border border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-3 py-2.5">
+            <div className="space-y-1.5">
+              {showWeatherSummary ? (
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <p className="text-[0.82rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
+                    {leadTravelMonth
+                      ? `${formatTravelMonth(leadTravelMonth)} · ${compactTravelWeatherSummary ?? leadTravelWeatherSummary ?? `${destinationName}의 시기별 날씨를 함께 보고 결정해 보세요.`}`
+                      : compactTravelWeatherSummary ?? leadTravelWeatherSummary ?? `${destinationName}의 시기별 날씨를 함께 보고 결정해 보세요.`}
                   </p>
-                </article>
-                <article className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1.5">
-                  <p className="text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
-                    비 오는 날 비중 약 {supplement.travelMonthWeather.rainyDayRatio}%
-                  </p>
-                </article>
-              </>
-            ) : null}
+                  {supplement.travelMonthWeather ? (
+                    <>
+                      <article className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-2 py-[0.22rem]">
+                        <p className="text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
+                          평균 {supplement.travelMonthWeather.averageMinTemperatureC}°~{supplement.travelMonthWeather.averageMaxTemperatureC}°
+                        </p>
+                      </article>
+                      <article className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-2 py-[0.22rem]">
+                        <p className="text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
+                          {describeSeasonCondition(
+                            supplement.travelMonthWeather.averageMinTemperatureC,
+                            supplement.travelMonthWeather.averageMaxTemperatureC,
+                            supplement.travelMonthWeather.rainyDayRatio,
+                          )}
+                        </p>
+                      </article>
+                    </>
+                  ) : null}
 
-            {supplement.weather ? (
-              <article className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1.5">
-                <p className="text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
-                  지금 {supplement.weather.temperatureC}° · 체감 {supplement.weather.apparentTemperatureC}° · {supplement.weather.summary}
-                </p>
-              </article>
-            ) : null}
-          </div>
-
-          {supplement.map ? (
-            <InteractiveDestinationMapCard map={supplement.map} destinationName={destinationName} />
-          ) : null}
-
-          {supplement.nearbyPlaces && supplement.nearbyPlaces.length > 0 ? (
-            <article className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-3">
-              <div className="flex items-start justify-between gap-3">
-                <div>
-                  <p className="text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                    먼저 볼 만한 곳
-                  </p>
-                  <p className="mt-1 text-sm font-semibold text-[var(--color-funnel-text)]">
-                    {destinationName}에서 바로 동선에 넣기 좋은 장소예요.
-                  </p>
+                  {supplement.weather ? (
+                    <article className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-2 py-[0.22rem]">
+                      <p className="text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
+                        지금 {supplement.weather.summary}
+                      </p>
+                    </article>
+                  ) : null}
                 </div>
-                <span className="rounded-full bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)]">
-                  {supplement.nearbyPlaces.slice(0, 3).length}곳
-                </span>
+              ) : null}
+
+              {summaryFacts.length > 0 ? (
+                <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                  {summaryFacts.map((fact) => (
+                    <article
+                      key={fact.label}
+                      className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-2 py-[0.22rem]"
+                    >
+                      <p className="text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
+                        {fact.label} {fact.value}
+                      </p>
+                    </article>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </article>
+        ) : null}
+
+        {supplement.nearbyPlaces && supplement.nearbyPlaces.length > 0 ? (
+          <article className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-3">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <p className="text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                  먼저 볼 만한 곳
+                </p>
+                <p className="mt-1 text-sm font-semibold text-[var(--color-funnel-text)]">
+                  {destinationName}에서 바로 동선에 넣기 좋은 장소예요.
+                </p>
               </div>
-              <div className="mt-3 grid gap-2">
-                {supplement.nearbyPlaces.slice(0, 3).map((place, index) => (
-                  <a
-                    key={place.id}
-                    data-testid={index === 0 ? testIds.detail.nearbyPlace0 : undefined}
-                    href={place.googleMapsUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="rounded-[0.9rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-3 transition-colors duration-200 hover:border-[var(--color-action-primary)] hover:bg-white"
-                  >
-                    <p className="text-sm font-semibold text-[var(--color-funnel-text)]">{place.name}</p>
-                    <p className="mt-1 text-xs leading-5 text-[var(--color-funnel-text-soft)]">
-                      {place.shortAddress}
-                    </p>
-                  </a>
-                ))}
-              </div>
-            </article>
-          ) : null}
-        </div>
+              <span className="rounded-full bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)]">
+                {supplement.nearbyPlaces.slice(0, 3).length}곳
+              </span>
+            </div>
+            <div className="mt-3 grid gap-2">
+              {supplement.nearbyPlaces.slice(0, 3).map((place, index) => (
+                <a
+                  key={place.id}
+                  data-testid={index === 0 ? testIds.detail.nearbyPlace0 : undefined}
+                  href={place.googleMapsUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="rounded-[0.9rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-3 transition-colors duration-200 hover:border-[var(--color-action-primary)] hover:bg-white"
+                >
+                  <p className="text-sm font-semibold text-[var(--color-funnel-text)]">{place.name}</p>
+                  <p className="mt-1 text-xs leading-5 text-[var(--color-funnel-text-soft)]">
+                    {place.shortAddress}
+                  </p>
+                </a>
+              ))}
+            </div>
+          </article>
+        ) : null}
       </section>
     );
   }

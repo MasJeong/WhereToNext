@@ -48,6 +48,8 @@ export const testIds = {
   result: {
     card0: "result-card-0",
     futureTripCta0: "future-trip-cta-0",
+    actionPlan: "result-action-plan",
+    actionCompact0: "result-action-compact-0",
     filterBar: "result-filter-bar",
     filterChip0: "result-filter-chip-0",
     instagramVibe0: "instagram-vibe-0",
@@ -69,6 +71,7 @@ export const testIds = {
   },
   detail: {
     root: "destination-detail-root",
+    actionPlan: "destination-action-plan",
     coreFacts: "destination-core-facts",
     travelSupport: "destination-travel-support",
     travelMapPreview: "destination-travel-map-preview",
@@ -158,6 +161,7 @@ export const testIds = {
     historyGalleryImage0: "history-gallery-image-0",
     futureTripList: "future-trip-list",
     futureTripEntry0: "future-trip-entry-0",
+    futureTripView0: "future-trip-view-0",
     futureTripDelete0: "future-trip-delete-0",
     futureTripEmptyState: "future-trip-empty-state",
     savedPlan0: "saved-plan-0",
@@ -303,6 +307,10 @@ export function getAccountHistoryGalleryImageTestId(index: number): string {
 
 export function getAccountFutureTripEntryTestId(index: number): string {
   return index === 0 ? testIds.account.futureTripEntry0 : `future-trip-entry-${index}`;
+}
+
+export function getAccountFutureTripViewTestId(index: number): string {
+  return index === 0 ? testIds.account.futureTripView0 : `future-trip-view-${index}`;
 }
 
 export function getAccountFutureTripDeleteTestId(index: number): string {

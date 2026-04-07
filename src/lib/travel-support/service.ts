@@ -420,73 +420,15 @@ async function getTravelMonthWeatherSnapshot(
 }
 
 /**
- * Google Places에서 주변 장소를 짧게 찾는다.
- * @param destination 목적지
- * @param location 목적지 좌표
- * @param apiKey Google Maps API key
- * @returns 주변 장소 목록 또는 undefined
+ * 주변 장소 목록은 비용과 오류율을 다시 점검하기 전까지 비활성화한다.
+ * @returns 항상 undefined
  */
 async function getNearbyPlaces(
-  destination: DestinationProfile,
-  location: LocationMeta,
-  apiKey: string,
+  _destination: DestinationProfile,
+  _location: LocationMeta,
+  _apiKey: string,
 ): Promise<DestinationTravelSupplement["nearbyPlaces"] | undefined> {
-  if (!apiKey) {
-    return undefined;
-  }
-
-  const response = await fetch("https://places.googleapis.com/v1/places:searchText", {
-    method: "POST",
-    headers: {
-      "content-type": "application/json",
-      accept: "application/json",
-      "X-Goog-Api-Key": apiKey,
-      "X-Goog-FieldMask":
-        "places.id,places.displayName,places.formattedAddress,places.googleMapsUri",
-    },
-    body: JSON.stringify({
-      textQuery: `${destination.nameEn} attractions`,
-      languageCode: "ko",
-      regionCode: destination.countryCode,
-      pageSize: 5,
-      locationBias: {
-        circle: {
-          center: {
-            latitude: location.latitude,
-            longitude: location.longitude,
-          },
-          radius: 12000,
-        },
-      },
-    }),
-    next: {
-      revalidate: 21600,
-    },
-  });
-
-  if (!response.ok) {
-    return undefined;
-  }
-
-  const payload = (await response.json()) as GooglePlacesTextSearchResponse;
-  const items =
-    payload.places
-      ?.map((place) => {
-        if (!place.id || !place.displayName?.text || !place.formattedAddress || !place.googleMapsUri) {
-          return null;
-        }
-
-        return {
-          id: place.id,
-          name: place.displayName.text,
-          shortAddress: place.formattedAddress,
-          googleMapsUrl: place.googleMapsUri,
-        };
-      })
-      .filter((place): place is NonNullable<typeof place> => place !== null)
-      .slice(0, 5) ?? [];
-
-  return items.length > 0 ? items : undefined;
+  return undefined;
 }
 
 /**

@@ -95,25 +95,6 @@ describe("getDestinationTravelSupplement", () => {
         });
       }
 
-      if (requestUrl.includes("places.googleapis.com")) {
-        return createJsonResponse({
-          places: [
-            {
-              id: "place-1",
-              displayName: { text: "센소지" },
-              formattedAddress: "Taito City, Tokyo",
-              googleMapsUri: "https://maps.google.com/?cid=1",
-            },
-            {
-              id: "place-2",
-              displayName: { text: "시부야 스카이" },
-              formattedAddress: "Shibuya City, Tokyo",
-              googleMapsUri: "https://maps.google.com/?cid=2",
-            },
-          ],
-        });
-      }
-
       if (requestUrl.includes("api.exchangerate.host")) {
         return createJsonResponse({
           success: true,
@@ -139,7 +120,7 @@ describe("getDestinationTravelSupplement", () => {
     expect(supplement?.travelMonthWeather?.travelMonth).toBe(10);
     expect(supplement?.travelMonthWeather?.averageMaxTemperatureC).toBe(21);
     expect(supplement?.travelMonthWeather?.rainyDayRatio).toBe(40);
-    expect(supplement?.nearbyPlaces).toHaveLength(2);
+    expect(supplement?.nearbyPlaces).toBeUndefined();
     expect(supplement?.exchangeRate?.quoteCurrency).toBe("JPY");
     expect(supplement?.map?.title).toBe("도쿄 지도");
     expect(supplement?.map?.googleMapsUrl).toContain("google.com/maps/search");

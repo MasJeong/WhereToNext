@@ -347,6 +347,7 @@ test("shows the detail first fold with 3 facts and an itinerary CTA", async ({ p
   await submitQuickRecommendation(page);
   await page.getByTestId(testIds.result.showMoreResults).click();
   await page.getByTestId(getResultCardTestId(1)).getByRole("link", { name: "상세 보기" }).click();
+  await page.waitForURL(/\/destinations\//);
 
   const coreFacts = page.getByTestId("destination-core-facts");
   await expect(coreFacts).toBeVisible();

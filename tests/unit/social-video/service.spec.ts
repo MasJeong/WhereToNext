@@ -213,6 +213,114 @@ describe("social-video service", () => {
     expect(selected?.candidate.id).toBe("within-window");
   });
 
+  it("penalizes safety-warning videos even when the destination name matches", () => {
+    const destination = launchCatalog.find((item) => item.id === "bali");
+
+    if (!destination) {
+      throw new Error("Expected bali destination to exist in launch catalog.");
+    }
+
+    const context = {
+      destination,
+      query: defaultRecommendationQuery,
+      leadEvidence: [],
+    } as const;
+
+    const safetyVideo = buildCandidate({
+      id: "bali-safety",
+      title: "발리 안전 괜찮을까",
+      description: "발리 여행 전에 꼭 알아야 할 위험과 주의사항",
+      viewCount: 420000,
+      likeCount: 2500,
+      commentCount: 300,
+    });
+    const standardVlog = buildCandidate({
+      id: "bali-vlog",
+      title: "발리 여행 브이로그",
+      description: "발리 숙소와 카페, 동선을 정리한 여행 브이로그",
+      viewCount: 240000,
+      likeCount: 3400,
+      commentCount: 220,
+    });
+
+    const selected = selectSocialVideoCandidate([safetyVideo, standardVlog], context);
+
+    expect(selected?.candidate.id).toBe("bali-vlog");
+  });
+
+  it("rejects news-style destination alerts in favor of travel vlog intent", () => {
+    const destination = launchCatalog.find((item) => item.id === "bali");
+
+    if (!destination) {
+      throw new Error("Expected bali destination to exist in launch catalog.");
+    }
+
+    const context = {
+      destination,
+      query: defaultRecommendationQuery,
+      leadEvidence: [],
+    } as const;
+
+    const newsAlertVideo = buildCandidate({
+      id: "bali-news-alert",
+      title: "발리 여행 가실 분, 잠시만요",
+      channelTitle: "KBS News",
+      description: "발리 여행 위험과 사기 사례를 다룬 뉴스",
+      viewCount: 520000,
+      likeCount: 1800,
+      commentCount: 900,
+    });
+    const travelVlog = buildCandidate({
+      id: "bali-real-vlog",
+      title: "발리 브이로그",
+      description: "발리 카페와 숙소, 일정 감을 담은 브이로그",
+      viewCount: 110000,
+      likeCount: 2100,
+      commentCount: 140,
+    });
+
+    const selected = selectSocialVideoCandidate([newsAlertVideo, travelVlog], context);
+
+    expect(selected?.candidate.id).toBe("bali-real-vlog");
+  });
+
+  it("prefers a higher-view destination vlog within two years over a merely newer one", () => {
+    const destination = launchCatalog.find((item) => item.id === "bali");
+
+    if (!destination) {
+      throw new Error("Expected bali destination to exist in launch catalog.");
+    }
+
+    const context = {
+      destination,
+      query: defaultRecommendationQuery,
+      leadEvidence: [],
+    } as const;
+
+    const highViewVlog = buildCandidate({
+      id: "bali-high-view",
+      title: "발리 여행 브이로그",
+      description: "발리 여행 코스와 분위기를 자세히 담은 브이로그",
+      publishedAt: "2025-04-10T00:00:00.000Z",
+      viewCount: 610000,
+      likeCount: 7200,
+      commentCount: 480,
+    });
+    const newerLowerViewVlog = buildCandidate({
+      id: "bali-newer",
+      title: "발리 여행",
+      description: "발리 최근 여행 기록",
+      publishedAt: "2026-02-15T00:00:00.000Z",
+      viewCount: 52000,
+      likeCount: 620,
+      commentCount: 40,
+    });
+
+    const selected = selectSocialVideoCandidate([newerLowerViewVlog, highViewVlog], context);
+
+    expect(selected?.candidate.id).toBe("bali-high-view");
+  });
+
   it("falls back to a relevant standard video when short-form quality is low", () => {
     const context = buildTestContext();
     const weakShortCandidate = buildCandidate({

@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { CompactSocialVideoPanel, LeadSocialVideoPanel } from "@/components/trip-compass/social-video-panel";
@@ -96,6 +96,66 @@ describe("LeadSocialVideoPanel fallback", () => {
     expect(screen.getByRole("link", { name: /Trips & Eats 채널/ })).toBeInTheDocument();
   });
 
+  it("hides fallback guidance when a playable YouTube item exists", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(async () =>
+        new Response(
+          JSON.stringify({
+            status: "fallback",
+            item: {
+              provider: "youtube",
+              videoId: "tokyo-playable",
+              title: "Tokyo Walkable Nights",
+              channelTitle: "Trips & Eats",
+              channelUrl: "https://www.youtube.com/channel/trips-and-eats",
+              videoUrl: "https://www.youtube.com/watch?v=tokyo-playable",
+              thumbnailUrl: "https://img.youtube.com/vi/tokyo-playable/hqdefault.jpg",
+              publishedAt: "2026-03-28T00:00:00.000Z",
+              durationSeconds: 65,
+            },
+            items: [
+              {
+                provider: "youtube",
+                videoId: "tokyo-playable",
+                title: "Tokyo Walkable Nights",
+                channelTitle: "Trips & Eats",
+                channelUrl: "https://www.youtube.com/channel/trips-and-eats",
+                videoUrl: "https://www.youtube.com/watch?v=tokyo-playable",
+                thumbnailUrl: "https://img.youtube.com/vi/tokyo-playable/hqdefault.jpg",
+                publishedAt: "2026-03-28T00:00:00.000Z",
+                durationSeconds: 65,
+              },
+            ],
+            fallback: {
+              reason: "low-confidence",
+              headline: "대표 영상 대신 더 넓게 찾은 후보를 보여드려요",
+              description: "정확도는 조금 낮아 검색 링크도 함께 보여드려요.",
+              searches: [
+                {
+                  label: "도쿄 여행 브이로그",
+                  url: "https://www.youtube.com/results?search_query=tokyo+travel+vlog",
+                },
+              ],
+            },
+          }),
+        ),
+      ),
+    );
+
+    render(
+      <LeadSocialVideoPanel
+        destinationId="tokyo"
+        destinationName="도쿄"
+        leadReason="먹고 걷는 일정과 잘 맞아요"
+        query={defaultRecommendationQuery}
+      />,
+    );
+
+    expect(await screen.findByText("Tokyo Walkable Nights")).toBeInTheDocument();
+    expect(screen.queryByTestId("social-video-fallback")).not.toBeInTheDocument();
+  });
+
   it("shows staged loading copy before the API resolves", () => {
     vi.stubGlobal(
       "fetch",
@@ -121,9 +181,53 @@ describe("LeadSocialVideoPanel fallback", () => {
   });
 
   it("renders a compact supporting video card for secondary recommendations", async () => {
-    vi.stubGlobal(
-      "fetch",
-      vi.fn(async () =>
+    const fetchMock = vi.fn(async () =>
+      new Response(
+        JSON.stringify({
+          status: "ok",
+          items: [
+            {
+              provider: "youtube",
+              videoId: "tokyo-support",
+              title: "Tokyo Cafes &amp; City Walk",
+              channelTitle: "Trips &amp; Eats",
+              channelUrl: "https://www.youtube.com/channel/trips-and-eats",
+              videoUrl: "https://www.youtube.com/watch?v=tokyo-support",
+              thumbnailUrl: "https://img.youtube.com/vi/tokyo-support/hqdefault.jpg",
+              publishedAt: "2026-03-28T00:00:00.000Z",
+              durationSeconds: 95,
+              viewCount: 182000,
+            },
+          ],
+        }),
+      ),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    render(
+      <CompactSocialVideoPanel
+        destinationId="tokyo"
+        destinationName="도쿄"
+        leadReason="먹고 걷는 일정과 잘 맞아요"
+        query={defaultRecommendationQuery}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: /도쿄 영상 보기/ })).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /도쿄 영상 보기/ }));
+
+    expect(await screen.findByText("Tokyo Cafes & City Walk")).toBeInTheDocument();
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(screen.getByRole("link", { name: /Tokyo Cafes & City Walk/ })).toHaveAttribute(
+      "href",
+      "https://www.youtube.com/watch?v=tokyo-support",
+    );
+  });
+
+  it("does not request a compact video until the user opens it", () => {
+    const fetchMock = vi.fn(async () =>
         new Response(
           JSON.stringify({
             status: "ok",
@@ -143,8 +247,8 @@ describe("LeadSocialVideoPanel fallback", () => {
             ],
           }),
         ),
-      ),
     );
+    vi.stubGlobal("fetch", fetchMock);
 
     render(
       <CompactSocialVideoPanel
@@ -155,10 +259,7 @@ describe("LeadSocialVideoPanel fallback", () => {
       />,
     );
 
-    expect(await screen.findByText("Tokyo Cafes & City Walk")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /Tokyo Cafes & City Walk/ })).toHaveAttribute(
-      "href",
-      "https://www.youtube.com/watch?v=tokyo-support",
-    );
+    expect(screen.getByRole("button", { name: /도쿄 영상 보기/ })).toBeInTheDocument();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

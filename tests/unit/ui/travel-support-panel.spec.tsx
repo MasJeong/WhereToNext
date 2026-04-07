@@ -116,17 +116,13 @@ describe("TravelSupportPanel", () => {
       />,
     );
 
-    expect(screen.getByText("10월 날씨")).toBeInTheDocument();
-    expect(screen.getByText("10월엔 조금 덥지만 움직이기 괜찮고 비 변수는 낮은 편이에요.")).toBeInTheDocument();
+    expect(screen.getByText("10월 · 더운 편, 비 걱정 적음")).toBeInTheDocument();
     expect(screen.queryByText("환율 참고")).not.toBeInTheDocument();
-    expect(screen.getByText("평균 최고 30.2° / 최저 24.1°")).toBeInTheDocument();
-    expect(screen.getByText("비 오는 날 비중 약 12%")).toBeInTheDocument();
-    expect(screen.getByText("지금 29° · 체감 31° · 맑아요")).toBeInTheDocument();
-    expect(screen.getByText("지도")).toBeInTheDocument();
-    expect(screen.getByText("발리가 어디에 붙어 있는지 먼저 감 잡아보세요.")).toBeInTheDocument();
-    expect(screen.getByText("먼저 볼 만한 곳")).toBeInTheDocument();
-    expect(screen.getByText("우붓 왕궁")).toBeInTheDocument();
-    expect(screen.getByText("뜨갈랄랑 라이스 테라스")).toBeInTheDocument();
+    expect(screen.getByText("평균 24.1°~30.2°")).toBeInTheDocument();
+    expect(screen.getByText("맑은 편")).toBeInTheDocument();
+    expect(screen.getByText("지금 맑아요")).toBeInTheDocument();
+    expect(screen.getByText("구글맵으로 발리 위치를 바로 확인해 보세요.")).toBeInTheDocument();
+    expect(screen.getByText("구글맵 보기")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "지도 새 탭에서 열기" })).toHaveAttribute(
       "href",
       "https://www.google.com/maps/search/?api=1&query=-8.34%2C115.09",
@@ -143,7 +139,6 @@ describe("TravelSupportPanel", () => {
       />,
     );
 
-    expect(screen.getByText("10월 날씨")).toBeInTheDocument();
-    expect(screen.getByText("10월 기준 날씨를 확인하고 있어요.")).toBeInTheDocument();
+    expect(screen.getByText("10월 · 날씨를 확인하고 있어요.")).toBeInTheDocument();
   });
 });

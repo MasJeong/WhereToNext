@@ -22,6 +22,15 @@ const blurredPreviews = [
 ];
 
 const dragThreshold = 60;
+const autoAdvanceDelayMs = 6800;
+const imageTransition = {
+  duration: 0.2,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
+const contentTransition = {
+  duration: 0.16,
+  ease: [0.22, 1, 0.36, 1] as const,
+};
 
 export function HeroAnimation({ testId }: HeroAnimationProps) {
   const prefersReducedMotion = useReducedMotion();
@@ -51,16 +60,15 @@ export function HeroAnimation({ testId }: HeroAnimationProps) {
 
   useEffect(() => {
     if (prefersReducedMotion) return;
-    const timer = setInterval(showNext, 4000);
+    const timer = setInterval(showNext, autoAdvanceDelayMs);
     return () => clearInterval(timer);
   }, [prefersReducedMotion, showNext]);
 
   const dest = destinations[current];
 
   return (
-    <div data-testid={testId} className="w-full max-w-xl space-y-5">
-      {/* Destination photo showcase */}
-      <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[1.5rem] bg-[var(--color-funnel-muted)] shadow-[var(--shadow-card)]">
+    <div data-testid={testId} className="w-full max-w-[44rem] space-y-5">
+      <div className="relative aspect-[16/9] w-full overflow-hidden rounded-[1.7rem] bg-[var(--color-funnel-muted)] shadow-[0_28px_52px_rgba(15,23,42,0.12)]">
         <AnimatePresence mode="wait">
           <motion.div
             key={dest.nameEn}
@@ -69,11 +77,11 @@ export function HeroAnimation({ testId }: HeroAnimationProps) {
             dragConstraints={{ left: 0, right: 0 }}
             dragElastic={0.18}
             onDragEnd={handleDragEnd}
-            initial={prefersReducedMotion ? false : { opacity: 0, scale: 1.04 }}
-            animate={{ opacity: 1, scale: 1 }}
+            initial={prefersReducedMotion ? false : { opacity: 0 }}
+            animate={{ opacity: 1 }}
             exit={prefersReducedMotion ? undefined : { opacity: 0 }}
-            transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.8, ease: "easeInOut" }}
-            whileDrag={prefersReducedMotion ? undefined : { scale: 0.985 }}
+            transition={prefersReducedMotion ? { duration: 0 } : imageTransition}
+            whileDrag={prefersReducedMotion ? undefined : { opacity: 0.96 }}
             style={{ touchAction: "pan-y" }}
           >
             <Image
@@ -87,16 +95,23 @@ export function HeroAnimation({ testId }: HeroAnimationProps) {
           </motion.div>
         </AnimatePresence>
 
-        {/* Destination label */}
         <div className="absolute bottom-4 left-5 right-5 flex items-end justify-between">
-          <div>
-            <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-white/70">
-              {dest.country}
-            </p>
-            <p className="text-[1.6rem] font-semibold leading-tight tracking-[-0.04em] text-white drop-shadow-sm sm:text-[2rem]">
-              {dest.name}
-            </p>
-          </div>
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={`${dest.nameEn}-label`}
+              initial={prefersReducedMotion ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={prefersReducedMotion ? undefined : { opacity: 0 }}
+              transition={prefersReducedMotion ? { duration: 0 } : { ...contentTransition, delay: 0.04 }}
+            >
+              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-white/70">
+                {dest.country}
+              </p>
+              <p className="text-[1.72rem] font-semibold leading-tight tracking-[-0.045em] text-white drop-shadow-sm sm:text-[2.2rem]">
+                {dest.name}
+              </p>
+            </motion.div>
+          </AnimatePresence>
           <div className="flex gap-1.5">
             {destinations.map((_, i) => (
               <button
@@ -115,13 +130,12 @@ export function HeroAnimation({ testId }: HeroAnimationProps) {
         </div>
       </div>
 
-      {/* Blurred preview cards — value sneak peek */}
       <div className="relative">
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
           {blurredPreviews.map((preview) => (
             <div
               key={preview.rank}
-              className="relative overflow-hidden rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white px-3 py-3"
+              className="relative overflow-hidden rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white px-3 py-3 shadow-[0_12px_22px_rgba(15,23,42,0.05)]"
             >
               <div className="select-none blur-[6px]">
                 <p className="text-[1.3rem] font-bold tracking-[-0.04em] text-[var(--color-funnel-text)]">
@@ -138,14 +152,13 @@ export function HeroAnimation({ testId }: HeroAnimationProps) {
                   ))}
                 </div>
               </div>
-              {/* Rank badge — visible through blur */}
               <div className="absolute left-2 top-2 flex h-5 w-5 items-center justify-center rounded-full bg-[var(--color-action-primary)] text-[0.6rem] font-bold text-white">
                 {preview.rank}
               </div>
             </div>
           ))}
         </div>
-        {/* Overlay prompt */}
+
         <div className="absolute inset-0 flex items-center justify-center">
           <p className="rounded-full bg-white/90 px-4 py-1.5 text-[0.75rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)] shadow-sm backdrop-blur-sm">
             질문에 답하면 내 여행지가 보여요

@@ -35,73 +35,74 @@ export function LandingPage({ testId, heroTestId, onStart, trendingDestinations,
   return (
     <motion.section
       data-testid={testId}
-      className="relative mx-auto flex min-h-screen max-w-5xl flex-col items-center justify-center overflow-hidden px-5 py-10 sm:px-8"
+      className="relative mx-auto flex min-h-screen max-w-[72rem] flex-col items-center justify-center overflow-hidden px-5 py-10 sm:px-8"
       initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={prefersReducedMotion ? undefined : { opacity: 0, y: -16 }}
       transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.26, ease: "easeOut" }}
     >
-      <div className="relative w-full max-w-3xl text-center">
-        {/* Headline — pain-point driven */}
+      <div className="relative w-full max-w-[56rem] text-center">
+        <p className="mx-auto text-[0.74rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
+          질문 6개로 찾는 해외여행 추천
+        </p>
+
         <h1
           aria-label="다음 여행, 아직 정하지 못했다면"
-          className="text-[1.75rem] font-semibold leading-[1.15] tracking-[-0.04em] text-[var(--color-funnel-text)] sm:text-[2.5rem] sm:leading-[1.1]"
+          className="mt-3 text-[1.75rem] font-semibold leading-[1.12] tracking-[-0.045em] text-[var(--color-funnel-text)] sm:text-[2.6rem] sm:leading-[1.08]"
         >
           다음 여행,
           <br /> 아직 정하지 못했다면
         </h1>
 
-        {/* Subtext — benefit + time cost */}
-        <p className="mx-auto mt-4 max-w-lg text-[0.95rem] leading-6 text-[var(--color-funnel-text-soft)] sm:text-[1rem] sm:leading-7">
+        <p className="mx-auto mt-4 max-w-xl text-[0.95rem] leading-6 text-[var(--color-funnel-text-soft)] sm:text-[1rem] sm:leading-7">
           취향, 일정, 예산에 맞는 여행지를 찾아드려요.
           <br />
           날씨, 환율, 유튜브 영상까지 한눈에.
         </p>
 
-        <div className="mx-auto mt-6 max-w-2xl rounded-[1.15rem] border border-[color:var(--color-funnel-border)] bg-white/76 px-4 py-3 shadow-[0_14px_30px_rgba(15,23,42,0.05)] backdrop-blur-sm">
-          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[0.72rem] tracking-[-0.01em] text-[var(--color-funnel-text-soft)]">
-            <span>무료 · 약 1분 · 로그인 불필요</span>
-            {todayCount != null && todayCount >= 10 ? (
-              <>
-                <span className="hidden h-1 w-1 rounded-full bg-[var(--color-funnel-border)] sm:block" />
-                <span>
-                  오늘 <span className="font-semibold text-[var(--color-funnel-text)]">{todayCount.toLocaleString()}명</span>이 여행지를 찾았어요
-                </span>
-              </>
-            ) : null}
-          </div>
-
-          <div className="mt-3 flex flex-col items-center gap-2">
-            <p className="text-[0.72rem] font-medium tracking-[-0.01em] text-[var(--color-funnel-text-soft)]">
-              최근 인기 여행지
-            </p>
-            <div className="flex flex-wrap justify-center gap-2">
-              {trendingLoading
-                ? Array.from({ length: 3 }, (_, i) => (
-                    <span
-                      key={i}
-                      className="h-[1.75rem] w-16 animate-pulse rounded-full bg-[var(--color-funnel-muted)]"
-                    />
-                  ))
-                : displayDestinations.map((dest) => (
-                    <span
-                      key={dest}
-                      className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1.5 text-[0.73rem] font-semibold text-[var(--color-funnel-text)]"
-                    >
-                      {dest}
-                    </span>
-                  ))}
-            </div>
-          </div>
+        <div className="mx-auto mt-6 flex max-w-3xl flex-wrap items-center justify-center gap-2.5">
+          <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-1.5 text-[0.74rem] font-semibold text-[var(--color-funnel-text)] shadow-[0_8px_18px_rgba(15,23,42,0.04)]">
+            무료
+          </span>
+          <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-1.5 text-[0.74rem] font-semibold text-[var(--color-funnel-text)] shadow-[0_8px_18px_rgba(15,23,42,0.04)]">
+            약 1분
+          </span>
+          <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-1.5 text-[0.74rem] font-semibold text-[var(--color-funnel-text)] shadow-[0_8px_18px_rgba(15,23,42,0.04)]">
+            로그인 불필요
+          </span>
+          {todayCount != null && todayCount >= 10 ? (
+            <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-1.5 text-[0.74rem] font-semibold text-[var(--color-funnel-text)] shadow-[0_8px_18px_rgba(15,23,42,0.03)]">
+              오늘 {todayCount.toLocaleString()}명이 여행지를 찾았어요
+            </span>
+          ) : null}
         </div>
 
-        {/* Hero showcase */}
-        <div className="mt-7 flex justify-center">
+        <div className="mx-auto mt-3 flex max-w-3xl flex-wrap items-center justify-center gap-2">
+          <span className="text-[0.74rem] font-medium text-[var(--color-funnel-text-soft)]">
+            최근 인기 여행지
+          </span>
+          {trendingLoading
+            ? Array.from({ length: 3 }, (_, i) => (
+                <span
+                  key={i}
+                  className="h-[1.75rem] w-16 animate-pulse rounded-full bg-[var(--color-funnel-muted)]"
+                />
+              ))
+            : displayDestinations.map((dest) => (
+                <span
+                  key={dest}
+                  className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1.5 text-[0.73rem] font-semibold text-[var(--color-funnel-text)]"
+                >
+                  {dest}
+                </span>
+              ))}
+        </div>
+
+        <div className="mt-8 flex justify-center">
           <HeroAnimation testId={heroTestId} />
         </div>
 
-        {/* CTA button with shine effect */}
-        <div className="mt-7 flex flex-col items-center gap-3">
+        <div className="mt-8 flex flex-col items-center gap-3">
           <button
             type="button"
             data-testid={testIds.home.cta}

@@ -9,6 +9,7 @@
 사용자가 동행, 예산, 일정, 여행 시기, 분위기를 선택하면 설명 가능한 추천 엔진이 목적지를 제안하고,
 각 결과 카드에는 인스타그램 분위기 근거와 저장/공유/비교 흐름이 함께 붙습니다.
 대표 추천 1곳에는 외부 여행 보조 데이터와 함께 YouTube 기반 소셜 비디오 근거 블록이 붙을 수 있습니다.
+대표 추천과 상세 페이지에는 AI 기반 행동 제안 블록이 붙을 수 있습니다.
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MasJeong/WhereToNext)
 
@@ -47,6 +48,9 @@ NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
 UNSPLASH_ACCESS_KEY=
 GOOGLE_MAPS_API_KEY=
 EXCHANGERATE_HOST_ACCESS_KEY=
+YOUTUBE_API_KEY=
+OPENAI_API_KEY=
+OPENAI_TRIP_ACTIONS_MODEL=gpt-5-mini
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
 KAKAO_CLIENT_ID=
@@ -64,6 +68,7 @@ MOCK_OAUTH_PROVIDER=false
 외부 여행 보조 데이터는 대표 추천 1곳에만 붙고, 공유 링크를 열면 이미지/날씨/지도/환율을 다시 조회합니다. 공급자 키가 없거나 일부 호출이 실패하면 해당 블록만 숨기고 추천 결과 자체는 그대로 보여줍니다.
 인터랙티브 지도는 `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`를 사용하고, 서버에서 주변 장소 검색을 할 때는 `GOOGLE_MAPS_API_KEY`를 사용합니다. 공개 지도 키는 반드시 localhost와 실제 도메인 기준 referrer 제한을 걸어 두세요.
 YouTube 소셜 비디오는 서버에서 `YOUTUBE_API_KEY`를 사용해 조회하며, 키가 없거나 후보 품질이 낮으면 블록을 숨기고 추천 결과는 그대로 유지합니다.
+AI 행동 제안은 서버에서 `OPENAI_API_KEY`를 사용해 생성하며, 키가 없거나 응답이 실패하면 규칙 기반 fallback 문구로 내려갑니다. `OPENAI_TRIP_ACTIONS_MODEL`을 지정하지 않으면 `gpt-5-mini`를 기본으로 사용합니다.
 소셜 로그인은 Google / Kakao / Apple 공급자를 사용하며, 각 공급자의 콜백 URL은 `/api/auth/oauth/[provider]/callback` 형식으로 맞춰야 합니다.
 Playwright 기반 소셜 로그인 E2E는 `MOCK_OAUTH_PROVIDER=true`일 때 로컬 모의 authorize 라우트를 사용합니다.
 실제 공급자 콘솔 설정과 운영 반영 방법은 `docs/social-login-setup.md`를 참고하세요.
@@ -99,7 +104,7 @@ npm run db:seed
 1. GitHub 저장소를 가져옵니다.
 2. 프레임워크는 Next.js로 자동 인식됩니다.
 3. 환경 변수에 `DATABASE_URL`을 추가합니다.
-4. 인터랙티브 지도를 쓰려면 `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, 주변 장소까지 쓰려면 `GOOGLE_MAPS_API_KEY`도 함께 추가합니다.
+4. 인터랙티브 지도를 쓰려면 `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`, 주변 장소까지 쓰려면 `GOOGLE_MAPS_API_KEY`, AI 행동 제안을 쓰려면 `OPENAI_API_KEY`도 함께 추가합니다.
 5. 첫 배포 전에 `npm run db:generate` 결과가 커밋되어 있는지 확인합니다.
 6. 배포 후 `/`, `/s/[snapshotId]`, `/compare/[snapshotId]`, `/api/recommendations`가 정상 응답하는지 확인합니다.
 

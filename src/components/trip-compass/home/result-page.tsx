@@ -12,8 +12,10 @@ type ResultPageProps = {
   leadTitle: string;
   leadReason: string;
   leadDescription: string;
+  leadMetaTags?: string[];
   leadTags: string[];
   leadFacts: RecommendationDecisionFactView[];
+  leadHeroAsideSlot?: ReactNode;
   leadSupportSlot?: ReactNode;
   leadWeatherSlot?: ReactNode;
   leadActionsSlot?: ReactNode;
@@ -32,8 +34,10 @@ export function ResultPage({
   leadTitle,
   leadReason,
   leadDescription,
+  leadMetaTags = [],
   leadTags,
   leadFacts,
+  leadHeroAsideSlot,
   leadSupportSlot,
   leadWeatherSlot,
   leadActionsSlot,
@@ -90,27 +94,39 @@ export function ResultPage({
         >
           <div className="space-y-4 p-4 sm:p-5">
             <div className="rounded-[1.05rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-4">
-              <div className="max-w-[34rem] space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-funnel-text-soft)]">
-                    이번에 제일 잘 맞는 곳
-                  </span>
-                  <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)]">
-                    지금 조건 기준 1순위
-                  </span>
+              <div className={`grid gap-4 ${leadHeroAsideSlot ? "lg:grid-cols-[minmax(0,1.35fr)_minmax(15rem,0.65fr)] lg:items-start" : ""}`}>
+                <div className="max-w-[34rem] space-y-3">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-funnel-text-soft)]">
+                      이번에 제일 잘 맞는 곳
+                    </span>
+                    <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)]">
+                      지금 조건 기준 1순위
+                    </span>
+                    {leadMetaTags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)]"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+                  </div>
+
+                  <h2 className="text-[1.9rem] font-semibold leading-[1.02] tracking-[-0.04em] text-[var(--color-funnel-text)] sm:text-[2.3rem]">
+                    {leadTitle}
+                  </h2>
+
+                  <p className="text-[1rem] font-semibold leading-7 tracking-[-0.02em] text-[var(--color-funnel-text)]">
+                    {leadReason}
+                  </p>
+
+                  <p className="line-clamp-3 text-[0.9rem] leading-6 text-[var(--color-funnel-text-soft)]">
+                    {leadDescription}
+                  </p>
                 </div>
 
-                <h2 className="text-[1.9rem] font-semibold leading-[1.02] tracking-[-0.04em] text-[var(--color-funnel-text)] sm:text-[2.3rem]">
-                  {leadTitle}
-                </h2>
-
-                <p className="text-[1rem] font-semibold leading-7 tracking-[-0.02em] text-[var(--color-funnel-text)]">
-                  {leadReason}
-                </p>
-
-                <p className="line-clamp-3 text-[0.9rem] leading-6 text-[var(--color-funnel-text-soft)]">
-                  {leadDescription}
-                </p>
+                {leadHeroAsideSlot ? <div>{leadHeroAsideSlot}</div> : null}
               </div>
             </div>
 

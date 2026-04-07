@@ -11,6 +11,7 @@ type InteractiveDestinationMapCardProps = {
   map: DestinationMap;
   destinationName: string;
   className?: string;
+  size?: "default" | "summary";
 };
 
 type GoogleMapOptions = {
@@ -84,6 +85,7 @@ export function InteractiveDestinationMapCard({
   map,
   destinationName,
   className = "",
+  size = "default",
 }: InteractiveDestinationMapCardProps) {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY?.trim() ?? "";
   const canOpenInteractiveMap = apiKey.length > 0;
@@ -143,17 +145,16 @@ export function InteractiveDestinationMapCard({
   }, [apiKey, isInteractiveOpen, map.latitude, map.longitude, map.title, map.zoom]);
 
   const shellClassName = `overflow-hidden rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white ${className}`.trim();
+  const previewHeightClassName = size === "summary" ? "h-48 sm:h-52" : "h-44";
+  const interactiveHeightClassName = size === "summary" ? "h-60 sm:h-68" : "h-52";
 
   return (
     <article className={shellClassName}>
       <div className="border-b border-[color:var(--color-funnel-border)] px-3.5 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
           <div>
-            <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-              지도
-            </p>
-            <p className="mt-1 text-sm font-semibold text-[var(--color-funnel-text)]">
-              {destinationName}가 어디에 붙어 있는지 먼저 감 잡아보세요.
+            <p className="text-sm font-semibold text-[var(--color-funnel-text)]">
+              구글맵으로 {destinationName} 위치를 바로 확인해 보세요.
             </p>
           </div>
           <a
@@ -170,22 +171,14 @@ export function InteractiveDestinationMapCard({
       {!isInteractiveOpen ? (
         <div
           data-testid={testIds.detail.travelMapPreview}
-          className="relative flex h-44 flex-col justify-between overflow-hidden bg-[linear-gradient(180deg,#eef6ff_0%,#fff6ea_100%)] p-4"
+          className={`relative flex flex-col justify-between overflow-hidden bg-[linear-gradient(180deg,#eef6ff_0%,#fff6ea_100%)] p-4 ${previewHeightClassName}`}
         >
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.22)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.22)_1px,transparent_1px)] bg-[size:24px_24px]" />
-          <div className="absolute left-1/2 top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--color-action-primary)] shadow-[0_0_0_8px_rgba(20,184,166,0.12)]" />
-          <div className="relative z-10 flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-white/90 px-3 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text)] shadow-[0_10px_24px_rgba(15,23,42,0.05)]">
-              {canOpenInteractiveMap ? "드래그 · 확대 가능" : "위치 감 먼저 보기"}
-            </span>
-            <span className="rounded-full border border-white/80 bg-white/70 px-3 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)]">
-              중심 좌표 {map.latitude.toFixed(2)}, {map.longitude.toFixed(2)}
-            </span>
-          </div>
+          <div className="relative z-10" />
 
           <div className="relative z-10 space-y-2">
-            <p className="max-w-sm text-sm font-semibold leading-6 text-[var(--color-funnel-text)]">
-              위치 감만 보는 작은 썸네일이 아니라, 눌러서 바로 움직여 볼 수 있는 지도로 열어둘게요.
+            <p className="max-w-sm text-base font-semibold leading-6 text-[var(--color-funnel-text)]">
+              구글맵 보기
             </p>
             {canOpenInteractiveMap ? (
               <button
@@ -213,7 +206,7 @@ export function InteractiveDestinationMapCard({
           </div>
         </div>
       ) : (
-        <div className="relative h-52 bg-[var(--color-funnel-muted)]">
+        <div className={`relative bg-[var(--color-funnel-muted)] ${interactiveHeightClassName}`}>
           <div
             ref={mapContainerRef}
             data-testid={testIds.detail.travelMapCanvas}

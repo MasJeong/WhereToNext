@@ -52,6 +52,10 @@ npm run test:e2e
   - 운영 배포 전에는 `HTTP referrers (websites)` 또는 실제 사용 구조에 맞는 제한을 다시 확인합니다.
   - 테스트/로컬 도메인만 허용된 상태면 운영 도메인에서 `quotaExceeded`와 별개로 호출이 막힐 수 있으니, 운영 도메인 `https://.../*`를 반드시 추가합니다.
   - YouTube Data API v3 쿼터는 하루 10,000 units 기본값이라 `search.list` 호출 수를 함께 점검합니다.
+- `OPENAI_API_KEY`
+  - 브라우저가 아니라 서버 route에서만 사용하므로 공개 키처럼 두지 않습니다.
+  - 운영에서는 서버 환경 변수로만 주입하고, 필요하면 `OPENAI_TRIP_ACTIONS_MODEL`로 모델명을 고정합니다.
+  - AI 행동 제안이 실패해도 화면은 fallback 문구로 유지되므로, 초기 배포는 선택적으로 켜도 됩니다.
 - 공통
   - 키는 `.env.local` 같은 로컬 환경 파일에만 두고 저장소에는 커밋하지 않습니다.
   - 운영 키와 개발 키를 분리할 수 있으면 분리하는 편이 안전합니다.
@@ -80,11 +84,14 @@ DATABASE_URL=postgres://...
 NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=...
 YOUTUBE_API_KEY=...
 GOOGLE_MAPS_API_KEY=...
+OPENAI_API_KEY=...
+OPENAI_TRIP_ACTIONS_MODEL=gpt-5-mini
 ```
 
 - `YOUTUBE_API_KEY`가 없으면 추천 결과 YouTube 패널은 fallback 링크만 보여줍니다.
 - `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`가 없으면 지도는 정적 프리뷰 + 외부 Google 지도 링크만 보여줍니다.
 - `GOOGLE_MAPS_API_KEY`가 없으면 주변 장소 목록은 비워 두고 지도와 다른 보조 정보만 보여줍니다.
+- `OPENAI_API_KEY`가 없으면 AI 행동 제안은 규칙 기반 fallback만 보여줍니다.
 - `PGLITE_DATA_DIR`는 로컬 파일 대체 경로가 필요할 때만 선택적으로 사용합니다.
 
 ### 2-1. GitHub Actions 자동 배포 시크릿

@@ -164,6 +164,47 @@ type SavedSnapshotCompactItemProps = {
   hideAccountActions?: boolean;
 };
 
+function renderLeadWeatherAside(
+  leadSupplement: RecommendationApiResponse["leadSupplement"],
+  destinationName: string,
+  travelMonth: number,
+) {
+  const travelMonthWeather = leadSupplement?.travelMonthWeather;
+  const currentWeather = leadSupplement?.weather;
+
+  if (!travelMonthWeather && !currentWeather) {
+    return null;
+  }
+
+  return (
+    <article className="rounded-[1.05rem] border border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-3.5 py-3.5">
+      <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+        {travelMonth}월 날씨
+      </p>
+      <p className="mt-1.5 text-[0.92rem] font-semibold leading-6 tracking-[-0.02em] text-[var(--color-funnel-text)]">
+        {travelMonthWeather?.summary ?? `${destinationName}의 시기별 날씨를 확인해 보세요.`}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {travelMonthWeather ? (
+          <>
+            <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
+              평균 {travelMonthWeather.averageMinTemperatureC}°~{travelMonthWeather.averageMaxTemperatureC}°
+            </span>
+            <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
+              비 {travelMonthWeather.rainyDayRatio}%
+            </span>
+          </>
+        ) : null}
+        {currentWeather ? (
+          <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
+            지금 {currentWeather.summary}
+          </span>
+        ) : null}
+      </div>
+    </article>
+  );
+}
+
 type CompactRecommendationItemProps = {
   card: RecommendationCardView;
   index: number;
@@ -1870,8 +1911,16 @@ export function HomeExperience() {
         leadTitle={leadCard ? leadCard.destination.nameKo : isSubmitting ? "추천 결과를 정리하고 있어요." : "다시 맞는 후보를 찾고 있어요."}
         leadReason={leadCard?.recommendation.reasons[0] ?? "결과가 나오면 가장 먼저 볼 목적지를 짧게 정리해 드릴게요."}
         leadDescription={leadCard ? leadCard.recommendation.whyThisFits : queryNarrative}
+        leadMetaTags={
+          leadCard
+            ? buildRecommendationDecisionFacts(leadCard.destination)
+                .filter((fact) => fact.id === "best-months")
+                .map((fact) => `${fact.label} ${fact.value}`)
+            : []
+        }
         leadTags={[]}
         leadFacts={[]}
+        leadHeroAsideSlot={leadCard ? renderLeadWeatherAside(results?.leadSupplement, leadCard.destination.nameKo, resultQuery.travelMonth) : null}
         leadSupportSlot={
           leadCard ? (
             <LeadSocialVideoPanel
@@ -1987,12 +2036,8 @@ export function HomeExperience() {
               destinationName={leadCard.destination.nameKo}
               travelMonth={results?.query.travelMonth}
               layout="summary"
-              summaryFacts={buildRecommendationDecisionFacts(leadCard.destination)
-                .filter((fact) => fact.id === "best-months")
-                .map((fact) => ({
-                  label: fact.label,
-                  value: fact.value,
-                }))}
+              showWeatherSummary={false}
+              summaryFacts={[]}
             />
           ) : null
         }
