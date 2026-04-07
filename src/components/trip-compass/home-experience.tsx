@@ -5,7 +5,6 @@ import { AnimatePresence } from "framer-motion";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type {
-  ComparisonSnapshot,
   RecommendationQuery,
   UserFutureTrip,
 } from "@/lib/domain/contracts";
@@ -70,7 +69,7 @@ import { ResultPage } from "./home/result-page";
 import { StepQuestion } from "./home/step-question";
 import { CompactSocialVideoPanel, LeadSocialVideoPanel } from "./social-video-panel";
 import { TravelSupportPanel } from "./travel-support-panel";
-import { RecommendationActionsPanel } from "./recommendation-actions-panel";
+
 
 type FunnelStage = "landing" | "question" | "loading" | "result";
 
@@ -135,8 +134,6 @@ type HomeFlowStep = {
 type SavedSnapshotCompactItemProps = {
   snapshot: SavedSnapshotCard;
   index: number;
-  selected: boolean;
-  onToggle: (snapshotId: string) => void;
   onCopy: (shareUrl: string) => void;
   hideAccountActions?: boolean;
 };
@@ -435,20 +432,6 @@ function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] 
     .slice(0, 3);
 }
 
-function buildComparisonSnapshotPayload(
-  savedSnapshots: SavedSnapshotCard[],
-): { kind: "comparison"; payload: ComparisonSnapshot } {
-  return {
-    kind: "comparison",
-    payload: {
-      v: 1,
-      kind: "comparison",
-      snapshotIds: savedSnapshots.map((snapshot) => snapshot.snapshotId),
-      destinationIds: savedSnapshots.map((snapshot) => snapshot.destinationId),
-    },
-  };
-}
-
 function buildAbsoluteShareUrl(sharePath: string): string {
   return `${window.location.origin}${sharePath}`;
 }
@@ -474,8 +457,6 @@ function scrollToPageTop(behavior: ScrollBehavior = "auto") {
 function SavedSnapshotCompactItem({
   snapshot,
   index,
-  selected,
-  onToggle,
   onCopy,
   hideAccountActions = false,
 }: SavedSnapshotCompactItemProps) {
@@ -488,15 +469,8 @@ function SavedSnapshotCompactItem({
         <div>
           <p className="compass-editorial-kicker">저장한 여행 {index + 1}</p>
           <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">{snapshot.destinationName}</p>
-          <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">다시 열어 보거나 비교 보드 후보로 바로 담을 수 있어요.</p>
+          <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">다시 열어 보거나 저장 목록에서 이어서 확인할 수 있어요.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => onToggle(snapshot.snapshotId)}
-          className={`rounded-full px-3 py-2 text-xs font-semibold ${selected ? "compass-selected" : "compass-selection-chip"}`}
-        >
-          {selected ? "비교 포함" : "비교 담기"}
-        </button>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
@@ -578,24 +552,6 @@ function CompactRecommendationItem({
             ))}
           </div>
 
-          <div className="mt-2.5">
-            <RecommendationActionsPanel
-              variant="compact"
-              rootTestId={index === 1 ? testIds.result.actionCompact0 : undefined}
-              destinationId={card.destination.id}
-              destinationName={card.destination.nameKo}
-              destinationSummary={card.destination.summary}
-              leadReason={leadReason}
-              whyThisFits={card.recommendation.whyThisFits}
-              watchOuts={card.recommendation.watchOuts.slice(0, 2)}
-              query={query}
-              evidence={card.recommendation.trendEvidence.slice(0, 2).map((item) => ({
-                sourceLabel: item.sourceLabel,
-                summary: item.summary,
-              }))}
-            />
-          </div>
-
           <CompactSocialVideoPanel
             destinationId={card.destination.id}
             destinationName={card.destination.nameKo}
@@ -627,7 +583,7 @@ function CompactRecommendationItem({
             href={detailPath}
             className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
           >
-            상세 보기
+            이 도시 알아보기
           </Link>
           {saveState.shareUrl ? (
             <button
@@ -664,9 +620,6 @@ export function HomeExperience() {
   const [snapshotReferences, setSnapshotReferences] = useState<Record<string, SavedSnapshotCard>>({});
   const [savedSnapshots, setSavedSnapshots] = useState<SavedSnapshotCard[]>([]);
   const [copyFallbackUrl, setCopyFallbackUrl] = useState<string | null>(null);
-  const [selectedCompareIds, setSelectedCompareIds] = useState<string[]>([]);
-  const [compareError, setCompareError] = useState<string | null>(null);
-  const [compareLoading, setCompareLoading] = useState(false);
   const [trendingDestinations, setTrendingDestinations] = useState<string[] | null>(null);
   const [trendingLoading, setTrendingLoading] = useState(true);
   const [todayRecommendationCount, setTodayRecommendationCount] = useState(0);
@@ -727,16 +680,6 @@ export function HomeExperience() {
 
   const leadCard = filteredCards[0] ?? cards[0] ?? null;
   const secondaryCards = filteredCards.slice(1, 5);
-  const canCreateCompare = selectedCompareIds.length >= 2 && selectedCompareIds.length <= 4;
-  const compareTrayDestinations = useMemo(() => {
-    const selectedSnapshots = savedSnapshots.filter((snapshot) => selectedCompareIds.includes(snapshot.snapshotId));
-    const previewSource = selectedSnapshots.length > 0 ? selectedSnapshots : savedSnapshots;
-
-    return previewSource
-      .slice(0, 2)
-      .map((snapshot) => snapshot.destinationName)
-      .join(" · ");
-  }, [savedSnapshots, selectedCompareIds]);
 
   const searchParamString = routeSearchParamString;
   const homeSearchParams = useMemo(() => new URLSearchParams(searchParamString), [searchParamString]);
@@ -994,11 +937,6 @@ export function HomeExperience() {
   ];
 
   const currentStep = steps[currentStepIndex] ?? steps[0];
-  const compareButtonLabel = compareLoading
-    ? "비교 보드 저장 중..."
-    : canCreateCompare
-      ? `${selectedCompareIds.length}곳 비교 보드 만들기`
-      : "2개부터 선택하면 비교돼요";
 
   useEffect(() => {
     setRouteSearchParamString(searchParams.toString());
@@ -1279,11 +1217,6 @@ export function HomeExperience() {
           ? currentSnapshots
           : [...currentSnapshots, snapshotReference],
       );
-      setSelectedCompareIds((currentSelection) =>
-        currentSelection.includes(snapshotReference.snapshotId) || currentSelection.length >= 4
-          ? currentSelection
-          : [...currentSelection, snapshotReference.snapshotId],
-      );
       await copyShareUrl(snapshotReference.shareUrl);
     },
     [copyShareUrl],
@@ -1430,71 +1363,6 @@ export function HomeExperience() {
     }
   }, [createSnapshotReference, hideAccountActions, promoteSavedSnapshot, registerFutureTrip, results, router, savedSnapshots, session.data?.user, snapshotReferences]);
 
-  function toggleCompareSelection(snapshotId: string) {
-    setCompareError(null);
-    setSelectedCompareIds((currentSelection) => {
-      if (currentSelection.includes(snapshotId)) {
-        return currentSelection.filter((id) => id !== snapshotId);
-      }
-
-      if (currentSelection.length >= 4) {
-        setCompareError("비교는 저장한 여행 2개부터 4개까지 가능해요.");
-        return currentSelection;
-      }
-
-      return [...currentSelection, snapshotId];
-    });
-  }
-
-  const createCompareSnapshot = useCallback(async () => {
-    if (!session.data?.user) {
-      const currentRoute = buildCurrentRoute(
-        "/",
-        results ? buildResultSearchParams(results.query) : new URLSearchParams(window.location.search),
-      );
-      savePostAuthIntent({
-        kind: "create-compare",
-        route: currentRoute,
-      });
-      router.push(`/auth?next=${encodeURIComponent(currentRoute)}&intent=share`);
-      return;
-    }
-
-    const selectedSnapshots = savedSnapshots.filter((snapshot) => selectedCompareIds.includes(snapshot.snapshotId));
-
-    if (selectedSnapshots.length < 2 || selectedSnapshots.length > 4) {
-      setCompareError("비교하려면 저장한 여행 2개부터 4개까지 선택해 주세요.");
-      return;
-    }
-
-    setCompareLoading(true);
-    setCompareError(null);
-
-    try {
-      const response = await fetch(buildApiUrl("/api/snapshots"), {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify({
-          ...buildComparisonSnapshotPayload(selectedSnapshots),
-          visibility: "public",
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error("compare-create-failed");
-      }
-
-      const payload = (await response.json()) as { snapshotId: string };
-      router.push(`/compare/${payload.snapshotId}`);
-    } catch {
-      setCompareError("비교 보드를 만들지 못했어요. 잠시 후 다시 시도해 주세요.");
-    } finally {
-      setCompareLoading(false);
-    }
-  }, [results, router, savedSnapshots, selectedCompareIds, session.data?.user]);
-
   useEffect(() => {
     if (session.isPending || !session.data?.user || !results) {
       return;
@@ -1521,11 +1389,7 @@ export function HomeExperience() {
       }
       return;
     }
-
-    if (intent.kind === "create-compare") {
-      void createCompareSnapshot();
-    }
-  }, [cards, createCompareSnapshot, results, saveCard, session.data?.user, session.isPending]);
+  }, [cards, results, saveCard, session.data?.user, session.isPending]);
 
   async function requestRecommendations(nextQuery: RecommendationQuery, syncRoute = true) {
     const loadingStartedAt = Date.now();
@@ -1850,7 +1714,7 @@ export function HomeExperience() {
                       href={buildDestinationDetailPath(leadCard.destination, resultQuery)}
                       className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-5 py-2.5 text-[0.82rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
                     >
-                      상세 보기
+                      이 도시 알아보기
                     </Link>
                     {saveState.shareUrl ? (
                       <button
@@ -1914,26 +1778,7 @@ export function HomeExperience() {
             />
           ) : null
         }
-        leadActionsSlot={
-          leadCard ? (
-            <RecommendationActionsPanel
-              variant="summary"
-              rootTestId={testIds.result.actionPlan}
-              destinationId={leadCard.destination.id}
-              destinationName={leadCard.destination.nameKo}
-              destinationSummary={leadCard.destination.summary}
-              leadReason={leadCard.recommendation.reasons[0] ?? leadCard.recommendation.whyThisFits}
-              whyThisFits={leadCard.recommendation.whyThisFits}
-              watchOuts={leadCard.recommendation.watchOuts.slice(0, 2)}
-              query={resultQuery}
-              nearbyPlaces={results?.leadSupplement?.nearbyPlaces}
-              evidence={leadCard.recommendation.trendEvidence.slice(0, 2).map((item) => ({
-                sourceLabel: item.sourceLabel,
-                summary: item.summary,
-              }))}
-            />
-          ) : null
-        }
+        leadActionsSlot={null}
         filtersSlot={null}
         statusSlot={
           <>
@@ -2061,31 +1906,13 @@ export function HomeExperience() {
           <>
             {savedSnapshots.length > 0 ? (
               <article id="saved-snapshots-section" className="rounded-[var(--radius-card)] border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-3.5 sm:px-4 sm:py-4">
-                <div className="flex flex-col gap-3 border-b border-[color:var(--color-stage-divider)] pb-3.5 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex flex-col gap-3 border-b border-[color:var(--color-stage-divider)] pb-3.5">
                   <div>
                     <p className="compass-editorial-kicker">내 일정 후보</p>
                     <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-                      마음에 드는 여행만 모아 비교 보드로 넘기면 마지막 결정이 더 쉬워져요.
+                      저장한 여행은 여기서 다시 열어 보거나 계정에서 이어서 확인할 수 있어요.
                     </p>
-                    <div
-                      data-testid={testIds.snapshot.compareSelectionCount}
-                      className="compass-metric-pill mt-2.5 inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                    >
-                      선택 {selectedCompareIds.length}개 · 최대 4개
-                    </div>
                   </div>
-
-                  <button
-                    type="button"
-                    data-testid={testIds.snapshot.compareSnapshot}
-                    onClick={() => {
-                      void createCompareSnapshot();
-                    }}
-                    disabled={!canCreateCompare || compareLoading}
-                    className="rounded-full bg-[var(--color-funnel-text)] px-4 py-3 text-sm font-semibold tracking-[0.04em] text-white disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {compareButtonLabel}
-                  </button>
                 </div>
 
                 <div className="mt-3 grid gap-2.5">
@@ -2094,63 +1921,14 @@ export function HomeExperience() {
                       key={snapshot.snapshotId}
                       snapshot={snapshot}
                       index={index}
-                      selected={selectedCompareIds.includes(snapshot.snapshotId)}
                       hideAccountActions={hideAccountActions}
-                      onToggle={toggleCompareSelection}
                       onCopy={(shareUrl) => {
                         void copyShareUrl(shareUrl);
                       }}
                     />
                   ))}
                 </div>
-
-                {compareError ? (
-                  <p className="compass-warning-card mt-3 rounded-[calc(var(--radius-card)-10px)] px-4 py-3 text-sm leading-6">
-                    {compareError}
-                  </p>
-      ) : null}
               </article>
-            ) : null}
-
-            {savedSnapshots.length > 0 ? (
-              <div className="pointer-events-none fixed inset-x-4 bottom-4 z-30 md:hidden">
-                <article
-                  data-testid={testIds.snapshot.stickyCompareTray}
-                  className="pointer-events-auto rounded-[calc(var(--radius-card)-6px)] border border-[color:var(--color-funnel-border)] bg-white px-4 py-3.5 shadow-[var(--shadow-funnel-card)]"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="compass-editorial-kicker">비교 트레이</p>
-                      <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">
-                        {compareTrayDestinations || `${savedSnapshots.length}개 저장 여행`}
-                      </p>
-                      <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">
-                        저장 {savedSnapshots.length}개 · 선택 {selectedCompareIds.length}개
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => scrollToElementById("saved-snapshots-section")}
-                      className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-[11px] font-semibold tracking-[0.04em]"
-                    >
-                      카드 보기
-                    </button>
-                  </div>
-
-                  <button
-                    type="button"
-                    data-testid={testIds.snapshot.stickyCompareAction}
-                    onClick={() => {
-                      void createCompareSnapshot();
-                    }}
-                    disabled={!canCreateCompare || compareLoading}
-                    className="compass-action-primary compass-soft-press mt-3 w-full rounded-full px-4 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {compareButtonLabel}
-                  </button>
-                </article>
-              </div>
             ) : null}
           </>
         }

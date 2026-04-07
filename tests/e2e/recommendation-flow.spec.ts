@@ -203,15 +203,6 @@ test("redirects signed-out save actions to the social auth gate", async ({ page 
   await expect(page.getByTestId("auth-provider-google")).toBeVisible();
 });
 
-test("redirects signed-out compare-save entry points to the social auth gate", async ({ page }) => {
-  await submitQuickRecommendation(page);
-
-  await page.getByTestId("save-snapshot").click();
-
-  await expect(page).toHaveURL(/\/auth\?/);
-  await expect(page.getByTestId("auth-provider-google")).toBeVisible();
-});
-
 test("redirects mobile save actions to the social auth gate", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await submitQuickRecommendation(page);

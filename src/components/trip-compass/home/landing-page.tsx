@@ -69,7 +69,7 @@ export function LandingPage({ testId, heroTestId, onStart, trendingDestinations,
 
           <p className="text-[0.78rem] text-[var(--color-funnel-text-soft)]">
             무료 · 약 1분 · 로그인 불필요
-            {todayCount != null && todayCount >= 10 ? (
+            {todayCount != null && todayCount >= 20 ? (
               <span className="ml-1.5 text-[var(--color-funnel-text)]">
                 · 오늘 {todayCount.toLocaleString()}명이 여행지를 찾았어요
               </span>
