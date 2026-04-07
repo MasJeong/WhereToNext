@@ -58,13 +58,50 @@ export function LandingPage({ testId, heroTestId, onStart, trendingDestinations,
           날씨, 환율, 유튜브 영상까지 한눈에.
         </p>
 
+        <div className="mx-auto mt-6 max-w-2xl rounded-[1.15rem] border border-[color:var(--color-funnel-border)] bg-white/76 px-4 py-3 shadow-[0_14px_30px_rgba(15,23,42,0.05)] backdrop-blur-sm">
+          <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[0.72rem] tracking-[-0.01em] text-[var(--color-funnel-text-soft)]">
+            <span>무료 · 약 1분 · 로그인 불필요</span>
+            {todayCount != null && todayCount >= 10 ? (
+              <>
+                <span className="hidden h-1 w-1 rounded-full bg-[var(--color-funnel-border)] sm:block" />
+                <span>
+                  오늘 <span className="font-semibold text-[var(--color-funnel-text)]">{todayCount.toLocaleString()}명</span>이 여행지를 찾았어요
+                </span>
+              </>
+            ) : null}
+          </div>
+
+          <div className="mt-3 flex flex-col items-center gap-2">
+            <p className="text-[0.72rem] font-medium tracking-[-0.01em] text-[var(--color-funnel-text-soft)]">
+              최근 인기 여행지
+            </p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {trendingLoading
+                ? Array.from({ length: 3 }, (_, i) => (
+                    <span
+                      key={i}
+                      className="h-[1.75rem] w-16 animate-pulse rounded-full bg-[var(--color-funnel-muted)]"
+                    />
+                  ))
+                : displayDestinations.map((dest) => (
+                    <span
+                      key={dest}
+                      className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1.5 text-[0.73rem] font-semibold text-[var(--color-funnel-text)]"
+                    >
+                      {dest}
+                    </span>
+                  ))}
+            </div>
+          </div>
+        </div>
+
         {/* Hero showcase */}
-        <div className="mt-8 flex justify-center">
+        <div className="mt-7 flex justify-center">
           <HeroAnimation testId={heroTestId} />
         </div>
 
         {/* CTA button with shine effect */}
-        <div className="mt-8 flex flex-col items-center gap-3">
+        <div className="mt-7 flex flex-col items-center gap-3">
           <button
             type="button"
             data-testid={testIds.home.cta}
@@ -74,40 +111,6 @@ export function LandingPage({ testId, heroTestId, onStart, trendingDestinations,
           >
             내 여행지 찾기
           </button>
-
-          {/* Time + effort indicator */}
-          <p className="text-[0.72rem] tracking-[-0.01em] text-[var(--color-funnel-text-soft)]">
-            무료 · 약 1분 · 로그인 불필요
-          </p>
-          {todayCount != null && todayCount >= 10 ? (
-            <p className="text-[0.72rem] tracking-[-0.01em] text-[var(--color-funnel-text-soft)]">
-              오늘 <span className="font-semibold text-[var(--color-funnel-text)]">{todayCount.toLocaleString()}명</span>이 여행지를 찾았어요
-            </p>
-          ) : null}
-        </div>
-
-        {/* Social proof — trending */}
-        <div className="mt-8 flex flex-col items-center gap-2">
-          <p className="text-[0.72rem] font-medium tracking-[-0.01em] text-[var(--color-funnel-text-soft)]">
-            최근 인기 여행지
-          </p>
-          <div className="flex gap-2">
-            {trendingLoading
-              ? Array.from({ length: 3 }, (_, i) => (
-                  <span
-                    key={i}
-                    className="h-[1.625rem] w-14 animate-pulse rounded-full bg-[var(--color-funnel-muted)]"
-                  />
-                ))
-              : displayDestinations.map((dest) => (
-                  <span
-                    key={dest}
-                    className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1 text-[0.72rem] font-semibold text-[var(--color-funnel-text)]"
-                  >
-                    {dest}
-                  </span>
-                ))}
-          </div>
         </div>
       </div>
 
