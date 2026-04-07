@@ -1,20 +1,17 @@
+"use client";
+
 import { motion, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
 
 import { testIds } from "@/lib/test-ids";
-import type {
-  RecommendationDecisionFactView,
-  WorkspaceBriefItemView,
-} from "@/lib/trip-compass/presentation";
+import type { WorkspaceBriefItemView } from "@/lib/trip-compass/presentation";
 
 type ResultPageProps = {
   testId: string;
   leadTitle: string;
-  leadReason: string;
   leadDescription: string;
   leadMetaTags?: string[];
   leadTags: string[];
-  leadFacts: RecommendationDecisionFactView[];
   leadHeroAsideSlot?: ReactNode;
   leadSupportSlot?: ReactNode;
   leadWeatherSlot?: ReactNode;
@@ -32,11 +29,9 @@ type ResultPageProps = {
 export function ResultPage({
   testId,
   leadTitle,
-  leadReason,
   leadDescription,
   leadMetaTags = [],
   leadTags,
-  leadFacts,
   leadHeroAsideSlot,
   leadSupportSlot,
   leadWeatherSlot,
@@ -51,6 +46,7 @@ export function ResultPage({
   savedSlot,
 }: ResultPageProps) {
   const prefersReducedMotion = useReducedMotion();
+  const visibleTags = leadTags.slice(0, 2);
 
   return (
     <motion.section
@@ -96,55 +92,43 @@ export function ResultPage({
             <div className="rounded-[1.05rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-4">
               <div className={`grid gap-4 ${leadHeroAsideSlot ? "lg:grid-cols-[minmax(0,1.35fr)_minmax(15rem,0.65fr)] lg:items-start" : ""}`}>
                 <div className="max-w-[34rem] space-y-3">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-funnel-text-soft)]">
-                      이번에 제일 잘 맞는 곳
-                    </span>
-                    <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)]">
-                      지금 조건 기준 1순위
-                    </span>
-                    {leadMetaTags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)]"
-                      >
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
+                  <span className="inline-block rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-funnel-text-soft)]">
+                    지금 조건 기준 1순위
+                  </span>
 
                   <h2 className="text-[1.9rem] font-semibold leading-[1.02] tracking-[-0.04em] text-[var(--color-funnel-text)] sm:text-[2.3rem]">
                     {leadTitle}
                   </h2>
 
-                  <p className="text-[1rem] font-semibold leading-7 tracking-[-0.02em] text-[var(--color-funnel-text)]">
-                    {leadReason}
-                  </p>
-
-                  <p className="line-clamp-3 text-[0.9rem] leading-6 text-[var(--color-funnel-text-soft)]">
+                  <p className="line-clamp-3 text-[0.95rem] leading-7 tracking-[-0.01em] text-[var(--color-funnel-text)]">
                     {leadDescription}
                   </p>
+
+                  {visibleTags.length > 0 ? (
+                    <div className="flex flex-wrap items-center gap-1.5">
+                      {visibleTags.map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)]"
+                        >
+                          #{tag}
+                        </span>
+                      ))}
+                      {leadMetaTags.slice(0, 1).map((tag) => (
+                        <span
+                          key={tag}
+                          className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)]"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  ) : null}
                 </div>
 
                 {leadHeroAsideSlot ? <div>{leadHeroAsideSlot}</div> : null}
               </div>
             </div>
-
-            {leadTags.length > 0 ? (
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)]">
-                  잘 맞는 포인트
-                </p>
-                {leadTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)]"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            ) : null}
 
             <div className="rounded-[1.05rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-4">
               {leadDetails}
@@ -156,14 +140,12 @@ export function ResultPage({
 
         {leadSupportSlot ? (
           <section className="space-y-3 rounded-[1.3rem] border border-[color:var(--color-funnel-border)] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)] sm:p-5">
-            <div className="space-y-1">
-              <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                미리 보는 영상
-              </p>
-              <p className="text-[0.95rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
-                이 추천이 감으로도 맞는지 대표 영상으로 바로 확인해 보세요.
-              </p>
-            </div>
+            <p className="text-[0.95rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
+              대표 영상으로 분위기 확인
+            </p>
+            <p className="text-sm leading-6 text-[var(--color-funnel-text-soft)]">
+              영상으로 분위기를 먼저 확인해 보세요
+            </p>
             {leadSupportSlot}
           </section>
         ) : (

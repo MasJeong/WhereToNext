@@ -168,7 +168,7 @@ function buildTravelMonthWeatherSummary(
     tone += ", 비 가끔";
   }
 
-  return `${travelMonth}월 — ${tone}`;
+  return `${travelMonth}월 날씨 - ${tone}`;
 }
 
 /**

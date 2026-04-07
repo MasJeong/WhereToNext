@@ -391,45 +391,77 @@ export function RecommendationActionsPanel({
   }
 
   return (
+    <SummaryActions
+      rootTestId={rootTestId}
+      destinationName={destinationName}
+      actions={state.payload.actions}
+    />
+  );
+}
+
+const stepIcons: Record<string, string> = {
+  "대표 경험": "📍",
+  "취향 맞춤": "✦",
+  "첫날 가볍게": "☀",
+  "바다 시간": "🌊",
+  "맛집 동선": "🍽",
+  "산책 코스": "🚶",
+};
+
+function resolveStepIcon(label: string): string {
+  return stepIcons[label] ?? `${Object.keys(stepIcons).length + 1}`;
+}
+
+function SummaryActions({
+  rootTestId,
+  destinationName,
+  actions,
+}: {
+  rootTestId?: string;
+  destinationName: string;
+  actions: RecommendationActionsResponse["actions"];
+}) {
+  return (
     <section
       data-testid={rootTestId}
-      className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3.5"
+      className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-4"
     >
-      <div>
-        <div>
-          <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-            이 도시에서 먼저 할 것
-          </p>
-          <p className="mt-1 text-sm font-semibold text-[var(--color-funnel-text)]">
-            처음 어디부터 볼지 바로 감 오게 정리했어요.
-          </p>
-        </div>
-      </div>
+      <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+        이 도시에서 먼저 할 것
+      </p>
 
-      <div className="mt-3 grid gap-2">
-        {state.payload.actions.map((action) => (
-          <article
-            key={action.id}
-            className="rounded-[0.9rem] border border-[color:var(--color-funnel-border)] bg-white px-3 py-2.5"
-          >
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[0.66rem] font-semibold text-[var(--color-funnel-text-soft)]">
-                {action.label}
-              </span>
-              {action.placeLabel && action.placeLabel !== destinationName ? (
-                <span className="text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)]">
-                  {action.placeLabel}
+      {/* Timeline */}
+      <div className="mt-3.5 flex flex-col">
+        {actions.map((action, index) => {
+          const isLast = index === actions.length - 1;
+
+          return (
+            <div key={action.id} className="flex gap-3.5">
+              {/* Timeline rail */}
+              <div className="flex flex-col items-center">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-funnel-border)] bg-white text-sm">
+                  {resolveStepIcon(action.label)}
                 </span>
-              ) : null}
+                {!isLast ? (
+                  <div className="my-1 w-px flex-1 bg-[var(--color-funnel-border)]" />
+                ) : null}
+              </div>
+
+              {/* Content */}
+              <div className={`min-w-0 ${isLast ? "pb-0" : "pb-4"}`}>
+                <p className="text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-funnel-text-soft)]">
+                  {action.label}
+                </p>
+                <p className="mt-1 text-[0.88rem] font-semibold leading-6 text-[var(--color-funnel-text)]">
+                  {normalizeActionTitle(action.title, destinationName)}
+                </p>
+                <p className="mt-0.5 line-clamp-2 text-xs leading-5 text-[var(--color-funnel-text-soft)]">
+                  {action.description}
+                </p>
+              </div>
             </div>
-            <p className="mt-2 text-[0.9rem] font-semibold leading-6 text-[var(--color-funnel-text)]">
-              {normalizeActionTitle(action.title, destinationName)}
-            </p>
-            <p className="mt-1 line-clamp-2 text-xs leading-5 text-[var(--color-funnel-text-soft)]">
-              {action.description}
-            </p>
-          </article>
-        ))}
+          );
+        })}
       </div>
     </section>
   );

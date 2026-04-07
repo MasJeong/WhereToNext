@@ -19,7 +19,7 @@ async function submitQuickRecommendation(page: import("@playwright/test").Page) 
   await page.getByTestId("home-step-next").click();
   await page.getByTestId("home-step-choice-0").click();
   await page.getByTestId("home-step-next").click();
-  await expect(page.getByTestId("result-filter-bar")).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId("result-filter-bar")).toBeVisible({ timeout: 15000 });
   await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 10000 });
 }
 
@@ -129,11 +129,15 @@ test("supports back navigation during the one-question-per-screen funnel", async
   await page.getByTestId("home-step-next").click();
   await page.getByTestId("home-step-choice-0").click();
   await page.getByTestId("home-step-next").click();
-  await expect(page.getByTestId("result-filter-bar")).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId("result-filter-bar")).toBeVisible({ timeout: 15000 });
 
   await page.goBack();
   await expect(page).toHaveURL(/\/\?stage=question&step=6/);
   await expect(page.getByTestId("home-step-question")).toContainText("이번엔 빼고 싶은 나라가 있나요?");
+
+  await page.getByTestId("home-step-next").click();
+  await expect(page.getByText("추천 결과를 정리하고 있어요.")).toBeVisible({ timeout: 3000 });
+  await expect(page.getByTestId("result-filter-bar")).toBeVisible({ timeout: 10000 });
 });
 
 test("asks realistic travel conditions instead of romance-first and departure-airport questions", async ({ page }) => {

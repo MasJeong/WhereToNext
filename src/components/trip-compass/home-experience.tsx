@@ -55,7 +55,6 @@ import {
   getInstagramVibeTestId,
   getRelaxFilterActionTestId,
   getResultCardTestId,
-  getResultFilterChipTestId,
   getResultTopItemTestId,
   getSaveSnapshotTestId,
   getSavedSnapshotTestId,
@@ -132,29 +131,6 @@ type HomeFlowStep = {
   }>;
 };
 
-/**
- * 결과 화면에서 다시 추천할 때 현재 본 목적지를 제외한 다음 질의를 만든다.
- * @param query 현재 추천 질의
- * @param currentCards 현재 결과 화면에 노출된 카드 목록
- * @returns 이미 본 목적지를 제외한 다음 추천 질의
- */
-function buildRetryQueryWithoutSeenDestinations(
-  query: RecommendationQuery,
-  currentCards: RecommendationCardView[],
-): RecommendationQuery {
-  const excludedDestinationIds = Array.from(
-    new Set([
-      ...(query.excludedDestinationIds ?? []),
-      ...currentCards.map((card) => card.destination.id),
-    ]),
-  ).slice(0, 20);
-
-  return {
-    ...query,
-    excludedDestinationIds,
-  };
-}
-
 type SavedSnapshotCompactItemProps = {
   snapshot: SavedSnapshotCard;
   index: number;
@@ -178,11 +154,8 @@ function renderLeadWeatherAside(
 
   return (
     <article className="rounded-[1.05rem] border border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-3.5 py-3.5">
-      <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-        {travelMonth}월 날씨
-      </p>
-      <p className="mt-1.5 text-[0.92rem] font-semibold leading-6 tracking-[-0.02em] text-[var(--color-funnel-text)]">
-        {travelMonthWeather?.summary ?? `${destinationName}의 시기별 날씨를 확인해 보세요.`}
+      <p className="text-[0.92rem] font-semibold leading-6 tracking-[-0.02em] text-[var(--color-funnel-text)]">
+        {travelMonthWeather?.summary ?? `${travelMonth}월 날씨 - ${destinationName}의 시기별 날씨를 확인해 보세요.`}
       </p>
       <div className="mt-3 flex flex-wrap gap-1.5">
         {travelMonthWeather ? (
@@ -215,8 +188,6 @@ type CompactRecommendationItemProps = {
   hideAccountActions?: boolean;
 };
 
-type ResultFilterKey = "all" | "short-flight" | "city" | "rest" | "balanced-budget";
-type ResultSortKey = "fit" | "shortest-flight" | "budget";
 type HomeUrlStage = FunnelStage;
 
 const tripLengthRelaxationOrder = [3, 5, 8, 15] as const;
@@ -232,14 +203,6 @@ const homeTravelStyleParam = "travelStyle";
 const homeFlightPreferenceParam = "flightPreference";
 const homeExcludedCountryCodesParam = "excludedCountryCodes";
 const minimumRecommendationLoadingMs = process.env.NODE_ENV === "test" ? 200 : 5000;
-
-const resultFilterOptions: Array<{ key: ResultFilterKey; label: string; description: string }> = [
-  { key: "all", label: "전체", description: "지금 조건과 맞는 순서대로 봐요." },
-  { key: "short-flight", label: "가까운 비행", description: "비행 부담이 낮은 곳부터 볼게요." },
-  { key: "city", label: "도시 리듬", description: "도시 동선이 살아 있는 후보만 봐요." },
-  { key: "rest", label: "아웃도어", description: "해변·풍경 쪽 후보를 먼저 볼게요." },
-  { key: "balanced-budget", label: "예산 균형", description: "균형 예산 감각을 먼저 볼게요." },
-];
 
 const companionValueSet = new Set(homeStepCompanionOptions.map((option) => option.value));
 const travelWindowValueSet = new Set<HomeStepTravelWindow>(homeStepTravelWindowValues);
@@ -260,30 +223,6 @@ function getNextRelaxedOption<TValue extends string | number>(
   }
 
   return options[currentIndex + 1] ?? null;
-}
-
-function getFlightRank(flightBand: RecommendationCardView["destination"]["flightBand"]): number {
-  if (flightBand === "short") {
-    return 0;
-  }
-
-  if (flightBand === "medium") {
-    return 1;
-  }
-
-  return 2;
-}
-
-function getBudgetRank(budgetBand: RecommendationCardView["destination"]["budgetBand"]): number {
-  if (budgetBand === "budget") {
-    return 0;
-  }
-
-  if (budgetBand === "mid") {
-    return 1;
-  }
-
-  return 2;
 }
 
 function isHomeStepTravelStyle(value: string): value is HomeStepTravelStyle {
@@ -665,16 +604,10 @@ function CompactRecommendationItem({
         </div>
 
         <div className="flex flex-wrap gap-2 sm:justify-end">
-          <Link
-            href={detailPath}
-            className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
-          >
-            상세 보기
-          </Link>
           {hideAccountActions ? null : saveState.status === "saved" ? (
             <Link
               href={accountSavedPath}
-              className="inline-flex min-h-[2.25rem] items-center rounded-full bg-[var(--color-action-primary)] px-3 py-2 text-[0.72rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
+              className="inline-flex min-h-[2.25rem] items-center gap-1.5 rounded-full bg-[var(--color-action-primary)] px-4 py-2 text-[0.72rem] font-semibold text-white shadow-[0_2px_6px_rgba(var(--color-action-primary-rgb,59,130,246),0.25)] transition-all duration-200 hover:bg-[var(--color-action-primary-strong)] hover:shadow-[0_3px_10px_rgba(var(--color-action-primary-rgb,59,130,246),0.35)]"
             >
               계정에서 보기
             </Link>
@@ -684,11 +617,17 @@ function CompactRecommendationItem({
               data-testid={getSaveSnapshotTestId(index)}
               onClick={() => onSave(card)}
               disabled={saveState.status === "saving"}
-              className="inline-flex min-h-[2.25rem] items-center rounded-full bg-[var(--color-action-primary)] px-3 py-2 text-[0.72rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex min-h-[2.25rem] items-center gap-1.5 rounded-full bg-[var(--color-action-primary)] px-4 py-2 text-[0.72rem] font-semibold text-white shadow-[0_2px_6px_rgba(var(--color-action-primary-rgb,59,130,246),0.25)] transition-all duration-200 hover:bg-[var(--color-action-primary-strong)] hover:shadow-[0_3px_10px_rgba(var(--color-action-primary-rgb,59,130,246),0.35)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
             >
               {saveState.status === "saving" ? "담는 중..." : "내 여행에 담기"}
             </button>
           )}
+          <Link
+            href={detailPath}
+            className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+          >
+            상세 보기
+          </Link>
           {saveState.shareUrl ? (
             <button
               type="button"
@@ -696,7 +635,7 @@ function CompactRecommendationItem({
               onClick={() => {
                 void onCopy(saveState.shareUrl ?? "");
               }}
-              className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+              className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] hover:text-[var(--color-funnel-text)]"
             >
               링크 복사
             </button>
@@ -719,9 +658,6 @@ export function HomeExperience() {
   const [cards, setCards] = useState<RecommendationCardView[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [showAllResults, setShowAllResults] = useState(false);
-  const [resultFilter, setResultFilter] = useState<ResultFilterKey>("all");
-  const [resultSort, setResultSort] = useState<ResultSortKey>("fit");
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
   const [futureTripStates, setFutureTripStates] = useState<Record<string, FutureTripState>>({});
   const [snapshotReferences, setSnapshotReferences] = useState<Record<string, SavedSnapshotCard>>({});
@@ -774,58 +710,15 @@ export function HomeExperience() {
   }, [answers.travelWindow, resultQuery]);
   const emptyStateActions = useMemo(() => buildRelaxationActions(resultQuery), [resultQuery]);
   const filteredCards = useMemo(() => {
-    const nextCards = [...cards];
-
-    const visibleByFilter = nextCards.filter((card) => {
-      if (resultFilter === "all") {
-        return true;
-      }
-
-      if (resultFilter === "short-flight") {
-        return card.destination.flightBand === "short";
-      }
-
-      if (resultFilter === "city") {
-        return card.destination.vibeTags.includes("city") || card.destination.kind === "city";
-      }
-
-      if (resultFilter === "rest") {
-        return card.destination.vibeTags.includes("beach") || card.destination.vibeTags.includes("nature");
-      }
-
-      return card.destination.budgetBand === "mid";
-    });
-
-    visibleByFilter.sort((left, right) => {
-      if (resultSort === "shortest-flight") {
-        return (
-          getFlightRank(left.destination.flightBand) - getFlightRank(right.destination.flightBand) ||
-          right.recommendation.confidence - left.recommendation.confidence
-        );
-      }
-
-      if (resultSort === "budget") {
-        return (
-          getBudgetRank(left.destination.budgetBand) - getBudgetRank(right.destination.budgetBand) ||
-          right.recommendation.confidence - left.recommendation.confidence
-        );
-      }
-
-      return (
+    return [...cards].sort(
+      (left, right) =>
         right.recommendation.scoreBreakdown.total - left.recommendation.scoreBreakdown.total ||
-        right.recommendation.confidence - left.recommendation.confidence
-      );
-    });
-
-    return visibleByFilter;
-  }, [cards, resultFilter, resultSort]);
+        right.recommendation.confidence - left.recommendation.confidence,
+    );
+  }, [cards]);
 
   const leadCard = filteredCards[0] ?? cards[0] ?? null;
-  const secondaryCards = showAllResults ? filteredCards.slice(1) : filteredCards.slice(1, 4);
-  const retryQuery = useMemo(
-    () => buildRetryQueryWithoutSeenDestinations(resultQuery, cards),
-    [cards, resultQuery],
-  );
+  const secondaryCards = filteredCards.slice(1, 5);
   const canCreateCompare = selectedCompareIds.length >= 2 && selectedCompareIds.length <= 4;
   const compareTrayDestinations = useMemo(() => {
     const selectedSnapshots = savedSnapshots.filter((snapshot) => selectedCompareIds.includes(snapshot.snapshotId));
@@ -928,9 +821,6 @@ export function HomeExperience() {
     setCards([]);
     setIsSubmitting(false);
     setSubmitError(null);
-    setShowAllResults(false);
-    setResultFilter("all");
-    setResultSort("fit");
     setCopyFallbackUrl(null);
   }, []);
 
@@ -944,9 +834,6 @@ export function HomeExperience() {
     setCards([]);
     setIsSubmitting(false);
     setSubmitError(null);
-    setShowAllResults(false);
-    setResultFilter("all");
-    setResultSort("fit");
     setCopyFallbackUrl(null);
   }, []);
 
@@ -1151,9 +1038,6 @@ export function HomeExperience() {
       setCards([]);
       setIsSubmitting(false);
       setSubmitError(null);
-      setShowAllResults(false);
-      setResultFilter("all");
-      setResultSort("fit");
       setCopyFallbackUrl(null);
       syncQuestionRoute(0, nextAnswers, "replace");
       return;
@@ -1283,9 +1167,6 @@ export function HomeExperience() {
     setCards([]);
     setIsSubmitting(false);
     setSubmitError(null);
-    setShowAllResults(false);
-    setResultFilter("all");
-    setResultSort("fit");
     setCopyFallbackUrl(null);
     syncLandingRoute("replace");
   }
@@ -1299,9 +1180,6 @@ export function HomeExperience() {
     setCards([]);
     setIsSubmitting(false);
     setSubmitError(null);
-    setShowAllResults(false);
-    setResultFilter("all");
-    setResultSort("fit");
     setCopyFallbackUrl(null);
     syncQuestionRoute(0, defaultAnswers, "push");
   }
@@ -1682,14 +1560,10 @@ export function HomeExperience() {
       setStage("result");
       setResults(payload);
       setCards(createRecommendationCards(payload.recommendations));
-      setResultFilter("all");
-      setResultSort("fit");
-      setShowAllResults(false);
       if (syncRoute) {
         syncResultRoute(payload.query, "push");
-      } else {
-        pendingRecommendationQueryRef.current = null;
       }
+      pendingRecommendationQueryRef.current = null;
       requestAnimationFrame(() => {
         scrollToPageTop("auto");
       });
@@ -1711,9 +1585,8 @@ export function HomeExperience() {
       setSubmitError("지금은 추천 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
       if (syncRoute) {
         syncResultRoute(nextQuery, "push");
-      } else {
-        pendingRecommendationQueryRef.current = null;
       }
+      pendingRecommendationQueryRef.current = null;
       requestAnimationFrame(() => {
         scrollToPageTop("auto");
       });
@@ -1909,7 +1782,6 @@ export function HomeExperience() {
       <ResultPage
         testId={testIds.home.resultPage}
         leadTitle={leadCard ? leadCard.destination.nameKo : isSubmitting ? "추천 결과를 정리하고 있어요." : "다시 맞는 후보를 찾고 있어요."}
-        leadReason={leadCard?.recommendation.reasons[0] ?? "결과가 나오면 가장 먼저 볼 목적지를 짧게 정리해 드릴게요."}
         leadDescription={leadCard ? leadCard.recommendation.whyThisFits : queryNarrative}
         leadMetaTags={
           leadCard
@@ -1919,7 +1791,6 @@ export function HomeExperience() {
             : []
         }
         leadTags={[]}
-        leadFacts={[]}
         leadHeroAsideSlot={leadCard ? renderLeadWeatherAside(results?.leadSupplement, leadCard.destination.nameKo, resultQuery.travelMonth) : null}
         leadSupportSlot={
           leadCard ? (
@@ -1940,17 +1811,11 @@ export function HomeExperience() {
               return (
                 <div className="space-y-3" data-testid={getInstagramVibeTestId(0)}>
                   {/* Primary action row */}
-                  <div className="flex flex-wrap items-center gap-2">
-                    <Link
-                      href={buildDestinationDetailPath(leadCard.destination, resultQuery)}
-                      className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-5 py-2.5 text-[0.82rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
-                    >
-                      상세 보기
-                    </Link>
+                  <div className="flex flex-wrap items-center gap-2.5">
                     {hideAccountActions ? null : saveState.status === "saved" ? (
                       <Link
                         href="/account?tab=saved"
-                        className="inline-flex min-h-[2.75rem] items-center rounded-full bg-[var(--color-action-primary)] px-5 py-2.5 text-[0.82rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
+                        className="inline-flex min-h-[2.75rem] items-center gap-1.5 rounded-full bg-[var(--color-action-primary)] px-6 py-2.5 text-[0.82rem] font-semibold text-white shadow-[0_2px_8px_rgba(var(--color-action-primary-rgb,59,130,246),0.3)] transition-all duration-200 hover:bg-[var(--color-action-primary-strong)] hover:shadow-[0_4px_12px_rgba(var(--color-action-primary-rgb,59,130,246),0.4)]"
                       >
                         계정에서 보기
                       </Link>
@@ -1962,11 +1827,17 @@ export function HomeExperience() {
                           void saveCard(leadCard);
                         }}
                         disabled={saveState.status === "saving"}
-                        className="inline-flex min-h-[2.75rem] items-center rounded-full bg-[var(--color-action-primary)] px-5 py-2.5 text-[0.82rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)] disabled:cursor-not-allowed disabled:opacity-60"
+                        className="inline-flex min-h-[2.75rem] items-center gap-1.5 rounded-full bg-[var(--color-action-primary)] px-6 py-2.5 text-[0.82rem] font-semibold text-white shadow-[0_2px_8px_rgba(var(--color-action-primary-rgb,59,130,246),0.3)] transition-all duration-200 hover:bg-[var(--color-action-primary-strong)] hover:shadow-[0_4px_12px_rgba(var(--color-action-primary-rgb,59,130,246),0.4)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
                       >
                         {saveState.status === "saving" ? "담는 중..." : "내 여행에 담기"}
                       </button>
                     )}
+                    <Link
+                      href={buildDestinationDetailPath(leadCard.destination, resultQuery)}
+                      className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-5 py-2.5 text-[0.82rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+                    >
+                      상세 보기
+                    </Link>
                     {saveState.shareUrl ? (
                       <button
                         type="button"
@@ -1974,7 +1845,7 @@ export function HomeExperience() {
                         onClick={() => {
                           void copyShareUrl(saveState.shareUrl ?? "");
                         }}
-                        className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-[0.82rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+                        className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-[0.82rem] font-semibold text-[var(--color-funnel-text-soft)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] hover:text-[var(--color-funnel-text)]"
                       >
                         링크 복사
                       </button>
@@ -1983,20 +1854,8 @@ export function HomeExperience() {
 
                   {/* Secondary actions */}
                   <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--color-funnel-text-soft)]">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        void requestRecommendations(retryQuery);
-                      }}
-                      className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]"
-                    >
-                      다시 고르기
-                    </button>
                     <button type="button" onClick={reopenQuestionFlow} className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]">
-                      질문 다시 고르기
-                    </button>
-                    <button type="button" onClick={resetFunnel} className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]">
-                      처음부터
+                      다시 선택하기
                     </button>
                     {saveState.shareUrl ? (
                       <Link
@@ -2061,56 +1920,7 @@ export function HomeExperience() {
             />
           ) : null
         }
-        filtersSlot={
-          isSubmitting ? null : (
-            <article
-              data-testid={testIds.result.filterBar}
-              className="rounded-[1.75rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-4"
-            >
-              <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-                <div>
-                  <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
-                    결과 조정
-                  </p>
-                  <p className="mt-1.5 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-                    대표 추천을 먼저 보고, 아래 후보만 짧게 비교해 보세요.
-                  </p>
-                </div>
-
-                <label className="grid gap-2 text-sm text-[var(--color-funnel-text)] lg:min-w-[12rem]">
-                  <span>정렬</span>
-                  <select
-                    value={resultSort}
-                    onChange={(event) => setResultSort(event.target.value as ResultSortKey)}
-                    className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm text-[var(--color-funnel-text)]"
-                  >
-                    <option value="fit">적합도 순</option>
-                    <option value="shortest-flight">가까운 비행 순</option>
-                    <option value="budget">예산 가벼운 순</option>
-                  </select>
-                </label>
-              </div>
-
-              <div className="mt-3 flex flex-wrap gap-2">
-                {resultFilterOptions.map((option, index) => (
-                  <button
-                    key={option.key}
-                    type="button"
-                    data-testid={getResultFilterChipTestId(index)}
-                    onClick={() => setResultFilter(option.key)}
-                    className={`rounded-full border px-3.5 py-2 text-xs font-semibold tracking-[0.04em] transition-colors duration-200 ${
-                      resultFilter === option.key
-                        ? "border-[color:var(--color-funnel-text)] bg-[var(--color-funnel-text)] text-white"
-                        : "border-[color:var(--color-funnel-border)] bg-white text-[var(--color-funnel-text)] hover:bg-[var(--color-funnel-muted)]"
-                    }`}
-                  >
-                    {option.label}
-                  </button>
-                ))}
-              </div>
-            </article>
-          )
-        }
+        filtersSlot={null}
         statusSlot={
           <>
             {submitError ? (
@@ -2131,7 +1941,7 @@ export function HomeExperience() {
                     onClick={reopenQuestionFlow}
                     className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-xs font-semibold tracking-[0.04em] text-[var(--color-funnel-text)]"
                   >
-                    질문 다시 고르기
+                    다시 선택하기
                   </button>
                 </div>
               </div>
@@ -2212,16 +2022,6 @@ export function HomeExperience() {
                     핵심만 간단히 비교하고 바로 저장하거나 비교 보드로 넘겨 보세요.
                   </p>
                 </div>
-                {filteredCards.length > 4 ? (
-                  <button
-                    type="button"
-                    data-testid={testIds.result.showMoreResults}
-                    onClick={() => setShowAllResults((currentValue) => !currentValue)}
-                    className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-3 text-sm font-semibold tracking-[0.04em] text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
-                  >
-                    {showAllResults ? "상위 결과만 보기" : `후보 ${filteredCards.length - 4}곳 더 보기`}
-                  </button>
-                ) : null}
               </div>
 
               <div data-testid={testIds.result.topList} className="grid gap-2.5">
