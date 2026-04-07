@@ -41,6 +41,7 @@ import {
   formatHomeStepTravelWindowLabel,
   homeStepCompanionOptions,
   homeStepExcludedCountryOptions,
+  homeStepFlightPreferenceValues,
   homeStepFlightPreferenceOptions,
   homeStepTravelStyleOptions,
   homeStepTravelWindowValues,
@@ -207,7 +208,7 @@ const minimumRecommendationLoadingMs = process.env.NODE_ENV === "test" ? 200 : 5
 const companionValueSet = new Set(homeStepCompanionOptions.map((option) => option.value));
 const travelWindowValueSet = new Set<HomeStepTravelWindow>(homeStepTravelWindowValues);
 const tripLengthValueSet = new Set(homeStepTripLengthOptions.map((option) => option.value));
-const flightPreferenceValueSet = new Set(homeStepFlightPreferenceOptions.map((option) => option.value));
+const flightPreferenceValueSet = new Set(homeStepFlightPreferenceValues);
 const travelStyleValueSet = new Set(homeStepTravelStyleOptions.map((option) => option.value));
 const excludedCountryCodeValueSet = new Set(homeStepExcludedCountryOptions.map((option) => option.value));
 const homeQuestionStepCount = 6;
@@ -699,6 +700,13 @@ export function HomeExperience() {
 
     return nextItems.map((item) => {
       if (item.id !== "travel-window") {
+        if (item.id === "flight-tolerance" && answers.flightPreference === "anywhere") {
+          return {
+            ...item,
+            value: "어디든 괜찮아요",
+          };
+        }
+
         return item;
       }
 
@@ -1781,7 +1789,13 @@ export function HomeExperience() {
     <div id="home-results-anchor">
       <ResultPage
         testId={testIds.home.resultPage}
-        leadTitle={leadCard ? leadCard.destination.nameKo : isSubmitting ? "추천 결과를 정리하고 있어요." : "다시 맞는 후보를 찾고 있어요."}
+        leadTitle={
+          leadCard
+            ? formatDestinationWithCountry(leadCard.destination)
+            : isSubmitting
+              ? "추천 결과를 정리하고 있어요."
+              : "조건에 맞는 여행지를 찾고 있어요."
+        }
         leadDescription={leadCard ? leadCard.recommendation.whyThisFits : queryNarrative}
         leadMetaTags={
           leadCard
@@ -2013,16 +2027,9 @@ export function HomeExperience() {
         resultsSlot={
           secondaryCards.length > 0 ? (
             <div className="space-y-3.5">
-              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
-                    다른 후보
-                  </p>
-                  <p className="mt-1 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-                    핵심만 간단히 비교하고 바로 저장하거나 비교 보드로 넘겨 보세요.
-                  </p>
-                </div>
-              </div>
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
+                다른 후보
+              </p>
 
               <div data-testid={testIds.result.topList} className="grid gap-2.5">
                 {secondaryCards.map((card, index) => {

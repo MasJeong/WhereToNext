@@ -36,7 +36,6 @@ import { testIds } from "@/lib/test-ids";
 
 import { FlightAffiliatePanel } from "./flight-affiliate-panel";
 import { RecommendationActionsPanel } from "./recommendation-actions-panel";
-import { TravelSupportPanel } from "./travel-support-panel";
 
 type DestinationDetailExperienceProps = {
   destination: DestinationProfile;
@@ -293,10 +292,7 @@ export function DestinationDetailExperience({
 
             <article className="rounded-[1.15rem] border border-[color:var(--color-frame-soft)] bg-white/86 px-4 py-4 shadow-[0_14px_32px_rgba(15,23,42,0.04)]">
               <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-soft)]">
-                왜 이 도시를 먼저 보냐면
-              </p>
-              <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-                저장 여부를 결정할 때 필요한 이유만 먼저 꺼내 뒀어요.
+                추천 이유
               </p>
               <div className="mt-3 grid gap-2">
                 {reasons.map((reason, index) => (
@@ -327,23 +323,14 @@ export function DestinationDetailExperience({
                   />
                   <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.04)_0%,rgba(15,23,42,0.16)_100%)]" />
                   <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                    <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-white/78">
-                      이 도시의 첫 인상
-                    </p>
-                    <p className="mt-1 text-sm font-semibold leading-6">{destination.nameKo}에서 느끼게 될 분위기를 먼저 보여드릴게요.</p>
+                    <p className="text-sm font-semibold leading-6">{destination.nameKo}의 분위기</p>
                   </div>
                 </div>
               ) : null}
 
               <article className="rounded-[1.2rem] border border-[color:var(--color-frame-soft)] bg-white/94 px-4 py-4 shadow-[0_18px_36px_rgba(15,23,42,0.06)]">
-                <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-soft)]">
-                  지금 여기서 결정
-                </p>
-                <p className="mt-1.5 text-[1rem] font-semibold leading-7 tracking-[-0.02em] text-[var(--color-ink)]">
-                  지금 담을지, 조금 더 읽고 확신할지 먼저 정리하면 됩니다.
-                </p>
-                <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-                  가장 자주 쓰는 행동만 한곳에 모아 두었어요.
+                <p className="text-[1rem] font-semibold leading-7 tracking-[-0.02em] text-[var(--color-ink)]">
+                  담을지, 더 볼지 여기서 결정하세요
                 </p>
 
                 <div className="mt-4 flex flex-col gap-2">
@@ -367,7 +354,7 @@ export function DestinationDetailExperience({
                     onClick={() => setShowDetails((current) => !current)}
                     className="compass-action-secondary compass-soft-press min-h-[3rem] rounded-[1rem] px-4 py-3 text-sm font-semibold tracking-[0.02em]"
                   >
-                    {showDetails ? "자세히 접기" : "자세히 보기"}
+                    {showDetails ? "접기" : "더 보기"}
                   </button>
                   {hasSavedViewLink ? (
                     <Link
@@ -397,7 +384,7 @@ export function DestinationDetailExperience({
 
                 {saveState.status === "saved" ? (
                   <p className="mt-4 rounded-[1rem] border border-[color:var(--color-frame-soft)] bg-[var(--color-surface-muted)] px-4 py-3 text-sm leading-6 text-[var(--color-ink-soft)]">
-                    내 일정에 담았어요. 이어서 다시 보거나 공유 페이지로 열 수 있어요.
+                    담았어요. 계정에서 다시 볼 수 있어요.
                   </p>
                 ) : null}
 
@@ -411,14 +398,6 @@ export function DestinationDetailExperience({
           </aside>
         </div>
       </section>
-
-      <TravelSupportPanel
-        supplement={supplement}
-        destinationName={destination.nameKo}
-        travelMonth={query?.travelMonth}
-        layout="summary"
-        rootClassName="shadow-[0_14px_32px_rgba(15,23,42,0.05)]"
-      />
 
       {query && flightAffiliateLink ? (
         <FlightAffiliatePanel
@@ -457,9 +436,6 @@ export function DestinationDetailExperience({
             >
               <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
                 <p className="compass-editorial-kicker">왜 잘 맞는지</p>
-                <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-                  길게 읽기보다, 결정에 필요한 이유만 앞으로 당겨 놓았어요.
-                </p>
               </div>
 
               <div className="mt-4 grid gap-2.5">
@@ -482,10 +458,7 @@ export function DestinationDetailExperience({
               className="rounded-[var(--radius-card)] border border-[color:var(--color-frame-soft)] bg-white px-4 py-4 shadow-[0_14px_32px_rgba(15,23,42,0.05)] sm:px-5 sm:py-5"
             >
               <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
-                <p className="compass-editorial-kicker">이런 느낌이에요</p>
-                <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-                  지금 이 도시가 왜 끌리는지, 실제 신호를 짧게 붙여 뒀어요.
-                </p>
+                <p className="compass-editorial-kicker">실제 분위기</p>
               </div>
 
               <div className="mt-4 grid gap-3">
@@ -527,11 +500,8 @@ export function DestinationDetailExperience({
 
           <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
             <article className="rounded-[var(--radius-card)] border border-[color:var(--color-frame-soft)] bg-white px-4 py-4 shadow-[0_14px_32px_rgba(15,23,42,0.05)] sm:px-5 sm:py-5">
-              <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
+              <div className="border-b border-[color:var(--color-frame-soft)] pb-3">
                 <p className="compass-editorial-kicker">다음 단계</p>
-                <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-                  지금 담아 두거나, 홈으로 돌아가 다른 추천과 나란히 보면 됩니다.
-                </p>
               </div>
 
               <div className="mt-4 grid gap-2">

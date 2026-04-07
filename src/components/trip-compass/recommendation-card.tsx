@@ -147,7 +147,7 @@ export function RecommendationCard({
             onClick={() => setDetailOpen((prev) => !prev)}
             className="inline-flex min-h-[2.25rem] items-center rounded-full px-3.5 py-2 text-xs font-semibold text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)]"
           >
-            {detailOpen ? "간략히" : "더 알아보기"}
+            {detailOpen ? "접기" : "더 보기"}
           </button>
         </div>
 

@@ -6,6 +6,7 @@ import {
   deriveRecommendationQueryFromHomeStepAnswers,
   filterHomeExcludedCountryOptions,
   homeStepExcludedCountryOptions,
+  homeStepFlightPreferenceOptions,
   homeStepTravelWindowOptions,
   homeStepTravelStyleOptions,
   resolveTravelMonthFromHomeWindow,
@@ -75,6 +76,15 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
     expect(recommendationQuerySchema.parse(query).excludedCountryCodes).toEqual(["CN", "HK"]);
   });
 
+  it("maps '어디든 괜찮아요' to the widest recommendation query range", () => {
+    const query = deriveRecommendationQueryFromHomeStepAnswers({
+      flightPreference: "anywhere",
+      travelStyle: ["foodie"],
+    });
+
+    expect(recommendationQuerySchema.parse(query).flightTolerance).toBe("long");
+  });
+
   it("keeps the default answer snapshot aligned to the strict question flow", () => {
     expect(defaultHomeStepAnswers).toMatchObject({
       whoWith: "couple",
@@ -120,6 +130,15 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
 
   it("exposes every month as a selectable departure window", () => {
     expect(homeStepTravelWindowOptions.map((option) => option.value)).toEqual(["soon", "q1", "q2", "q3", "q4"]);
+  });
+
+  it("adds '어디든 괜찮아요' to the flight preference options", () => {
+    expect(homeStepFlightPreferenceOptions.map((option) => option.label)).toEqual([
+      "가까운 곳 위주",
+      "중거리까지 괜찮아요",
+      "장거리도 괜찮아요",
+      "어디든 괜찮아요",
+    ]);
   });
 
   it("maps grouped departure windows to representative months", () => {

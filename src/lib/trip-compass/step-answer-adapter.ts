@@ -35,13 +35,15 @@ export type HomeStepTravelStyle = (typeof homeStepTravelStyleValues)[number];
 export const homeStepTravelWindowValues = ["soon", "q1", "q2", "q3", "q4"] as const;
 
 export type HomeStepTravelWindow = (typeof homeStepTravelWindowValues)[number];
+export const homeStepFlightPreferenceValues = ["short", "medium", "long", "anywhere"] as const;
+export type HomeStepFlightPreference = (typeof homeStepFlightPreferenceValues)[number];
 
 export type HomeStepAnswers = {
   whoWith: RecommendationQuery["partyType"];
   travelWindow: HomeStepTravelWindow;
   tripLength: RecommendationQuery["tripLengthDays"];
   travelStyle: HomeStepTravelStyle[];
-  flightPreference: RecommendationQuery["flightTolerance"];
+  flightPreference: HomeStepFlightPreference;
   excludedCountryCodes: string[];
 };
 
@@ -156,21 +158,28 @@ export const homeStepTripLengthOptions: HomeStepOption<HomeStepAnswers["tripLeng
   tripLengthOptions;
 
 export const homeStepFlightPreferenceOptions: HomeStepOption<HomeStepAnswers["flightPreference"]>[] =
-  flightToleranceOptions.map((option) => ({
-    ...option,
-    label:
-      option.value === "short"
-        ? "가까운 곳 위주"
-        : option.value === "medium"
-          ? "중거리까지 괜찮아요"
-          : "멀어도 괜찮아요",
-    description:
-      option.value === "short"
-        ? "비행 피로가 적고 바로 움직일 수 있는 곳부터 볼게요."
-        : option.value === "medium"
-          ? "선택지는 넓히되 너무 긴 비행은 피하고 싶어요."
-          : "비행 시간이 길어도 여행 만족도가 높다면 괜찮아요.",
-  }));
+  [
+    ...flightToleranceOptions.map((option) => ({
+      ...option,
+      label:
+        option.value === "short"
+          ? "가까운 곳 위주"
+          : option.value === "medium"
+            ? "중거리까지 괜찮아요"
+            : "장거리도 괜찮아요",
+      description:
+        option.value === "short"
+          ? "비행 피로가 적고 바로 움직일 수 있는 곳부터 볼게요."
+          : option.value === "medium"
+            ? "선택지는 넓히되 너무 긴 비행은 피하고 싶어요."
+            : "비행 시간이 길어도 여행 만족도가 높다면 괜찮아요.",
+    })),
+    {
+      value: "anywhere",
+      label: "어디든 괜찮아요",
+      description: "이동 거리는 크게 신경 쓰지 않고 맞는 여행지부터 보고 싶어요.",
+    },
+  ];
 
 export const homeStepTravelStyleOptions: HomeStepOption<HomeStepTravelStyle>[] = [
   {
@@ -336,7 +345,7 @@ export function deriveRecommendationQueryFromHomeStepAnswers(
     departureAirport: defaultRecommendationQuery.departureAirport,
     travelMonth: resolveTravelMonthFromHomeWindow(mergedAnswers.travelWindow),
     pace: derivePaceFromTravelStyles(travelStyles),
-    flightTolerance: mergedAnswers.flightPreference,
+    flightTolerance: mergedAnswers.flightPreference === "anywhere" ? "long" : mergedAnswers.flightPreference,
     vibes: deriveVibesFromTravelStyles(travelStyles),
     excludedCountryCodes: mergedAnswers.excludedCountryCodes.slice(0, 3),
     excludedDestinationIds: defaultRecommendationQuery.excludedDestinationIds ?? [],

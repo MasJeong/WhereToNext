@@ -82,13 +82,15 @@ export function StepQuestion({
 
           <ProgressBar current={current} total={total} testId={progressTestId} />
           <div className="min-w-[4rem] text-right">
-            <button
-              type="button"
-              onClick={onReset}
-              className="text-sm font-medium text-[var(--color-funnel-text-soft)] transition-colors duration-200 hover:text-[var(--color-funnel-text)]"
-            >
-              처음으로
-            </button>
+            {current >= 3 ? (
+              <button
+                type="button"
+                onClick={onReset}
+                className="text-sm font-medium text-[var(--color-funnel-text-soft)] transition-colors duration-200 hover:text-[var(--color-funnel-text)]"
+              >
+                처음으로
+              </button>
+            ) : null}
           </div>
         </div>
 

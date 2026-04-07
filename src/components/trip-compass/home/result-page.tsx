@@ -140,11 +140,8 @@ export function ResultPage({
 
         {leadSupportSlot ? (
           <section className="space-y-3 rounded-[1.3rem] border border-[color:var(--color-funnel-border)] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)] sm:p-5">
-            <p className="text-[0.95rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
-              대표 영상으로 분위기 확인
-            </p>
-            <p className="text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-              영상으로 분위기를 먼저 확인해 보세요
+            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+              대표 영상
             </p>
             {leadSupportSlot}
           </section>
@@ -160,14 +157,9 @@ export function ResultPage({
                   준비 중
                 </span>
               </div>
-              <div className="space-y-2">
-                <p className="text-[1rem] font-semibold tracking-[-0.03em] text-[var(--color-funnel-text)]">
-                  관련 영상을 붙이는 중입니다
-                </p>
-                <p className="max-w-xl text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-                  결과는 먼저 보여드리고, 영상은 뒤에서 조용히 이어 붙입니다.
-                </p>
-              </div>
+              <p className="text-sm font-semibold text-[var(--color-funnel-text)]">
+                영상을 불러오고 있어요
+              </p>
               <div className="grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_11rem]">
                 <div className="space-y-2 rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3">
                   <div className="h-3 w-24 rounded-full bg-white" />

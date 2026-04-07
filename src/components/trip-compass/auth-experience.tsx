@@ -46,28 +46,28 @@ function normalizeIntent(value: string | null): AuthIntent {
 function buildAuthHeading(intent: AuthIntent): { title: string; intro: string } {
   if (intent === "save") {
     return {
-      title: "저장한 여행 흐름을 계정에 이어 둘까요?",
-      intro: "로그인하면 방금 고른 추천 결과를 내 기록에 남기고, 다음에도 같은 감각으로 다시 꺼내볼 수 있어요.",
+      title: "추천 결과를 저장할까요?",
+      intro: "로그인하면 저장한 여행을 언제든 다시 볼 수 있어요.",
     };
   }
 
   if (intent === "share") {
     return {
-      title: "공유할 여행 카드를 이어서 만들어요",
-      intro: "로그인하면 저장한 카드와 공유 흐름을 한 계정에서 차분하게 이어갈 수 있어요.",
+      title: "여행 카드를 공유하려면",
+      intro: "로그인 후 공유 링크를 만들 수 있어요.",
     };
   }
 
   if (intent === "account") {
     return {
-      title: "내 여행 기록을 이어 보려면 로그인이 필요해요",
-      intro: "로그인하면 저장한 추천 결과와 취향 기록을 한곳에서 이어볼 수 있어요.",
+      title: "내 여행 기록 보기",
+      intro: "로그인하면 저장한 추천과 취향 기록을 볼 수 있어요.",
     };
   }
 
   return {
-    title: "여행 기록을 가볍게 이어 두는 로그인",
-    intro: "로그인하면 저장과 공유, 내 기록을 한 계정에서 이어갈 수 있어요. 추천은 로그인 없이도 받을 수 있어요.",
+    title: "로그인하고 여행 기록 이어가기",
+    intro: "저장, 공유, 취향 기록을 한곳에서 관리할 수 있어요.",
   };
 }
 

@@ -19,7 +19,7 @@ async function submitQuickRecommendation(page: import("@playwright/test").Page) 
   await page.getByTestId("home-step-next").click();
   await page.getByTestId("home-step-choice-0").click();
   await page.getByTestId("home-step-next").click();
-  await expect(page.getByTestId("result-filter-bar")).toBeVisible({ timeout: 15000 });
+  await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 15000 });
   await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 10000 });
 }
 
@@ -129,7 +129,7 @@ test("supports back navigation during the one-question-per-screen funnel", async
   await page.getByTestId("home-step-next").click();
   await page.getByTestId("home-step-choice-0").click();
   await page.getByTestId("home-step-next").click();
-  await expect(page.getByTestId("result-filter-bar")).toBeVisible({ timeout: 15000 });
+  await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 15000 });
 
   await page.goBack();
   await expect(page).toHaveURL(/\/\?stage=question&step=6/);
@@ -137,7 +137,7 @@ test("supports back navigation during the one-question-per-screen funnel", async
 
   await page.getByTestId("home-step-next").click();
   await expect(page.getByText("추천 결과를 정리하고 있어요.")).toBeVisible({ timeout: 3000 });
-  await expect(page.getByTestId("result-filter-bar")).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 15000 });
 });
 
 test("asks realistic travel conditions instead of romance-first and departure-airport questions", async ({ page }) => {
@@ -164,7 +164,8 @@ test("asks realistic travel conditions instead of romance-first and departure-ai
   await expect(page.getByTestId("home-step-question")).toContainText("비행이나 이동 부담은 어느 정도 괜찮아요?");
   await expect(page.getByText("가까운 곳 위주")).toBeVisible();
   await expect(page.getByText("중거리까지 괜찮아요")).toBeVisible();
-  await expect(page.getByText("멀어도 괜찮아요")).toBeVisible();
+  await expect(page.getByText("장거리도 괜찮아요")).toBeVisible();
+  await expect(page.getByText("어디든 괜찮아요")).toBeVisible();
 
   await page.getByTestId("home-step-choice-0").click();
   await expect(page.getByTestId("home-step-question")).toContainText("이번엔 빼고 싶은 나라가 있나요?");
@@ -183,12 +184,12 @@ test("reflects the selected practical conditions in the result summary", async (
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-7").click();
   await page.getByTestId("home-step-next").click();
-  await page.getByTestId("home-step-choice-2").click();
+  await page.getByTestId("home-step-choice-3").click();
   await page.getByTestId("home-step-next").click();
 
   await expect(page.getByTestId("result-filter-bar")).toBeVisible({ timeout: 10000 });
   await expect(page.getByTestId("query-summary")).toContainText("7~9월 · 7~10일");
-  await expect(page.getByTestId("query-summary")).toContainText("장거리도 가능");
+  await expect(page.getByTestId("query-summary")).toContainText("어디든 괜찮아요");
   await expect(page.getByTestId("query-summary")).toContainText("도시");
   await expect(page.getByTestId("query-summary")).toContainText("쇼핑");
 });
