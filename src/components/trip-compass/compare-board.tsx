@@ -87,7 +87,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
         <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
           <div>
             <p className="compass-editorial-kicker">비교 화면</p>
-            <h3 className="mt-1.5 font-display text-[1.08rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.24rem]">
+            <h3 className="mt-1.5 text-[1.04rem] font-semibold leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.16rem]">
               차이만 빠르게 보고 마지막 후보를 좁혀 보세요.
             </h3>
             <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
@@ -129,10 +129,10 @@ export function CompareBoard({ columns }: CompareBoardProps) {
             <article
               key={column.snapshotId}
               data-testid={getCompareColumnTestId(index)}
-              className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-3.5 py-3.5"
+              className="compass-desk rounded-[calc(var(--radius-card)-10px)] px-3.5 py-3.5"
             >
               <p className="compass-editorial-kicker">후보 {index + 1}</p>
-              <p className="mt-1.5 font-display text-[0.98rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
+              <p className="mt-1.5 text-[1rem] font-semibold leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
                 {column.card.destination.nameKo}
               </p>
               <p className="mt-1 text-sm font-semibold leading-5 text-[var(--color-ink)]">
@@ -203,7 +203,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
             <div key={`mobile-header-${column.snapshotId}`} className="compass-compare-column px-3 py-3">
               <div className="compass-compare-header-block">
                 <p className="compass-editorial-kicker">보드 후보</p>
-                <p className="font-display text-[0.98rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
+                <p className="text-[0.98rem] font-semibold leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
                   {column.card.destination.nameKo}
                 </p>
                 <p className="text-xs text-[var(--color-ink-soft)]">
@@ -246,7 +246,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
             <div key={`desktop-header-${column.snapshotId}`} className="compass-compare-column px-4 py-3.5">
               <div className="compass-compare-header-block">
                 <p className="compass-editorial-kicker">보드 후보 {index + 1}</p>
-                <p className="font-display text-[1.06rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
+                <p className="text-[1.02rem] font-semibold leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
                   {column.card.destination.nameKo}
                 </p>
                 <p className="text-xs text-[var(--color-ink-soft)]">

@@ -339,5 +339,6 @@ export function deriveRecommendationQueryFromHomeStepAnswers(
     flightTolerance: mergedAnswers.flightPreference,
     vibes: deriveVibesFromTravelStyles(travelStyles),
     excludedCountryCodes: mergedAnswers.excludedCountryCodes.slice(0, 3),
+    excludedDestinationIds: defaultRecommendationQuery.excludedDestinationIds ?? [],
   };
 }

@@ -41,7 +41,7 @@ describe("GET /api/recommendations", () => {
 
   it("returns ranked results for a valid query", async () => {
     const request = new Request(
-      `${TEST_BASE_URL}/api/recommendations?partyType=couple&partySize=2&budgetBand=mid&tripLengthDays=5&departureAirport=ICN&travelMonth=10&pace=balanced&flightTolerance=medium&vibes=romance,food&excludedCountryCodes=CN,HK`,
+      `${TEST_BASE_URL}/api/recommendations?partyType=couple&partySize=2&budgetBand=mid&tripLengthDays=5&departureAirport=ICN&travelMonth=10&pace=balanced&flightTolerance=medium&vibes=romance,food&excludedCountryCodes=CN,HK&excludedDestinationIds=tokyo,osaka`,
     );
 
     const response = await GET(request);
@@ -54,6 +54,8 @@ describe("GET /api/recommendations", () => {
     expect(data.leadSupplement?.location?.countryCode).toBeTruthy();
     expect(data.leadSupplement?.travelMonthWeather?.travelMonth).toBe(10);
     expect(data.query.excludedCountryCodes).toEqual(["CN", "HK"]);
+    expect(data.query.excludedDestinationIds).toEqual(["tokyo", "osaka"]);
+    expect(data.recommendations.some((item: { destinationId: string }) => item.destinationId === "tokyo")).toBe(false);
   });
 
   it("rejects invalid queries with a stable code", async () => {

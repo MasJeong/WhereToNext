@@ -10,6 +10,7 @@ import type {
   UserFutureTrip,
 } from "@/lib/domain/contracts";
 import {
+  buildDestinationDetailPath,
   buildQueryNarrative,
   buildRecommendationDecisionFacts,
   buildRecommendationSearchParams,
@@ -69,6 +70,7 @@ import { ResultPage } from "./home/result-page";
 import { StepQuestion } from "./home/step-question";
 import { CompactSocialVideoPanel, LeadSocialVideoPanel } from "./social-video-panel";
 import { TravelSupportPanel } from "./travel-support-panel";
+import { RecommendationActionsPanel } from "./recommendation-actions-panel";
 
 type FunnelStage = "landing" | "question" | "loading" | "result";
 
@@ -129,6 +131,29 @@ type HomeFlowStep = {
     onRemove: () => void;
   }>;
 };
+
+/**
+ * 결과 화면에서 다시 추천할 때 현재 본 목적지를 제외한 다음 질의를 만든다.
+ * @param query 현재 추천 질의
+ * @param currentCards 현재 결과 화면에 노출된 카드 목록
+ * @returns 이미 본 목적지를 제외한 다음 추천 질의
+ */
+function buildRetryQueryWithoutSeenDestinations(
+  query: RecommendationQuery,
+  currentCards: RecommendationCardView[],
+): RecommendationQuery {
+  const excludedDestinationIds = Array.from(
+    new Set([
+      ...(query.excludedDestinationIds ?? []),
+      ...currentCards.map((card) => card.destination.id),
+    ]),
+  ).slice(0, 20);
+
+  return {
+    ...query,
+    excludedDestinationIds,
+  };
+}
 
 type SavedSnapshotCompactItemProps = {
   snapshot: SavedSnapshotCard;
@@ -499,7 +524,7 @@ function SavedSnapshotCompactItem({
             href="/account?tab=saved"
             className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em]"
           >
-            계정에서 보기
+            저장 목록에서 보기
           </Link>
         )}
         <button
@@ -526,6 +551,7 @@ function CompactRecommendationItem({
   const leadReason = card.recommendation.reasons[0] ?? card.recommendation.whyThisFits;
   const decisionFacts = buildRecommendationDecisionFacts(card.destination);
   const tags = card.destination.vibeTags.slice(0, 3).map((tag) => formatResultVibeLabel(tag));
+  const detailPath = buildDestinationDetailPath(card.destination, query);
   const accountSavedPath = "/account?tab=saved";
 
   return (
@@ -571,6 +597,24 @@ function CompactRecommendationItem({
             ))}
           </div>
 
+          <div className="mt-2.5">
+            <RecommendationActionsPanel
+              variant="compact"
+              rootTestId={index === 1 ? testIds.result.actionCompact0 : undefined}
+              destinationId={card.destination.id}
+              destinationName={card.destination.nameKo}
+              destinationSummary={card.destination.summary}
+              leadReason={leadReason}
+              whyThisFits={card.recommendation.whyThisFits}
+              watchOuts={card.recommendation.watchOuts.slice(0, 2)}
+              query={query}
+              evidence={card.recommendation.trendEvidence.slice(0, 2).map((item) => ({
+                sourceLabel: item.sourceLabel,
+                summary: item.summary,
+              }))}
+            />
+          </div>
+
           <CompactSocialVideoPanel
             destinationId={card.destination.id}
             destinationName={card.destination.nameKo}
@@ -580,6 +624,12 @@ function CompactRecommendationItem({
         </div>
 
         <div className="flex flex-wrap gap-2 sm:justify-end">
+          <Link
+            href={detailPath}
+            className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+          >
+            상세 보기
+          </Link>
           {hideAccountActions ? null : saveState.status === "saved" ? (
             <Link
               href={accountSavedPath}
@@ -731,6 +781,10 @@ export function HomeExperience() {
 
   const leadCard = filteredCards[0] ?? cards[0] ?? null;
   const secondaryCards = showAllResults ? filteredCards.slice(1) : filteredCards.slice(1, 4);
+  const retryQuery = useMemo(
+    () => buildRetryQueryWithoutSeenDestinations(resultQuery, cards),
+    [cards, resultQuery],
+  );
   const canCreateCompare = selectedCompareIds.length >= 2 && selectedCompareIds.length <= 4;
   const compareTrayDestinations = useMemo(() => {
     const selectedSnapshots = savedSnapshots.filter((snapshot) => selectedCompareIds.includes(snapshot.snapshotId));
@@ -1817,7 +1871,7 @@ export function HomeExperience() {
         leadReason={leadCard?.recommendation.reasons[0] ?? "결과가 나오면 가장 먼저 볼 목적지를 짧게 정리해 드릴게요."}
         leadDescription={leadCard ? leadCard.recommendation.whyThisFits : queryNarrative}
         leadTags={[]}
-        leadFacts={leadCard ? buildRecommendationDecisionFacts(leadCard.destination).filter((f) => f.id === "best-months") : []}
+        leadFacts={[]}
         leadSupportSlot={
           leadCard ? (
             <LeadSocialVideoPanel
@@ -1838,6 +1892,12 @@ export function HomeExperience() {
                 <div className="space-y-3" data-testid={getInstagramVibeTestId(0)}>
                   {/* Primary action row */}
                   <div className="flex flex-wrap items-center gap-2">
+                    <Link
+                      href={buildDestinationDetailPath(leadCard.destination, resultQuery)}
+                      className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-5 py-2.5 text-[0.82rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+                    >
+                      상세 보기
+                    </Link>
                     {hideAccountActions ? null : saveState.status === "saved" ? (
                       <Link
                         href="/account?tab=saved"
@@ -1876,10 +1936,15 @@ export function HomeExperience() {
                   <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--color-funnel-text-soft)]">
                     <button
                       type="button"
-                      onClick={reopenQuestionFlow}
+                      onClick={() => {
+                        void requestRecommendations(retryQuery);
+                      }}
                       className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]"
                     >
                       다시 고르기
+                    </button>
+                    <button type="button" onClick={reopenQuestionFlow} className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]">
+                      질문 다시 고르기
                     </button>
                     <button type="button" onClick={resetFunnel} className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]">
                       처음부터
@@ -1922,6 +1987,32 @@ export function HomeExperience() {
               destinationName={leadCard.destination.nameKo}
               travelMonth={results?.query.travelMonth}
               layout="summary"
+              summaryFacts={buildRecommendationDecisionFacts(leadCard.destination)
+                .filter((fact) => fact.id === "best-months")
+                .map((fact) => ({
+                  label: fact.label,
+                  value: fact.value,
+                }))}
+            />
+          ) : null
+        }
+        leadActionsSlot={
+          leadCard ? (
+            <RecommendationActionsPanel
+              variant="summary"
+              rootTestId={testIds.result.actionPlan}
+              destinationId={leadCard.destination.id}
+              destinationName={leadCard.destination.nameKo}
+              destinationSummary={leadCard.destination.summary}
+              leadReason={leadCard.recommendation.reasons[0] ?? leadCard.recommendation.whyThisFits}
+              whyThisFits={leadCard.recommendation.whyThisFits}
+              watchOuts={leadCard.recommendation.watchOuts.slice(0, 2)}
+              query={resultQuery}
+              nearbyPlaces={results?.leadSupplement?.nearbyPlaces}
+              evidence={leadCard.recommendation.trendEvidence.slice(0, 2).map((item) => ({
+                sourceLabel: item.sourceLabel,
+                summary: item.summary,
+              }))}
             />
           ) : null
         }

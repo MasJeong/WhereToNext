@@ -114,6 +114,7 @@ export const defaultRecommendationQuery: RecommendationQuery = {
   flightTolerance: "medium",
   vibes: ["food"],
   excludedCountryCodes: [],
+  excludedDestinationIds: [],
 };
 
 export const partyOptions: QueryOption<RecommendationQuery["partyType"]>[] = [
@@ -365,6 +366,9 @@ export function buildRecommendationSearchParams(query: RecommendationQuery): URL
   params.set("vibes", query.vibes.join(","));
   if (query.excludedCountryCodes && query.excludedCountryCodes.length > 0) {
     params.set("excludedCountryCodes", query.excludedCountryCodes.join(","));
+  }
+  if (query.excludedDestinationIds && query.excludedDestinationIds.length > 0) {
+    params.set("excludedDestinationIds", query.excludedDestinationIds.join(","));
   }
   return params;
 }
@@ -1060,7 +1064,7 @@ export function formatFreshnessState(
     return "조금 지난 반응";
   }
 
-  return "아카이브 반응";
+  return "꾸준한 반응";
 }
 
 /**

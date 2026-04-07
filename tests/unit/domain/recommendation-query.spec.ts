@@ -48,6 +48,23 @@ describe("recommendationQuerySchema", () => {
     expect(parsed.excludedCountryCodes).toEqual(["CN", "HK", "MO"]);
   });
 
+  it("accepts excluded destination ids for rerolling results", () => {
+    const parsed = recommendationQuerySchema.parse({
+      partyType: "couple",
+      partySize: 2,
+      budgetBand: "mid",
+      tripLengthDays: 5,
+      departureAirport: "ICN",
+      travelMonth: 10,
+      pace: "balanced",
+      flightTolerance: "medium",
+      vibes: ["food"],
+      excludedDestinationIds: ["tokyo", "osaka", "sapporo"],
+    });
+
+    expect(parsed.excludedDestinationIds).toEqual(["tokyo", "osaka", "sapporo"]);
+  });
+
   it("rejects invalid ranges and too many vibes", () => {
     const result = recommendationQuerySchema.safeParse({
       partyType: "couple",

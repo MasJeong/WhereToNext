@@ -103,6 +103,7 @@ export const recommendationQuerySchema = z.object({
   flightTolerance: flightToleranceSchema,
   vibes: z.array(vibeSchema).min(1).max(3),
   excludedCountryCodes: z.array(z.string().length(2)).max(3).optional(),
+  excludedDestinationIds: z.array(z.string().min(1)).max(20).optional(),
 });
 
 export const trendEvidenceSnapshotSchema = z.object({
@@ -242,7 +243,7 @@ export const socialVideoFallbackSearchSchema = z.object({
 });
 
 export const socialVideoFallbackMetaSchema = z.object({
-  reason: z.enum(["api-disabled", "request-failed", "low-confidence", "no-candidates"]),
+  reason: z.enum(["api-disabled", "quota-exceeded", "request-failed", "low-confidence", "no-candidates"]),
   headline: z.string().min(1),
   description: z.string().min(1),
   searches: z.array(socialVideoFallbackSearchSchema).min(1).max(4),
@@ -267,6 +268,44 @@ export const socialVideoResponseSchema = z.discriminatedUnion("status", [
     fallback: socialVideoFallbackMetaSchema,
   }),
 ]);
+
+export const recommendationActionEvidenceSchema = z.object({
+  sourceLabel: z.string().min(1),
+  summary: z.string().min(1),
+});
+
+export const recommendationActionRequestSchema = z.object({
+  destinationId: z.string().min(1),
+  destinationName: z.string().min(1),
+  destinationSummary: z.string().min(1),
+  leadReason: z.string().min(1),
+  whyThisFits: z.string().min(1),
+  watchOuts: z.array(z.string().min(1)).max(3),
+  query: recommendationQuerySchema,
+  nearbyPlaces: z.array(destinationNearbyPlaceSchema).max(5).optional(),
+  evidence: z.array(recommendationActionEvidenceSchema).max(3).optional(),
+});
+
+export const recommendationActionItemSchema = z.object({
+  id: z.enum(["signature", "tailored", "easy-start"]),
+  label: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  placeLabel: z.string().min(1).optional(),
+});
+
+export const recommendationActionDetailBlockSchema = z.object({
+  id: z.enum(["signature", "half-day", "check-point"]),
+  title: z.string().min(1),
+  body: z.string().min(1),
+});
+
+export const recommendationActionsResponseSchema = z.object({
+  status: z.enum(["ok", "fallback"]),
+  actions: z.array(recommendationActionItemSchema).min(1).max(3),
+  compactSummary: z.string().min(1),
+  detailBlocks: z.array(recommendationActionDetailBlockSchema).min(1).max(3),
+});
 
 export const recommendationSnapshotMetaSchema = z.object({
   status: snapshotStatusSchema.default("saved"),
@@ -457,6 +496,11 @@ export type SocialVideoLeadEvidence = z.infer<typeof socialVideoLeadEvidenceSche
 export type SocialVideoRequest = z.infer<typeof socialVideoRequestSchema>;
 export type SocialVideoItem = z.infer<typeof socialVideoItemSchema>;
 export type SocialVideoResponse = z.infer<typeof socialVideoResponseSchema>;
+export type RecommendationActionEvidence = z.infer<typeof recommendationActionEvidenceSchema>;
+export type RecommendationActionRequest = z.infer<typeof recommendationActionRequestSchema>;
+export type RecommendationActionItem = z.infer<typeof recommendationActionItemSchema>;
+export type RecommendationActionDetailBlock = z.infer<typeof recommendationActionDetailBlockSchema>;
+export type RecommendationActionsResponse = z.infer<typeof recommendationActionsResponseSchema>;
 export type RecommendationSnapshot = z.infer<typeof recommendationSnapshotSchema>;
 export type ComparisonSnapshot = z.infer<typeof comparisonSnapshotSchema>;
 export type ScoringVersion = z.infer<typeof scoringVersionSchema>;

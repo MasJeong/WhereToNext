@@ -40,6 +40,7 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
       flightTolerance: "short",
       vibes: ["city", "shopping", "food"],
       excludedCountryCodes: [],
+      excludedDestinationIds: [],
     });
   });
 
@@ -61,6 +62,7 @@ describe("deriveRecommendationQueryFromHomeStepAnswers", () => {
       flightTolerance: "medium",
       vibes: ["nature"],
       excludedCountryCodes: [],
+      excludedDestinationIds: [],
     });
   });
 
