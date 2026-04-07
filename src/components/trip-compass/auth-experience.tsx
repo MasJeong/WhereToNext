@@ -193,9 +193,10 @@ export function AuthExperience() {
           <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
             <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,_rgb(74_180_255_/_0.18),_transparent_68%)]" />
             <div className="relative h-18 w-18 rounded-[1.6rem] bg-[linear-gradient(180deg,rgb(86_187_255),rgb(30_136_229))] shadow-[0_16px_34px_rgb(30_136_229_/_0.16)]">
-              <span className="absolute left-1/2 top-3.5 h-7 w-7 -translate-x-1/2 rounded-full border-[3px] border-white" />
-              <span className="absolute left-1/2 top-7 h-8 w-[3px] -translate-x-1/2 rounded-full bg-white" />
-              <span className="absolute left-1/2 top-4 h-9 w-[3px] -translate-x-1/2 rotate-45 rounded-full bg-white" />
+              <span className="absolute left-1/2 top-[0.58rem] h-[2.55rem] w-[2.55rem] -translate-x-1/2 rounded-full border-[3px] border-white" />
+              <span className="absolute left-1/2 top-[2.15rem] h-[1.9rem] w-[1.9rem] -translate-x-1/2 rotate-45 rounded-[0.62rem] border-b-[3px] border-r-[3px] border-white" />
+              <span className="absolute left-[1.8rem] top-[1.5rem] h-[0.32rem] w-[1.2rem] rounded-full bg-white/95" />
+              <span className="absolute left-[2.48rem] top-[1.48rem] h-[0.42rem] w-[0.42rem] rounded-full bg-[rgb(255_212_72)] shadow-[0_0_0_4px_rgb(255_212_72_/_0.16)]" />
             </div>
           </div>
 
