@@ -19,13 +19,9 @@ import type {
 } from "@/lib/domain/contracts";
 import { buildApiUrl } from "@/lib/runtime/url";
 import {
-  buildDestinationDetailPath,
-  buildRecommendationDecisionFacts,
   buildRecommendationSceneCopy,
-  describeSourceBadge,
   formatDestinationWithCountry,
   formatDepartureAirport,
-  formatFreshnessState,
   formatTravelMonth,
   formatTripLengthBand,
   formatVibeList,
@@ -65,44 +61,14 @@ function buildFallbackReasonList(destination: DestinationProfile): string[] {
 
 function buildCompactContextLine(query?: RecommendationQuery | null): string {
   if (!query) {
-    return "핵심 정보만 빠르게 보고 결정해 보세요.";
+    return "이 도시가 어떤 곳인지 한눈에 볼 수 있어요.";
   }
 
   return `${formatDepartureAirport(query.departureAirport)} · ${formatTravelMonth(query.travelMonth)} · ${formatTripLengthBand(query.tripLengthDays)}`;
 }
 
-function resolveSharePath(detailPath: string, saveState: SaveState, snapshotId?: string | null): string {
-  return saveState.sharePath ?? (snapshotId ? `/s/${snapshotId}` : detailPath);
-}
-
-function buildDecisionBadgeItems(query?: RecommendationQuery | null): string[] {
-  if (!query) {
-    return [];
-  }
-
-  return [
-    `${formatDepartureAirport(query.departureAirport)} 출발`,
-    `${formatTravelMonth(query.travelMonth)} · ${formatTripLengthBand(query.tripLengthDays)}`,
-    query.partyType === "solo"
-      ? "혼자 떠나는 여행"
-      : query.partyType === "friends"
-        ? `${query.partySize}명 우정 여행`
-        : query.partyType === "family"
-          ? `${query.partySize}명 가족 여행`
-          : `${query.partySize}명 함께 가는 여행`,
-  ];
-}
-
 function isInstagramSource(sourceUrl: string): boolean {
   return sourceUrl.includes("instagram.com");
-}
-
-function buildSourceActionLabel(sourceLabel: string, sourceUrl: string): string {
-  if (isInstagramSource(sourceUrl)) {
-    return `${sourceLabel}에서 보기`;
-  }
-
-  return "바로 보기";
 }
 
 function InstagramSourceIcon() {
@@ -148,15 +114,11 @@ export function DestinationDetailExperience({
 
   const canSave = Boolean(allowSave && card && query && scoringVersionId);
   const sceneCopy = card ? buildRecommendationSceneCopy(card, query ?? undefined) : null;
-  const decisionFacts = buildRecommendationDecisionFacts(destination);
   const reasons = card?.recommendation.reasons.slice(0, 2) ?? buildFallbackReasonList(destination);
   const watchOuts = (card?.recommendation.watchOuts.length ? card.recommendation.watchOuts : destination.watchOuts).slice(0, 2);
   const evidenceItems = (card?.recommendation.trendEvidence.length ? card.recommendation.trendEvidence : evidence).slice(0, 2);
-  const detailPath = buildDestinationDetailPath(destination, query ?? undefined, snapshotId ?? undefined);
-  const sharePath = resolveSharePath(detailPath, saveState, snapshotId);
   const flightAffiliateLink = resolveDestinationFlightAffiliateLink(destination, query);
   const compactContextLine = buildCompactContextLine(query);
-  const decisionBadges = buildDecisionBadgeItems(query);
   const headlineCopy = sceneCopy?.headline ?? destination.summary;
   const hasSavedViewLink = Boolean(saveState.sharePath ?? snapshotId);
 
@@ -258,55 +220,18 @@ export function DestinationDetailExperience({
               </div>
             </div>
 
-            {decisionBadges.length > 0 ? (
-              <article className="rounded-[1.1rem] border border-[color:var(--color-frame-soft)] bg-white/84 px-4 py-3.5 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
-                <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-soft)]">
-                  이번 결정 기준
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {decisionBadges.map((badge) => (
-                    <span
-                      key={badge}
-                      className="rounded-full border border-[color:var(--color-frame-soft)] bg-[var(--color-surface-muted)] px-3 py-1.5 text-[0.72rem] font-semibold text-[var(--color-ink)]"
-                    >
-                      {badge}
-                    </span>
-                  ))}
-                </div>
-              </article>
-            ) : null}
-
-            <div data-testid={testIds.detail.coreFacts} className="grid gap-2.5 sm:grid-cols-3">
-              {decisionFacts.map((fact) => (
-                <article
-                  key={fact.id}
-                  className="rounded-[1.1rem] border border-[color:var(--color-frame-soft)] bg-white/88 px-4 py-4 shadow-[0_12px_28px_rgba(15,23,42,0.05)]"
-                >
-                  <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">{fact.label}</p>
-                  <p className="mt-2 text-[0.96rem] font-semibold leading-6 tracking-[-0.02em] text-[var(--color-ink)]">
-                    {fact.value}
-                  </p>
-                </article>
-              ))}
-            </div>
-
-            <article className="rounded-[1.15rem] border border-[color:var(--color-frame-soft)] bg-white/86 px-4 py-4 shadow-[0_14px_32px_rgba(15,23,42,0.04)]">
+            <article className="rounded-[1.15rem] border border-[color:var(--color-frame-soft)] bg-white/90 px-4 py-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
               <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-soft)]">
-                추천 이유
+                이 도시를 추천한 이유
               </p>
-              <div className="mt-3 grid gap-2">
-                {reasons.map((reason, index) => (
-                  <article
-                    key={reason}
-                    className="rounded-[0.95rem] border border-[color:var(--color-frame-soft)] bg-[var(--color-surface-muted)] px-3.5 py-3"
-                  >
-                    <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
-                      포인트 {String(index + 1).padStart(2, "0")}
-                    </p>
-                    <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink)]">{reason}</p>
-                  </article>
+              <ul className="mt-3 space-y-2">
+                {reasons.map((reason) => (
+                  <li key={reason} className="flex gap-2.5 text-sm leading-6 text-[var(--color-ink)]">
+                    <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[var(--color-action-primary)]" />
+                    {reason}
+                  </li>
                 ))}
-              </div>
+              </ul>
             </article>
           </div>
 
@@ -323,14 +248,14 @@ export function DestinationDetailExperience({
                   />
                   <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(15,23,42,0.04)_0%,rgba(15,23,42,0.16)_100%)]" />
                   <div className="absolute inset-x-0 bottom-0 p-4 text-white">
-                    <p className="text-sm font-semibold leading-6">{destination.nameKo}의 분위기</p>
+                    <p className="text-sm font-semibold leading-6">{destination.nameKo}</p>
                   </div>
                 </div>
               ) : null}
 
               <article className="rounded-[1.2rem] border border-[color:var(--color-frame-soft)] bg-white/94 px-4 py-4 shadow-[0_18px_36px_rgba(15,23,42,0.06)]">
                 <p className="text-[1rem] font-semibold leading-7 tracking-[-0.02em] text-[var(--color-ink)]">
-                  담을지, 더 볼지 여기서 결정하세요
+                  마음에 드시나요?
                 </p>
 
                 <div className="mt-4 flex flex-col gap-2">
@@ -371,7 +296,7 @@ export function DestinationDetailExperience({
                   className="mt-4 rounded-[1rem] border border-[color:var(--color-warning-border)] bg-[var(--color-warning-bg)] px-4 py-3.5"
                 >
                   <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-warning-text)]">
-                    체크할 점
+                    알아두면 좋아요
                   </p>
                   <div className="mt-2 grid gap-2">
                     {watchOuts.map((watchOut) => (
@@ -409,117 +334,72 @@ export function DestinationDetailExperience({
       ) : null}
 
       {showDetails ? (
-        <section className="grid gap-4 xl:grid-cols-[minmax(0,1.1fr)_minmax(19rem,0.78fr)]">
-          <div className="space-y-4">
-            {query ? (
-              <RecommendationActionsPanel
-                variant="detail"
-                rootTestId={testIds.detail.actionPlan}
-                destinationId={destination.id}
-                destinationName={destination.nameKo}
-                destinationSummary={destination.summary}
-                leadReason={reasons[0] ?? destination.summary}
-                whyThisFits={card?.recommendation.whyThisFits ?? destination.summary}
-                watchOuts={watchOuts}
-                query={query}
-                nearbyPlaces={supplement?.nearbyPlaces}
-                evidence={evidenceItems.map((item) => ({
-                  sourceLabel: item.sourceLabel,
-                  summary: item.summary,
-                }))}
-              />
-            ) : null}
+        <section className="space-y-4">
+          {query ? (
+            <RecommendationActionsPanel
+              variant="detail"
+              rootTestId={testIds.detail.actionPlan}
+              destinationId={destination.id}
+              destinationName={destination.nameKo}
+              destinationSummary={destination.summary}
+              leadReason={reasons[0] ?? destination.summary}
+              whyThisFits={card?.recommendation.whyThisFits ?? destination.summary}
+              watchOuts={watchOuts}
+              query={query}
+              nearbyPlaces={supplement?.nearbyPlaces}
+              evidence={evidenceItems.map((item) => ({
+                sourceLabel: item.sourceLabel,
+                summary: item.summary,
+              }))}
+            />
+          ) : null}
 
-            <article
-              data-testid={testIds.detail.fitReason}
-              className="rounded-[var(--radius-card)] border border-[color:var(--color-frame-soft)] bg-white px-4 py-4 shadow-[0_14px_32px_rgba(15,23,42,0.05)] sm:px-5 sm:py-5"
-            >
-              <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
-                <p className="compass-editorial-kicker">왜 잘 맞는지</p>
-              </div>
-
-              <div className="mt-4 grid gap-2.5">
-                {reasons.map((reason, index) => (
-                  <article
-                    key={reason}
-                    className="rounded-[1rem] border border-[color:var(--color-frame-soft)] bg-[var(--color-surface-muted)] px-4 py-3.5"
-                  >
-                    <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">
-                      이유 {String(index + 1).padStart(2, "0")}
-                    </p>
-                    <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink)]">{reason}</p>
-                  </article>
-                ))}
-              </div>
-            </article>
-
+          {evidenceItems.length > 0 ? (
             <article
               data-testid={evidenceTestId ?? testIds.detail.evidence}
-              className="rounded-[var(--radius-card)] border border-[color:var(--color-frame-soft)] bg-white px-4 py-4 shadow-[0_14px_32px_rgba(15,23,42,0.05)] sm:px-5 sm:py-5"
+              className="rounded-[1.3rem] border border-[color:var(--color-frame-soft)] bg-white px-4 py-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)] sm:px-5 sm:py-5"
             >
-              <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
-                <p className="compass-editorial-kicker">실제 분위기</p>
-              </div>
-
-              <div className="mt-4 grid gap-3">
-                {evidenceItems.length > 0 ? (
-                  evidenceItems.map((item) => (
-                    <article
-                      key={item.id}
-                      className="rounded-[1rem] border border-[color:var(--color-frame-soft)] bg-[var(--color-surface-muted)] px-4 py-3.5"
-                    >
-                      <div className="flex flex-wrap items-center gap-2">
-                        <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-                          {describeSourceBadge(item)}
-                        </span>
-                        <span className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-soft)]">
-                          {formatFreshnessState(item.freshnessState)}
-                        </span>
-                      </div>
-                      <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">{item.sourceLabel}</p>
-                      <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">{item.summary}</p>
-                      <a
-                        href={item.sourceUrl}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="mt-3 inline-flex items-center gap-2 rounded-full border border-[color:var(--color-frame-soft)] bg-white px-3 py-2 text-[0.76rem] font-semibold tracking-[0.01em] text-[var(--color-ink)] transition-colors hover:border-[var(--color-action-primary-soft)] hover:bg-[var(--color-action-primary-surface)]"
-                      >
+              <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-ink-soft)]">
+                실제 분위기
+              </p>
+              <ul className="mt-3 space-y-3">
+                {evidenceItems.map((item) => (
+                  <li
+                    key={item.id}
+                    className="rounded-[1rem] border border-[color:var(--color-frame-soft)] bg-[var(--color-surface-muted)] px-4 py-3.5"
+                  >
+                    <div className="flex items-start gap-3">
+                      <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-frame-soft)] bg-white text-[var(--color-ink-soft)]">
                         {isInstagramSource(item.sourceUrl) ? <InstagramSourceIcon /> : <ExternalLinkIcon />}
-                        {buildSourceActionLabel(item.sourceLabel, item.sourceUrl)}
-                      </a>
-                    </article>
-                  ))
-                ) : (
-                  <p className="text-sm leading-6 text-[var(--color-ink-soft)]">
-                    지금은 참고할 만한 내용이 많지 않아요.
-                  </p>
-                )}
-              </div>
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm font-semibold text-[var(--color-ink)]">{item.sourceLabel}</p>
+                        <p className="mt-1 text-sm leading-6 text-[var(--color-ink-soft)]">{item.summary}</p>
+                        <a
+                          href={item.sourceUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="mt-2 inline-flex items-center gap-1.5 text-[0.78rem] font-semibold text-[var(--color-action-primary)] hover:underline"
+                        >
+                          {isInstagramSource(item.sourceUrl) ? (
+                            <>
+                              <InstagramSourceIcon />
+                              인스타그램에서 보기
+                            </>
+                          ) : (
+                            <>
+                              <ExternalLinkIcon />
+                              자세히 보기
+                            </>
+                          )}
+                        </a>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             </article>
-          </div>
-
-          <aside className="space-y-4 xl:sticky xl:top-24 xl:self-start">
-            <article className="rounded-[var(--radius-card)] border border-[color:var(--color-frame-soft)] bg-white px-4 py-4 shadow-[0_14px_32px_rgba(15,23,42,0.05)] sm:px-5 sm:py-5">
-              <div className="border-b border-[color:var(--color-frame-soft)] pb-3">
-                <p className="compass-editorial-kicker">다음 단계</p>
-              </div>
-
-              <div className="mt-4 grid gap-2">
-                <Link
-                  href="/"
-                  className="compass-action-secondary compass-soft-press inline-flex min-h-[3rem] items-center justify-center rounded-[1rem] px-4 py-3 text-sm font-semibold tracking-[0.02em]"
-                >
-                  홈으로 돌아가기
-                </Link>
-                <Link
-                  href={sharePath}
-                  className="compass-action-secondary compass-soft-press inline-flex min-h-[3rem] items-center justify-center rounded-[1rem] px-4 py-3 text-sm font-semibold tracking-[0.02em]"
-                >
-                  링크 열기
-                </Link>
-              </div>
-            </article>
-          </aside>
+          ) : null}
         </section>
       ) : null}
     </div>

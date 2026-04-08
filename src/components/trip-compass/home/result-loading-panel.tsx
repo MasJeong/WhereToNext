@@ -10,8 +10,8 @@ type ResultLoadingPanelProps = {
 };
 
 const loadingStages = [
-  { label: "조건 정리" },
-  { label: "후보 비교" },
+  { label: "취향 파악" },
+  { label: "여행지 검색" },
   { label: "추천 완성" },
 ] as const;
 
@@ -42,25 +42,21 @@ export function ResultLoadingPanel({ queryNarrative }: ResultLoadingPanelProps) 
       {/* Main loading card — single column, centered */}
       <div className="overflow-hidden rounded-[1.75rem] border border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#ffffff_0%,#f6fbff_100%)] px-6 py-8 shadow-[var(--shadow-funnel-soft)] sm:px-10 sm:py-10">
         <div className="flex flex-col items-center text-center">
-          {/* Animated loading icon */}
+          {/* Animated compass icon */}
           <motion.div
-            className="relative flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-[1.4rem] bg-[linear-gradient(145deg,#1e88e5_0%,#42a5f5_100%)] shadow-[0_10px_28px_rgba(30,136,229,0.22)]"
+            className="relative flex h-[4.5rem] w-[4.5rem] items-center justify-center rounded-full bg-[linear-gradient(145deg,#1e88e5_0%,#42a5f5_100%)] shadow-[0_10px_28px_rgba(30,136,229,0.22)]"
             animate={prefersReducedMotion ? {} : { scale: [1, 1.05, 1] }}
             transition={{ duration: 2.4, repeat: Infinity, ease: "easeInOut" }}
           >
-            <svg viewBox="0 0 36 36" fill="none" className="h-9 w-9" aria-hidden="true">
-              {/* Compass ring */}
+            <svg
+              viewBox="0 0 36 36"
+              fill="none"
+              className={`h-9 w-9 ${prefersReducedMotion ? "" : "animate-[spin_4s_linear_infinite]"}`}
+              aria-hidden="true"
+            >
               <circle cx="18" cy="18" r="13" stroke="white" strokeWidth="2" opacity="0.35" />
-              {/* North needle */}
-              <motion.g
-                style={{ originX: "18px", originY: "18px" }}
-                animate={prefersReducedMotion ? {} : { rotate: [0, 360] }}
-                transition={{ duration: 4, repeat: Infinity, ease: "linear" }}
-              >
-                <path d="M18 7 L20.5 18 L18 16.5 L15.5 18 Z" fill="white" />
-                <path d="M18 29 L20.5 18 L18 19.5 L15.5 18 Z" fill="white" opacity="0.4" />
-              </motion.g>
-              {/* Center dot */}
+              <path d="M18 7 L20.5 18 L18 16.5 L15.5 18 Z" fill="white" />
+              <path d="M18 29 L20.5 18 L18 19.5 L15.5 18 Z" fill="white" opacity="0.4" />
               <circle cx="18" cy="18" r="2" fill="white" />
             </svg>
           </motion.div>
@@ -93,7 +89,7 @@ export function ResultLoadingPanel({ queryNarrative }: ResultLoadingPanelProps) 
                     ) : null}
                     <span
                       className={[
-                        "relative z-10 flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[0.72rem] font-semibold transition-all duration-500",
+                        "relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-full text-[0.88rem] font-semibold transition-all duration-500",
                         isDone
                           ? "bg-[var(--color-action-primary)] text-white shadow-[0_2px_8px_rgba(30,136,229,0.3)]"
                           : isActive
@@ -101,7 +97,11 @@ export function ResultLoadingPanel({ queryNarrative }: ResultLoadingPanelProps) 
                             : "border border-[var(--color-funnel-border)] bg-[var(--color-funnel-muted)] text-[var(--color-funnel-text-soft)]",
                       ].join(" ")}
                     >
-                      {isDone ? "✓" : `${index + 1}`}
+                      {isDone ? (
+                        <svg viewBox="0 0 20 20" fill="none" className="h-4.5 w-4.5" aria-hidden="true">
+                          <path d="M5.5 10.5 L8.5 13.5 L14.5 7" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      ) : `${index + 1}`}
                     </span>
                   </div>
                 );

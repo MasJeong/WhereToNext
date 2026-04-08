@@ -380,8 +380,8 @@ function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] 
       id: "trip-length",
       label: `여행 기간을 ${
         nextTripLength <= 3 ? "2~3일" : nextTripLength <= 6 ? "4~6일" : nextTripLength <= 10 ? "7~10일" : "11일 이상"
-      }으로 넓히기`,
-      description: "짧은 일정 제약을 풀어 후보 풀을 조금 더 넓혀요.",
+      }으로 변경하기`,
+      description: "더 많은 여행지를 확인할 수 있어요.",
       nextQuery: { ...query, tripLengthDays: nextTripLength },
     });
   }
@@ -389,8 +389,8 @@ function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] 
   if (nextFlightTolerance) {
     actions.push({
       id: "flight-tolerance",
-      label: `비행 범위를 ${nextFlightTolerance === "short" ? "단거리" : nextFlightTolerance === "medium" ? "중거리" : "장거리"}까지 넓히기`,
-      description: "거리 제한을 조금 풀어 더 넓은 후보를 확인해요.",
+      label: `비행 범위를 ${nextFlightTolerance === "short" ? "단거리" : nextFlightTolerance === "medium" ? "중거리" : "장거리"}까지 늘려보기`,
+      description: "더 먼 곳도 추천받아 볼 수 있어요.",
       nextQuery: { ...query, flightTolerance: nextFlightTolerance },
     });
   }
@@ -399,7 +399,7 @@ function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] 
     actions.push({
       id: "departure-airport",
       label: "출발 공항을 인천(ICN)으로 바꾸기",
-      description: "노선 선택지가 가장 넓은 기준으로 다시 볼게요.",
+      description: "더 많은 항공편을 고려해서 다시 추천해 드릴게요.",
       nextQuery: { ...query, departureAirport: "ICN" },
     });
   }
@@ -407,8 +407,8 @@ function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] 
   if (query.vibes.length > 1) {
     actions.push({
       id: "secondary-vibe",
-      label: "보조 분위기 조건 빼기",
-      description: "대표 분위기 하나로 먼저 넓게 받아봐요.",
+      label: "주요 분위기만 보기",
+      description: "가장 중요한 분위기 하나로 추천받아 봐요.",
       nextQuery: { ...query, vibes: [query.vibes[0]] },
     });
   }

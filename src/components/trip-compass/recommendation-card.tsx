@@ -140,7 +140,7 @@ export function RecommendationCard({
             href={detailPath}
             className="compass-action-primary compass-soft-press inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-stage-divider)] bg-white px-4 py-2 text-xs font-semibold tracking-[0.04em] text-[var(--color-ink)] transition-colors hover:bg-[var(--color-funnel-muted)]"
           >
-            상세 보기
+            이 도시 알아보기
           </Link>
           <button
             type="button"
@@ -185,7 +185,7 @@ export function RecommendationCard({
 
               <aside className="space-y-3">
                 <section className="compass-note rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-                  <p className="compass-editorial-kicker">결정 포인트</p>
+                  <p className="compass-editorial-kicker">여행 판단 포인트</p>
                   <div className="mt-3 grid gap-2.5">
                     {decisionFacts.map((fact) => (
                       <article key={fact.id} className="rounded-[calc(var(--radius-card)-14px)] border border-[color:var(--color-stage-divider)] bg-white/58 px-3 py-3">

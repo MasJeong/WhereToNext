@@ -106,7 +106,7 @@ function buildClientFallbackPayload(
       },
       {
         id: "check-point",
-        title: "체크할 포인트",
+        title: "알아두면 좋아요",
         body: watchOuts[0] ?? "동선을 넓히기보다 한 구역부터 천천히 보는 편이 좋아요.",
       },
     ],

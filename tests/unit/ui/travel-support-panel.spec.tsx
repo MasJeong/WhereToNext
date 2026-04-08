@@ -53,7 +53,7 @@ describe("TravelSupportPanel", () => {
       />,
     );
 
-    expect(screen.getByText("10월 여행 판단")).toBeInTheDocument();
+    expect(screen.getByText("10월 여행 날씨")).toBeInTheDocument();
     expect(screen.getByText("10월엔 조금 덥지만 움직이기 괜찮고 비 변수는 낮은 편이에요.")).toBeInTheDocument();
     expect(screen.getByText("선택한 시기 평균")).toBeInTheDocument();
     expect(screen.getByText("현재 참고")).toBeInTheDocument();

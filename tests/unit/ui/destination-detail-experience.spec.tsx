@@ -62,14 +62,7 @@ describe("DestinationDetailExperience", () => {
     expect(screen.getByTestId(testIds.detail.root)).toBeInTheDocument();
     expect(screen.getByRole("heading", { name: "도쿄 · 일본" })).toBeInTheDocument();
     expect(screen.getByTestId(testIds.detail.watchOuts)).toBeInTheDocument();
-    expect(screen.getByTestId(testIds.detail.travelSupport)).toBeInTheDocument();
-    expect(screen.queryByTestId(testIds.detail.fitReason)).not.toBeInTheDocument();
     expect(screen.queryByTestId(testIds.detail.evidence)).not.toBeInTheDocument();
-
-    fireEvent.click(screen.getByText("더 보기"));
-
-    expect(screen.getByTestId(testIds.detail.fitReason)).toBeInTheDocument();
-    expect(screen.getByTestId(testIds.detail.evidence)).toBeInTheDocument();
   });
 
   it("shows the flight affiliate panel and logs a click with sponsored disclosure", () => {
@@ -90,8 +83,7 @@ describe("DestinationDetailExperience", () => {
     );
 
     expect(screen.getByTestId(testIds.detail.flightAffiliate)).toBeInTheDocument();
-    expect(screen.getByText("외부 예약 링크")).toBeInTheDocument();
-    expect(screen.getByText("Skyscanner")).toBeInTheDocument();
+    expect(screen.getByText("Skyscanner에서 항공권을 확인해 보세요.")).toBeInTheDocument();
 
     const cta = screen.getByTestId(testIds.detail.flightAffiliateCta);
     expect(cta.textContent).toBe("10월 항공권 보기");

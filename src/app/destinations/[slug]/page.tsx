@@ -25,10 +25,10 @@ export default async function DestinationDetailPage({
 
   return (
     <ExperienceShell
-      eyebrow="목적지 결정"
-      title={`${pageData.destination.nameKo}를 지금 담을지 빠르게 정리해 보세요.`}
-      intro="결정에 필요한 정보는 먼저 위에 모아 두고, 더 읽을 이유와 여행 판단 정보는 아래에서 이어서 확인할 수 있게 정리했어요."
-      capsule="결정 우선 · 담기 · 근거 확인"
+      eyebrow={pageData.destination.nameKo}
+      title={`${pageData.destination.nameKo}, 어떤 곳인지 알아보세요.`}
+      intro=""
+      capsule=""
     >
       <DestinationDetailExperience
         destination={pageData.destination}

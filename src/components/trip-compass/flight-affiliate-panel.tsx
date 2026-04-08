@@ -96,12 +96,12 @@ export function FlightAffiliatePanel({
           </p>
         </div>
 
-        <span className="rounded-full border border-[color:var(--color-frame-strong)] bg-white/80 px-3 py-1 text-[0.66rem] font-semibold tracking-[0.02em] text-[var(--color-ink-soft)]">
-          {link.partnerLabel}
+        <span className="rounded-full bg-[var(--color-funnel-muted)] px-2 py-0.5 text-[0.62rem] font-semibold text-[var(--color-ink-soft)]">
+          광고
         </span>
       </div>
 
-      <div className="mt-4 space-y-2">
+      <div className="mt-4">
         <a
           data-testid={testIds.detail.flightAffiliateCta}
           href={link.url}
@@ -120,12 +120,6 @@ export function FlightAffiliatePanel({
         >
           {link.ctaLabel}
         </a>
-
-        <p className="text-[0.73rem] leading-5 text-[var(--color-ink-soft)]">
-          <span className="font-semibold text-[var(--color-ink)]">{link.disclosureLabel}</span>
-          {" · "}
-          {link.disclosureDetail}
-        </p>
       </div>
     </article>
   );

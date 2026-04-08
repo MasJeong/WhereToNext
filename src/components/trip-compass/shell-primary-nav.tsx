@@ -28,6 +28,10 @@ export function ShellPrimaryNav({ items }: ShellPrimaryNavProps) {
       return pathname.startsWith("/account");
     }
 
+    if (href === "/community") {
+      return pathname.startsWith("/community");
+    }
+
     if (href.startsWith("/?")) {
       return pathname === "/";
     }

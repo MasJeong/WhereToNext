@@ -15,29 +15,27 @@ type SnapshotRestoreViewProps = {
 function RestoreTrustPanel({
   destinationName,
   cardsCount,
-  scoringVersionId,
 }: {
   destinationName: string;
   cardsCount: number;
-  scoringVersionId: string;
 }) {
   return (
     <div className="compass-sheet rounded-[calc(var(--radius-card)-10px)] px-4 py-4 sm:px-5 sm:py-5">
-      <p className="compass-editorial-kicker">이 페이지가 하는 일</p>
+      <p className="compass-editorial-kicker">저장된 추천</p>
       <h2 className="mt-2 text-[1.02rem] font-semibold leading-snug tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.12rem]">
-        {destinationName} 저장 결과를 다시 확인해요.
+        {destinationName} 저장된 추천을 다시 볼 수 있어요.
       </h2>
 
       <div className="mt-4 grid gap-2 sm:grid-cols-2">
         <article className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3.5">
-          <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">복원 방식</p>
+          <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">보기 방식</p>
           <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">저장된 결과 그대로</p>
-          <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">익명 링크로 다시 읽는 페이지예요.</p>
+          <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">링크로 언제든 다시 볼 수 있어요.</p>
         </article>
         <article className="compass-open-info rounded-[calc(var(--radius-card)-12px)] px-3.5 py-3.5">
-          <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">저장 당시 범위</p>
-          <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">후보 {cardsCount}곳 중 1곳</p>
-          <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">추천 버전 {scoringVersionId}</p>
+          <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">당시 추천 결과</p>
+          <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">총 {cardsCount}곳 중 저장한 1곳</p>
+          <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">저장 시점의 추천 기준이에요.</p>
         </article>
       </div>
 
@@ -84,13 +82,12 @@ export function SnapshotRestoreView({ data }: SnapshotRestoreViewProps) {
     <ExperienceShell
       eyebrow="내 일정"
       title={`${data.card.destination.nameKo} 저장 결과를 다시 보고 있어요.`}
-      intro="저장 당시 기준과 결과를 그대로 확인하는 페이지예요. 아래에서 담아 둔 이유를 먼저 보고 상세 정보를 이어서 읽어 보세요."
-      capsule="익명 공유 링크 · 재계산 없음 · 저장 당시 판단 그대로"
+      intro="저장했던 추천 결과를 그대로 다시 볼 수 있어요."
+      capsule="공유 링크 · 저장 당시 결과 그대로"
       headerAside={
         <RestoreTrustPanel
           destinationName={data.card.destination.nameKo}
           cardsCount={data.cardsCount}
-          scoringVersionId={data.scoringVersionId}
         />
       }
     >

@@ -17,6 +17,18 @@ function CompassIcon() {
   );
 }
 
+/* People icon for 여행 이야기 */
+function PeopleIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className="h-[14px] w-[14px]" aria-hidden="true">
+      <circle cx="5.5" cy="4.5" r="2" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M1.5 12.5c0-2.2 1.8-4 4-4s4 1.8 4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+      <circle cx="10.5" cy="4.5" r="2" stroke="currentColor" strokeWidth="1.3" />
+      <path d="M9.5 8.5c.3-.1.6-.1 1-.1 2.2 0 4 1.8 4 4" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
 /* Suitcase icon for 내 여행 */
 function SuitcaseIcon() {
   return (
@@ -30,6 +42,7 @@ function SuitcaseIcon() {
 
 const primaryNavItems: readonly { label: string; href: string; icon: React.ReactNode }[] = [
   { label: "추천 받기", href: "/?stage=question&step=1", icon: <CompassIcon /> },
+  { label: "여행 이야기", href: "/community", icon: <PeopleIcon /> },
   { label: "내 여행", href: "/account", icon: <SuitcaseIcon /> },
 ];
 

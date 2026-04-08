@@ -90,11 +90,11 @@ export function resolveDestinationFlightAffiliateLink(
     partnerLabel: resolvedPartner === "skyscanner" ? "Skyscanner" : "Trip.com",
     category: "flight",
     url: resolvedUrl,
-    eyebrow: "다음 단계",
-    title: "항공권을 확인해 보세요.",
+    eyebrow: "항공권",
+    title: `${resolvedPartner === "skyscanner" ? "Skyscanner" : "Trip.com"}에서 항공권을 확인해 보세요.`,
     ctaLabel: `${formatTravelMonth(query.travelMonth)} 항공권 보기`,
-    disclosureLabel: "외부 예약 링크",
-    disclosureDetail: "예약이 이어지면 수수료를 받을 수 있어요.",
+    disclosureLabel: resolvedPartner === "skyscanner" ? "Skyscanner" : "Trip.com",
+    disclosureDetail: "에서 가격을 비교할 수 있어요.",
     summary: buildFlightAffiliateSummary(query),
   };
 }

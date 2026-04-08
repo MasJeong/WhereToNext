@@ -261,15 +261,15 @@ export function TravelSupportPanel({
     >
       <div className="space-y-1.5 border-b border-[color:var(--color-funnel-border)] pb-3">
         <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-          {leadTravelMonth ? `${formatTravelMonth(leadTravelMonth)} 여행 판단` : "여행 판단 메모"}
+          {leadTravelMonth ? `${formatTravelMonth(leadTravelMonth)} 여행 날씨` : "여행 날씨"}
         </p>
         <p className="text-[1rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
-          {leadTravelWeatherSummary ?? `${destinationName}에 가기 전에 날씨와 현지 감을 먼저 확인해 보세요.`}
+          {leadTravelWeatherSummary ?? `${destinationName}의 날씨를 미리 알아보세요.`}
         </p>
         <p className="text-sm leading-6 text-[var(--color-funnel-text-soft)]">
           {leadTravelMonth
-            ? `${destinationName}에서 ${formatTravelMonth(leadTravelMonth)}에 체감할 가능성이 큰 흐름을 먼저 보여드리고, 지금 날씨는 참고용으로 덧붙였어요.`
-            : `${destinationName}에 가기 전 필요한 보조 정보만 짧게 정리했어요.`}
+            ? `${formatTravelMonth(leadTravelMonth)} ${destinationName}의 평균 날씨예요.`
+            : `${destinationName}의 날씨 정보예요.`}
         </p>
       </div>
 
@@ -313,7 +313,7 @@ export function TravelSupportPanel({
               {supplement.travelMonthWeather.averageMinTemperatureC}°
             </p>
             <p className="mt-1 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-              비 오는 날 비중 약 {supplement.travelMonthWeather.rainyDayRatio}%로, 여행 중 우산을 챙길지 판단하는 기준으로 보면 돼요.
+              비 오는 날이 약 {supplement.travelMonthWeather.rainyDayRatio}% 정도예요.
             </p>
             <p className="mt-1 text-[11px] leading-5 text-[var(--color-funnel-text-soft)]">
               최근 {supplement.travelMonthWeather.basedOnYears}년 흐름 기준

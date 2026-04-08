@@ -28,7 +28,7 @@ type CompareRow = {
 function buildCompareRows(): CompareRow[] {
   return [
     {
-      label: "한 줄 판정",
+      label: "이 곳의 매력",
       value: (column) => buildRecommendationVerdict(column.card).headline,
     },
     {
@@ -36,7 +36,7 @@ function buildCompareRows(): CompareRow[] {
       value: (column) => column.card.recommendation.whyThisFits,
     },
     {
-      label: "핵심 정보",
+      label: "여행 조건",
       value: (column) =>
         `${formatMonthList(column.card.destination.bestMonths)} · ${formatBudgetBand(column.card.destination.budgetBand)} · ${formatFlightBand(column.card.destination.flightBand)}`,
     },
@@ -45,14 +45,14 @@ function buildCompareRows(): CompareRow[] {
       value: (column) => formatVibeList(column.card.destination.vibeTags.slice(0, 3)),
     },
     {
-      label: "근거 한 줄",
+      label: "한 줄 요약",
       value: (column) => {
         const evidence = buildRecommendationEvidenceLead(column.card);
         return `${evidence.label} · ${evidence.detail}`;
       },
     },
     {
-      label: "체크할 점",
+      label: "알아두면 좋은 점",
       value: (column) => column.card.recommendation.watchOuts.slice(0, 2).join(" / "),
       warning: true,
     },
@@ -71,10 +71,10 @@ export function CompareBoard({ columns }: CompareBoardProps) {
 
   const mobileColumns = columns.slice(mobileStartIndex, mobileStartIndex + 2);
   const desktopRows = showDifferencesOnly
-    ? rows.filter((row) => row.label === "한 줄 판정" || !isSameRow(row, columns))
+    ? rows.filter((row) => row.label === "이 곳의 매력" || !isSameRow(row, columns))
     : rows;
   const mobileRows = showDifferencesOnly
-    ? rows.filter((row) => row.label === "한 줄 판정" || !isSameRow(row, mobileColumns))
+    ? rows.filter((row) => row.label === "이 곳의 매력" || !isSameRow(row, mobileColumns))
     : rows;
   const canMoveNext = mobileStartIndex + 2 < columns.length;
   const canMovePrev = mobileStartIndex > 0;
@@ -88,10 +88,10 @@ export function CompareBoard({ columns }: CompareBoardProps) {
           <div>
             <p className="compass-editorial-kicker">비교 화면</p>
             <h3 className="mt-1.5 text-[1.04rem] font-semibold leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.16rem]">
-              차이만 빠르게 보고 마지막 후보를 좁혀 보세요.
+              차이만 빠르게 보고 마음에 드는 곳을 골라보세요.
             </h3>
             <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-              먼저 한 줄 판정과 체크할 점부터 보면 결정이 빨라져요.
+              후보별 차이를 한눈에 비교해 보세요.
             </p>
           </div>
 
@@ -154,7 +154,7 @@ export function CompareBoard({ columns }: CompareBoardProps) {
                   href={buildDestinationDetailPath(column.card.destination, undefined, column.snapshotId)}
                   className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-[11px] font-semibold tracking-[0.04em]"
                 >
-                  상세 보기
+                  이 도시 알아보기
                 </Link>
               </div>
             </article>
@@ -216,8 +216,8 @@ export function CompareBoard({ columns }: CompareBoardProps) {
           {mobileRows.map((row) => (
             <Fragment key={`mobile-${row.label}`}>
               <div
-                data-testid={row.label === "한 줄 판정" ? testIds.compare.verdictRow : undefined}
-                className={`${row.label === "한 줄 판정" ? "compass-decision-card" : "compass-compare-label"} px-3 py-3 text-xs font-semibold`}
+                data-testid={row.label === "이 곳의 매력" ? testIds.compare.verdictRow : undefined}
+                className={`${row.label === "이 곳의 매력" ? "compass-decision-card" : "compass-compare-label"} px-3 py-3 text-xs font-semibold`}
               >
                 {row.label}
               </div>
@@ -262,8 +262,8 @@ export function CompareBoard({ columns }: CompareBoardProps) {
           {desktopRows.map((row) => (
             <Fragment key={`desktop-${row.label}`}>
               <div
-                data-testid={row.label === "한 줄 판정" ? testIds.compare.verdictRow : undefined}
-                className={`${row.label === "한 줄 판정" ? "compass-decision-card" : "compass-compare-label"} px-4 py-3.5 text-sm font-semibold`}
+                data-testid={row.label === "이 곳의 매력" ? testIds.compare.verdictRow : undefined}
+                className={`${row.label === "이 곳의 매력" ? "compass-decision-card" : "compass-compare-label"} px-4 py-3.5 text-sm font-semibold`}
               >
                 {row.label}
               </div>

@@ -30,6 +30,7 @@ export const evidenceSourceTypeValues = [
 export const freshnessStateValues = ["fresh", "aging", "stale"] as const;
 export const snapshotKindValues = ["recommendation", "comparison"] as const;
 export const snapshotVisibilityValues = ["public", "private"] as const;
+export const historyVisibilityValues = ["public", "private"] as const;
 export const snapshotStatusValues = ["saved", "planned"] as const;
 export const explorationPreferenceValues = ["repeat", "balanced", "discover"] as const;
 export const affiliatePartnerValues = ["skyscanner", "trip-com"] as const;
@@ -49,6 +50,7 @@ export const evidenceSourceTypeSchema = z.enum(evidenceSourceTypeValues);
 export const freshnessStateSchema = z.enum(freshnessStateValues);
 export const snapshotKindSchema = z.enum(snapshotKindValues);
 export const snapshotVisibilitySchema = z.enum(snapshotVisibilityValues);
+export const historyVisibilitySchema = z.enum(historyVisibilityValues);
 export const snapshotStatusSchema = z.enum(snapshotStatusValues);
 export const explorationPreferenceSchema = z.enum(explorationPreferenceValues);
 export const affiliatePartnerSchema = z.enum(affiliatePartnerValues);
@@ -416,6 +418,7 @@ export const userDestinationHistorySchema = z.object({
   visitedAt: z.string().datetime(),
   memo: z.string().trim().max(500).nullable().optional(),
   images: z.array(userDestinationHistoryImageSchema).max(userDestinationHistoryImageMaxCount),
+  visibility: historyVisibilitySchema.default("private"),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -437,6 +440,20 @@ export const userDestinationHistoryInputSchema = z.object({
     .max(userDestinationHistoryImageMaxCount)
     .nullish()
     .transform((value) => value ?? []),
+  visibility: historyVisibilitySchema.optional().default("private"),
+});
+
+export const communityCommentSchema = z.object({
+  id: z.string().uuid(),
+  historyId: z.string().uuid(),
+  userId: z.string().min(1),
+  content: z.string().min(1).max(500),
+  createdAt: z.string().datetime(),
+});
+
+export const communityCommentInputSchema = z.object({
+  historyId: z.string().uuid(),
+  content: z.string().min(1).max(500),
 });
 
 export const userFutureTripSchema = z.object({
@@ -507,6 +524,7 @@ export type ScoringVersion = z.infer<typeof scoringVersionSchema>;
 export type EvidenceTier = z.infer<typeof evidenceTierSchema>;
 export type EvidenceSourceType = z.infer<typeof evidenceSourceTypeSchema>;
 export type SnapshotVisibility = z.infer<typeof snapshotVisibilitySchema>;
+export type HistoryVisibility = z.infer<typeof historyVisibilitySchema>;
 export type SnapshotStatus = z.infer<typeof snapshotStatusSchema>;
 export type ExplorationPreference = z.infer<typeof explorationPreferenceSchema>;
 export type UserPreferenceProfile = z.infer<typeof userPreferenceProfileSchema>;
@@ -514,6 +532,8 @@ export type UserPreferenceProfileUpdate = z.infer<typeof userPreferenceProfileUp
 export type UserDestinationHistoryImage = z.infer<typeof userDestinationHistoryImageSchema>;
 export type UserDestinationHistory = z.infer<typeof userDestinationHistorySchema>;
 export type UserDestinationHistoryInput = z.infer<typeof userDestinationHistoryInputSchema>;
+export type CommunityComment = z.infer<typeof communityCommentSchema>;
+export type CommunityCommentInput = z.infer<typeof communityCommentInputSchema>;
 export type UserFutureTrip = z.infer<typeof userFutureTripSchema>;
 export type UserFutureTripInput = z.infer<typeof userFutureTripInputSchema>;
 export type DestinationAffiliateClick = z.infer<typeof destinationAffiliateClickSchema>;
