@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { Suspense, type ReactNode } from "react";
 
 import { isIosShellMode } from "@/lib/runtime/shell";
 import { testIds } from "@/lib/test-ids";
@@ -40,9 +40,26 @@ function SuitcaseIcon() {
   );
 }
 
+/** Bed icon for the stay showcase entry. */
+function StayIcon() {
+  return (
+    <svg viewBox="0 0 16 16" fill="none" className="h-[14px] w-[14px]" aria-hidden="true">
+      <path d="M2.5 10.5h11v2.5h-1.2v-1h-8.6v1H2.5v-2.5Z" fill="currentColor" />
+      <path
+        d="M3 10V7.4c0-.8.6-1.4 1.4-1.4h2.2c.8 0 1.4.6 1.4 1.4V10M8 10V6.7c0-.9.7-1.7 1.7-1.7h1.3c1 0 1.7.8 1.7 1.7V10"
+        stroke="currentColor"
+        strokeWidth="1.2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
 const primaryNavItems: readonly { label: string; href: string; icon: React.ReactNode }[] = [
   { label: "추천 받기", href: "/?stage=question&step=1", icon: <CompassIcon /> },
   { label: "여행 이야기", href: "/community", icon: <PeopleIcon /> },
+  { label: "스테이", href: "/stays", icon: <StayIcon /> },
   { label: "내 여행", href: "/account", icon: <SuitcaseIcon /> },
 ];
 
@@ -90,7 +107,11 @@ export function ExperienceShell({
             <div className="compass-shell-topbar-layout min-h-[2.75rem]">
               <ShellPrimaryNav items={primaryNavItems} />
 
-              {hideAuthNavigation ? null : <ShellAuthNav />}
+              {hideAuthNavigation ? null : (
+                <Suspense fallback={null}>
+                  <ShellAuthNav />
+                </Suspense>
+              )}
             </div>
           </div>
         )}

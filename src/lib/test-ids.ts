@@ -7,6 +7,10 @@ export const testIds = {
     personalizedNote: "personalized-note",
     privacyLink: "footer-privacy-link",
   },
+  stays: {
+    root: "stays-root",
+    card0: "stays-card-0",
+  },
   home: {
     landing: "home-landing",
     searchEntry: "home-search-entry",

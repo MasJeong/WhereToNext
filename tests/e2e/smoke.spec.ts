@@ -24,6 +24,7 @@ test("shows the home header with auth and account shortcuts", async ({ page }) =
 
   await expect(page.getByRole("link", { name: /떠나볼까.*홈으로/i })).toBeVisible();
   await expect(page.getByLabel("주요 메뉴").getByRole("link", { name: "추천 받기" })).toBeVisible();
+  await expect(page.getByLabel("주요 메뉴").getByRole("link", { name: "스테이" })).toBeVisible();
   await expect(page.getByLabel("주요 메뉴").getByRole("link", { name: "내 여행" })).toBeVisible();
   await expect(page.getByTestId("account-link")).toHaveCount(0);
   await expect(page.getByTestId("auth-cta")).toBeVisible();
@@ -36,6 +37,15 @@ test("opens the question flow from the header start link", async ({ page }) => {
   await page.getByRole("link", { name: "추천 받기" }).click();
   await expect(page.getByTestId("home-step-question")).toBeVisible({ timeout: 10000 });
   await expect(page).toHaveURL(/\/\?stage=question&step=1$/);
+});
+
+test("opens the stay showcase from the header menu", async ({ page }) => {
+  await page.goto("/");
+
+  await page.getByRole("link", { name: "스테이" }).click();
+  await expect(page).toHaveURL(/\/stays$/);
+  await expect(page.getByTestId("stays-root")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "이번 주말, 오래 머물고 싶은 스테이" })).toBeVisible();
 });
 
 test("resets to landing when the logo is clicked from the home funnel", async ({ page }) => {
