@@ -64,3 +64,9 @@
 - 지원 페이지: `src/app/support/page.tsx`
 - shell build / sync 경로: `apps/ios-shell/package.json`, `capacitor.config.ts`
 - iOS 프로젝트 버전/번들 ID: `ios/App/App.xcodeproj/project.pbxproj`
+
+# 같이 볼 문서
+
+- `docs/ios-release-preflight.md`
+- `docs/ios-app-privacy-matrix.md`
+- `docs/ios-at-home-release-checklist.md`
