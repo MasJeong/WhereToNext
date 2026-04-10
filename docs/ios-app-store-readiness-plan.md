@@ -3,7 +3,7 @@
 - 목표는 `떠나볼까?`를 가장 빠른 경로로 TestFlight/App Store 제출 가능한 상태까지 끌어올리는 것이다.
 - 2026-04-05 현재 우선순위는 `Xcode signing -> archive/upload -> App Store Connect 메타데이터 입력` 순서다.
 - `static shell/webDir`와 `ios/App/**`는 이미 준비돼 있으므로, 더 이상 “native shell 시작 전” 문서가 아니다.
-- 이미 있는 내부 계획 `.sisyphus/plans/ios-launch-path.md`를 대체하지 않고, 공개용 실행 계획으로 압축했다.
+- 내부 기준 계획은 `.sisyphus/plans/ios-launch-path.md`, `.sisyphus/plans/static-webdir-strategy.md`를 함께 본다.
 
 # iOS App Store 준비 계획
 
@@ -56,6 +56,13 @@
 7. 외부 콘텐츠 권리/약관 준수 정리
 8. 서드파티 로그인 유지 시 `Sign in with Apple` 동등 옵션 검증
 9. 핵심 기능이 계정 기반이 아니면 비로그인 접근 가능 상태 유지
+
+### 2026-04-10 Apple 공식 문서 재확인 메모
+1. `Privacy Policy URL`은 iOS 앱에 필수다.
+2. `Support URL`은 platform version metadata에서 required로 표시된다.
+3. `App Review Information`에는 연락처, notes, 로그인 필요 시 만료되지 않는 demo account가 필요하다.
+4. `screenshots`는 제출용 필수 자산이고, `app previews`는 선택 항목이다.
+5. 일반적인 HTTPS/TLS 접근만 있어도 export compliance 질문을 거쳐야 할 수 있다.
 
 ### 현재는 구현 완료된 것
 1. 앱 내부 개인정보처리방침
@@ -216,7 +223,8 @@
 
 ## 관련 문서
 
-- [docs/ios-release-preflight.md](/Users/jihun/Desktop/study/project/SooGo/docs/ios-release-preflight.md)
-- [.sisyphus/plans/ios-launch-path.md](/Users/jihun/Desktop/study/project/SooGo/.sisyphus/plans/ios-launch-path.md)
-- [docs/social-login-setup.md](/Users/jihun/Desktop/study/project/SooGo/docs/social-login-setup.md)
-- [docs/deployment.md](/Users/jihun/Desktop/study/project/SooGo/docs/deployment.md)
+- [docs/ios-release-preflight.md](C:/jihun_roject/trip-compass/docs/ios-release-preflight.md)
+- [.sisyphus/plans/ios-launch-path.md](C:/jihun_roject/trip-compass/.sisyphus/plans/ios-launch-path.md)
+- [.sisyphus/plans/static-webdir-strategy.md](C:/jihun_roject/trip-compass/.sisyphus/plans/static-webdir-strategy.md)
+- [docs/social-login-setup.md](C:/jihun_roject/trip-compass/docs/social-login-setup.md)
+- [docs/deployment.md](C:/jihun_roject/trip-compass/docs/deployment.md)

@@ -168,6 +168,12 @@ export function ExperienceShell({
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Link
+                href="/support"
+                className="transition-colors hover:text-[var(--color-ink)]"
+              >
+                지원
+              </Link>
+              <Link
                 href="/privacy"
                 data-testid={testIds.shell.privacyLink}
                 className="transition-colors hover:text-[var(--color-ink)]"

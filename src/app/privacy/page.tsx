@@ -64,6 +64,12 @@ export default function PrivacyPage() {
             정책 문의나 삭제 요청 전 확인이 필요하면 계정 화면에서 먼저 현재 저장 상태를 확인해 주세요.
           </p>
           <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href="/support"
+              className="rounded-full border border-[var(--color-frame-soft)] px-4 py-2 text-[0.8rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)]"
+            >
+              지원 보기
+            </Link>
             {hideAccountSettingsLink ? null : (
               <Link
                 href="/account/settings"

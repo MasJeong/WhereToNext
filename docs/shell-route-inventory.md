@@ -78,6 +78,7 @@ Shell app에서 `output: "export"`가 가능한 이유는 다음과 같습니다
 
 - 아키텍처 결정: `.sisyphus/plans/static-webdir-strategy.md`
 - iOS 출시 체크리스트: `docs/ios-release-preflight.md`
+- iOS 실행 계획: `.sisyphus/plans/ios-launch-path.md`
 
 ## 현재 앱 표면 검증 메모
 
