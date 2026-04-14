@@ -232,7 +232,7 @@ export function AccountExperience({
     setError(null);
 
     try {
-      const response = await fetch("/api/me/preferences", {
+      const response = await fetch(buildApiUrl("/api/me/preferences"), {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ explorationPreference }),
