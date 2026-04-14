@@ -81,30 +81,6 @@ function useSession() {
 
 export const authClient = {
   useSession,
-  signIn: {
-    email: async (input: { email: string; password: string }) => {
-      const response = await fetch(buildApiUrl("/api/auth/sign-in"), {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify(input),
-      });
-
-      return (await response.json()) as AuthResponse;
-    },
-  },
-  signUp: {
-    email: async (input: { name: string; email: string; password: string }) => {
-      const response = await fetch(buildApiUrl("/api/auth/sign-up"), {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        credentials: "same-origin",
-        body: JSON.stringify(input),
-      });
-
-      return (await response.json()) as AuthResponse;
-    },
-  },
   signOut: async () => {
     const response = await fetch(buildApiUrl("/api/auth/sign-out"), {
       method: "POST",

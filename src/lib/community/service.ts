@@ -184,6 +184,115 @@ async function listPublicPostsFromDb(cursor?: string): Promise<{
 }
 
 /* ------------------------------------------------------------------ */
+/*  Single post                                                        */
+/* ------------------------------------------------------------------ */
+
+export async function readPublicPost(
+  historyId: string,
+): Promise<CommunityPostRow | null> {
+  if (!usePersistentDatabase) {
+    return readPublicPostInMemory(historyId);
+  }
+
+  return readPublicPostFromDb(historyId);
+}
+
+async function readPublicPostInMemory(
+  historyId: string,
+): Promise<CommunityPostRow | null> {
+  const historyEntries = useLocalFileStore
+    ? Object.values((await readLocalStore()).history)
+    : [...memoryStore.history.values()];
+
+  const entry = historyEntries.find(
+    (e) => e.id === historyId && e.visibility === "public",
+  );
+  if (!entry) return null;
+
+  const users = useLocalFileStore
+    ? (await readLocalStore()).users
+    : Object.fromEntries(memoryStore.users.entries());
+
+  const comments = useLocalFileStore
+    ? Object.values((await readLocalStore()).communityComments)
+    : [...memoryStore.communityComments.values()];
+
+  const author = users[entry.userId];
+  const destination = launchCatalog.find((d) => d.id === entry.destinationId);
+  const entryComments = comments.filter((c) => c.historyId === entry.id);
+
+  return {
+    historyId: entry.id,
+    authorName: author?.name ?? "여행자",
+    authorImage: author?.image ?? null,
+    destinationName: destination?.nameKo ?? entry.destinationId,
+    rating: entry.rating,
+    tags: entry.customTags ?? [],
+    memo: entry.memo ?? null,
+    imageUrl: entry.images?.[0]?.dataUrl ?? null,
+    commentCount: entryComments.length,
+    createdAt: entry.createdAt,
+  };
+}
+
+async function readPublicPostFromDb(
+  historyId: string,
+): Promise<CommunityPostRow | null> {
+  const { db } = await getRuntimeDatabase();
+
+  const [row] = await db
+    .select({
+      historyId: userDestinationHistory.id,
+      authorName: userTable.name,
+      authorImage: userTable.image,
+      destinationNameKo: destinationProfiles.nameKo,
+      destinationId: userDestinationHistory.destinationId,
+      rating: userDestinationHistory.rating,
+      customTags: userDestinationHistory.customTags,
+      memo: userDestinationHistory.memo,
+      images: userDestinationHistory.images,
+      createdAt: userDestinationHistory.createdAt,
+    })
+    .from(userDestinationHistory)
+    .leftJoin(userTable, eq(userDestinationHistory.userId, userTable.id))
+    .leftJoin(
+      destinationProfiles,
+      eq(userDestinationHistory.destinationId, destinationProfiles.id),
+    )
+    .where(
+      and(
+        eq(userDestinationHistory.id, historyId),
+        eq(userDestinationHistory.visibility, "public"),
+      ),
+    )
+    .limit(1);
+
+  if (!row) return null;
+
+  const [commentResult] = await db
+    .select({ cnt: count() })
+    .from(communityComments)
+    .where(eq(communityComments.historyId, historyId));
+
+  const images = row.images as
+    | Array<{ name: string; contentType: string; dataUrl: string }>
+    | null;
+
+  return {
+    historyId: row.historyId,
+    authorName: row.authorName ?? "여행자",
+    authorImage: row.authorImage ?? null,
+    destinationName: row.destinationNameKo ?? row.destinationId,
+    rating: row.rating,
+    tags: (row.customTags as string[] | null) ?? [],
+    memo: row.memo ?? null,
+    imageUrl: images?.[0]?.dataUrl ?? null,
+    commentCount: commentResult?.cnt ?? 0,
+    createdAt: row.createdAt.toISOString(),
+  };
+}
+
+/* ------------------------------------------------------------------ */
 /*  Comments                                                           */
 /* ------------------------------------------------------------------ */
 

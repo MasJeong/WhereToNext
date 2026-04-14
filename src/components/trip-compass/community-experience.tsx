@@ -11,7 +11,7 @@ import { buildApiUrl } from "@/lib/runtime/url";
 /*  Types                                                              */
 /* ------------------------------------------------------------------ */
 
-type CommunityPost = {
+export type CommunityPost = {
   historyId: string;
   authorName: string;
   authorImage: string | null;
@@ -41,7 +41,7 @@ type FeedPage = {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-function formatRelativeTime(dateString: string): string {
+export function formatRelativeTime(dateString: string): string {
   const now = Date.now();
   const then = new Date(dateString).getTime();
   const diffMs = now - then;
@@ -60,7 +60,7 @@ function formatRelativeTime(dateString: string): string {
   return `${months}달 전`;
 }
 
-function StarRating({ rating }: { rating: number }) {
+export function StarRating({ rating }: { rating: number }) {
   return (
     <span className="inline-flex gap-0.5" aria-label={`별점 ${rating}점`}>
       {Array.from({ length: 5 }, (_, i) => (
@@ -119,7 +119,7 @@ function EmptyState() {
 /*  Comment section                                                    */
 /* ------------------------------------------------------------------ */
 
-function CommentSection({
+export function CommentSection({
   historyId,
   isLoggedIn,
 }: {
