@@ -1,6 +1,6 @@
 # 검증 결과
 
-- LSP 진단
+- LSP diagnostics
   - `lsp_diagnostics` 시도
   - 로컬 환경에 `typescript-language-server`가 없어 도구 기반 진단은 실행 불가
 - `npm run test:unit`
@@ -16,7 +16,7 @@
   - 실패
   - 원인: 이번 변경과 무관한 `apps/ios-shell/.next/server/**` 생성 파일이 ESLint 대상에 포함됨
 
-## 남은 리스크
+## Open Risks
 
 - `tests/e2e/recommendation-flow.spec.ts`의 auth sign-up / personalized recommendation 시나리오는 WebKit, Mobile Safari 에서 여전히 `/auth`에 머무름
 - repo-wide `npm run lint`는 생성 산출물 `apps/ios-shell/.next/server/**` 정리 또는 lint ignore 없이는 계속 실패함

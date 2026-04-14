@@ -20,11 +20,11 @@ describe("Home", () => {
 
     expect(
       landingScope.getByRole("heading", {
-        name: /다음 여행, 아직 정하지 못했다면/,
+        name: /여행지, 바로 추천받기/,
       }),
     ).toBeInTheDocument();
     expect(landingScope.getByTestId("home-hero-visual")).toBeInTheDocument();
-    expect(landingScope.getAllByRole("button", { name: "내 여행지 찾기" }).length).toBeGreaterThan(0);
+    expect(landingScope.getByRole("button", { name: "추천 여정 시작하기" })).toBeInTheDocument();
 
     expect(screen.queryByTestId("home-step-question")).not.toBeInTheDocument();
     expect(screen.queryByTestId("home-result-page")).not.toBeInTheDocument();

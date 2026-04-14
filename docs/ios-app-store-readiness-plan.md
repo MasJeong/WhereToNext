@@ -3,8 +3,7 @@
 - 목표는 `떠나볼까?`를 가장 빠른 경로로 TestFlight/App Store 제출 가능한 상태까지 끌어올리는 것이다.
 - 2026-04-05 현재 우선순위는 `Xcode signing -> archive/upload -> App Store Connect 메타데이터 입력` 순서다.
 - `static shell/webDir`와 `ios/App/**`는 이미 준비돼 있으므로, 더 이상 “native shell 시작 전” 문서가 아니다.
-- 내부 기준 계획은 `.sisyphus/plans/ios-launch-path.md`, `.sisyphus/plans/static-webdir-strategy.md`를 함께 본다.
-- 2026-04-28 이후에는 App Store Connect 업로드에 `iOS 26 SDK` 이상이 필요하므로, 현재 배포 환경의 Xcode 버전 확인이 선행돼야 한다.
+- 이미 있는 내부 계획 `.sisyphus/plans/ios-launch-path.md`를 대체하지 않고, 공개용 실행 계획으로 압축했다.
 
 # iOS App Store 준비 계획
 
@@ -57,19 +56,6 @@
 7. 외부 콘텐츠 권리/약관 준수 정리
 8. 서드파티 로그인 유지 시 `Sign in with Apple` 동등 옵션 검증
 9. 핵심 기능이 계정 기반이 아니면 비로그인 접근 가능 상태 유지
-10. 배포 국가가 `대한민국`만 선택돼 있는지와 App Store Connect의 `DSA trader status` 관련 화면 노출 여부 확인
-11. archive 전 Xcode `Privacy Report`에서 Capacitor privacy manifest 포함 여부 확인
-
-### 2026-04-10 Apple 공식 문서 재확인 메모
-1. `Privacy Policy URL`은 iOS 앱에 필수다.
-2. `Support URL`은 platform version metadata에서 required로 표시되고, 공개 페이지라는 점을 감안해 한국 한정 배포 기준으로는 `운영자 표시 이름`과 `이메일`을 우선 두고 전화번호는 `App Review Information`에만 넣는 편이 안전하다.
-3. `App Review Information`에는 연락처, notes, 로그인 필요 시 만료되지 않는 demo account가 필요하다.
-4. `screenshots`는 제출용 필수 자산이고, `app previews`는 선택 항목이다.
-5. 일반적인 HTTPS/TLS 접근만 있어도 export compliance 질문을 거쳐야 할 수 있다.
-6. `Capacitor`는 Apple의 third-party SDK requirement 목록에 포함돼 privacy manifest/signature 확인이 필요하다.
-7. EU 배포를 하지 않는다면 DSA trader 공개 연락처 요건은 직접 적용되지 않지만, App Store Connect의 관련 질문지와 배포 국가 설정은 직접 확인해야 한다.
-8. 2026-04-28 이후 iOS 앱 업로드는 `iOS 26 SDK` 이상 빌드가 필요하다.
-9. Age rating 시스템이 세분화돼 기존 값 자동 변환만 믿지 말고 제출 전에 다시 확인하는 편이 안전하다.
 
 ### 현재는 구현 완료된 것
 1. 앱 내부 개인정보처리방침
@@ -99,11 +85,9 @@
 
 ### 2단계. Xcode 업로드 경로 확정
 1. `npm run shell:ios:sync`로 최신 웹 산출물을 iOS 프로젝트에 동기화
-2. `Xcode 26` 이상 여부를 먼저 확인
-3. Xcode에서 `Signing & Capabilities`의 `Team`과 bundle id를 확정
-4. archive 전 `Privacy Report`에서 Capacitor manifest가 합쳐지는지 확인
-5. 시뮬레이터 또는 실제 iPhone에서 핵심 흐름 smoke 확인
-6. `Product > Archive` 후 Organizer 업로드
+2. Xcode에서 `Signing & Capabilities`의 `Team`과 bundle id를 확정
+3. 시뮬레이터 또는 실제 iPhone에서 핵심 흐름 smoke 확인
+4. `Product > Archive` 후 Organizer 업로드
 
 ### 3단계. iOS 배포 기술 증빙 확보
 1. shell mode 핵심 흐름 QA
@@ -112,7 +96,7 @@
 4. 업로드 전 체크리스트 완결
 
 ### 4단계. App Store Connect 제출 패키지 준비
-1. `DSA trader status`, Age Rating, privacy, export compliance, screenshots 입력
+1. Age Rating, privacy, export compliance, screenshots 입력
 2. `Privacy Policy URL`, `Support URL`, 연락처 정보 점검
 3. review notes에 로그인/데모/제휴 링크 동작 설명
 4. 제출 메타데이터와 기능 URL이 실제 동작과 일치하는지 점검
@@ -137,15 +121,12 @@
 - metadata checklist
 - release owner / verification owner 지정 문서
 - 심사 중 백엔드/외부 링크 가용성 확인 메모
-- DSA trader status 확인 메모
 
 ## 우선순위
 
 ### P0
 - Xcode signing과 archive/upload
 - App Privacy, screenshots, review information 입력
-- `DSA trader status` 선언
-- `Xcode 26 / iOS 26 SDK` 환경 확인
 
 ### P1
 - simulator smoke 확인
@@ -169,10 +150,9 @@
 2. 계정 기반 기능 검토를 위해 만료되지 않는 `demo account`를 준비한다.
 3. `review notes`에 로그인 방식, demo 접근, 외부 제휴 링크 동작을 정리한다.
 4. App Review 연락처 이름, 이메일, 전화번호를 정리한다.
-5. `Support URL` 페이지에 공개 가능한 운영자 이름과 이메일이 있는지 확인하고, 심사 연락용 전화번호는 `App Review Information`에만 넣는지 점검한다.
-6. App Store Connect 입력용 `DSA trader status`, `Privacy Policy URL`, `Support URL`, `Age Rating`, `export compliance`, `screenshots` 체크리스트를 만든다.
-7. 심사 기간 동안 백엔드와 제출 메타데이터의 URL이 살아 있는지 확인한다.
-8. `app previews`는 선택 항목으로 관리한다.
+5. App Store Connect 입력용 `Privacy Policy URL`, `Support URL`, `Age Rating`, `export compliance`, `screenshots` 체크리스트를 만든다.
+6. 심사 기간 동안 백엔드와 제출 메타데이터의 URL이 살아 있는지 확인한다.
+7. `app previews`는 선택 항목으로 관리한다.
 
 ### 3. 최종 검증
 1. full Xcode 환경에서 simulator build를 확인한다.
@@ -224,26 +204,19 @@
 ## 공식 참고 링크
 
 - App Review Guidelines: https://developer.apple.com/app-store/review/guidelines
-- Submit your apps and games today: https://developer.apple.com/app-store/submitting/
 - Sign in with Apple for user account sign-in: https://developer.apple.com/sign-in-with-apple/get-started/
 - Manage app privacy: https://developer.apple.com/help/app-store-connect/manage-app-information/manage-app-privacy
 - App privacy reference: https://developer.apple.com/help/app-store-connect/reference/app-privacy
 - App information reference: https://developer.apple.com/help/app-store-connect/reference/app-information/app-information
-- Required app properties reference: https://developer.apple.com/help/app-store-connect/reference/app-information/required-localizable-and-editable-properties
-- Platform version information reference: https://developer.apple.com/help/app-store-connect/reference/app-information/platform-version-information
 - App review information reference: https://developer.apple.com/help/app-store-connect/reference/app-review-information
 - Upload app previews and screenshots: https://developer.apple.com/help/app-store-connect/manage-app-information/upload-app-previews-and-screenshots
 - Screenshot specifications: https://developer.apple.com/help/app-store-connect/reference/screenshot-specifications
 - Overview of export compliance: https://developer.apple.com/help/app-store-connect/manage-app-information/overview-of-export-compliance
-- Manage European Union Digital Services Act trader requirements: https://developer.apple.com/help/app-store-connect/manage-compliance-information/manage-european-union-digital-services-act-trader-requirements/
-- Third-party SDK requirements: https://developer.apple.com/support/third-party-SDK-requirements/
 - Offering account deletion in your app: https://developer.apple.com/support/offering-account-deletion-in-your-app/
 
 ## 관련 문서
 
-- [docs/ios-release-preflight.md](C:/jihun_roject/trip-compass/docs/ios-release-preflight.md)
-- [docs/ios-domain-hosting-strategy.md](C:/jihun_roject/trip-compass/docs/ios-domain-hosting-strategy.md)
-- [.sisyphus/plans/ios-launch-path.md](C:/jihun_roject/trip-compass/.sisyphus/plans/ios-launch-path.md)
-- [.sisyphus/plans/static-webdir-strategy.md](C:/jihun_roject/trip-compass/.sisyphus/plans/static-webdir-strategy.md)
-- [docs/social-login-setup.md](C:/jihun_roject/trip-compass/docs/social-login-setup.md)
-- [docs/deployment.md](C:/jihun_roject/trip-compass/docs/deployment.md)
+- [docs/ios-release-preflight.md](/Users/jihun/Desktop/study/project/SooGo/docs/ios-release-preflight.md)
+- [.sisyphus/plans/ios-launch-path.md](/Users/jihun/Desktop/study/project/SooGo/.sisyphus/plans/ios-launch-path.md)
+- [docs/social-login-setup.md](/Users/jihun/Desktop/study/project/SooGo/docs/social-login-setup.md)
+- [docs/deployment.md](/Users/jihun/Desktop/study/project/SooGo/docs/deployment.md)

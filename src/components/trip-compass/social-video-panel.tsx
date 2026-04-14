@@ -14,13 +14,6 @@ type LeadSocialVideoPanelProps = {
   query: RecommendationQuery;
 };
 
-type CompactSocialVideoPanelProps = {
-  destinationId: string;
-  destinationName: string;
-  leadReason: string;
-  query: RecommendationQuery;
-};
-
 type SocialVideoPanelState = {
   requestKey: string;
   items: SocialVideoItem[];
@@ -40,6 +33,7 @@ type SocialVideoSlotProps = {
   isMain?: boolean;
   isResolved: boolean;
   leadReason: string;
+  destinationName: string;
   fallbackNote: string;
 };
 
@@ -234,6 +228,7 @@ function SocialVideoSlot({
   isMain = false,
   isResolved,
   leadReason,
+  destinationName,
   fallbackNote,
 }: SocialVideoSlotProps) {
   const mainViewCountLabel = isMain ? formatViewCountLabel(item?.viewCount) : null;
@@ -244,54 +239,63 @@ function SocialVideoSlot({
     return (
       <article
         className={[
-          "overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.04)]",
-          isMain ? "min-h-[16rem] sm:min-h-[20rem]" : "h-full min-h-[8.75rem]",
+          "overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)]",
+          isMain ? "min-h-[18rem] sm:min-h-[24rem]" : "min-h-[12.5rem]",
         ].join(" ")}
       >
         <div
           className={[
             "flex h-full flex-col justify-between gap-4 p-4 sm:p-5",
+            isMain ? "sm:flex-row sm:items-end" : "",
           ].join(" ")}
         >
-          <div className="flex min-w-0 flex-1 flex-col justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                YouTube
-              </span>
-              <span
-                className={[
-                  "inline-flex items-center gap-2 rounded-full border px-3 py-1 text-[0.72rem] font-semibold",
-                  isResolved
-                    ? "border-[color:var(--color-funnel-border)] bg-white text-[var(--color-funnel-text-soft)]"
-                    : "border-[color:var(--color-funnel-border)] bg-white text-[var(--color-funnel-text-soft)]",
-                ].join(" ")}
-              >
-                <span className={isResolved ? "h-1.5 w-1.5 rounded-full bg-[var(--color-funnel-text-soft)]" : "h-1.5 w-1.5 rounded-full bg-[var(--color-action-primary)] animate-pulse"} />
-                {isResolved ? "영상 없음" : "준비 중"}
-              </span>
-            </div>
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded-full bg-[var(--color-funnel-muted)] px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+              YouTube
+            </span>
+            <span className="text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)]">
+              {isResolved ? "영상 없음" : "불러오는 중"}
+            </span>
+          </div>
 
-            <div className={isMain ? "max-w-xl space-y-2" : "space-y-2"}>
-              <p className={isMain ? "text-[1rem] font-semibold tracking-[-0.03em] text-[var(--color-funnel-text)]" : "text-[0.92rem] font-semibold text-[var(--color-funnel-text)]"}>
-                {isMain ? "관련 영상 붙이는 중" : "보조 영상 찾는 중"}
-              </p>
-              <p className="max-w-xl text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-                {isMain ? leadReason : fallbackNote}
-              </p>
-            </div>
+          <div className={isMain ? "max-w-xl space-y-2" : "space-y-2"}>
+            <p
+              className={[
+                "font-semibold tracking-[-0.05em] text-[var(--color-funnel-text)]",
+                isMain ? "text-[1.8rem] leading-[1] sm:text-[2.35rem]" : "text-[1.05rem] leading-6",
+              ].join(" ")}
+            >
+              {isMain ? destinationName : destinationName}
+            </p>
+            <p className={isMain ? "text-[0.98rem] font-semibold leading-7 text-[var(--color-funnel-text)]" : "text-sm font-semibold leading-6 text-[var(--color-funnel-text)]"}>
+              {isMain ? leadReason : fallbackNote}
+            </p>
+            <p className="max-w-xl text-sm leading-6 text-[var(--color-funnel-text-soft)] sm:text-[0.96rem]">
+              {isMain
+                ? isResolved
+                  ? "지금은 메인으로 보여줄 영상이 아직 없어요. 아래 서브 슬롯은 준비되는 대로 채워집니다."
+                  : "가장 먼저 보면 좋은 영상을 하나만 앞에 두었어요."
+                : fallbackNote}
+            </p>
+          </div>
 
-            <div className={isMain ? "grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_11rem]" : "grid gap-2"}>
-              <div className="space-y-2 rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3">
-                <div className="h-3 w-24 rounded-full bg-white" />
-                <div className="h-3 w-full rounded-full bg-white" />
-                <div className="h-3 w-5/6 rounded-full bg-white" />
-              </div>
-              {isMain ? (
-                <div className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3">
-                  <div className="aspect-[4/3] rounded-[0.8rem] bg-white" />
-                </div>
-              ) : null}
-            </div>
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            <article className="rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-3">
+              <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                선택 기준
+              </p>
+              <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">
+                {isMain ? "관련성·설명력 우선" : "최근성·보완 관점 우선"}
+              </p>
+            </article>
+            <article className="rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-3">
+              <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                노출 방식
+              </p>
+              <p className="mt-1.5 text-sm font-semibold text-[var(--color-funnel-text)]">
+                {isMain ? "큰 카드 1개" : "작은 보조 카드"}
+              </p>
+            </article>
           </div>
         </div>
       </article>
@@ -299,12 +303,7 @@ function SocialVideoSlot({
   }
 
   return (
-    <article
-      className={[
-        "overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white shadow-[0_14px_30px_rgba(15,23,42,0.08)]",
-        isMain ? "lg:grid lg:h-full lg:grid-rows-[minmax(0,1fr)_auto]" : "h-full",
-      ].join(" ")}
-    >
+    <article className="overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white shadow-[0_14px_30px_rgba(15,23,42,0.08)]">
       <a
         data-testid={isMain ? testIds.socialVideo.link : undefined}
         href={item.videoUrl}
@@ -316,7 +315,7 @@ function SocialVideoSlot({
         <div
           className={[
             "relative overflow-hidden bg-[var(--color-funnel-muted)]",
-            isMain ? "aspect-[16/10] lg:h-full lg:aspect-auto" : "aspect-[16/9]",
+            isMain ? "aspect-[16/10] sm:aspect-[16/9]" : "aspect-[16/9]",
           ].join(" ")}
         >
           <Image
@@ -413,198 +412,6 @@ function buildSocialVideoSearchParams({
 }
 
 /**
- * 2위 이하 추천 카드에 붙는 경량 YouTube 보조 카드다.
- * @param props 목적지와 추천 질의
- * @returns 작은 영상 링크 카드 또는 fallback 링크
- */
-export function CompactSocialVideoPanel({
-  destinationId,
-  destinationName,
-  leadReason,
-  query,
-}: CompactSocialVideoPanelProps) {
-  const requestIdRef = useRef(0);
-  const requestKey = buildSocialVideoSearchParams({ destinationId, leadReason, query }).toString();
-  const [isActivated, setIsActivated] = useState(false);
-  const [state, setState] = useState<SocialVideoPanelState>({
-    requestKey: "",
-    items: [],
-    resolved: false,
-    fallback: null,
-    status: null,
-  });
-
-  useEffect(() => {
-    if (!isActivated) {
-      return;
-    }
-
-    const controller = new AbortController();
-    const requestId = ++requestIdRef.current;
-
-    async function loadSocialVideo() {
-      try {
-        const response = await fetch(buildApiUrl(`/api/social-video?${requestKey}`), {
-          method: "GET",
-          cache: "no-store",
-          signal: controller.signal,
-        });
-
-        if (!response.ok) {
-          if (!controller.signal.aborted && requestIdRef.current === requestId) {
-            setState({
-              requestKey,
-              items: [],
-              resolved: true,
-              fallback: buildClientSideFallback(destinationName),
-              status: "fallback",
-            });
-          }
-          return;
-        }
-
-        const payload = (await response.json()) as SocialVideoResponse;
-
-        if (requestIdRef.current !== requestId) {
-          return;
-        }
-
-        setState({
-          requestKey,
-          items: extractSocialVideoItems(payload),
-          resolved: true,
-          fallback: extractSocialVideoFallback(payload),
-          status: payload.status,
-        });
-      } catch {
-        if (!controller.signal.aborted && requestIdRef.current === requestId) {
-          setState({
-            requestKey,
-            items: [],
-            resolved: true,
-            fallback: buildClientSideFallback(destinationName),
-            status: "fallback",
-          });
-        }
-      }
-    }
-
-    void loadSocialVideo();
-
-    return () => {
-      controller.abort();
-    };
-  }, [destinationName, isActivated, requestKey]);
-
-  const isCurrentRequest = state.requestKey === requestKey;
-  const item = isCurrentRequest ? state.items[0] ?? null : null;
-  const fallback = isCurrentRequest ? state.fallback : null;
-
-  if (!isActivated) {
-    return (
-      <button
-        type="button"
-        onClick={() => setIsActivated(true)}
-        className="mt-3 flex w-full items-center justify-between gap-3 rounded-[0.9rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-3 text-left transition-colors duration-200 hover:bg-white"
-      >
-        <div className="min-w-0">
-          <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-            YouTube
-          </p>
-          <p className="mt-1 text-[0.86rem] font-semibold text-[var(--color-funnel-text)]">
-            {destinationName} 영상 보기
-          </p>
-          <p className="mt-1 text-[0.74rem] leading-5 text-[var(--color-funnel-text-soft)]">
-            눌렀을 때만 영상을 불러와요.
-          </p>
-        </div>
-        <span className="shrink-0 text-[0.72rem] font-semibold text-[var(--color-action-primary)]">
-          열기
-        </span>
-      </button>
-    );
-  }
-
-  if (!item && !fallback) {
-    return (
-      <div className="mt-3 rounded-[0.9rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-3">
-        <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-          YouTube
-        </p>
-        <p className="mt-1.5 text-[0.82rem] text-[var(--color-funnel-text-soft)]">
-          관련 영상을 찾는 중이에요.
-        </p>
-      </div>
-    );
-  }
-
-  if (!item) {
-    const search = fallback?.searches[0] ?? null;
-
-    if (!search) {
-      return null;
-    }
-
-    return (
-      <a
-        href={search.url}
-        target="_blank"
-        rel="noreferrer"
-        className="mt-3 flex items-center justify-between gap-3 rounded-[0.9rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-3 transition-colors duration-200 hover:bg-white"
-      >
-        <div className="min-w-0">
-          <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-            YouTube
-          </p>
-          <p className="mt-1 line-clamp-1 text-[0.86rem] font-semibold text-[var(--color-funnel-text)]">
-            {search.label}
-          </p>
-        </div>
-        <span className="shrink-0 text-[0.72rem] font-semibold text-[var(--color-action-primary)]">
-          바로 보기
-        </span>
-      </a>
-    );
-  }
-
-  const resolvedTitle = decodeHtmlEntities(item.title);
-  const resolvedChannelTitle = decodeHtmlEntities(item.channelTitle);
-  const viewCountLabel = formatViewCountLabel(item.viewCount);
-
-  return (
-    <a
-      href={item.videoUrl}
-      target="_blank"
-      rel="noreferrer"
-      className="mt-3 flex gap-3 rounded-[0.9rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] p-2.5 transition-colors duration-200 hover:bg-white"
-    >
-      <div className="relative h-20 w-32 shrink-0 overflow-hidden rounded-[0.75rem] bg-[var(--color-funnel-border)]">
-        <Image
-          src={item.thumbnailUrl}
-          alt={`${resolvedTitle} 썸네일`}
-          fill
-          unoptimized
-          sizes="128px"
-          className="object-cover"
-        />
-      </div>
-      <div className="min-w-0">
-        <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-          YouTube 보조 영상
-        </p>
-        <p className="mt-1 line-clamp-2 text-[0.86rem] font-semibold leading-5 text-[var(--color-funnel-text)]">
-          {resolvedTitle}
-        </p>
-        <p className="mt-1 line-clamp-1 text-[0.74rem] text-[var(--color-funnel-text-soft)]">
-          {resolvedChannelTitle}
-          {viewCountLabel ? ` · ${viewCountLabel}` : ""}
-        </p>
-      </div>
-    </a>
-  );
-}
-
-/**
  * 대표 추천 1위 카드에만 붙는 실시간 소셜 비디오 참고 블록을 렌더한다.
  * @param props lead 카드와 추천 질의
  * @returns social video block or null
@@ -686,7 +493,7 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
 
   if (isResolved && fallback && items.length === 0) {
     return (
-      <section data-testid={testIds.socialVideo.block} className="flex h-full flex-col gap-4">
+      <section data-testid={testIds.socialVideo.block} className="space-y-4">
         <section
           data-testid={testIds.socialVideo.fallbackBlock}
           className="rounded-[1.2rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-4 sm:px-5"
@@ -718,8 +525,8 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
   }
 
   return (
-    <section data-testid={testIds.socialVideo.block} className="flex h-full flex-col gap-4">
-      {isResolved && fallback && items.length === 0 ? (
+    <section data-testid={testIds.socialVideo.block} className="space-y-4">
+      {isResolved && fallback ? (
         <section
           data-testid={testIds.socialVideo.fallbackBlock}
           className="rounded-[1.2rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-4 sm:px-5"
@@ -748,34 +555,33 @@ export function LeadSocialVideoPanel({ destinationId, destinationName, leadReaso
         </section>
       ) : null}
 
-      <div className="grid gap-3 lg:items-stretch lg:grid-cols-[minmax(0,1.22fr)_minmax(15rem,0.78fr)]">
-        <div className="min-w-0 lg:h-full">
-          <SocialVideoSlot
-            item={mainItem}
-            title="가장 먼저 볼 영상"
-            isMain
-            isResolved={isResolved}
-            leadReason={leadReason}
-            fallbackNote="메인은 추천 결과를 가장 잘 설명하는 영상을 먼저 보여줘요."
-          />
-        </div>
+      <SocialVideoSlot
+        item={mainItem}
+        title="가장 먼저 볼 영상"
+        isMain
+        isResolved={isResolved}
+        leadReason={leadReason}
+        destinationName={destinationName}
+        fallbackNote="메인은 추천 결과를 가장 잘 설명하는 영상을 먼저 보여줘요."
+      />
 
-        <div className="grid gap-3 lg:h-full lg:grid-rows-[minmax(0,1fr)_minmax(0,1fr)]">
-          <SocialVideoSlot
-            item={subOne}
-            title=""
-            isResolved={isResolved}
-            leadReason={leadReason}
-            fallbackNote="최근성이나 다른 관점에서 함께 보면 좋은 영상이에요."
-          />
-          <SocialVideoSlot
-            item={subTwo}
-            title=""
-            isResolved={isResolved}
-            leadReason={leadReason}
-            fallbackNote="메인과 결이 다른 보조 영상을 함께 붙여요."
-          />
-        </div>
+      <div className="grid gap-3 lg:grid-cols-2">
+        <SocialVideoSlot
+          item={subOne}
+          title=""
+          isResolved={isResolved}
+          leadReason={leadReason}
+          destinationName={destinationName}
+          fallbackNote="최근성이나 다른 관점에서 함께 보면 좋은 영상이에요."
+        />
+        <SocialVideoSlot
+          item={subTwo}
+          title=""
+          isResolved={isResolved}
+          leadReason={leadReason}
+          destinationName={destinationName}
+          fallbackNote="메인과 결이 다른 보조 영상을 함께 붙여요."
+        />
       </div>
     </section>
   );

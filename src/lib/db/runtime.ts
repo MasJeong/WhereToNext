@@ -31,7 +31,6 @@ function getMigrationsFolder(): string {
 }
 
 const DEFAULT_PGLITE_DATA_DIR = ".data/trip-compass";
-const PGLITE_MIGRATIONS_TABLE = "__trip_compass_migrations";
 
 /**
  * 서버 런타임에서 사용할 PGlite 데이터 디렉터리를 문자열 경로로 정규화한다.
@@ -53,74 +52,6 @@ export function resolvePGliteDataDir(): string | null {
   }
 
   return resolve(process.cwd(), rawDataDir);
-}
-
-/**
- * `drizzle/` 폴더의 SQL 마이그레이션 파일명을 정렬된 순서로 반환한다.
- * @returns migration SQL 파일명 목록
- */
-async function listMigrationFiles(): Promise<string[]> {
-  const migrationsFolder = getMigrationsFolder();
-
-  return (await readdir(migrationsFolder))
-    .filter((fileName) => fileName.endsWith(".sql"))
-    .sort();
-}
-
-/**
- * 기존 PGlite 파일 DB에 스키마가 이미 있는데 추적 테이블만 없는 경우,
- * 이전 런타임이 적용한 마이그레이션을 모두 적용 완료 상태로 백필한다.
- * @param db Drizzle 데이터베이스 인스턴스
- * @param migrationFiles 로컬 migration 파일명 목록
- * @returns 이미 적용된 migration 파일명 집합
- */
-async function ensurePGliteMigrationState(
-  db: RuntimeDatabase["db"],
-  migrationFiles: string[],
-): Promise<Set<string>> {
-  await db.execute(sql.raw(`
-    CREATE TABLE IF NOT EXISTS "${PGLITE_MIGRATIONS_TABLE}" (
-      "id" text PRIMARY KEY NOT NULL,
-      "applied_at" timestamp with time zone DEFAULT now() NOT NULL
-    )
-  `));
-
-  type AppliedMigrationRow = {
-    id: string;
-  };
-
-  const appliedResult = await db.execute<AppliedMigrationRow>(
-    sql.raw(`SELECT "id" FROM "${PGLITE_MIGRATIONS_TABLE}" ORDER BY "id"`),
-  );
-  const appliedIds = new Set(Array.from(appliedResult as Iterable<AppliedMigrationRow>).map((row) => row.id));
-
-  if (appliedIds.size > 0) {
-    return appliedIds;
-  }
-
-  type ExistingSchemaRow = {
-    destination_profiles: string | null;
-  };
-
-  const existingSchemaResult = await db.execute<ExistingSchemaRow>(
-    sql.raw(`SELECT to_regclass('public.destination_profiles')::text AS "destination_profiles"`),
-  );
-  const existingSchema = Array.from(existingSchemaResult as Iterable<ExistingSchemaRow>)[0];
-
-  if (!existingSchema?.destination_profiles) {
-    return appliedIds;
-  }
-
-  for (const fileName of migrationFiles) {
-    await db.execute(sql.raw(`
-      INSERT INTO "${PGLITE_MIGRATIONS_TABLE}" ("id")
-      VALUES ('${fileName.replaceAll("'", "''")}')
-      ON CONFLICT ("id") DO NOTHING
-    `));
-    appliedIds.add(fileName);
-  }
-
-  return appliedIds;
 }
 
 /**

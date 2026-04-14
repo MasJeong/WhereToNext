@@ -4,7 +4,6 @@ import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import {
   comparisonSnapshotSchema,
   destinationAffiliateClickInputSchema,
-  recommendationActionRequestSchema,
   recommendationQuerySchema,
   recommendationSnapshotSchema,
   snapshotStatusSchema,
@@ -46,7 +45,6 @@ export type UserFutureTripInput = z.infer<typeof userFutureTripInputSchema>;
 export type UserPreferenceProfileUpdate = z.infer<typeof userPreferenceProfileUpdateSchema>;
 export type SocialVideoRequest = z.infer<typeof socialVideoRequestSchema>;
 export type SocialVideoQuery = z.infer<typeof socialVideoRequestSchema>;
-export type RecommendationActionRequest = z.infer<typeof recommendationActionRequestSchema>;
 export type UpdateRecommendationSnapshotBody = z.infer<typeof updateRecommendationSnapshotBodySchema>;
 
 const defaultSocialVideoQuery: RecommendationQuery = {
@@ -60,7 +58,6 @@ const defaultSocialVideoQuery: RecommendationQuery = {
   flightTolerance: "medium",
   vibes: ["romance"],
   excludedCountryCodes: [],
-  excludedDestinationIds: [],
 };
 
 /**
@@ -79,11 +76,6 @@ export function parseRecommendationQuery(params: URLSearchParams): Recommendatio
     ?.split(",")
     .map((value) => value.trim().toUpperCase())
     .filter(Boolean);
-  const excludedDestinationIds = params
-    .get("excludedDestinationIds")
-    ?.split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
 
   return recommendationQuerySchema.parse({
     partyType: params.get("partyType"),
@@ -96,7 +88,6 @@ export function parseRecommendationQuery(params: URLSearchParams): Recommendatio
     flightTolerance: params.get("flightTolerance"),
     vibes,
     excludedCountryCodes,
-    excludedDestinationIds,
   });
 }
 
@@ -140,11 +131,6 @@ export function parseSocialVideoQuery(params: URLSearchParams): SocialVideoReque
     ?.split(",")
     .map((value) => value.trim().toUpperCase())
     .filter(Boolean);
-  const excludedDestinationIds = params
-    .get("excludedDestinationIds")
-    ?.split(",")
-    .map((value) => value.trim())
-    .filter(Boolean);
 
   return socialVideoRequestSchema
     .refine((value) => destinationIdSet.has(value.destinationId), {
@@ -170,10 +156,6 @@ export function parseSocialVideoQuery(params: URLSearchParams): SocialVideoReque
           excludedCountryCodes && excludedCountryCodes.length > 0
             ? excludedCountryCodes
             : defaultSocialVideoQuery.excludedCountryCodes,
-        excludedDestinationIds:
-          excludedDestinationIds && excludedDestinationIds.length > 0
-            ? excludedDestinationIds
-            : defaultSocialVideoQuery.excludedDestinationIds,
       }),
       leadEvidence:
         leadEvidenceLabel && leadEvidenceDetail && leadEvidenceSourceLabel
@@ -192,20 +174,6 @@ export function parseSocialVideoQuery(params: URLSearchParams): SocialVideoReque
               }
           : undefined,
     });
-}
-
-/**
- * AI 행동 제안 요청 바디를 검증한다.
- * @param body 요청 바디 원문
- * @returns 검증된 행동 제안 입력
- */
-export function parseRecommendationActionRequest(body: unknown): RecommendationActionRequest {
-  return recommendationActionRequestSchema
-    .refine((value) => destinationIdSet.has(value.destinationId), {
-      message: "UNKNOWN_DESTINATION",
-      path: ["destinationId"],
-    })
-    .parse(body);
 }
 
 /**

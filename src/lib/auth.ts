@@ -578,22 +578,7 @@ export function setSessionCookie(
   response: import("next/server").NextResponse,
   token: string,
   request?: Request,
-  options?: {
-    clientType?: ClientType;
-    allowIosShell?: boolean;
-    expiresAt?: string | Date;
-  },
 ) {
-  const issuedClientType = classifyClientTypeForSessionIssuance({
-    clientType: options?.clientType,
-    allowIosShell: options?.allowIosShell,
-  });
-  const fallbackPolicy = getSessionPolicyForClientType(issuedClientType);
-  const expiresAt = options?.expiresAt ? toDate(options.expiresAt) : null;
-  const maxAge = expiresAt && isValidDate(expiresAt)
-    ? Math.max(0, Math.ceil((expiresAt.getTime() - Date.now()) / 1000))
-    : fallbackPolicy.idleTtlSeconds;
-
   response.cookies.set({
     name: SESSION_COOKIE_NAME,
     value: token,

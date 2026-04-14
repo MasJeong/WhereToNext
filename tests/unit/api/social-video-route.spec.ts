@@ -94,36 +94,6 @@ describe("GET /api/social-video", () => {
     expect(data.fallback.searches).toHaveLength(1);
   });
 
-  it("preserves a quota-exceeded fallback when the service reports quota exhaustion", async () => {
-    const { GET } = await import("@/app/api/social-video/route");
-    getLeadSocialVideoResultMock.mockResolvedValue({
-      status: "fallback",
-      item: null,
-      items: [],
-      fallback: {
-        reason: "quota-exceeded",
-        headline: "지금은 YouTube 할당량이 잠시 다 찼어요",
-        description: "오늘 할당량이 다시 열리면 대표 영상을 자동으로 붙여드릴게요.",
-        searches: [
-          {
-            label: "도쿄 여행",
-            url: "https://www.youtube.com/results?search_query=%EB%8F%84%EC%BF%84+%EC%97%AC%ED%96%89",
-          },
-        ],
-      },
-    });
-
-    const request = new Request(
-      `${TEST_BASE_URL}/api/social-video?destinationId=tokyo&partyType=couple&partySize=2&budgetBand=mid&tripLengthDays=5&departureAirport=ICN&travelMonth=11&pace=balanced&flightTolerance=medium&vibes=romance`,
-    );
-    const response = await GET(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data.status).toBe("fallback");
-    expect(data.fallback.reason).toBe("quota-exceeded");
-  });
-
   it("returns fallback when the service throws", async () => {
     const { GET } = await import("@/app/api/social-video/route");
     getLeadSocialVideoResultMock.mockRejectedValue(new Error("quota exceeded"));

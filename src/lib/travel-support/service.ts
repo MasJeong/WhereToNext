@@ -1,7 +1,3 @@
-import { eq } from "drizzle-orm";
-
-import { getRuntimeDatabase } from "@/lib/db/runtime";
-import { destinationTravelSupplementCache } from "@/lib/db/schema";
 import type { DestinationProfile, DestinationTravelSupplement } from "@/lib/domain/contracts";
 import { destinationTravelSupplementSchema } from "@/lib/domain/contracts";
 
@@ -25,15 +21,6 @@ type OpenMeteoForecastResponse = {
     temperature_2m_max?: number[];
     temperature_2m_min?: number[];
     precipitation_probability_max?: number[];
-  };
-};
-
-type OpenMeteoArchiveResponse = {
-  daily?: {
-    time?: string[];
-    temperature_2m_max?: number[];
-    temperature_2m_min?: number[];
-    precipitation_sum?: number[];
   };
 };
 
@@ -69,12 +56,6 @@ type ExchangeRateLiveResponse = {
   quotes?: Record<string, number>;
 };
 
-type OpenErApiResponse = {
-  result?: string;
-  time_last_update_unix?: number;
-  rates?: Record<string, number>;
-};
-
 type LocationMeta = {
   latitude: number;
   longitude: number;
@@ -91,8 +72,6 @@ const DEFAULT_REQUEST_OPTIONS = {
     revalidate: 3600,
   },
 } satisfies RequestInit;
-
-const SUPPLEMENT_CACHE_TTL_MS = 6 * 60 * 60 * 1000;
 
 const WEATHER_CODE_LABELS: Record<number, string> = {
   0: "맑아요",
@@ -128,47 +107,6 @@ function roundTemperature(value: number | undefined) {
   }
 
   return Math.round(value);
-}
-
-function roundAverage(value: number) {
-  return Math.round(value * 10) / 10;
-}
-
-function average(values: number[]) {
-  if (values.length === 0) {
-    return null;
-  }
-
-  return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-function buildTravelMonthWeatherSummary(
-  travelMonth: number,
-  averageMinTemperatureC: number,
-  averageMaxTemperatureC: number,
-  rainyDayRatio: number,
-) {
-  const averageTemperature = (averageMinTemperatureC + averageMaxTemperatureC) / 2;
-
-  let tone = "더워요, 가벼운 옷 추천";
-
-  if (averageTemperature < 5) {
-    tone = "추워요, 패딩 필수";
-  } else if (averageTemperature < 12) {
-    tone = "쌀쌀해요, 겉옷 필요";
-  } else if (averageTemperature < 20) {
-    tone = "돌아다니기 좋은 날씨";
-  } else if (averageTemperature < 27) {
-    tone = "살짝 더운 편";
-  }
-
-  if (rainyDayRatio >= 50) {
-    tone += ", 비 잦음";
-  } else if (rainyDayRatio >= 30) {
-    tone += ", 비 가끔";
-  }
-
-  return `${travelMonth}월 날씨 - ${tone}`;
 }
 
 /**
@@ -340,26 +278,48 @@ async function getWeatherSnapshot(
   };
 }
 
-async function getTravelMonthWeatherSnapshot(
+/**
+ * Google Places에서 주변 장소를 짧게 찾는다.
+ * @param destination 목적지
+ * @param location 목적지 좌표
+ * @param apiKey Google Maps API key
+ * @returns 주변 장소 목록 또는 undefined
+ */
+async function getNearbyPlaces(
+  destination: DestinationProfile,
   location: LocationMeta,
-  travelMonth: number,
-): Promise<DestinationTravelSupplement["travelMonthWeather"] | undefined> {
-  const now = new Date();
-  const startDate = `${String(now.getUTCFullYear() - 5)}-01-01`;
-  const endDate = `${String(now.getUTCFullYear() - 1)}-12-31`;
-  const searchParams = new URLSearchParams({
-    latitude: String(location.latitude),
-    longitude: String(location.longitude),
-    start_date: startDate,
-    end_date: endDate,
-    daily: "temperature_2m_max,temperature_2m_min,precipitation_sum",
-    timezone: "auto",
-  });
+  apiKey: string,
+): Promise<DestinationTravelSupplement["nearbyPlaces"] | undefined> {
+  if (!apiKey) {
+    return undefined;
+  }
 
-  const response = await fetch(`https://archive-api.open-meteo.com/v1/archive?${searchParams.toString()}`, {
-    ...DEFAULT_REQUEST_OPTIONS,
+  const response = await fetch("https://places.googleapis.com/v1/places:searchText", {
+    method: "POST",
+    headers: {
+      "content-type": "application/json",
+      accept: "application/json",
+      "X-Goog-Api-Key": apiKey,
+      "X-Goog-FieldMask":
+        "places.id,places.displayName,places.formattedAddress,places.googleMapsUri",
+    },
+    body: JSON.stringify({
+      textQuery: `${destination.nameEn} attractions`,
+      languageCode: "ko",
+      regionCode: destination.countryCode,
+      pageSize: 5,
+      locationBias: {
+        circle: {
+          center: {
+            latitude: location.latitude,
+            longitude: location.longitude,
+          },
+          radius: 12000,
+        },
+      },
+    }),
     next: {
-      revalidate: 86400,
+      revalidate: 21600,
     },
   });
 
@@ -367,217 +327,71 @@ async function getTravelMonthWeatherSnapshot(
     return undefined;
   }
 
-  const payload = (await response.json()) as OpenMeteoArchiveResponse;
-  const dates = payload.daily?.time ?? [];
-  const maxTemperatures = payload.daily?.temperature_2m_max ?? [];
-  const minTemperatures = payload.daily?.temperature_2m_min ?? [];
-  const precipitation = payload.daily?.precipitation_sum ?? [];
+  const payload = (await response.json()) as GooglePlacesTextSearchResponse;
+  const items =
+    payload.places
+      ?.map((place) => {
+        if (!place.id || !place.displayName?.text || !place.formattedAddress || !place.googleMapsUri) {
+          return null;
+        }
 
-  const matchingIndexes = dates
-    .map((value, index) => ({ value, index }))
-    .filter(({ value }) => {
-      const date = new Date(value);
-      return !Number.isNaN(date.getTime()) && date.getUTCMonth() + 1 === travelMonth;
-    })
-    .map(({ index }) => index);
+        return {
+          id: place.id,
+          name: place.displayName.text,
+          shortAddress: place.formattedAddress,
+          googleMapsUrl: place.googleMapsUri,
+        };
+      })
+      .filter((place): place is NonNullable<typeof place> => place !== null)
+      .slice(0, 5) ?? [];
 
-  if (matchingIndexes.length === 0) {
-    return undefined;
-  }
-
-  const monthMaxTemperatures = matchingIndexes
-    .map((index) => maxTemperatures[index])
-    .filter((value): value is number => typeof value === "number" && !Number.isNaN(value));
-  const monthMinTemperatures = matchingIndexes
-    .map((index) => minTemperatures[index])
-    .filter((value): value is number => typeof value === "number" && !Number.isNaN(value));
-  const rainyDays = matchingIndexes.filter((index) => (precipitation[index] ?? 0) >= 1);
-  const averageMaxTemperatureC = average(monthMaxTemperatures);
-  const averageMinTemperatureC = average(monthMinTemperatures);
-
-  if (averageMaxTemperatureC === null || averageMinTemperatureC === null) {
-    return undefined;
-  }
-
-  const basedOnYears = new Set(
-    matchingIndexes.map((index) => dates[index]?.slice(0, 4)).filter((value): value is string => Boolean(value)),
-  ).size;
-  const rainyDayRatio = Math.round((rainyDays.length / matchingIndexes.length) * 100);
-
-  return {
-    travelMonth,
-    summary: buildTravelMonthWeatherSummary(
-      travelMonth,
-      roundAverage(averageMinTemperatureC),
-      roundAverage(averageMaxTemperatureC),
-      rainyDayRatio,
-    ),
-    averageMinTemperatureC: roundAverage(averageMinTemperatureC),
-    averageMaxTemperatureC: roundAverage(averageMaxTemperatureC),
-    rainyDayRatio,
-    basedOnYears,
-  };
+  return items.length > 0 ? items : undefined;
 }
 
 /**
- * 주변 장소 목록은 비용과 오류율을 다시 점검하기 전까지 비활성화한다.
- * @returns 항상 undefined
- */
-async function getNearbyPlaces(
-  _destination: DestinationProfile,
-  _location: LocationMeta,
-  _apiKey: string,
-): Promise<DestinationTravelSupplement["nearbyPlaces"] | undefined> {
-  return undefined;
-}
-
-/**
- * 인터랙티브 지도에서 재사용할 목적지 지도 메타를 만든다.
+ * Google Maps 임베드용 작은 지도 URL을 만든다.
  * @param destination 목적지
  * @param location 목적지 좌표
- * @returns 지도 메타데이터
+ * @param apiKey Google Maps API key
+ * @returns 지도 임베드 정보 또는 undefined
  */
-function buildDestinationMap(
+function getMapEmbed(
   destination: DestinationProfile,
   location: LocationMeta,
-): DestinationTravelSupplement["map"] {
+  apiKey: string,
+): DestinationTravelSupplement["mapEmbed"] | undefined {
+  if (!apiKey) {
+    return undefined;
+  }
+
+  const searchParams = new URLSearchParams({
+    key: apiKey,
+    q: buildDestinationSearchLabel(destination, location.countryName),
+    center: `${location.latitude},${location.longitude}`,
+    zoom: "11",
+    language: "ko",
+  });
+
   return {
-    latitude: location.latitude,
-    longitude: location.longitude,
-    zoom: 11,
+    src: `https://www.google.com/maps/embed/v1/place?${searchParams.toString()}`,
     title: `${destination.nameKo} 지도`,
-    googleMapsUrl: `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(`${location.latitude},${location.longitude}`)}`,
   };
-}
-
-function buildTravelSupplementCacheKey(destinationId: string, travelMonth?: number) {
-  return `${destinationId}:${typeof travelMonth === "number" ? travelMonth : "all"}`;
-}
-
-function isCacheFresh(expiresAt: string | Date): boolean {
-  const resolvedDate = expiresAt instanceof Date ? expiresAt : new Date(expiresAt);
-  return !Number.isNaN(resolvedDate.getTime()) && resolvedDate.getTime() > Date.now();
-}
-
-async function readDestinationTravelSupplementCache(
-  destinationId: string,
-  travelMonth?: number,
-): Promise<{ payload: DestinationTravelSupplement; expiresAt: Date } | null> {
-  const { db } = await getRuntimeDatabase();
-  const cacheKey = buildTravelSupplementCacheKey(destinationId, travelMonth);
-  const rows = await db
-    .select({
-      payload: destinationTravelSupplementCache.payload,
-      expiresAt: destinationTravelSupplementCache.expiresAt,
-    })
-    .from(destinationTravelSupplementCache)
-    .where(eq(destinationTravelSupplementCache.cacheKey, cacheKey))
-    .limit(1);
-
-  const row = rows[0];
-
-  if (!row) {
-    return null;
-  }
-
-  return {
-    payload: destinationTravelSupplementSchema.parse(row.payload),
-    expiresAt: row.expiresAt,
-  };
-}
-
-async function writeDestinationTravelSupplementCache(
-  destinationId: string,
-  travelMonth: number | undefined,
-  payload: DestinationTravelSupplement,
-) {
-  const { db } = await getRuntimeDatabase();
-  const cacheKey = buildTravelSupplementCacheKey(destinationId, travelMonth);
-  const expiresAt = new Date(Date.now() + SUPPLEMENT_CACHE_TTL_MS);
-
-  await db
-    .insert(destinationTravelSupplementCache)
-    .values({
-      cacheKey,
-      destinationId,
-      travelMonth,
-      payload,
-      expiresAt,
-      updatedAt: new Date(),
-    })
-    .onConflictDoUpdate({
-      target: destinationTravelSupplementCache.cacheKey,
-      set: {
-        payload,
-        expiresAt,
-        updatedAt: new Date(),
-      },
-    });
-}
-
-export async function clearDestinationTravelSupplementCacheForTests() {
-  if (process.env.NODE_ENV !== "test") {
-    return;
-  }
-
-  const { db } = await getRuntimeDatabase();
-  await db.delete(destinationTravelSupplementCache);
 }
 
 /**
  * 환율을 원화 기준 참고값으로 가져온다.
- * open.er-api.com (무료, 키 불필요)을 우선 사용하고,
- * 실패 시 exchangerate.host(키 필요)로 폴백한다.
+ * @param currencyCode 목적지 통화 코드
+ * @param accessKey exchangerate.host access key
+ * @returns 환율 요약 또는 undefined
  */
 async function getExchangeRate(
   currencyCode: string,
   accessKey: string,
 ): Promise<DestinationTravelSupplement["exchangeRate"] | undefined> {
-  if (currencyCode === "KRW") {
+  if (!accessKey || currencyCode === "KRW") {
     return undefined;
   }
 
-  const result = await getExchangeRateFromOpenErApi(currencyCode);
-  if (result) return result;
-
-  if (!accessKey) return undefined;
-  return getExchangeRateFromHost(currencyCode, accessKey);
-}
-
-async function getExchangeRateFromOpenErApi(
-  currencyCode: string,
-): Promise<DestinationTravelSupplement["exchangeRate"] | undefined> {
-  try {
-    const response = await fetch(`https://open.er-api.com/v6/latest/KRW`, {
-      ...DEFAULT_REQUEST_OPTIONS,
-      next: { revalidate: 86400 },
-    });
-
-    if (!response.ok) return undefined;
-
-    const payload = (await response.json()) as OpenErApiResponse;
-    const quote = payload.rates?.[currencyCode];
-
-    if (payload.result !== "success" || !quote || !payload.time_last_update_unix) {
-      return undefined;
-    }
-
-    return {
-      baseCurrency: "KRW",
-      quoteCurrency: currencyCode,
-      quote,
-      summary: `1,000원당 약 ${(quote * 1000).toFixed(currencyCode === "JPY" ? 0 : 2)} ${currencyCode}`,
-      observedAt: new Date(payload.time_last_update_unix * 1000).toISOString(),
-    };
-  } catch {
-    return undefined;
-  }
-}
-
-async function getExchangeRateFromHost(
-  currencyCode: string,
-  accessKey: string,
-): Promise<DestinationTravelSupplement["exchangeRate"] | undefined> {
   const searchParams = new URLSearchParams({
     access_key: accessKey,
     source: "KRW",
@@ -586,10 +400,14 @@ async function getExchangeRateFromHost(
 
   const response = await fetch(`https://api.exchangerate.host/live?${searchParams.toString()}`, {
     ...DEFAULT_REQUEST_OPTIONS,
-    next: { revalidate: 1800 },
+    next: {
+      revalidate: 1800,
+    },
   });
 
-  if (!response.ok) return undefined;
+  if (!response.ok) {
+    return undefined;
+  }
 
   const payload = (await response.json()) as ExchangeRateLiveResponse;
   const quote = payload.quotes?.[`KRW${currencyCode}`];
@@ -614,67 +432,42 @@ async function getExchangeRateFromHost(
  */
 export async function getDestinationTravelSupplement(
   destination: DestinationProfile,
-  travelMonth?: number,
 ): Promise<DestinationTravelSupplement | null> {
-  const cached = await readDestinationTravelSupplementCache(destination.id, travelMonth);
-
-  if (cached && isCacheFresh(cached.expiresAt)) {
-    return cached.payload;
-  }
-
   const metadata = getCountryMetadata(destination.countryCode);
 
   if (!metadata) {
-    return cached?.payload ?? null;
+    return null;
   }
 
   try {
     const providerConfig = getProviderConfig();
-    const location =
-      cached?.payload.location ??
-      (await getDestinationLocation(
-        destination,
-        metadata.countryName,
-        metadata.currencyCode,
-      ));
+    const location = await getDestinationLocation(
+      destination,
+      metadata.countryName,
+      metadata.currencyCode,
+    );
 
     if (!location) {
-      return cached?.payload ?? null;
+      return null;
     }
 
-    const [heroImage, weather, travelMonthWeather, nearbyPlaces, exchangeRate] = await Promise.all([
-      getHeroImage(destination, metadata.countryName, providerConfig.unsplashAccessKey).catch(
-        () => cached?.payload.heroImage,
-      ),
-      getWeatherSnapshot(location).catch(() => cached?.payload.weather),
-      typeof travelMonth === "number"
-        ? getTravelMonthWeatherSnapshot(location, travelMonth).catch(
-            () => cached?.payload.travelMonthWeather,
-          )
-        : Promise.resolve(undefined),
-      getNearbyPlaces(destination, location, providerConfig.googleMapsApiKey).catch(
-        () => cached?.payload.nearbyPlaces,
-      ),
-      getExchangeRate(location.currencyCode, providerConfig.exchangeRateHostAccessKey).catch(
-        () => cached?.payload.exchangeRate,
-      ),
+    const [heroImage, weather, nearbyPlaces, exchangeRate] = await Promise.all([
+      getHeroImage(destination, metadata.countryName, providerConfig.unsplashAccessKey).catch(() => undefined),
+      getWeatherSnapshot(location).catch(() => undefined),
+      getNearbyPlaces(destination, location, providerConfig.googleMapsApiKey).catch(() => undefined),
+      getExchangeRate(location.currencyCode, providerConfig.exchangeRateHostAccessKey).catch(() => undefined),
     ]);
 
-    const supplement = destinationTravelSupplementSchema.parse({
+    return destinationTravelSupplementSchema.parse({
       location,
       heroImage,
       weather,
-      travelMonthWeather,
       nearbyPlaces,
-      map: buildDestinationMap(destination, location),
+      mapEmbed: getMapEmbed(destination, location, providerConfig.googleMapsApiKey),
       exchangeRate,
       fetchedAt: new Date().toISOString(),
     });
-
-    await writeDestinationTravelSupplementCache(destination.id, travelMonth, supplement);
-
-    return supplement;
   } catch {
-    return cached?.payload ?? null;
+    return null;
   }
 }

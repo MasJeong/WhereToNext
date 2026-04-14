@@ -1,8 +1,8 @@
-# 떠나볼래 한국어 카피 가이드라인
+# 떠나볼래 Korean Copy Guidelines
 
 ## 목적
 
-떠나볼래는 한국어를 우선으로 쓰는 해외여행 추천 제품입니다. 모든 사용자-facing 문구는 글로벌 영어 사용자가 아니라, 한국에서 출발하는 한국인 여행자를 기준으로 작성합니다.
+떠나볼래 is a Korean-first outbound travel recommendation product. Write every user-facing string for Korean travelers departing from Korea, not for a global English audience.
 
 ## 제품 보이스
 

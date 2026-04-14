@@ -260,7 +260,6 @@ export async function listUserDestinationHistory(userId: string): Promise<UserDe
     visitedAt: row.visitedAt.toISOString(),
     memo: row.memo,
     images: normalizeHistoryImages(row.images),
-    visibility: row.visibility,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
   }));
@@ -305,7 +304,6 @@ export async function createUserDestinationHistory(
         visitedAt: input.visitedAt,
         memo: input.memo ?? null,
         images: input.images,
-        visibility: input.visibility,
         createdAt: nowIso,
         updatedAt: nowIso,
       } satisfies UserDestinationHistory;
@@ -327,7 +325,6 @@ export async function createUserDestinationHistory(
       visitedAt: input.visitedAt,
       memo: input.memo ?? null,
       images: input.images,
-      visibility: input.visibility,
       createdAt: nowIso,
       updatedAt: nowIso,
     } satisfies UserDestinationHistory;
@@ -349,7 +346,6 @@ export async function createUserDestinationHistory(
       visitedAt: new Date(input.visitedAt),
       memo: input.memo ?? null,
       images: input.images,
-      visibility: input.visibility,
     })
     .returning();
 
@@ -364,7 +360,6 @@ export async function createUserDestinationHistory(
     visitedAt: created.visitedAt.toISOString(),
     memo: created.memo,
     images: normalizeHistoryImages(created.images),
-    visibility: created.visibility,
     createdAt: created.createdAt.toISOString(),
     updatedAt: created.updatedAt.toISOString(),
   };
@@ -400,7 +395,6 @@ export async function updateUserDestinationHistory(
         visitedAt: input.visitedAt,
         memo: input.memo ?? null,
         images: input.images,
-        visibility: input.visibility,
         updatedAt: new Date().toISOString(),
       } satisfies UserDestinationHistory;
 
@@ -424,7 +418,6 @@ export async function updateUserDestinationHistory(
       visitedAt: input.visitedAt,
       memo: input.memo ?? null,
       images: input.images,
-      visibility: input.visibility,
       updatedAt: new Date().toISOString(),
     } satisfies UserDestinationHistory;
 
@@ -444,7 +437,6 @@ export async function updateUserDestinationHistory(
       visitedAt: new Date(input.visitedAt),
       memo: input.memo ?? null,
       images: input.images,
-      visibility: input.visibility,
       updatedAt: new Date(),
     })
     .where(and(eq(userDestinationHistory.id, historyId), eq(userDestinationHistory.userId, userId)))
@@ -465,7 +457,6 @@ export async function updateUserDestinationHistory(
     visitedAt: updated.visitedAt.toISOString(),
     memo: updated.memo,
     images: normalizeHistoryImages(updated.images),
-    visibility: updated.visibility,
     createdAt: updated.createdAt.toISOString(),
     updatedAt: updated.updatedAt.toISOString(),
   };
@@ -573,7 +564,6 @@ export async function upsertUserFutureTrip(
       const existing = Object.values(store.futureTrips).find(
         (entry) => entry.userId === userId && entry.destinationId === parsedInput.destinationId,
       );
-
       const nowIso = new Date().toISOString();
       const saved = userFutureTripSchema.parse({
         id: existing?.id ?? randomUUID(),
@@ -594,7 +584,6 @@ export async function upsertUserFutureTrip(
     const existing = [...memoryStore.futureTrips.values()].find(
       (entry) => entry.userId === userId && entry.destinationId === parsedInput.destinationId,
     );
-
     const nowIso = new Date().toISOString();
     const saved = userFutureTripSchema.parse({
       id: existing?.id ?? randomUUID(),

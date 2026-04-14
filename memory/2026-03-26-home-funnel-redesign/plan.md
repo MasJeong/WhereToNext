@@ -1,6 +1,6 @@
-# 홈 퍼널 리디자인 계획
+# Home funnel redesign plan
 
-- 랜딩 → 질문 → 결과 흐름과 추천 질의 파생 로직은 그대로 유지한다.
-- 따뜻한 톤, 카드 중심 비주얼을 흰색 중심의 미니멀 퍼널로 교체한다.
-- 저장, 공유, 비교 액션과 안정적인 home/result test id를 유지한다.
-- 결과 표시는 대표 목적지 대표 영역 1개와 간결한 보조 목록으로 단순화한다.
+- Keep landing → question → result flow and recommendation query derivation intact.
+- Replace warm/card-heavy visual treatment with a white-first minimal funnel.
+- Preserve save/share/compare actions and stable home/result test ids.
+- Simplify result presentation into one primary destination hero plus compact secondary list.
