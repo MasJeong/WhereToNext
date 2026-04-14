@@ -63,13 +63,6 @@ const primaryNavItems: readonly { label: string; href: string; icon: React.React
   { label: "내 여행", href: "/account", icon: <SuitcaseIcon /> },
 ];
 
-import { brandDisplayName } from "@/lib/brand";
-import { isIosShellMode } from "@/lib/runtime/shell";
-import { testIds } from "@/lib/test-ids";
-
-import { isIosShellMode } from "@/lib/runtime/shell";
-import { testIds } from "@/lib/test-ids";
-
 type ExperienceShellProps = {
   eyebrow: string;
   title: string;
