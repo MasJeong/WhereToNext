@@ -170,6 +170,15 @@ export const destinationWeatherSnapshotSchema = z.object({
   observedAt: z.string().datetime(),
 });
 
+export const destinationTravelMonthWeatherSchema = z.object({
+  travelMonth: z.number().int().min(1).max(12),
+  summary: z.string().min(1),
+  averageMinTemperatureC: z.number(),
+  averageMaxTemperatureC: z.number(),
+  rainyDayRatio: z.number().min(0).max(100),
+  basedOnYears: z.number().int().min(1),
+});
+
 export const destinationNearbyPlaceSchema = z.object({
   id: z.string().min(1),
   name: z.string().min(1),
@@ -177,9 +186,12 @@ export const destinationNearbyPlaceSchema = z.object({
   googleMapsUrl: z.url(),
 });
 
-export const destinationMapEmbedSchema = z.object({
-  src: z.url(),
+export const destinationMapSchema = z.object({
+  latitude: z.number().min(-90).max(90),
+  longitude: z.number().min(-180).max(180),
+  zoom: z.number().int().min(1).max(20),
   title: z.string().min(1),
+  googleMapsUrl: z.url(),
 });
 
 export const destinationExchangeRateSchema = z.object({
@@ -194,10 +206,111 @@ export const destinationTravelSupplementSchema = z.object({
   location: destinationTravelLocationSchema,
   heroImage: destinationHeroImageSchema.optional(),
   weather: destinationWeatherSnapshotSchema.optional(),
+  travelMonthWeather: destinationTravelMonthWeatherSchema.optional(),
   nearbyPlaces: z.array(destinationNearbyPlaceSchema).max(5).optional(),
-  mapEmbed: destinationMapEmbedSchema.optional(),
+  map: destinationMapSchema.optional(),
   exchangeRate: destinationExchangeRateSchema.optional(),
   fetchedAt: z.string().datetime(),
+});
+
+export const socialVideoLeadEvidenceSchema = z.object({
+  label: z.string().min(1),
+  detail: z.string().min(1),
+  sourceLabel: z.string().min(1),
+  sourceUrl: z.url().nullable().optional(),
+});
+
+export const socialVideoRequestSchema = z.object({
+  destinationId: z.string().min(1),
+  query: recommendationQuerySchema,
+  leadEvidence: socialVideoLeadEvidenceSchema.optional(),
+});
+
+export const socialVideoItemSchema = z.object({
+  provider: z.literal("youtube"),
+  videoId: z.string().min(1),
+  title: z.string().min(1),
+  channelTitle: z.string().min(1),
+  channelUrl: z.url(),
+  videoUrl: z.url(),
+  thumbnailUrl: z.url(),
+  publishedAt: z.string().datetime(),
+  durationSeconds: z.number().int().positive(),
+  viewCount: z.number().int().nonnegative().optional(),
+});
+
+export const socialVideoFallbackSearchSchema = z.object({
+  label: z.string().min(1),
+  url: z.url(),
+});
+
+export const socialVideoFallbackMetaSchema = z.object({
+  reason: z.enum(["api-disabled", "quota-exceeded", "request-failed", "low-confidence", "no-candidates"]),
+  headline: z.string().min(1),
+  description: z.string().min(1),
+  searches: z.array(socialVideoFallbackSearchSchema).min(1).max(4),
+});
+
+export const socialVideoResponseSchema = z.discriminatedUnion("status", [
+  z.object({
+    status: z.literal("ok"),
+    item: socialVideoItemSchema,
+    items: z.array(socialVideoItemSchema).min(1).max(3),
+  }),
+  z.object({
+    status: z.literal("fallback"),
+    item: socialVideoItemSchema.nullable(),
+    items: z.array(socialVideoItemSchema).max(3),
+    fallback: socialVideoFallbackMetaSchema,
+  }),
+  z.object({
+    status: z.literal("empty"),
+    item: z.null(),
+    items: z.array(socialVideoItemSchema).max(0).optional(),
+    fallback: socialVideoFallbackMetaSchema,
+  }),
+]);
+
+export const recommendationActionEvidenceSchema = z.object({
+  sourceLabel: z.string().min(1),
+  summary: z.string().min(1),
+});
+
+export const recommendationActionRequestSchema = z.object({
+  destinationId: z.string().min(1),
+  destinationName: z.string().min(1),
+  destinationSummary: z.string().min(1),
+  leadReason: z.string().min(1),
+  whyThisFits: z.string().min(1),
+  watchOuts: z.array(z.string().min(1)).max(3),
+  query: recommendationQuerySchema,
+  nearbyPlaces: z.array(destinationNearbyPlaceSchema).max(5).optional(),
+  evidence: z.array(recommendationActionEvidenceSchema).max(3).optional(),
+});
+
+export const recommendationActionItemSchema = z.object({
+  id: z.enum(["signature", "tailored", "easy-start"]),
+  label: z.string().min(1),
+  title: z.string().min(1),
+  description: z.string().min(1),
+  placeLabel: z.string().min(1).optional(),
+});
+
+export const recommendationActionDetailBlockSchema = z.object({
+  id: z.enum(["signature", "half-day", "check-point"]),
+  title: z.string().min(1),
+  body: z.string().min(1),
+});
+
+export const recommendationActionsResponseSchema = z.object({
+  status: z.enum(["ok", "fallback"]),
+  actions: z.array(recommendationActionItemSchema).min(1).max(3),
+  compactSummary: z.string().min(1),
+  detailBlocks: z.array(recommendationActionDetailBlockSchema).min(1).max(3),
+});
+
+export const recommendationSnapshotMetaSchema = z.object({
+  status: snapshotStatusSchema.default("saved"),
 });
 
 export const recommendationSnapshotSchema = z.object({
@@ -396,6 +509,15 @@ export type RecommendationQuery = z.infer<typeof recommendationQuerySchema>;
 export type RecommendationResult = z.infer<typeof recommendationResultSchema>;
 export type TrendEvidenceSnapshot = z.infer<typeof trendEvidenceSnapshotSchema>;
 export type DestinationTravelSupplement = z.infer<typeof destinationTravelSupplementSchema>;
+export type SocialVideoLeadEvidence = z.infer<typeof socialVideoLeadEvidenceSchema>;
+export type SocialVideoRequest = z.infer<typeof socialVideoRequestSchema>;
+export type SocialVideoItem = z.infer<typeof socialVideoItemSchema>;
+export type SocialVideoResponse = z.infer<typeof socialVideoResponseSchema>;
+export type RecommendationActionEvidence = z.infer<typeof recommendationActionEvidenceSchema>;
+export type RecommendationActionRequest = z.infer<typeof recommendationActionRequestSchema>;
+export type RecommendationActionItem = z.infer<typeof recommendationActionItemSchema>;
+export type RecommendationActionDetailBlock = z.infer<typeof recommendationActionDetailBlockSchema>;
+export type RecommendationActionsResponse = z.infer<typeof recommendationActionsResponseSchema>;
 export type RecommendationSnapshot = z.infer<typeof recommendationSnapshotSchema>;
 export type ComparisonSnapshot = z.infer<typeof comparisonSnapshotSchema>;
 export type ScoringVersion = z.infer<typeof scoringVersionSchema>;

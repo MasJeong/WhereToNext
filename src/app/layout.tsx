@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Cormorant_Garamond, JetBrains_Mono, Manrope } from "next/font/google";
+import type { CSSProperties } from "react";
+import { brandDisplayName } from "@/lib/brand";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -47,7 +48,15 @@ export default function RootLayout({
   return (
     <html lang="ko">
       <body
-        className={`${bodyFont.variable} ${displayFont.variable} ${monoFont.variable} compass-app-body antialiased`}
+        style={
+          {
+            "--font-body": "\"Avenir Next\", \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif",
+            "--font-ko": "\"Apple SD Gothic Neo\", \"Malgun Gothic\", \"Noto Sans KR\", sans-serif",
+            "--font-display": "\"Iowan Old Style\", \"Palatino Linotype\", \"Times New Roman\", serif",
+            "--font-mono": "\"SFMono-Regular\", \"JetBrains Mono\", Consolas, \"Liberation Mono\", monospace",
+          } as CSSProperties
+        }
+        className="compass-app-body antialiased"
       >
         <div className="compass-app-frame compass-app-shell">
           <div className="compass-route-stage">{children}</div>

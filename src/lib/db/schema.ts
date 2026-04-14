@@ -49,6 +49,7 @@ export const explorationPreferenceEnum = pgEnum(
   "exploration_preference",
   explorationPreferenceValues,
 );
+export const historyVisibilityEnum = pgEnum("history_visibility", historyVisibilityValues);
 export const userStatusEnum = pgEnum("user_status", ["active", "inactive"]);
 export const affiliatePartnerEnum = pgEnum("affiliate_partner", affiliatePartnerValues);
 export const affiliateCategoryEnum = pgEnum("affiliate_category", affiliateCategoryValues);
@@ -210,6 +211,72 @@ export const userDestinationHistory = pgTable("user_destination_history", {
     contentType: string;
     dataUrl: string;
   }>>(),
+  visibility: historyVisibilityEnum("visibility").notNull().default("private"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const communityComments = pgTable("community_comments", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  historyId: uuid("history_id")
+    .notNull()
+    .references(() => userDestinationHistory.id, { onDelete: "cascade" }),
+  userId: text("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  content: text("content").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const userFutureTrips = pgTable(
+  "user_future_trips",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    userId: text("user_id")
+      .notNull()
+      .references(() => user.id, { onDelete: "cascade" }),
+    destinationId: text("destination_id")
+      .notNull()
+      .references(() => destinationProfiles.id, { onDelete: "cascade" }),
+    sourceSnapshotId: uuid("source_snapshot_id").notNull(),
+    destinationNameKo: text("destination_name_ko").notNull(),
+    countryCode: text("country_code").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    userDestinationUnique: uniqueIndex("user_future_trips_user_destination_unique").on(
+      table.userId,
+      table.destinationId,
+    ),
+  }),
+);
+
+export const destinationAffiliateClicks = pgTable("destination_affiliate_clicks", {
+  id: uuid("id").defaultRandom().primaryKey(),
+  destinationId: text("destination_id")
+    .notNull()
+    .references(() => destinationProfiles.id, { onDelete: "cascade" }),
+  partner: affiliatePartnerEnum("partner").notNull(),
+  category: affiliateCategoryEnum("category").notNull(),
+  pageType: affiliatePageTypeEnum("page_type").notNull(),
+  departureAirport: text("departure_airport"),
+  travelMonth: integer("travel_month"),
+  tripLengthDays: integer("trip_length_days"),
+  flightTolerance: text("flight_tolerance"),
+  userId: text("user_id").references(() => user.id, { onDelete: "set null" }),
+  sessionId: text("session_id"),
+  clickedAt: timestamp("clicked_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export const destinationTravelSupplementCache = pgTable("destination_travel_supplement_cache", {
+  cacheKey: text("cache_key").primaryKey(),
+  destinationId: text("destination_id")
+    .notNull()
+    .references(() => destinationProfiles.id, { onDelete: "cascade" }),
+  travelMonth: integer("travel_month"),
+  payload: jsonb("payload").$type<DestinationTravelSupplement>().notNull(),
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
 });

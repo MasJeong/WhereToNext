@@ -163,7 +163,7 @@ export async function readLocalStore(): Promise<LocalStoreData> {
     }
 
     try {
-      return JSON.parse(content) as LocalStoreData;
+      return normalizeLocalStore(JSON.parse(content) as Partial<LocalStoreData>);
     } catch {
       await sleep(20);
     }

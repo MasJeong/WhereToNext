@@ -41,11 +41,6 @@ type FeedPage = {
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
 
-/**
- * 작성 시각을 커뮤니티 피드용 상대 시간으로 포맷한다.
- * @param dateString ISO 시각 문자열
- * @returns 상대 시간 라벨
- */
 export function formatRelativeTime(dateString: string): string {
   const now = Date.now();
   const then = new Date(dateString).getTime();
@@ -65,11 +60,6 @@ export function formatRelativeTime(dateString: string): string {
   return `${months}달 전`;
 }
 
-/**
- * 커뮤니티 카드와 상세에서 공통으로 쓰는 별점 표시다.
- * @param props 표시할 별점
- * @returns 별점 UI
- */
 export function StarRating({ rating }: { rating: number }) {
   return (
     <span className="inline-flex gap-0.5" aria-label={`별점 ${rating}점`}>
@@ -129,11 +119,6 @@ function EmptyState() {
 /*  Comment section                                                    */
 /* ------------------------------------------------------------------ */
 
-/**
- * 여행 이야기 댓글 목록과 입력 영역을 렌더링한다.
- * @param props 댓글 대상 historyId와 로그인 상태
- * @returns 댓글 섹션
- */
 export function CommentSection({
   historyId,
   isLoggedIn,
@@ -293,6 +278,12 @@ function PostCard({
   isLoggedIn: boolean;
 }) {
   const [showComments, setShowComments] = useState(false);
+  const [localCommentCount, setLocalCommentCount] = useState(post.commentCount);
+
+  /* Keep count in sync when comments section tells us */
+  useEffect(() => {
+    setLocalCommentCount(post.commentCount);
+  }, [post.commentCount]);
 
   return (
     <article className="py-5">
@@ -323,50 +314,49 @@ function PostCard({
         </div>
       </div>
 
-      <Link href={`/community/${post.historyId}`} className="group block">
-        <h3 className="mt-3 text-[1.05rem] font-semibold leading-snug tracking-[-0.02em] text-[var(--color-ink)] transition-colors group-hover:text-[var(--color-action-primary)]">
-          {post.destinationName}
-        </h3>
+      {/* Destination heading */}
+      <h3 className="mt-3 text-[1.05rem] font-semibold leading-snug tracking-[-0.02em] text-[var(--color-ink)]">
+        {post.destinationName}
+      </h3>
 
-        <div className="mt-1.5">
-          <StarRating rating={post.rating} />
+      {/* Rating */}
+      <div className="mt-1.5">
+        <StarRating rating={post.rating} />
+      </div>
+
+      {/* Tags */}
+      {post.tags.length > 0 ? (
+        <div className="mt-2.5 flex flex-wrap gap-1.5">
+          {post.tags.map((tag) => (
+            <span
+              key={tag}
+              className="rounded-full border border-[color:var(--color-funnel-border)] bg-white/80 px-2.5 py-0.5 text-[0.68rem] font-semibold text-[var(--color-ink-soft)]"
+            >
+              #{tag}
+            </span>
+          ))}
         </div>
+      ) : null}
 
-        {post.tags.length > 0 ? (
-          <div className="mt-2.5 flex flex-wrap gap-1.5">
-            {post.tags.map((tag) => (
-              <span
-                key={tag}
-                className="rounded-full border border-[color:var(--color-funnel-border)] bg-white/80 px-2.5 py-0.5 text-[0.68rem] font-semibold text-[var(--color-ink-soft)]"
-              >
-                #{tag}
-              </span>
-            ))}
-          </div>
-        ) : null}
-
-        {post.memo ? (
-          <p className="mt-3 line-clamp-3 text-[0.88rem] leading-relaxed text-[var(--color-ink)]">
-            {post.memo}
-          </p>
-        ) : null}
-
-        {post.imageUrl ? (
-          <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-[1.2rem]">
-            <Image
-              src={post.imageUrl}
-              alt={`${post.destinationName} 여행 사진`}
-              fill
-              sizes="(max-width: 672px) 100vw, 672px"
-              className="object-cover transition-transform duration-300 group-hover:scale-[1.02]"
-            />
-          </div>
-        ) : null}
-
-        <p className="mt-3 text-[0.78rem] font-semibold text-[var(--color-action-primary)]">
-          로그인하고 이야기 자세히 보기
+      {/* Memo */}
+      {post.memo ? (
+        <p className="mt-3 text-[0.88rem] leading-relaxed text-[var(--color-ink)]">
+          {post.memo}
         </p>
-      </Link>
+      ) : null}
+
+      {/* Image */}
+      {post.imageUrl ? (
+        <div className="relative mt-3 aspect-[4/3] overflow-hidden rounded-[1.2rem]">
+          <Image
+            src={post.imageUrl}
+            alt={`${post.destinationName} 여행 사진`}
+            fill
+            sizes="(max-width: 672px) 100vw, 672px"
+            className="object-cover"
+          />
+        </div>
+      ) : null}
 
       {/* Comment toggle button */}
       <button
@@ -374,8 +364,8 @@ function PostCard({
         onClick={() => setShowComments((prev) => !prev)}
         className="mt-3 text-[0.82rem] font-semibold text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)]"
       >
-        {post.commentCount > 0
-          ? `댓글 ${post.commentCount}개`
+        {localCommentCount > 0
+          ? `댓글 ${localCommentCount}개`
           : "댓글 쓰기"}
       </button>
 

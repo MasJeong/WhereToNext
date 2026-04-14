@@ -1,51 +1,60 @@
 "use client";
-
-import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { AnimatePresence } from "framer-motion";
-import { useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type {
-  ComparisonSnapshot,
-  DestinationTravelSupplement,
   RecommendationQuery,
+  UserFutureTrip,
 } from "@/lib/domain/contracts";
 import {
   buildDestinationDetailPath,
   buildQueryNarrative,
   buildRecommendationDecisionFacts,
-  buildRecommendationEvidenceLead,
   buildRecommendationSearchParams,
   buildStructuredTripBrief,
   createRecommendationCards,
   formatDepartureAirport,
   formatDestinationWithCountry,
   formatEvidenceMode,
-  formatMonthList,
+  formatResultVibeLabel,
+  formatTripLengthBand,
   formatTravelMonth,
-  formatVibeLabel,
   type RecommendationApiResponse,
   type RecommendationCardView,
 } from "@/lib/trip-compass/presentation";
 import { buildRecommendationSnapshotPayload } from "@/lib/trip-compass/snapshot-payload";
-import { buildApiUrl } from "@/lib/runtime/url";
+import { authClient } from "@/lib/auth-client";
 import {
-  defaultHomeStepAnswers,
+  buildCurrentRoute,
+  consumeMatchingPostAuthIntent,
+  savePostAuthIntent,
+} from "@/lib/post-auth-intent";
+import { buildApiUrl } from "@/lib/runtime/url";
+import { isIosShellMode } from "@/lib/runtime/shell";
+import { parseRecommendationQuery } from "@/lib/security/validation";
+import {
   deriveRecommendationQueryFromHomeStepAnswers,
+  filterHomeExcludedCountryOptions,
+  formatHomeStepTravelWindowLabel,
   homeStepCompanionOptions,
-  homeStepDepartureOptions,
-  homeStepMainVibeOptions,
+  homeStepExcludedCountryOptions,
+  homeStepFlightPreferenceValues,
+  homeStepFlightPreferenceOptions,
+  homeStepTravelStyleOptions,
+  homeStepTravelWindowValues,
+  homeStepTripLengthOptions,
   homeStepTravelWindowOptions,
-  homeStepTripRhythmOptions,
   type HomeStepAnswers,
+  type HomeStepTravelStyle,
+  type HomeStepTravelWindow,
 } from "@/lib/trip-compass/step-answer-adapter";
 import {
   getHomeChoiceTestId,
   getInstagramVibeTestId,
   getRelaxFilterActionTestId,
   getResultCardTestId,
-  getResultFilterChipTestId,
   getResultTopItemTestId,
   getSaveSnapshotTestId,
   getSavedSnapshotTestId,
@@ -55,11 +64,14 @@ import { shellHomeEvent, shellStartRecommendationEvent } from "@/lib/trip-compas
 
 import { ExperienceShell } from "./experience-shell";
 import { LandingPage } from "./home/landing-page";
+import { ResultLoadingPanel } from "./home/result-loading-panel";
 import { ResultPage } from "./home/result-page";
 import { StepQuestion } from "./home/step-question";
+import { CompactSocialVideoPanel, LeadSocialVideoPanel } from "./social-video-panel";
 import { TravelSupportPanel } from "./travel-support-panel";
 
-type FunnelStage = "landing" | "question" | "result";
+
+type FunnelStage = "landing" | "question" | "loading" | "result";
 
 type SaveState = {
   status: "idle" | "saving" | "saved" | "error";
@@ -89,6 +101,7 @@ type RelaxationAction = {
 };
 
 type StepOptionValue = string | number | null;
+type StepSelectionValue = StepOptionValue | StepOptionValue[];
 
 type StepOptionView = {
   id: string;
@@ -101,24 +114,67 @@ type HomeFlowStep = {
   id: string;
   question: string;
   helper: string;
-  selectedValue?: StepOptionValue;
+  selectedValue?: StepSelectionValue;
   options: StepOptionView[];
   onSelect: (value: StepOptionValue) => void;
+  onNext?: () => void;
+  nextLabel?: string;
+  nextDisabled?: boolean;
+  searchValue?: string;
+  onSearchChange?: (value: string) => void;
+  searchPlaceholder?: string;
+  emptyMessage?: string;
+  selectedChips?: Array<{
+    id: string;
+    label: string;
+    onRemove: () => void;
+  }>;
 };
 
 type SavedSnapshotCompactItemProps = {
   snapshot: SavedSnapshotCard;
   index: number;
-  selected: boolean;
-  onToggle: (snapshotId: string) => void;
   onCopy: (shareUrl: string) => void;
+  hideAccountActions?: boolean;
 };
 
-type LeadDestinationVisualProps = {
-  card: RecommendationCardView;
-  query: RecommendationQuery;
-  supplement?: DestinationTravelSupplement | null;
-};
+function renderLeadWeatherAside(
+  leadSupplement: RecommendationApiResponse["leadSupplement"],
+  destinationName: string,
+  travelMonth: number,
+) {
+  const travelMonthWeather = leadSupplement?.travelMonthWeather;
+  const currentWeather = leadSupplement?.weather;
+
+  if (!travelMonthWeather && !currentWeather) {
+    return null;
+  }
+
+  return (
+    <article className="rounded-[1.05rem] border border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#ffffff_0%,#f8fafc_100%)] px-3.5 py-3.5">
+      <p className="text-[0.92rem] font-semibold leading-6 tracking-[-0.02em] text-[var(--color-funnel-text)]">
+        {travelMonthWeather?.summary ?? `${travelMonth}월 날씨 - ${destinationName}의 시기별 날씨를 확인해 보세요.`}
+      </p>
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {travelMonthWeather ? (
+          <>
+            <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
+              평균 {travelMonthWeather.averageMinTemperatureC}°~{travelMonthWeather.averageMaxTemperatureC}°
+            </span>
+            <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
+              비 {travelMonthWeather.rainyDayRatio}%
+            </span>
+          </>
+        ) : null}
+        {currentWeather ? (
+          <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text)]">
+            지금 {currentWeather.summary}
+          </span>
+        ) : null}
+      </div>
+    </article>
+  );
+}
 
 type CompactRecommendationItemProps = {
   card: RecommendationCardView;
@@ -127,29 +183,32 @@ type CompactRecommendationItemProps = {
   saveState: SaveState;
   onSave: (card: RecommendationCardView) => void;
   onCopy: (shareUrl: string) => void;
+  hideAccountActions?: boolean;
 };
 
-type ResultFilterKey = "all" | "short-flight" | "city" | "rest" | "balanced-budget";
-type ResultSortKey = "fit" | "shortest-flight" | "budget";
+type HomeUrlStage = FunnelStage;
 
-const tripLengthRelaxationOrder = [3, 5, 8] as const;
+const tripLengthRelaxationOrder = [3, 5, 8, 15] as const;
 const flightToleranceRelaxationOrder = ["short", "medium", "long"] as const;
 const travelMonthRelaxationOrder = [7, 10, 12] as const;
-const defaultAnswers: HomeStepAnswers = {
-  whoWith: defaultHomeStepAnswers.whoWith,
-  travelWindow: defaultHomeStepAnswers.travelWindow,
-  tripRhythm: defaultHomeStepAnswers.tripRhythm,
-  mainVibe: defaultHomeStepAnswers.mainVibe,
-  departureChoice: defaultHomeStepAnswers.departureChoice,
-};
+const defaultAnswers: Partial<HomeStepAnswers> = {};
+const homeStageParam = "stage";
+const homeStepParam = "step";
+const homeWhoWithParam = "whoWith";
+const homeTravelWindowParam = "travelWindow";
+const homeTripLengthParam = "tripLength";
+const homeTravelStyleParam = "travelStyle";
+const homeFlightPreferenceParam = "flightPreference";
+const homeExcludedCountryCodesParam = "excludedCountryCodes";
+const minimumRecommendationLoadingMs = process.env.NODE_ENV === "test" ? 200 : 5000;
 
-const resultFilterOptions: Array<{ key: ResultFilterKey; label: string; description: string }> = [
-  { key: "all", label: "전체", description: "지금 조건과 맞는 순서대로 봐요." },
-  { key: "short-flight", label: "가까운 비행", description: "비행 부담이 낮은 곳부터 볼게요." },
-  { key: "city", label: "도시 리듬", description: "도시 동선이 살아 있는 후보만 봐요." },
-  { key: "rest", label: "쉬는 흐름", description: "휴양·자연 쪽을 먼저 볼게요." },
-  { key: "balanced-budget", label: "예산 균형", description: "균형 예산 감각을 먼저 볼게요." },
-];
+const companionValueSet = new Set(homeStepCompanionOptions.map((option) => option.value));
+const travelWindowValueSet = new Set<HomeStepTravelWindow>(homeStepTravelWindowValues);
+const tripLengthValueSet = new Set(homeStepTripLengthOptions.map((option) => option.value));
+const flightPreferenceValueSet = new Set(homeStepFlightPreferenceValues);
+const travelStyleValueSet = new Set(homeStepTravelStyleOptions.map((option) => option.value));
+const excludedCountryCodeValueSet = new Set(homeStepExcludedCountryOptions.map((option) => option.value));
+const homeQuestionStepCount = 6;
 
 function getNextRelaxedOption<TValue extends string | number>(
   currentValue: TValue,
@@ -164,28 +223,151 @@ function getNextRelaxedOption<TValue extends string | number>(
   return options[currentIndex + 1] ?? null;
 }
 
-function getFlightRank(flightBand: RecommendationCardView["destination"]["flightBand"]): number {
-  if (flightBand === "short") {
-    return 0;
-  }
-
-  if (flightBand === "medium") {
-    return 1;
-  }
-
-  return 2;
+function isHomeStepTravelStyle(value: string): value is HomeStepTravelStyle {
+  return travelStyleValueSet.has(value as HomeStepTravelStyle);
 }
 
-function getBudgetRank(budgetBand: RecommendationCardView["destination"]["budgetBand"]): number {
-  if (budgetBand === "budget") {
+function isHomeStepTravelWindow(value: string): value is HomeStepTravelWindow {
+  return travelWindowValueSet.has(value as HomeStepTravelWindow);
+}
+
+function parseStepParam(stepParam: string | null): number {
+  const parsedValue = Number(stepParam);
+  if (!Number.isInteger(parsedValue) || parsedValue < 1) {
     return 0;
   }
 
-  if (budgetBand === "mid") {
+  return parsedValue - 1;
+}
+
+/**
+ * Keeps the recommendation loading UI visible for a minimum duration.
+ */
+async function waitForMinimumRecommendationLoading(startedAt: number): Promise<void> {
+  const remainingMs = minimumRecommendationLoadingMs - (Date.now() - startedAt);
+
+  if (remainingMs <= 0) {
+    return;
+  }
+
+  await new Promise<void>((resolve) => {
+    window.setTimeout(resolve, remainingMs);
+  });
+}
+
+function getFirstIncompleteStepIndex(answers: Partial<HomeStepAnswers>): number {
+  if (!answers.whoWith) {
+    return 0;
+  }
+
+  if (!answers.travelWindow) {
     return 1;
   }
 
-  return 2;
+  if (!answers.tripLength) {
+    return 2;
+  }
+
+  if (!answers.travelStyle || answers.travelStyle.length === 0) {
+    return 3;
+  }
+
+  if (!answers.flightPreference) {
+    return 4;
+  }
+
+  return 5;
+}
+
+function clampQuestionStepIndex(stepIndex: number, answers: Partial<HomeStepAnswers>, totalSteps: number): number {
+  const maxStepIndex = Math.max(0, totalSteps - 1);
+  const firstIncompleteStepIndex = getFirstIncompleteStepIndex(answers);
+  return Math.min(Math.max(0, stepIndex), Math.min(firstIncompleteStepIndex, maxStepIndex));
+}
+
+function parseQuestionAnswersFromSearchParams(searchParams: URLSearchParams): Partial<HomeStepAnswers> {
+  const whoWith = searchParams.get(homeWhoWithParam);
+  const travelWindow = searchParams.get(homeTravelWindowParam);
+  const tripLength = Number(searchParams.get(homeTripLengthParam));
+  const flightPreference = searchParams.get(homeFlightPreferenceParam);
+  const excludedCountryCodes = searchParams
+    .get(homeExcludedCountryCodesParam)
+    ?.split(",")
+    .map((value) => value.trim().toUpperCase())
+    .filter((value) => excludedCountryCodeValueSet.has(value))
+    .slice(0, 3);
+  const travelStyle = searchParams
+    .get(homeTravelStyleParam)
+    ?.split(",")
+    .map((value) => value.trim())
+    .filter(isHomeStepTravelStyle)
+    .slice(0, 3);
+
+  const restoredAnswers: Partial<HomeStepAnswers> = {};
+
+  if (whoWith && companionValueSet.has(whoWith as HomeStepAnswers["whoWith"])) {
+    restoredAnswers.whoWith = whoWith as HomeStepAnswers["whoWith"];
+  }
+
+  if (travelWindow && isHomeStepTravelWindow(travelWindow)) {
+    restoredAnswers.travelWindow = travelWindow;
+  }
+
+  if (tripLengthValueSet.has(tripLength as HomeStepAnswers["tripLength"])) {
+    restoredAnswers.tripLength = tripLength as HomeStepAnswers["tripLength"];
+  }
+
+  if (travelStyle && travelStyle.length > 0) {
+    restoredAnswers.travelStyle = travelStyle;
+  }
+
+  if (flightPreference && flightPreferenceValueSet.has(flightPreference as HomeStepAnswers["flightPreference"])) {
+    restoredAnswers.flightPreference = flightPreference as HomeStepAnswers["flightPreference"];
+  }
+
+  if (excludedCountryCodes && excludedCountryCodes.length > 0) {
+    restoredAnswers.excludedCountryCodes = excludedCountryCodes;
+  }
+
+  return restoredAnswers;
+}
+
+function buildQuestionSearchParams(stepIndex: number, answers: Partial<HomeStepAnswers>): URLSearchParams {
+  const params = new URLSearchParams();
+  params.set(homeStageParam, "question");
+  params.set(homeStepParam, String(stepIndex + 1));
+
+  if (answers.whoWith) {
+    params.set(homeWhoWithParam, answers.whoWith);
+  }
+
+  if (answers.travelWindow) {
+    params.set(homeTravelWindowParam, String(answers.travelWindow));
+  }
+
+  if (answers.tripLength) {
+    params.set(homeTripLengthParam, String(answers.tripLength));
+  }
+
+  if (answers.travelStyle && answers.travelStyle.length > 0) {
+    params.set(homeTravelStyleParam, answers.travelStyle.join(","));
+  }
+
+  if (answers.flightPreference) {
+    params.set(homeFlightPreferenceParam, answers.flightPreference);
+  }
+
+  if (answers.excludedCountryCodes && answers.excludedCountryCodes.length > 0) {
+    params.set(homeExcludedCountryCodesParam, answers.excludedCountryCodes.join(","));
+  }
+
+  return params;
+}
+
+function buildResultSearchParams(query: RecommendationQuery): URLSearchParams {
+  const params = buildRecommendationSearchParams(query);
+  params.set(homeStageParam, "result");
+  return params;
 }
 
 function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] {
@@ -196,8 +378,10 @@ function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] 
   if (nextTripLength) {
     actions.push({
       id: "trip-length",
-      label: `일정을 ${nextTripLength}일로 넓히기`,
-      description: "짧은 일정 제약을 풀어 후보 풀을 조금 더 넓혀요.",
+      label: `여행 기간을 ${
+        nextTripLength <= 3 ? "2~3일" : nextTripLength <= 6 ? "4~6일" : nextTripLength <= 10 ? "7~10일" : "11일 이상"
+      }으로 변경하기`,
+      description: "더 많은 여행지를 확인할 수 있어요.",
       nextQuery: { ...query, tripLengthDays: nextTripLength },
     });
   }
@@ -205,8 +389,8 @@ function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] 
   if (nextFlightTolerance) {
     actions.push({
       id: "flight-tolerance",
-      label: `비행 범위를 ${nextFlightTolerance === "short" ? "단거리" : nextFlightTolerance === "medium" ? "중거리" : "장거리"}까지 넓히기`,
-      description: "거리 제한을 조금 풀어 더 넓은 후보를 확인해요.",
+      label: `비행 범위를 ${nextFlightTolerance === "short" ? "단거리" : nextFlightTolerance === "medium" ? "중거리" : "장거리"}까지 늘려보기`,
+      description: "더 먼 곳도 추천받아 볼 수 있어요.",
       nextQuery: { ...query, flightTolerance: nextFlightTolerance },
     });
   }
@@ -215,7 +399,7 @@ function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] 
     actions.push({
       id: "departure-airport",
       label: "출발 공항을 인천(ICN)으로 바꾸기",
-      description: "노선 선택지가 가장 넓은 기준으로 다시 볼게요.",
+      description: "더 많은 항공편을 고려해서 다시 추천해 드릴게요.",
       nextQuery: { ...query, departureAirport: "ICN" },
     });
   }
@@ -223,8 +407,8 @@ function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] 
   if (query.vibes.length > 1) {
     actions.push({
       id: "secondary-vibe",
-      label: "보조 분위기 조건 빼기",
-      description: "대표 분위기 하나로 먼저 넓게 받아봐요.",
+      label: "주요 분위기만 보기",
+      description: "가장 중요한 분위기 하나로 추천받아 봐요.",
       nextQuery: { ...query, vibes: [query.vibes[0]] },
     });
   }
@@ -248,20 +432,6 @@ function buildRelaxationActions(query: RecommendationQuery): RelaxationAction[] 
     .slice(0, 3);
 }
 
-function buildComparisonSnapshotPayload(
-  savedSnapshots: SavedSnapshotCard[],
-): { kind: "comparison"; payload: ComparisonSnapshot } {
-  return {
-    kind: "comparison",
-    payload: {
-      v: 1,
-      kind: "comparison",
-      snapshotIds: savedSnapshots.map((snapshot) => snapshot.snapshotId),
-      destinationIds: savedSnapshots.map((snapshot) => snapshot.destinationId),
-    },
-  };
-}
-
 function buildAbsoluteShareUrl(sharePath: string): string {
   return `${window.location.origin}${sharePath}`;
 }
@@ -277,12 +447,18 @@ function scrollToElementById(elementId: string, behavior: ScrollBehavior = getMo
   });
 }
 
+function scrollToPageTop(behavior: ScrollBehavior = "auto") {
+  window.scrollTo({
+    top: 0,
+    behavior,
+  });
+}
+
 function SavedSnapshotCompactItem({
   snapshot,
   index,
-  selected,
-  onToggle,
   onCopy,
+  hideAccountActions = false,
 }: SavedSnapshotCompactItemProps) {
   return (
     <article
@@ -293,24 +469,19 @@ function SavedSnapshotCompactItem({
         <div>
           <p className="compass-editorial-kicker">저장한 여행 {index + 1}</p>
           <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">{snapshot.destinationName}</p>
-          <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">다시 열어 보거나 비교 보드 후보로 바로 담을 수 있어요.</p>
+          <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">다시 열어 보거나 저장 목록에서 이어서 확인할 수 있어요.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => onToggle(snapshot.snapshotId)}
-          className={`rounded-full px-3 py-2 text-xs font-semibold ${selected ? "compass-selected" : "compass-selection-chip"}`}
-        >
-          {selected ? "비교 포함" : "비교 담기"}
-        </button>
       </div>
 
       <div className="mt-3 flex flex-wrap gap-2">
-        <Link
-          href={snapshot.sharePath}
-          className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em]"
-        >
-          저장 페이지
-        </Link>
+        {hideAccountActions ? null : (
+          <Link
+            href="/account?tab=saved"
+            className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-xs font-semibold tracking-[0.04em]"
+          >
+            저장 목록에서 보기
+          </Link>
+        )}
         <button
           type="button"
           onClick={() => onCopy(snapshot.shareUrl)}
@@ -323,83 +494,6 @@ function SavedSnapshotCompactItem({
   );
 }
 
-function LeadDestinationVisual({ card, query, supplement }: LeadDestinationVisualProps) {
-  const primaryVibe = card.destination.vibeTags[0] ?? "city";
-  const isRest = primaryVibe === "beach" || primaryVibe === "nature";
-  const isRomance = primaryVibe === "romance" || primaryVibe === "culture";
-
-  return (
-    <div className="relative aspect-[5/6] overflow-hidden rounded-[1.75rem] border border-[color:var(--color-funnel-border)] bg-white">
-      {supplement?.heroImage ? (
-        <>
-          <Image
-            src={supplement.heroImage.url}
-            alt={supplement.heroImage.alt}
-            fill
-            sizes="(max-width: 1024px) 100vw, 40vw"
-            className="absolute inset-0 object-cover"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/20 to-black/25" />
-        </>
-      ) : (
-        <>
-          <div className="absolute inset-x-0 top-0 h-[46%] bg-[var(--color-funnel-accent-subtle)]" />
-          <div className="absolute inset-x-0 bottom-0 h-[34%] bg-white" />
-        </>
-      )}
-      <div className="absolute left-5 top-5 text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-        {card.destination.nameEn}
-      </div>
-      <div className="absolute right-5 top-5 rounded-full border border-[color:var(--color-funnel-border)] bg-white/95 px-3 py-1 text-[0.64rem] font-semibold text-[var(--color-funnel-text-soft)] backdrop-blur-sm">
-        {formatDepartureAirport(query.departureAirport)} 출발
-      </div>
-
-      {!supplement?.heroImage && isRest ? (
-        <>
-          <div className="absolute left-8 top-20 h-16 w-16 rounded-full bg-white" />
-          <div className="absolute bottom-20 left-6 right-6 h-10 rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-accent-soft)]" />
-          <div className="absolute bottom-28 left-10 h-24 w-28 rounded-t-[3rem] bg-[var(--color-funnel-accent-muted)]" />
-          <div className="absolute bottom-28 right-10 h-32 w-40 rounded-t-[4rem] bg-[var(--color-funnel-text)]" />
-        </>
-      ) : !supplement?.heroImage && isRomance ? (
-        <>
-          <div className="absolute bottom-32 left-1/2 h-28 w-28 -translate-x-1/2 rounded-t-full border-[14px] border-b-0 border-[color:var(--color-funnel-text)]" />
-          <div className="absolute bottom-24 left-1/2 h-10 w-40 -translate-x-1/2 rounded-t-full border border-[color:var(--color-funnel-border-strong)] bg-[var(--color-funnel-accent-soft)]" />
-          <div className="absolute bottom-0 left-8 right-8 h-28 rounded-t-[2rem] bg-[var(--color-funnel-text)]" />
-        </>
-      ) : !supplement?.heroImage ? (
-        <>
-          <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between px-7">
-            <span className="h-24 w-12 rounded-t-[1rem] bg-[var(--color-funnel-accent-soft)]" />
-            <span className="h-32 w-16 rounded-t-[1rem] bg-[var(--color-funnel-text)]" />
-            <span className="h-[5.25rem] w-11 rounded-t-[0.9rem] bg-[var(--color-funnel-accent-muted)]" />
-            <span className="h-28 w-14 rounded-t-[1rem] bg-[var(--color-funnel-text)]" />
-            <span className="h-20 w-10 rounded-t-[0.9rem] bg-[var(--color-funnel-accent-soft)]" />
-          </div>
-        </>
-      ) : null}
-
-      <div className="absolute inset-x-5 bottom-5 rounded-[1.5rem] border border-[color:var(--color-funnel-border)] bg-white px-5 py-4">
-        <p className="text-[0.68rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-          대표 추천
-        </p>
-        <p
-          data-testid={getResultTopItemTestId(0)}
-          className="mt-2 text-[1.55rem] font-semibold leading-none tracking-[-0.05em] text-[var(--color-funnel-text)] sm:text-[2rem]"
-        >
-          {card.destination.nameKo}
-        </p>
-        <p className="mt-2 text-sm leading-6 text-[var(--color-funnel-text-soft)]">{formatMonthList(card.destination.bestMonths)}</p>
-        {supplement?.heroImage ? (
-          <p className="mt-1 text-[11px] leading-5 text-[var(--color-funnel-text-soft)]">
-            사진 · {supplement.heroImage.sourceLabel} / {supplement.heroImage.photographerName}
-          </p>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
 function CompactRecommendationItem({
   card,
   index,
@@ -407,16 +501,18 @@ function CompactRecommendationItem({
   saveState,
   onSave,
   onCopy,
+  hideAccountActions = false,
 }: CompactRecommendationItemProps) {
-  const detailPath = buildDestinationDetailPath(card.destination, query, saveState.snapshotId);
   const leadReason = card.recommendation.reasons[0] ?? card.recommendation.whyThisFits;
   const decisionFacts = buildRecommendationDecisionFacts(card.destination);
-  const tags = card.destination.vibeTags.slice(0, 3).map((tag) => formatVibeLabel(tag));
+  const tags = card.destination.vibeTags.slice(0, 3).map((tag) => formatResultVibeLabel(tag));
+  const detailPath = buildDestinationDetailPath(card.destination, query);
+  const accountSavedPath = "/account?tab=saved";
 
   return (
     <article
       data-testid={getResultCardTestId(index)}
-      className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-3"
+      className="rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-3.5 shadow-[0_10px_28px_rgba(15,23,42,0.04)]"
     >
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="min-w-0 flex-1">
@@ -434,15 +530,15 @@ function CompactRecommendationItem({
           <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
             <h3
               data-testid={getResultTopItemTestId(index)}
-              className="text-[1rem] font-semibold leading-none tracking-[-0.02em] text-[var(--color-funnel-text)]"
+              className="text-[1.05rem] font-semibold leading-none tracking-[-0.02em] text-[var(--color-funnel-text)]"
             >
-              {card.destination.nameKo}
+              {formatDestinationWithCountry(card.destination)}
             </h3>
             <span className="text-[0.78rem] text-[var(--color-funnel-text-soft)]">
               {formatDepartureAirport(query.departureAirport)} 출발
             </span>
           </div>
-          <p className="mt-1.5 line-clamp-1 text-[0.88rem] font-semibold leading-6 text-[var(--color-funnel-text)]">
+          <p className="mt-2 line-clamp-2 text-[0.9rem] font-semibold leading-6 text-[var(--color-funnel-text)]">
             {leadReason}
           </p>
           <div className="mt-1.5 flex flex-wrap gap-1.5">
@@ -455,28 +551,40 @@ function CompactRecommendationItem({
               </span>
             ))}
           </div>
+
+          <CompactSocialVideoPanel
+            destinationId={card.destination.id}
+            destinationName={card.destination.nameKo}
+            leadReason={leadReason}
+            query={query}
+          />
         </div>
 
         <div className="flex flex-wrap gap-2 sm:justify-end">
+          {hideAccountActions ? null : saveState.status === "saved" ? (
+            <Link
+              href={accountSavedPath}
+              className="inline-flex min-h-[2.25rem] items-center gap-1.5 rounded-full bg-[var(--color-action-primary)] px-4 py-2 text-[0.72rem] font-semibold text-white shadow-[0_2px_6px_rgba(var(--color-action-primary-rgb,59,130,246),0.25)] transition-all duration-200 hover:bg-[var(--color-action-primary-strong)] hover:shadow-[0_3px_10px_rgba(var(--color-action-primary-rgb,59,130,246),0.35)]"
+            >
+              계정에서 보기
+            </Link>
+          ) : (
+            <button
+              type="button"
+              data-testid={getSaveSnapshotTestId(index)}
+              onClick={() => onSave(card)}
+              disabled={saveState.status === "saving"}
+              className="inline-flex min-h-[2.25rem] items-center gap-1.5 rounded-full bg-[var(--color-action-primary)] px-4 py-2 text-[0.72rem] font-semibold text-white shadow-[0_2px_6px_rgba(var(--color-action-primary-rgb,59,130,246),0.25)] transition-all duration-200 hover:bg-[var(--color-action-primary-strong)] hover:shadow-[0_3px_10px_rgba(var(--color-action-primary-rgb,59,130,246),0.35)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+            >
+              {saveState.status === "saving" ? "담는 중..." : "내 여행에 담기"}
+            </button>
+          )}
           <Link
             href={detailPath}
-            className="inline-flex min-h-[2.25rem] items-center rounded-full bg-[var(--color-action-primary)] px-3 py-2 text-[0.72rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
+            className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
           >
-            상세 보기
+            이 도시 알아보기
           </Link>
-          <button
-            type="button"
-            data-testid={getSaveSnapshotTestId(index)}
-            onClick={() => onSave(card)}
-            disabled={saveState.status === "saving"}
-            className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {saveState.status === "saving"
-              ? "저장 중..."
-              : saveState.status === "saved"
-                ? "담김"
-                : "저장"}
-          </button>
           {saveState.shareUrl ? (
             <button
               type="button"
@@ -484,7 +592,7 @@ function CompactRecommendationItem({
               onClick={() => {
                 void onCopy(saveState.shareUrl ?? "");
               }}
-              className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
+              className="inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] hover:text-[var(--color-funnel-text)]"
             >
               링크 복사
             </button>
@@ -497,6 +605,9 @@ function CompactRecommendationItem({
 
 export function HomeExperience() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const session = authClient.useSession();
+  const [routeSearchParamString, setRouteSearchParamString] = useState(() => searchParams.toString());
   const [stage, setStage] = useState<FunnelStage>("landing");
   const [answers, setAnswers] = useState<Partial<HomeStepAnswers>>(defaultAnswers);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -504,83 +615,178 @@ export function HomeExperience() {
   const [cards, setCards] = useState<RecommendationCardView[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [showAllResults, setShowAllResults] = useState(false);
-  const [resultFilter, setResultFilter] = useState<ResultFilterKey>("all");
-  const [resultSort, setResultSort] = useState<ResultSortKey>("fit");
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
   const [futureTripStates, setFutureTripStates] = useState<Record<string, FutureTripState>>({});
   const [snapshotReferences, setSnapshotReferences] = useState<Record<string, SavedSnapshotCard>>({});
   const [savedSnapshots, setSavedSnapshots] = useState<SavedSnapshotCard[]>([]);
   const [copyFallbackUrl, setCopyFallbackUrl] = useState<string | null>(null);
-  const [selectedCompareIds, setSelectedCompareIds] = useState<string[]>([]);
-  const [compareError, setCompareError] = useState<string | null>(null);
-  const [compareLoading, setCompareLoading] = useState(false);
+  const [trendingDestinations, setTrendingDestinations] = useState<string[] | null>(null);
+  const [trendingLoading, setTrendingLoading] = useState(true);
+  const [todayRecommendationCount, setTodayRecommendationCount] = useState(0);
+  const [excludedCountrySearchQuery, setExcludedCountrySearchQuery] = useState("");
+  const hideAccountActions = isIosShellMode();
   const activeRecommendationRequestRef = useRef(0);
+  const localRouteSyncRef = useRef<string | null>(null);
+  const pendingRecommendationQueryRef = useRef<string | null>(null);
+  const requestRecommendationsRef = useRef<(query: RecommendationQuery, syncRoute?: boolean) => Promise<void>>(async () => {});
+  const resetFunnelRef = useRef<() => void>(() => {});
+  const startFunnelRef = useRef<() => void>(() => {});
+  const replayedIntentRef = useRef<string | null>(null);
 
   const currentQuery = useMemo(() => deriveRecommendationQueryFromHomeStepAnswers(answers), [answers]);
+  const filteredExcludedCountryOptions = useMemo(
+    () => filterHomeExcludedCountryOptions(excludedCountrySearchQuery),
+    [excludedCountrySearchQuery],
+  );
+  const selectedExcludedCountryOptions = useMemo(
+    () => homeStepExcludedCountryOptions.filter((option) => (answers.excludedCountryCodes ?? []).includes(option.value)),
+    [answers.excludedCountryCodes],
+  );
   const resultQuery = results?.query ?? currentQuery;
   const queryNarrative = useMemo(() => buildQueryNarrative(resultQuery), [resultQuery]);
-  const briefItems = useMemo(() => buildStructuredTripBrief(resultQuery), [resultQuery]);
+  const briefItems = useMemo(() => {
+    const nextItems = buildStructuredTripBrief(resultQuery);
+    const selectedTravelWindow = answers.travelWindow;
+    if (!selectedTravelWindow) {
+      return nextItems;
+    }
+
+    return nextItems.map((item) => {
+      if (item.id !== "travel-window") {
+        if (item.id === "flight-tolerance" && answers.flightPreference === "anywhere") {
+          return {
+            ...item,
+            value: "어디든 괜찮아요",
+          };
+        }
+
+        return item;
+      }
+
+      return {
+        ...item,
+        value: `${formatHomeStepTravelWindowLabel(selectedTravelWindow)} · ${formatTripLengthBand(resultQuery.tripLengthDays)}`,
+      };
+    });
+  }, [answers.travelWindow, resultQuery]);
   const emptyStateActions = useMemo(() => buildRelaxationActions(resultQuery), [resultQuery]);
   const filteredCards = useMemo(() => {
-    const nextCards = [...cards];
-
-    const visibleByFilter = nextCards.filter((card) => {
-      if (resultFilter === "all") {
-        return true;
-      }
-
-      if (resultFilter === "short-flight") {
-        return card.destination.flightBand === "short";
-      }
-
-      if (resultFilter === "city") {
-        return card.destination.vibeTags.includes("city") || card.destination.kind === "city";
-      }
-
-      if (resultFilter === "rest") {
-        return card.destination.vibeTags.includes("beach") || card.destination.vibeTags.includes("nature");
-      }
-
-      return card.destination.budgetBand === "mid";
-    });
-
-    visibleByFilter.sort((left, right) => {
-      if (resultSort === "shortest-flight") {
-        return (
-          getFlightRank(left.destination.flightBand) - getFlightRank(right.destination.flightBand) ||
-          right.recommendation.confidence - left.recommendation.confidence
-        );
-      }
-
-      if (resultSort === "budget") {
-        return (
-          getBudgetRank(left.destination.budgetBand) - getBudgetRank(right.destination.budgetBand) ||
-          right.recommendation.confidence - left.recommendation.confidence
-        );
-      }
-
-      return (
+    return [...cards].sort(
+      (left, right) =>
         right.recommendation.scoreBreakdown.total - left.recommendation.scoreBreakdown.total ||
-        right.recommendation.confidence - left.recommendation.confidence
-      );
-    });
-
-    return visibleByFilter;
-  }, [cards, resultFilter, resultSort]);
+        right.recommendation.confidence - left.recommendation.confidence,
+    );
+  }, [cards]);
 
   const leadCard = filteredCards[0] ?? cards[0] ?? null;
-  const secondaryCards = showAllResults ? filteredCards.slice(1) : filteredCards.slice(1, 4);
-  const canCreateCompare = selectedCompareIds.length >= 2 && selectedCompareIds.length <= 4;
-  const compareTrayDestinations = useMemo(() => {
-    const selectedSnapshots = savedSnapshots.filter((snapshot) => selectedCompareIds.includes(snapshot.snapshotId));
-    const previewSource = selectedSnapshots.length > 0 ? selectedSnapshots : savedSnapshots;
+  const secondaryCards = filteredCards.slice(1, 5);
 
-    return previewSource
-      .slice(0, 2)
-      .map((snapshot) => snapshot.destinationName)
-      .join(" · ");
-  }, [savedSnapshots, selectedCompareIds]);
+  const searchParamString = routeSearchParamString;
+  const homeSearchParams = useMemo(() => new URLSearchParams(searchParamString), [searchParamString]);
+  const routeStage = homeSearchParams.get(homeStageParam) as HomeUrlStage | null;
+  const effectiveStage = useMemo<FunnelStage>(() => {
+    if (stage === "loading") {
+      return "loading";
+    }
+
+    if (routeStage === "question") {
+      return "question";
+    }
+
+    if (routeStage === "result") {
+      return "result";
+    }
+
+    if (routeStage === "landing" || homeSearchParams.size === 0) {
+      return "landing";
+    }
+
+    return stage;
+  }, [homeSearchParams.size, routeStage, stage]);
+
+  const navigateHomeRoute = useCallback((nextSearchParams: URLSearchParams | null, mode: "push" | "replace") => {
+    const nextQuery = nextSearchParams?.toString() ?? "";
+    const nextRoute = nextQuery ? `/?${nextQuery}` : "/";
+    localRouteSyncRef.current = nextRoute;
+    setRouteSearchParamString(nextQuery);
+    if (mode === "push") {
+      router.push(nextRoute, { scroll: false });
+      return;
+    }
+
+    router.replace(nextRoute, { scroll: false });
+  }, [router]);
+
+  const replaceHomeRoute = useCallback((nextSearchParams: URLSearchParams | null) => {
+    navigateHomeRoute(nextSearchParams, "replace");
+  }, [navigateHomeRoute]);
+
+  const pushHomeRoute = useCallback((nextSearchParams: URLSearchParams | null) => {
+    navigateHomeRoute(nextSearchParams, "push");
+  }, [navigateHomeRoute]);
+
+  const syncQuestionRoute = useCallback((
+    stepIndex: number,
+    nextAnswers: Partial<HomeStepAnswers>,
+    mode: "push" | "replace" = "push",
+  ) => {
+    const nextSearchParams = buildQuestionSearchParams(stepIndex, nextAnswers);
+    if (mode === "replace") {
+      replaceHomeRoute(nextSearchParams);
+      return;
+    }
+
+    pushHomeRoute(nextSearchParams);
+  }, [pushHomeRoute, replaceHomeRoute]);
+
+  const syncResultRoute = useCallback((query: RecommendationQuery, mode: "push" | "replace" = "push") => {
+    const nextSearchParams = buildResultSearchParams(query);
+    if (mode === "replace") {
+      replaceHomeRoute(nextSearchParams);
+      return;
+    }
+
+    pushHomeRoute(nextSearchParams);
+  }, [pushHomeRoute, replaceHomeRoute]);
+
+  const syncLandingRoute = useCallback((mode: "push" | "replace" = "replace") => {
+    if (mode === "push") {
+      pushHomeRoute(null);
+      return;
+    }
+
+    replaceHomeRoute(null);
+  }, [pushHomeRoute, replaceHomeRoute]);
+
+  const restoreQuestionStage = useCallback((nextSearchParams: URLSearchParams) => {
+    const restoredAnswers = parseQuestionAnswersFromSearchParams(nextSearchParams);
+    const requestedStepIndex = parseStepParam(nextSearchParams.get(homeStepParam));
+    const nextStepIndex = clampQuestionStepIndex(requestedStepIndex, restoredAnswers, homeQuestionStepCount);
+
+    activeRecommendationRequestRef.current += 1;
+    pendingRecommendationQueryRef.current = null;
+    setStage("question");
+    setAnswers(restoredAnswers);
+    setCurrentStepIndex(nextStepIndex);
+    setResults(null);
+    setCards([]);
+    setIsSubmitting(false);
+    setSubmitError(null);
+    setCopyFallbackUrl(null);
+  }, []);
+
+  const restoreLandingStage = useCallback(() => {
+    activeRecommendationRequestRef.current += 1;
+    pendingRecommendationQueryRef.current = null;
+    setStage("landing");
+    setAnswers(defaultAnswers);
+    setCurrentStepIndex(0);
+    setResults(null);
+    setCards([]);
+    setIsSubmitting(false);
+    setSubmitError(null);
+    setCopyFallbackUrl(null);
+  }, []);
 
   const steps: HomeFlowStep[] = [
     {
@@ -620,12 +826,12 @@ export function HomeExperience() {
       },
     },
     {
-      id: "trip-rhythm",
-      question: "이번 일정은 어떤 리듬이 좋아요?",
-      helper: "일정 길이, 밀도, 비행 부담을 한 번에 가볍게 맞춰요.",
-      selectedValue: answers.tripRhythm,
-      options: homeStepTripRhythmOptions.map((option) => ({
-        id: `trip-rhythm-${option.value}`,
+      id: "trip-length",
+      question: "며칠 정도 생각하고 있나요?",
+      helper: "일정 길이가 정해지면 갈 수 있는 후보를 훨씬 현실적으로 좁힐 수 있어요.",
+      selectedValue: answers.tripLength,
+      options: homeStepTripLengthOptions.map((option) => ({
+        id: `trip-length-${option.value}`,
         value: option.value,
         label: option.label,
         description: option.description,
@@ -633,17 +839,17 @@ export function HomeExperience() {
       onSelect: (value) => {
         setAnswers((currentState) => ({
           ...currentState,
-          tripRhythm: value as HomeStepAnswers["tripRhythm"],
+          tripLength: value as HomeStepAnswers["tripLength"],
         }));
       },
     },
     {
-      id: "main-vibe",
-      question: "가장 먼저 챙기고 싶은 분위기는요?",
-      helper: "대표 분위기 하나만 정하면 TOP 후보가 훨씬 빨리 좁혀져요.",
-      selectedValue: answers.mainVibe,
-      options: homeStepMainVibeOptions.map((option) => ({
-        id: `main-vibe-${option.value}`,
+      id: "travel-style",
+      question: "이번 여행에서는 뭐가 더 중요해요?",
+      helper: "최대 3개까지 고를 수 있어요. 실제로 여행에서 먼저 챙기고 싶은 스타일을 골라 주세요.",
+      selectedValue: answers.travelStyle ?? [],
+      options: homeStepTravelStyleOptions.map((option) => ({
+        id: `travel-style-${option.value}`,
         value: option.value,
         label: option.label,
         description: option.description,
@@ -651,17 +857,47 @@ export function HomeExperience() {
       onSelect: (value) => {
         setAnswers((currentState) => ({
           ...currentState,
-          mainVibe: value as HomeStepAnswers["mainVibe"],
+          travelStyle: toggleTravelStyleOption(currentState.travelStyle ?? [], value as HomeStepTravelStyle),
+        }));
+      },
+      onNext: () => {
+        const nextStepIndex = Math.min(currentStepIndex + 1, steps.length - 1);
+        setCurrentStepIndex(nextStepIndex);
+        syncQuestionRoute(nextStepIndex, answers, "push");
+      },
+      nextDisabled: (answers.travelStyle ?? []).length === 0,
+    },
+    {
+      id: "flight-preference",
+      question: "비행이나 이동 부담은 어느 정도 괜찮아요?",
+      helper: "출발지는 기본값으로 두고, 갈 수 있는 거리 범위만 현실적으로 먼저 맞출게요.",
+      selectedValue: answers.flightPreference,
+      options: homeStepFlightPreferenceOptions.map((option) => ({
+        id: `flight-preference-${option.value}`,
+        value: option.value,
+        label: option.label,
+        description: option.description,
+      })),
+      onSelect: (value) => {
+        setAnswers((currentState) => ({
+          ...currentState,
+          flightPreference: value as HomeStepAnswers["flightPreference"],
         }));
       },
     },
     {
-      id: "departure-choice",
-      question: "출발은 어디 기준으로 볼까요?",
-      helper: "한국 출발 흐름을 맞추는 마지막 질문이에요.",
-      selectedValue: answers.departureChoice,
-      options: homeStepDepartureOptions.map((option) => ({
-        id: `departure-choice-${option.value}`,
+      id: "excluded-countries",
+      question: "이번엔 빼고 싶은 나라가 있나요?",
+      helper: "없으면 그대로 추천할게요. 최대 3개까지 빼둘 수 있어요.",
+      selectedValue: answers.excludedCountryCodes ?? [],
+      options: (
+        excludedCountrySearchQuery.trim().length > 0
+          ? filteredExcludedCountryOptions.filter(
+              (option) => !(answers.excludedCountryCodes ?? []).includes(option.value),
+            )
+          : []
+      ).map((option) => ({
+        id: `excluded-country-${option.value}`,
         value: option.value,
         label: option.label,
         description: option.description,
@@ -669,18 +905,204 @@ export function HomeExperience() {
       onSelect: (value) => {
         setAnswers((currentState) => ({
           ...currentState,
-          departureChoice: value as HomeStepAnswers["departureChoice"],
+          excludedCountryCodes: toggleExcludedCountryOption(
+            currentState.excludedCountryCodes ?? [],
+            value as string,
+          ),
         }));
       },
+      onNext: () => {
+        void requestRecommendations(deriveRecommendationQueryFromHomeStepAnswers(answers));
+      },
+      nextLabel: "추천 보기",
+      searchValue: excludedCountrySearchQuery,
+      onSearchChange: setExcludedCountrySearchQuery,
+      searchPlaceholder: "나라명이나 국가코드로 검색",
+      emptyMessage: excludedCountrySearchQuery.trim().length > 0
+        ? "맞는 나라가 없어요. 다른 이름이나 국가코드로 검색해 보세요."
+        : undefined,
+      selectedChips: selectedExcludedCountryOptions.map((option) => ({
+        id: option.value,
+        label: option.label,
+        onRemove: () => {
+          setAnswers((currentState) => ({
+            ...currentState,
+            excludedCountryCodes: (currentState.excludedCountryCodes ?? []).filter(
+              (countryCode) => countryCode !== option.value,
+            ),
+          }));
+        },
+      })),
     },
   ];
 
   const currentStep = steps[currentStepIndex] ?? steps[0];
-  const compareButtonLabel = compareLoading
-    ? "비교 보드 저장 중..."
-    : canCreateCompare
-      ? `${selectedCompareIds.length}곳 비교 보드 만들기`
-      : "2개부터 선택하면 비교돼요";
+
+  useEffect(() => {
+    setRouteSearchParamString(searchParams.toString());
+  }, [searchParams]);
+
+  useEffect(() => {
+    if (currentStep?.id !== "excluded-countries" && excludedCountrySearchQuery) {
+      setExcludedCountrySearchQuery("");
+    }
+  }, [currentStep?.id, excludedCountrySearchQuery]);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(buildApiUrl("/api/trending-destinations"), { signal: controller.signal })
+      .then((res) => res.json())
+      .then((data: { destinations?: Array<{ nameKo: string }>; todayCount?: number }) => {
+        if (data.destinations) {
+          setTrendingDestinations(data.destinations.map((d) => d.nameKo));
+        }
+        if (typeof data.todayCount === "number") {
+          setTodayRecommendationCount(data.todayCount);
+        }
+        setTrendingLoading(false);
+      })
+      .catch(() => {
+        setTrendingLoading(false);
+      });
+    return () => controller.abort();
+  }, []);
+
+  useEffect(() => {
+    const currentRoute = buildCurrentRoute("/", homeSearchParams);
+    const isLocallySyncedRoute = localRouteSyncRef.current === currentRoute;
+
+    if (isLocallySyncedRoute) {
+      localRouteSyncRef.current = null;
+    }
+
+    if (homeSearchParams.get("start") === "1") {
+      const nextAnswers = defaultAnswers;
+      setStage("question");
+      setAnswers(nextAnswers);
+      setCurrentStepIndex(0);
+      setResults(null);
+      setCards([]);
+      setIsSubmitting(false);
+      setSubmitError(null);
+      setCopyFallbackUrl(null);
+      syncQuestionRoute(0, nextAnswers, "replace");
+      return;
+    }
+
+    const routeStage = homeSearchParams.get(homeStageParam) as HomeUrlStage | null;
+
+    if (routeStage === "question" && pendingRecommendationQueryRef.current) {
+      return;
+    }
+
+    if (routeStage === "question") {
+      restoreQuestionStage(homeSearchParams);
+      return;
+    }
+
+    try {
+      const query = parseRecommendationQuery(homeSearchParams);
+      const serializedQuery = buildRecommendationSearchParams(query).toString();
+
+      if (routeStage !== "result") {
+        syncResultRoute(query, "replace");
+        return;
+      }
+
+      if (submitError) {
+        if (pendingRecommendationQueryRef.current === serializedQuery) {
+          pendingRecommendationQueryRef.current = null;
+        }
+        return;
+      }
+
+      if (pendingRecommendationQueryRef.current === serializedQuery) {
+        if (results) {
+          const serializedResultQuery = buildRecommendationSearchParams(results.query).toString();
+
+          if (serializedResultQuery === serializedQuery) {
+            pendingRecommendationQueryRef.current = null;
+          }
+        }
+        return;
+      }
+
+      if (results) {
+        const serializedResultQuery = buildRecommendationSearchParams(results.query).toString();
+
+        if (serializedResultQuery === serializedQuery) {
+          return;
+        }
+
+        syncResultRoute(results.query, "replace");
+        return;
+      }
+
+      if (isLocallySyncedRoute) {
+        return;
+      }
+
+      void requestRecommendationsRef.current(query, false);
+      return;
+    } catch {
+    }
+
+    if (routeStage === "landing" || homeSearchParams.size === 0) {
+      restoreLandingStage();
+    }
+  }, [homeSearchParams, isSubmitting, restoreLandingStage, restoreQuestionStage, results, searchParamString, submitError, syncQuestionRoute, syncResultRoute]);
+
+  useEffect(() => {
+    function handlePopState() {
+      const nextSearchParamString = window.location.search.startsWith("?")
+        ? window.location.search.slice(1)
+        : window.location.search;
+      const nextSearchParams = new URLSearchParams(nextSearchParamString);
+      setRouteSearchParamString(nextSearchParamString);
+      const routeStage = nextSearchParams.get(homeStageParam) as HomeUrlStage | null;
+
+      if (routeStage === "question") {
+        restoreQuestionStage(nextSearchParams);
+        return;
+      }
+
+      if (routeStage === "landing" || nextSearchParams.size === 0) {
+        restoreLandingStage();
+      }
+    }
+
+    window.addEventListener("popstate", handlePopState);
+
+    return () => {
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [restoreLandingStage, restoreQuestionStage]);
+
+  useEffect(() => {
+    function handleHomeNavigation() {
+      resetFunnelRef.current();
+      requestAnimationFrame(() => {
+        scrollToPageTop(getMotionBehavior());
+      });
+    }
+
+    function handleStartRecommendation() {
+      startFunnelRef.current();
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          scrollToElementById("home-question-flow");
+        });
+      });
+    }
+
+    window.addEventListener(shellHomeEvent, handleHomeNavigation);
+    window.addEventListener(shellStartRecommendationEvent, handleStartRecommendation);
+
+    return () => {
+      window.removeEventListener(shellHomeEvent, handleHomeNavigation);
+      window.removeEventListener(shellStartRecommendationEvent, handleStartRecommendation);
+    };
+  }, []);
 
   function resetFunnel() {
     activeRecommendationRequestRef.current += 1;
@@ -691,10 +1113,8 @@ export function HomeExperience() {
     setCards([]);
     setIsSubmitting(false);
     setSubmitError(null);
-    setShowAllResults(false);
-    setResultFilter("all");
-    setResultSort("fit");
     setCopyFallbackUrl(null);
+    syncLandingRoute("replace");
   }
 
   function startFunnel() {
@@ -706,13 +1126,11 @@ export function HomeExperience() {
     setCards([]);
     setIsSubmitting(false);
     setSubmitError(null);
-    setShowAllResults(false);
-    setResultFilter("all");
-    setResultSort("fit");
     setCopyFallbackUrl(null);
+    syncQuestionRoute(0, defaultAnswers, "push");
   }
 
-  async function copyShareUrl(shareUrl: string) {
+  const copyShareUrl = useCallback(async (shareUrl: string) => {
     try {
       await navigator.clipboard.writeText(shareUrl);
       setCopyFallbackUrl(null);
@@ -877,8 +1295,21 @@ export function HomeExperience() {
       return;
     }
 
-  async function saveCard(card: RecommendationCardView) {
     if (!results) {
+      return;
+    }
+
+    if (!session.data?.user) {
+      const currentRoute = buildCurrentRoute(
+        "/",
+        buildResultSearchParams(results.query),
+      );
+      savePostAuthIntent({
+        kind: "save-home-card",
+        route: currentRoute,
+        destinationId: card.destination.id,
+      });
+      router.push(`/auth?next=${encodeURIComponent(currentRoute)}&intent=save`);
       return;
     }
 
@@ -907,14 +1338,7 @@ export function HomeExperience() {
       [card.destination.id]: { status: "saving" },
     }));
 
-    try {
-      const response = await fetch(buildApiUrl("/api/snapshots"), {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(buildRecommendationSnapshotPayload(results.query, card, results.meta.scoringVersion)),
-      });
+    let createdSnapshotReference: SavedSnapshotCard | null = null;
 
     try {
       const nextSnapshotReference = await createSnapshotReference(card);
@@ -922,16 +1346,7 @@ export function HomeExperience() {
         throw new Error("save-failed");
       }
 
-      const payload = (await response.json()) as { snapshotId: string };
-      const sharePath = `/s/${payload.snapshotId}`;
-      const shareUrl = buildAbsoluteShareUrl(sharePath);
-      const savedSnapshot: SavedSnapshotCard = {
-        snapshotId: payload.snapshotId,
-        destinationId: card.destination.id,
-        destinationName: card.destination.nameKo,
-        sharePath,
-        shareUrl,
-      };
+      createdSnapshotReference = nextSnapshotReference;
 
       await promoteSavedSnapshot(card, nextSnapshotReference);
     } catch {
@@ -939,63 +1354,53 @@ export function HomeExperience() {
         ...currentState,
         [card.destination.id]: { status: "error" },
       }));
-    }
-  }
-
-  function toggleCompareSelection(snapshotId: string) {
-    setCompareError(null);
-    setSelectedCompareIds((currentSelection) => {
-      if (currentSelection.includes(snapshotId)) {
-        return currentSelection.filter((id) => id !== snapshotId);
-      }
-
-      if (currentSelection.length >= 4) {
-        setCompareError("비교는 저장한 여행 2개부터 4개까지 가능해요.");
-        return currentSelection;
-      }
-
-      return [...currentSelection, snapshotId];
-    });
-  }
-
-  async function createCompareSnapshot() {
-    const selectedSnapshots = savedSnapshots.filter((snapshot) => selectedCompareIds.includes(snapshot.snapshotId));
-
-    if (selectedSnapshots.length < 2 || selectedSnapshots.length > 4) {
-      setCompareError("비교하려면 저장한 여행 2개부터 4개까지 선택해 주세요.");
       return;
     }
 
-    setCompareLoading(true);
-    setCompareError(null);
-
-    try {
-      const response = await fetch(buildApiUrl("/api/snapshots"), {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-        },
-        body: JSON.stringify(buildComparisonSnapshotPayload(selectedSnapshots)),
-      });
-
-      if (!response.ok) {
-        throw new Error("compare-create-failed");
-      }
-
-      const payload = (await response.json()) as { snapshotId: string };
-      router.push(`/compare/${payload.snapshotId}`);
-    } catch {
-      setCompareError("비교 보드를 만들지 못했어요. 잠시 후 다시 시도해 주세요.");
-    } finally {
-      setCompareLoading(false);
+    // 로그인 상태면 future trip도 자동 등록 (담기 = snapshot + future trip 통합)
+    if (session.data?.user) {
+      void registerFutureTrip(card, createdSnapshotReference ?? undefined);
     }
   }, [createSnapshotReference, hideAccountActions, promoteSavedSnapshot, registerFutureTrip, results, router, savedSnapshots, session.data?.user, snapshotReferences]);
 
-  async function requestRecommendations(nextQuery: RecommendationQuery) {
+  useEffect(() => {
+    if (session.isPending || !session.data?.user || !results) {
+      return;
+    }
+
+    const currentRoute = buildCurrentRoute(window.location.pathname, new URLSearchParams(window.location.search));
+    const intent = consumeMatchingPostAuthIntent(currentRoute);
+
+    if (!intent) {
+      return;
+    }
+
+    const intentKey = `${intent.kind}:${intent.route}`;
+    if (replayedIntentRef.current === intentKey) {
+      return;
+    }
+
+    replayedIntentRef.current = intentKey;
+
+    if (intent.kind === "save-home-card") {
+      const targetCard = cards.find((card) => card.destination.id === intent.destinationId);
+      if (targetCard) {
+        void saveCard(targetCard);
+      }
+      return;
+    }
+  }, [cards, results, saveCard, session.data?.user, session.isPending]);
+
+  async function requestRecommendations(nextQuery: RecommendationQuery, syncRoute = true) {
+    const loadingStartedAt = Date.now();
     const requestId = activeRecommendationRequestRef.current + 1;
     activeRecommendationRequestRef.current = requestId;
+    pendingRecommendationQueryRef.current = buildRecommendationSearchParams(nextQuery).toString();
 
-    setStage("result");
+    setStage("loading");
+    requestAnimationFrame(() => {
+      scrollToPageTop("auto");
+    });
     setIsSubmitting(true);
     setSubmitError(null);
     setResults(null);
@@ -1017,24 +1422,45 @@ export function HomeExperience() {
         return;
       }
 
+      if (syncRoute) {
+        await waitForMinimumRecommendationLoading(loadingStartedAt);
+        if (activeRecommendationRequestRef.current !== requestId) {
+          return;
+        }
+      }
+
+      setStage("result");
       setResults(payload);
       setCards(createRecommendationCards(payload.recommendations));
-      setResultFilter("all");
-      setResultSort("fit");
-      setShowAllResults(false);
+      if (syncRoute) {
+        syncResultRoute(payload.query, "push");
+      }
+      pendingRecommendationQueryRef.current = null;
       requestAnimationFrame(() => {
-        scrollToElementById("home-results-anchor", "auto");
+        scrollToPageTop("auto");
       });
     } catch {
       if (activeRecommendationRequestRef.current !== requestId) {
         return;
       }
 
+      if (syncRoute) {
+        await waitForMinimumRecommendationLoading(loadingStartedAt);
+        if (activeRecommendationRequestRef.current !== requestId) {
+          return;
+        }
+      }
+
+      setStage("result");
       setResults(null);
       setCards([]);
       setSubmitError("지금은 추천 결과를 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
+      if (syncRoute) {
+        syncResultRoute(nextQuery, "push");
+      }
+      pendingRecommendationQueryRef.current = null;
       requestAnimationFrame(() => {
-        scrollToElementById("home-results-anchor", "auto");
+        scrollToPageTop("auto");
       });
     } finally {
       if (activeRecommendationRequestRef.current === requestId) {
@@ -1043,8 +1469,66 @@ export function HomeExperience() {
     }
   }
 
+  requestRecommendationsRef.current = requestRecommendations;
+  resetFunnelRef.current = resetFunnel;
+  startFunnelRef.current = startFunnel;
+
   async function applyRelaxation(nextQuery: RecommendationQuery) {
     await requestRecommendations(nextQuery);
+  }
+
+  function resolveAnswerKey(stepId: HomeFlowStep["id"]): keyof HomeStepAnswers {
+    if (stepId === "who-with") {
+      return "whoWith";
+    }
+
+    if (stepId === "travel-window") {
+      return "travelWindow";
+    }
+
+    if (stepId === "trip-length") {
+      return "tripLength";
+    }
+
+    if (stepId === "travel-style") {
+      return "travelStyle";
+    }
+
+    if (stepId === "excluded-countries") {
+      return "excludedCountryCodes";
+    }
+
+    return "flightPreference";
+  }
+
+  function toggleTravelStyleOption(
+    currentStyles: HomeStepAnswers["travelStyle"],
+    nextStyle: HomeStepTravelStyle,
+  ): HomeStepAnswers["travelStyle"] {
+    if (currentStyles.includes(nextStyle)) {
+      return currentStyles.filter((style) => style !== nextStyle);
+    }
+
+    if (currentStyles.length >= 3) {
+      return [...currentStyles.slice(1), nextStyle];
+    }
+
+    return [...currentStyles, nextStyle];
+  }
+
+  function toggleExcludedCountryOption(
+    currentCountryCodes: HomeStepAnswers["excludedCountryCodes"],
+    nextCountryCode: string,
+  ): HomeStepAnswers["excludedCountryCodes"] {
+    if (currentCountryCodes.includes(nextCountryCode)) {
+      return currentCountryCodes.filter((countryCode) => countryCode !== nextCountryCode);
+    }
+
+    if (currentCountryCodes.length >= 3) {
+      return [...currentCountryCodes.slice(1), nextCountryCode];
+    }
+
+    return [...currentCountryCodes, nextCountryCode];
   }
 
   function handleStepSelect(stepIndex: number, value: StepOptionValue) {
@@ -1053,22 +1537,38 @@ export function HomeExperience() {
     }
 
     const step = steps[stepIndex];
-    step?.onSelect(value);
+    if (!step) {
+      return;
+    }
 
-    const answerKey =
-      step.id === "who-with"
-        ? "whoWith"
-        : step.id === "travel-window"
-          ? "travelWindow"
-          : step.id === "trip-rhythm"
-            ? "tripRhythm"
-            : step.id === "main-vibe"
-              ? "mainVibe"
-              : "departureChoice";
+    if (step.id === "travel-style") {
+      const nextTravelStyleAnswers = {
+        ...answers,
+        travelStyle: toggleTravelStyleOption(answers.travelStyle ?? [], value as HomeStepTravelStyle),
+      };
+      setAnswers(nextTravelStyleAnswers);
+      syncQuestionRoute(stepIndex, nextTravelStyleAnswers, "replace");
+      return;
+    }
+
+    if (step.id === "excluded-countries") {
+      const nextExcludedCountryAnswers = {
+        ...answers,
+        excludedCountryCodes: toggleExcludedCountryOption(
+          answers.excludedCountryCodes ?? [],
+          value as string,
+        ),
+      };
+      setAnswers(nextExcludedCountryAnswers);
+      syncQuestionRoute(stepIndex, nextExcludedCountryAnswers, "replace");
+      return;
+    }
+
+    const answerKey = resolveAnswerKey(step.id);
 
     const nextAnswers: Partial<HomeStepAnswers> = {
       ...answers,
-      [answerKey]: value,
+      [answerKey]: value as HomeStepAnswers[typeof answerKey],
     };
 
     setAnswers(nextAnswers);
@@ -1078,22 +1578,20 @@ export function HomeExperience() {
       return;
     }
 
-    setCurrentStepIndex(stepIndex + 1);
+    const nextStepIndex = stepIndex + 1;
+    setCurrentStepIndex(nextStepIndex);
+    syncQuestionRoute(nextStepIndex, nextAnswers);
   }
 
   function goToPreviousStep() {
-    if (currentStepIndex === 0) {
-      setStage("landing");
-      return;
-    }
-
-    setCurrentStepIndex((currentValue) => Math.max(0, currentValue - 1));
+    router.back();
   }
 
   function reopenQuestionFlow() {
     activeRecommendationRequestRef.current += 1;
     setIsSubmitting(false);
     setStage("question");
+    syncQuestionRoute(currentStepIndex, answers, "push");
     requestAnimationFrame(() => {
       scrollToElementById("home-question-flow", "auto");
     });
@@ -1104,6 +1602,9 @@ export function HomeExperience() {
       testId={testIds.home.landing}
       heroTestId={testIds.home.heroVisual}
       onStart={startFunnel}
+      trendingDestinations={trendingDestinations}
+      trendingLoading={trendingLoading}
+      todayCount={todayRecommendationCount}
     />
   );
 
@@ -1120,11 +1621,21 @@ export function HomeExperience() {
         onBack={goToPreviousStep}
         onReset={resetFunnel}
         isSubmitting={isSubmitting}
+        nextLabel={currentStep.nextLabel ?? "다음"}
+        onNext={currentStep.onNext}
+        nextDisabled={currentStep.nextDisabled}
+        searchValue={currentStep.searchValue}
+        onSearchChange={currentStep.onSearchChange}
+        searchPlaceholder={currentStep.searchPlaceholder}
+        emptyMessage={currentStep.emptyMessage}
+        selectedChips={currentStep.selectedChips}
         options={currentStep.options.map((option, index) => ({
           id: option.id,
           label: option.label,
           description: option.description,
-          selected: currentStep.selectedValue === option.value,
+          selected: Array.isArray(currentStep.selectedValue)
+            ? currentStep.selectedValue.includes(option.value)
+            : currentStep.selectedValue === option.value,
           testId: getHomeChoiceTestId(index),
           onSelect: () => handleStepSelect(currentStepIndex, option.value),
         }))}
@@ -1132,115 +1643,106 @@ export function HomeExperience() {
     </div>
   );
 
+  const loadingStage = (
+    <div id="home-loading-anchor" className="mx-auto max-w-6xl px-5 py-8 sm:px-8 sm:py-10">
+      <ResultLoadingPanel queryNarrative={queryNarrative} />
+    </div>
+  );
+
   const resultStage = (
     <div id="home-results-anchor">
       <ResultPage
         testId={testIds.home.resultPage}
-        leadTitle={leadCard ? leadCard.destination.nameKo : isSubmitting ? "추천 결과를 정리하고 있어요." : "다시 맞는 후보를 찾고 있어요."}
-        leadReason={leadCard?.recommendation.reasons[0] ?? "결과가 나오면 가장 먼저 볼 목적지를 짧게 정리해 드릴게요."}
-        leadDescription={leadCard ? leadCard.recommendation.whyThisFits : queryNarrative}
-        leadVisual={
-          leadCard ? (
-            <LeadDestinationVisual
-              card={leadCard}
-              query={resultQuery}
-              supplement={results?.leadSupplement}
-            />
-          ) : (
-            <div className="aspect-[4/5] rounded-[1.75rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)]" />
-          )
+        leadTitle={
+          leadCard
+            ? formatDestinationWithCountry(leadCard.destination)
+            : isSubmitting
+              ? "추천 결과를 정리하고 있어요."
+              : "조건에 맞는 여행지를 찾고 있어요."
         }
-        leadTags={leadCard ? leadCard.destination.vibeTags.slice(0, 3).map((tag) => formatVibeLabel(tag)) : []}
-        leadFacts={leadCard ? buildRecommendationDecisionFacts(leadCard.destination) : []}
+        leadDescription={leadCard ? leadCard.recommendation.whyThisFits : queryNarrative}
+        leadMetaTags={
+          leadCard
+            ? buildRecommendationDecisionFacts(leadCard.destination)
+                .filter((fact) => fact.id === "best-months")
+                .map((fact) => `${fact.label} ${fact.value}`)
+            : []
+        }
+        leadTags={[]}
+        leadHeroAsideSlot={leadCard ? renderLeadWeatherAside(results?.leadSupplement, leadCard.destination.nameKo, resultQuery.travelMonth) : null}
         leadSupportSlot={
           leadCard ? (
-            <TravelSupportPanel
-              supplement={results?.leadSupplement}
+            <LeadSocialVideoPanel
+              key={`${leadCard.destination.id}-${resultQuery.partyType}-${resultQuery.partySize}-${resultQuery.budgetBand}-${resultQuery.tripLengthDays}-${resultQuery.departureAirport}-${resultQuery.travelMonth}-${resultQuery.pace}-${resultQuery.flightTolerance}-${resultQuery.vibes.join(",")}`}
+              destinationId={leadCard.destination.id}
               destinationName={leadCard.destination.nameKo}
-              heroMode="compact"
-              rootClassName="p-0 border-0"
+              leadReason={leadCard.recommendation.reasons[0] ?? leadCard.recommendation.whyThisFits}
+              query={resultQuery}
             />
           ) : null
         }
-        leadDetails={
+          leadDetails={
           leadCard ? (
             (() => {
               const saveState = saveStates[leadCard.destination.id] ?? { status: "idle" };
-              const detailPath = buildDestinationDetailPath(leadCard.destination, results?.query ?? currentQuery, saveState.snapshotId);
-              const evidenceLead = buildRecommendationEvidenceLead(leadCard);
 
               return (
-                <div className="space-y-4">
-                  <section
-                    data-testid={getInstagramVibeTestId(0)}
-                    className="rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-4"
-                  >
-                    <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                      추천 메모
-                    </p>
-                    <p className="mt-2 text-base font-semibold leading-6 text-[var(--color-funnel-text)]">
-                      {leadCard.recommendation.reasons[0] ?? leadCard.recommendation.whyThisFits}
-                    </p>
-                    <p className="mt-2 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-                      {evidenceLead.detail}
-                    </p>
-                  </section>
-
-                  <div className="flex flex-wrap gap-2">
+                <div className="space-y-3" data-testid={getInstagramVibeTestId(0)}>
+                  {/* Primary action row */}
+                  <div className="flex flex-wrap items-center gap-2.5">
+                    {hideAccountActions ? null : saveState.status === "saved" ? (
+                      <Link
+                        href="/account?tab=saved"
+                        className="inline-flex min-h-[2.75rem] items-center gap-1.5 rounded-full bg-[var(--color-action-primary)] px-6 py-2.5 text-[0.82rem] font-semibold text-white shadow-[0_2px_8px_rgba(var(--color-action-primary-rgb,59,130,246),0.3)] transition-all duration-200 hover:bg-[var(--color-action-primary-strong)] hover:shadow-[0_4px_12px_rgba(var(--color-action-primary-rgb,59,130,246),0.4)]"
+                      >
+                        계정에서 보기
+                      </Link>
+                    ) : (
+                      <button
+                        type="button"
+                        data-testid={getSaveSnapshotTestId(0)}
+                        onClick={() => {
+                          void saveCard(leadCard);
+                        }}
+                        disabled={saveState.status === "saving"}
+                        className="inline-flex min-h-[2.75rem] items-center gap-1.5 rounded-full bg-[var(--color-action-primary)] px-6 py-2.5 text-[0.82rem] font-semibold text-white shadow-[0_2px_8px_rgba(var(--color-action-primary-rgb,59,130,246),0.3)] transition-all duration-200 hover:bg-[var(--color-action-primary-strong)] hover:shadow-[0_4px_12px_rgba(var(--color-action-primary-rgb,59,130,246),0.4)] disabled:cursor-not-allowed disabled:opacity-60 disabled:shadow-none"
+                      >
+                        {saveState.status === "saving" ? "담는 중..." : "내 여행에 담기"}
+                      </button>
+                    )}
                     <Link
-                      href={detailPath}
-                      className="inline-flex min-h-[2.9rem] items-center rounded-full bg-[var(--color-action-primary)] px-4 py-2.5 text-sm font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
+                      href={buildDestinationDetailPath(leadCard.destination, resultQuery)}
+                      className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-5 py-2.5 text-[0.82rem] font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
                     >
-                      상세 보기
+                      이 도시 알아보기
                     </Link>
-                    <button
-                      type="button"
-                      data-testid={getSaveSnapshotTestId(0)}
-                      onClick={() => {
-                        void saveCard(leadCard);
-                      }}
-                      disabled={saveState.status === "saving"}
-                      className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] disabled:cursor-not-allowed disabled:opacity-60"
-                    >
-                      {saveState.status === "saving"
-                        ? "저장 중..."
-                        : saveState.status === "saved"
-                          ? "내 일정에 담았어요"
-                          : "내 일정에 담기"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={reopenQuestionFlow}
-                      className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm font-semibold text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
-                    >
-                      질문 다시 보기
-                    </button>
+                    {saveState.shareUrl ? (
+                      <button
+                        type="button"
+                        data-testid={testIds.snapshot.copyShareLink}
+                        onClick={() => {
+                          void copyShareUrl(saveState.shareUrl ?? "");
+                        }}
+                        className="inline-flex min-h-[2.75rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-[0.82rem] font-semibold text-[var(--color-funnel-text-soft)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)] hover:text-[var(--color-funnel-text)]"
+                      >
+                        링크 복사
+                      </button>
+                    ) : null}
                   </div>
 
+                  {/* Secondary actions */}
                   <div className="flex flex-wrap items-center gap-3 text-xs text-[var(--color-funnel-text-soft)]">
-                    <button type="button" onClick={resetFunnel} className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]">
-                      처음부터 다시 하기
+                    <button type="button" onClick={reopenQuestionFlow} className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]">
+                      다시 선택하기
                     </button>
                     {saveState.shareUrl ? (
-                      <>
-                        <Link
-                          data-testid={testIds.snapshot.shareLink}
-                          href={`/s/${saveState.snapshotId ?? ""}`}
-                          className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]"
-                        >
-                          공유 페이지 보기
-                        </Link>
-                        <button
-                          type="button"
-                          data-testid={testIds.snapshot.copyShareLink}
-                          onClick={() => {
-                            void copyShareUrl(saveState.shareUrl ?? "");
-                          }}
-                          className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]"
-                        >
-                          링크 복사
-                        </button>
-                      </>
+                      <Link
+                        data-testid={testIds.snapshot.shareLink}
+                        href={`/s/${saveState.snapshotId ?? ""}`}
+                        className="transition-colors duration-200 hover:text-[var(--color-funnel-text)]"
+                      >
+                        공유 페이지
+                      </Link>
                     ) : null}
                   </div>
                 </div>
@@ -1256,7 +1758,7 @@ export function HomeExperience() {
                   결과 {results.meta.resultCount}곳
                 </span>
                 <span className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[10px] font-semibold text-[var(--color-funnel-text-soft)]">
-                  {formatEvidenceMode(results.sourceSummary.mode)} 근거
+                  {formatEvidenceMode(results.sourceSummary.mode)} 참고
                 </span>
               </>
             ) : null}
@@ -1264,54 +1766,20 @@ export function HomeExperience() {
         }
         personalized={Boolean(results?.meta.personalized)}
         briefItems={briefItems}
-        filtersSlot={
-          <article
-            data-testid={testIds.result.filterBar}
-            className="rounded-[1.75rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-4"
-          >
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
-              <div>
-                <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
-                  결과 조정
-                </p>
-                <p className="mt-1.5 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-                  대표 추천을 먼저 보고, 아래 후보만 짧게 비교해 보세요.
-                </p>
-              </div>
-
-              <label className="grid gap-2 text-sm text-[var(--color-funnel-text)] lg:min-w-[12rem]">
-                <span>정렬</span>
-                <select
-                  value={resultSort}
-                  onChange={(event) => setResultSort(event.target.value as ResultSortKey)}
-                  className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-2.5 text-sm text-[var(--color-funnel-text)]"
-                >
-                  <option value="fit">적합도 순</option>
-                  <option value="shortest-flight">가까운 비행 순</option>
-                  <option value="budget">예산 가벼운 순</option>
-                </select>
-              </label>
-            </div>
-
-            <div className="mt-3 flex flex-wrap gap-2">
-              {resultFilterOptions.map((option, index) => (
-                <button
-                  key={option.key}
-                  type="button"
-                  data-testid={getResultFilterChipTestId(index)}
-                  onClick={() => setResultFilter(option.key)}
-                  className={`rounded-full border px-3.5 py-2 text-xs font-semibold tracking-[0.04em] transition-colors duration-200 ${
-                    resultFilter === option.key
-                      ? "border-[color:var(--color-funnel-text)] bg-[var(--color-funnel-text)] text-white"
-                      : "border-[color:var(--color-funnel-border)] bg-white text-[var(--color-funnel-text)] hover:bg-[var(--color-funnel-muted)]"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </article>
+        leadWeatherSlot={
+          leadCard ? (
+            <TravelSupportPanel
+              supplement={results?.leadSupplement}
+              destinationName={leadCard.destination.nameKo}
+              travelMonth={results?.query.travelMonth}
+              layout="summary"
+              showWeatherSummary={false}
+              summaryFacts={[]}
+            />
+          ) : null
         }
+        leadActionsSlot={null}
+        filtersSlot={null}
         statusSlot={
           <>
             {submitError ? (
@@ -1332,7 +1800,7 @@ export function HomeExperience() {
                     onClick={reopenQuestionFlow}
                     className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-2 text-xs font-semibold tracking-[0.04em] text-[var(--color-funnel-text)]"
                   >
-                    질문 다시 고르기
+                    다시 선택하기
                   </button>
                 </div>
               </div>
@@ -1372,22 +1840,6 @@ export function HomeExperience() {
               </div>
             ) : null}
 
-            {isSubmitting ? (
-              <div className="grid gap-3">
-                {[0, 1, 2].map((placeholder) => (
-                  <div
-                    key={`loading-card-${placeholder}`}
-                    className="rounded-[1.5rem] border border-[color:var(--color-funnel-border)] bg-white p-5 shadow-[var(--shadow-funnel-card)]"
-                  >
-                    <div className="compass-skeleton-shimmer h-4 w-20 rounded-full" />
-                    <div className="compass-skeleton-shimmer mt-4 h-8 w-2/3 rounded-full" />
-                    <div className="compass-skeleton-shimmer mt-4 h-4 w-full rounded-full" />
-                    <div className="compass-skeleton-shimmer mt-2 h-4 w-5/6 rounded-full" />
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
             {results && cards.length === 0 ? (
               <div
                 data-testid={testIds.result.emptyState}
@@ -1419,30 +1871,12 @@ export function HomeExperience() {
         }
         resultsSlot={
           secondaryCards.length > 0 ? (
-            <div className="space-y-4">
-              <div className="flex flex-col gap-2.5 sm:flex-row sm:items-end sm:justify-between">
-                <div>
-                  <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
-                    다른 후보
-                  </p>
-                  <p className="mt-1.5 text-sm leading-6 text-[var(--color-funnel-text-soft)]">
-                    대표 추천 아래에서 바로 저장하거나 비교 후보로 골라 보세요.
-                  </p>
-                </div>
-                {filteredCards.length > 4 ? (
-                  <button
-                    type="button"
-                    data-testid={testIds.result.showMoreResults}
-                    onClick={() => setShowAllResults((currentValue) => !currentValue)}
-                    className="inline-flex min-h-[2.9rem] items-center rounded-full border border-[color:var(--color-funnel-border)] bg-white px-4 py-3 text-sm font-semibold tracking-[0.04em] text-[var(--color-funnel-text)] transition-colors duration-200 hover:bg-[var(--color-funnel-muted)]"
-                  >
-                    {showAllResults ? "상위 결과만 보기" : `후보 ${filteredCards.length - 4}곳 더 보기`}
-                  </button>
-                ) : null}
-              </div>
-            ) : null}
+            <div className="space-y-3.5">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
+                다른 후보
+              </p>
 
-              <div data-testid={testIds.result.topList} className="grid gap-3">
+              <div data-testid={testIds.result.topList} className="grid gap-2.5">
                 {secondaryCards.map((card, index) => {
                   const cardIndex = index + 1;
                   const saveState = saveStates[card.destination.id] ?? { status: "idle" };
@@ -1454,6 +1888,7 @@ export function HomeExperience() {
                       index={cardIndex}
                       query={results?.query ?? currentQuery}
                       saveState={saveState}
+                      hideAccountActions={hideAccountActions}
                       onSave={(nextCard) => {
                         void saveCard(nextCard);
                       }}
@@ -1471,31 +1906,13 @@ export function HomeExperience() {
           <>
             {savedSnapshots.length > 0 ? (
               <article id="saved-snapshots-section" className="rounded-[var(--radius-card)] border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-3.5 sm:px-4 sm:py-4">
-                <div className="flex flex-col gap-3 border-b border-[color:var(--color-stage-divider)] pb-3.5 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex flex-col gap-3 border-b border-[color:var(--color-stage-divider)] pb-3.5">
                   <div>
                     <p className="compass-editorial-kicker">내 일정 후보</p>
                     <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-                      마음에 드는 여행만 모아 비교 보드로 넘기면 마지막 결정이 더 쉬워져요.
+                      저장한 여행은 여기서 다시 열어 보거나 계정에서 이어서 확인할 수 있어요.
                     </p>
-                    <div
-                      data-testid={testIds.snapshot.compareSelectionCount}
-                      className="compass-metric-pill mt-2.5 inline-flex rounded-full px-3 py-1 text-xs font-semibold"
-                    >
-                      선택 {selectedCompareIds.length}개 · 최대 4개
-                    </div>
                   </div>
-
-                  <button
-                    type="button"
-                    data-testid={testIds.snapshot.compareSnapshot}
-                    onClick={() => {
-                      void createCompareSnapshot();
-                    }}
-                    disabled={!canCreateCompare || compareLoading}
-                    className="rounded-full bg-[var(--color-funnel-text)] px-4 py-3 text-sm font-semibold tracking-[0.04em] text-white disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {compareButtonLabel}
-                  </button>
                 </div>
 
                 <div className="mt-3 grid gap-2.5">
@@ -1504,62 +1921,14 @@ export function HomeExperience() {
                       key={snapshot.snapshotId}
                       snapshot={snapshot}
                       index={index}
-                      selected={selectedCompareIds.includes(snapshot.snapshotId)}
-                      onToggle={toggleCompareSelection}
+                      hideAccountActions={hideAccountActions}
                       onCopy={(shareUrl) => {
                         void copyShareUrl(shareUrl);
                       }}
                     />
                   ))}
                 </div>
-
-                {compareError ? (
-                  <p className="compass-warning-card mt-3 rounded-[calc(var(--radius-card)-10px)] px-4 py-3 text-sm leading-6">
-                    {compareError}
-                  </p>
-                ) : null}
               </article>
-            ) : null}
-
-            {savedSnapshots.length > 0 ? (
-              <div className="pointer-events-none fixed inset-x-4 bottom-4 z-30 md:hidden">
-                <article
-                  data-testid={testIds.snapshot.stickyCompareTray}
-                  className="pointer-events-auto rounded-[calc(var(--radius-card)-6px)] border border-[color:var(--color-funnel-border)] bg-white px-4 py-3.5 shadow-[var(--shadow-funnel-card)]"
-                >
-                  <div className="flex items-start justify-between gap-3">
-                    <div>
-                      <p className="compass-editorial-kicker">비교 트레이</p>
-                      <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">
-                        {compareTrayDestinations || `${savedSnapshots.length}개 저장 여행`}
-                      </p>
-                      <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">
-                        저장 {savedSnapshots.length}개 · 선택 {selectedCompareIds.length}개
-                      </p>
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => scrollToElementById("saved-snapshots-section")}
-                      className="compass-action-secondary compass-soft-press rounded-full px-3 py-2 text-[11px] font-semibold tracking-[0.04em]"
-                    >
-                      카드 보기
-                    </button>
-                  </div>
-
-                  <button
-                    type="button"
-                    data-testid={testIds.snapshot.stickyCompareAction}
-                    onClick={() => {
-                      void createCompareSnapshot();
-                    }}
-                    disabled={!canCreateCompare || compareLoading}
-                    className="compass-action-primary compass-soft-press mt-3 w-full rounded-full px-4 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {compareButtonLabel}
-                  </button>
-                </article>
-              </div>
             ) : null}
           </>
         }
@@ -1570,13 +1939,14 @@ export function HomeExperience() {
   return (
     <ExperienceShell eyebrow="" title="" intro="" capsule="" hideHeader hideTopbar bareBody>
       <div
-        className={`-mx-3 min-h-screen bg-white sm:-mx-4 ${savedSnapshots.length > 0 && stage === "result" ? "pb-28 md:pb-0" : ""}`}
+        className={`-mx-3 min-h-screen bg-white sm:-mx-4 ${savedSnapshots.length > 0 && effectiveStage === "result" ? "pb-28 md:pb-0" : ""}`}
       >
         <AnimatePresence mode="wait" initial={false}>
           <div key={stage} className="space-y-4">
-            {stage === "landing" ? landingStage : null}
-            {stage === "question" ? questionStage : null}
-            {stage === "result" ? resultStage : null}
+            {effectiveStage === "landing" ? landingStage : null}
+            {effectiveStage === "question" ? questionStage : null}
+            {effectiveStage === "loading" ? loadingStage : null}
+            {effectiveStage === "result" ? resultStage : null}
           </div>
         </AnimatePresence>
       </div>

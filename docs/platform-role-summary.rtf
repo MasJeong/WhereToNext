@@ -1,0 +1,38 @@
+{\rtf1\ansi\deff0
+{\fonttbl{\f0 Arial;}}
+\fs24
+\b 플랫폼 역할 요약\b0\par
+\par
+\b 한눈에 보기\b0\par
+- Vercel은 웹 앱을 배포하는 곳입니다.\par
+- Cloudflare Registrar, Namecheap, Porkbun은 도메인을 사는 곳입니다.\par
+- Cloudflare DNS는 산 도메인을 실제 서비스로 연결하는 곳입니다.\par
+- Supabase, Neon은 운영 데이터베이스를 두는 곳입니다.\par
+- App Store Connect와 Xcode는 iOS 앱 제출용입니다.\par
+\par
+\b 플랫폼별 역할\b0\par
+Vercel\tab 웹 배포/호스팅\tab 지금 필요: 예\par
+Cloudflare Registrar\tab 도메인 구매/등록\tab 지금 필요: 선택\par
+Cloudflare DNS\tab 도메인 연결\tab 지금 필요: 선택\par
+Supabase\tab 관리형 Postgres + Auth + Storage\tab 지금 필요: 선택\par
+Neon\tab 관리형 Postgres\tab 지금 필요: 선택\par
+Namecheap\tab 도메인 구매/등록\tab 지금 필요: 선택\par
+Porkbun\tab 도메인 구매/등록\tab 지금 필요: 선택\par
+App Store Connect\tab iOS 제출 창구\tab 지금 필요: 예\par
+Xcode\tab iOS 빌드/업로드\tab 지금 필요: 예\par
+\par
+\b 가장 단순한 추천 조합\b0\par
+1. Vercel: 웹 운영 배포\par
+2. 도메인 등록처: Cloudflare Registrar 먼저 시도, 떠나볼까.com이 안 되면 Namecheap 또는 Porkbun\par
+3. 운영 DB: Neon 또는 Supabase\par
+4. iOS 제출: Xcode + App Store Connect\par
+\par
+\b 우리 기준 최적안\b0\par
+웹 배포: Vercel\par
+메인 도메인: 떠나볼까.com\par
+영문 백업 도메인: tteonabolkka.com\par
+운영 DB: 빠르게 붙이려면 Neon, Auth/Storage까지 넓히려면 Supabase\par
+\par
+\b 한 줄 결론\b0\par
+Vercel은 배포, Cloudflare/Namecheap/Porkbun은 도메인 구매, Supabase/Neon은 DB입니다. 서로 대체재가 아니라 역할이 다른 도구들입니다.\par
+}

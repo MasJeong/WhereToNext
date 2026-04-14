@@ -1,8 +1,6 @@
 # 떠나볼래 UI/UX 스타일 가이드
 
-Reference note: `docs/designus-reference-notes.md`
-
-## 1. Product stance
+참고 문서: `docs/designus-reference-notes.md`
 
 ## 1. 제품의 기본 입장
 
@@ -83,10 +81,10 @@ Reference note: `docs/designus-reference-notes.md`
 
 색상은 역할이 분명하게 읽히도록 써야 합니다.
 
-- `paper`: reading surface and primary background
-- `ink`: primary text and rational decision layers
-- `sand`: metadata, section labels, low-pressure guidance
-- `accent`: action only
+- `paper`: 읽기 표면과 기본 배경
+- `ink`: 본문 텍스트와 이성적 판단 레이어
+- `sand`: 메타데이터, 섹션 라벨, 부담이 적은 안내
+- `accent`: 행동 유도 전용
 
 규칙은 다음과 같습니다.
 
@@ -94,68 +92,7 @@ Reference note: `docs/designus-reference-notes.md`
 - Instagram류 무드 컬러가 신뢰 정보를 덮으면 안 된다
 - 신뢰 레이어는 분위기 레이어보다 더 깨끗하고 조용하게 느껴져야 한다
 
-### Preferred palette direction
-
-SooGo should use a warm, edible palette built from:
-
-- `white / ivory`
-- `soft yellow`
-- `orange`
-- `brown`
-
-This palette fits the product because:
-
-- white and ivory create readable planning surfaces
-- yellow creates low-pressure guidance and friendly momentum
-- orange signals action and attraction without looking like an error state
-- brown anchors trust, maturity, and decision seriousness
-
-### Role-based color assignment
-
-Do not assign color by feature. Assign it by role.
-
-| Role | Meaning | Suggested palette direction | Usage |
-|---|---|---|---|
-| `surface-base` | page base, long-read background | deep brown / dark ink-brown | app background |
-| `surface-elevated` | cards and sections | warm ivory / soft paper | recommendation surfaces |
-| `surface-muted` | low-priority grouped blocks | pale yellow-tinted ivory | helper rails, subtle grouping |
-| `text-primary` | main reading content | dark brown / ink | headings, verdicts, main facts |
-| `text-secondary` | supporting explanation | softened brown | helper text, captions |
-| `meta-label` | section labels and small metadata | muted ochre / sand | section eyebrow, key labels |
-| `action-primary` | main CTA only | saturated orange | start, save, compare primary actions |
-| `action-secondary` | non-primary actions | light brown border + ivory fill | secondary buttons |
-| `selected-state` | currently chosen chip/filter | strong warm yellow with dark text | selected chips and toggles |
-| `decision-highlight` | verdict or priority summary | pale yellow / ivory with warm border | verdict box, decision summary |
-| `trust-info` | trust and evidence blocks | ivory + brown text, low chroma | season/flight/source signals |
-| `warning` | caution, watch-outs | deeper ochre / muted orange | watch-outs, “check again” states |
-| `error` | blocked or failed actions | reserved burnt orange-red | actual errors only |
-
-### Hard rules
-
-- `action-primary` and `selected-state` must not use the same exact color treatment.
-- `decision-highlight` must not look clickable.
-- `warning` must not share the same look as `action-primary`.
-- `mood evidence` must not use stronger color than `trust-info` or `decision-highlight`.
-- if a user can infer “click this now” from a box, it should not be a verdict summary box.
-
-### Implementation guidance
-
-Map the current token system toward role-based use:
-
-- `--color-paper`, `--color-paper-sheet`, `--color-paper-elevated` -> surfaces only
-- `--color-ink`, `--color-ink-soft` -> text only
-- `--color-sand`, `--color-sand-deep` -> labels and secondary structure
-- `--color-accent` -> primary action only
-- `--color-paper-soft` should stop acting as both selected state and decision summary highlight
-
-If needed, split it into separate tokens such as:
-
-- `--color-action-primary`
-- `--color-selected`
-- `--color-decision-highlight`
-- `--color-warning-soft`
-
-## 7. Typography
+### 권장 팔레트 방향
 
 떠나볼래는 아래 색에서 출발하는 따뜻하고 식감 있는 팔레트를 사용해야 합니다.
 
