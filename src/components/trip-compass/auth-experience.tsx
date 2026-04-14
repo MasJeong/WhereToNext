@@ -4,18 +4,19 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { authClient } from "@/lib/auth-client";
+import { brandDisplayName } from "@/lib/brand";
 import { testIds } from "@/lib/test-ids";
 
 import { ExperienceShell } from "./experience-shell";
 
-type AuthMode = "sign-in" | "sign-up";
+type AuthIntent = "save" | "share" | "account" | "default";
+type Provider = "kakao" | "google" | "apple";
 
-type AuthResultLike = {
-  error?: {
-    message?: string | null;
-  } | null;
-} | null;
+type ProviderCta = {
+  id: Provider;
+  label: string;
+  testId: string;
+};
 
 function getAuthErrorMessage(result: AuthResultLike, fallback: string): string {
   return result?.error?.message?.trim() || fallback;
@@ -35,23 +36,16 @@ export function AuthExperience() {
     setIsSubmitting(true);
     setError(null);
 
-    try {
-      if (mode === "sign-up") {
-        const result = await authClient.signUp.email({
-          name: name.trim(),
-          email: email.trim(),
-          password,
-        });
+  return {
+    title: "로그인하고 여행 기록 이어가기",
+    intro: "저장, 공유, 취향 기록을 한곳에서 관리할 수 있어요.",
+  };
+}
 
-        if (result.error) {
-          setError(getAuthErrorMessage(result, "계정을 만들지 못했어요. 잠시 후 다시 시도해 주세요."));
-          return;
-        }
-      } else {
-        const result = await authClient.signIn.email({
-          email: email.trim(),
-          password,
-        });
+function getCollisionErrorMessage(errorCode: string | null): string | null {
+  if (!errorCode) {
+    return null;
+  }
 
         if (result.error) {
           setError(
@@ -214,8 +208,17 @@ export function AuthExperience() {
               >
                 로그인 없이 추천 계속 보기
               </Link>
-            </div>
-          </form>
+            ))}
+          </div>
+
+          <div className="mt-5">
+            <Link
+              href={buildContinueHref(next)}
+              className="inline-flex items-center text-sm font-medium text-[var(--color-ink-soft)] underline decoration-[color:var(--color-frame-strong)] underline-offset-4"
+            >
+              로그인 없이 계속 보기
+            </Link>
+          </div>
         </section>
       </div>
     </ExperienceShell>

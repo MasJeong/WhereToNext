@@ -14,7 +14,7 @@ describe("recommendationQuerySchema", () => {
       travelMonth: 10,
       pace: "balanced",
       flightTolerance: "medium",
-      vibes: ["romance", "food"],
+      vibes: ["romance", "food", "nature"],
       ignoredField: "should strip",
     });
 
@@ -27,8 +27,42 @@ describe("recommendationQuerySchema", () => {
       travelMonth: 10,
       pace: "balanced",
       flightTolerance: "medium",
-      vibes: ["romance", "food"],
+      vibes: ["romance", "food", "nature"],
     });
+  });
+
+  it("accepts up to three excluded country codes", () => {
+    const parsed = recommendationQuerySchema.parse({
+      partyType: "couple",
+      partySize: 2,
+      budgetBand: "mid",
+      tripLengthDays: 5,
+      departureAirport: "ICN",
+      travelMonth: 10,
+      pace: "balanced",
+      flightTolerance: "medium",
+      vibes: ["food"],
+      excludedCountryCodes: ["CN", "HK", "MO"],
+    });
+
+    expect(parsed.excludedCountryCodes).toEqual(["CN", "HK", "MO"]);
+  });
+
+  it("accepts excluded destination ids for rerolling results", () => {
+    const parsed = recommendationQuerySchema.parse({
+      partyType: "couple",
+      partySize: 2,
+      budgetBand: "mid",
+      tripLengthDays: 5,
+      departureAirport: "ICN",
+      travelMonth: 10,
+      pace: "balanced",
+      flightTolerance: "medium",
+      vibes: ["food"],
+      excludedDestinationIds: ["tokyo", "osaka", "sapporo"],
+    });
+
+    expect(parsed.excludedDestinationIds).toEqual(["tokyo", "osaka", "sapporo"]);
   });
 
   it("rejects invalid ranges and too many vibes", () => {
@@ -41,7 +75,7 @@ describe("recommendationQuerySchema", () => {
       travelMonth: 13,
       pace: "balanced",
       flightTolerance: "medium",
-      vibes: ["romance", "food", "nature"],
+      vibes: ["romance", "food", "nature", "city"],
     });
 
     expect(result.success).toBe(false);

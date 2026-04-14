@@ -19,7 +19,9 @@ export async function OPTIONS(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const snapshot = await createSnapshot(parseCreateSnapshotBody((await request.json()) as unknown));
+    const body = parseCreateSnapshotBody((await request.json()) as unknown);
+    const session = await getSessionFromHeaders(request.headers);
+    const visibility = body.visibility ?? "public";
 
     return applyAcquisitionCorsHeaders(
       request,

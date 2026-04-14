@@ -45,14 +45,72 @@ test("supports back navigation during the one-question-per-screen funnel", async
 test("restores a saved recommendation snapshot", async ({ page }) => {
   await submitQuickRecommendation(page);
 
-  await page.getByTestId("save-snapshot").click();
-  await expect(page.getByTestId("saved-snapshot-0")).toBeVisible();
+async function mockSocialVideoOk(page: import("@playwright/test").Page) {
+  await page.route("**/api/social-video*", async (route) => {
+    const items = [
+      {
+        provider: "youtube",
+        videoId: "tokyo-social-video",
+        title: "도쿄 골목과 야경을 빠르게 보는 여행 브이로그",
+        channelTitle: "서울 여행자",
+        channelUrl: "https://www.youtube.com/channel/seoul-traveler",
+        videoUrl: "https://www.youtube.com/watch?v=tokyo-social-video",
+        thumbnailUrl:
+          "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'%3E%3Crect width='1280' height='720' fill='%230b63ce'/%3E%3Ccircle cx='640' cy='360' r='120' fill='white' fill-opacity='0.18'/%3E%3Cpolygon points='600,305 600,415 715,360' fill='white'/%3E%3C/svg%3E",
+        publishedAt: "2026-03-24T09:00:00.000Z",
+        durationSeconds: 342,
+      },
+      {
+        provider: "youtube",
+        videoId: "tokyo-social-video-2",
+        title: "도쿄 쇼핑 스폿 60초 요약",
+        channelTitle: "여행 압축본",
+        channelUrl: "https://www.youtube.com/channel/travel-shortcut",
+        videoUrl: "https://www.youtube.com/watch?v=tokyo-social-video-2",
+        thumbnailUrl:
+          "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'%3E%3Crect width='1280' height='720' fill='%23f59e0b'/%3E%3Ccircle cx='640' cy='360' r='120' fill='white' fill-opacity='0.18'/%3E%3Cpolygon points='600,305 600,415 715,360' fill='white'/%3E%3C/svg%3E",
+        publishedAt: "2026-03-28T09:00:00.000Z",
+        durationSeconds: 60,
+      },
+      {
+        provider: "youtube",
+        videoId: "tokyo-social-video-3",
+        title: "도쿄 야시장과 카페 최근 분위기",
+        channelTitle: "요즘 여행",
+        channelUrl: "https://www.youtube.com/channel/trending-trip",
+        videoUrl: "https://www.youtube.com/watch?v=tokyo-social-video-3",
+        thumbnailUrl:
+          "data:image/svg+xml;utf8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1280 720'%3E%3Crect width='1280' height='720' fill='%231f2937'/%3E%3Ccircle cx='640' cy='360' r='120' fill='white' fill-opacity='0.18'/%3E%3Cpolygon points='600,305 600,415 715,360' fill='white'/%3E%3C/svg%3E",
+        publishedAt: "2026-03-29T09:00:00.000Z",
+        durationSeconds: 74,
+      },
+    ];
 
-  const shareLink = page.getByRole("link", { name: "공유 페이지 보기" }).first();
-  await expect(shareLink).toBeVisible();
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        status: "ok",
+        item: items[0],
+        items,
+      }),
+    });
+  });
+}
 
-  const href = await shareLink.getAttribute("href");
-  expect(href).toBeTruthy();
+async function mockSocialVideoEmpty(page: import("@playwright/test").Page) {
+  await page.route("**/api/social-video*", async (route) => {
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        status: "empty",
+        item: null,
+        items: [],
+      }),
+    });
+  });
+}
 
   await page.goto(href!);
   await expect(page).toHaveURL(/\/s\//);
@@ -65,8 +123,8 @@ test("restores a saved recommendation snapshot", async ({ page }) => {
 test("builds a compare board from two saved picks", async ({ page }) => {
   await submitQuickRecommendation(page);
 
-  await page.getByTestId("save-snapshot").click();
-  await expect(page.getByTestId("saved-snapshot-0")).toBeVisible();
+  await page.getByTestId("home-step-choice-0").click();
+  await expect(page).toHaveURL(/\/\?stage=question&step=2&whoWith=couple$/);
 
   await page.getByTestId("show-more-results").click();
   await page.getByTestId("save-snapshot-1").click();
@@ -80,24 +138,114 @@ test("builds a compare board from two saved picks", async ({ page }) => {
   await expect(page.locator('[data-testid="compare-verdict-row"]:visible').first()).toBeVisible();
 });
 
-test("shows a sticky compare tray on mobile after saving a card", async ({ page }) => {
+test("supports back navigation during the one-question-per-screen funnel", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("home-cta").click();
+  await expect(page).toHaveURL(/\/\?stage=question&step=1$/);
+
+  await page.getByTestId("home-step-choice-0").click();
+  await expect(page).toHaveURL(/\/\?stage=question&step=2&whoWith=couple$/);
+  await expect(page.getByTestId("home-step-question")).toContainText("언제쯤 떠나고 싶으세요?");
+
+  await page.getByRole("button", { name: /10~12월/ }).click();
+  await expect(page).toHaveURL(/travelWindow=q4/);
+  await expect(page.getByTestId("home-step-question")).toContainText("며칠 정도 생각하고 있나요?");
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/\?stage=question&step=2&whoWith=couple$/);
+  await expect(page.getByTestId("home-step-question")).toContainText("언제쯤 떠나고 싶으세요?");
+
+  await page.getByRole("button", { name: /10~12월/ }).click();
+  await page.getByTestId("home-step-choice-1").click();
+  await page.getByTestId("home-step-choice-8").click();
+  await page.getByTestId("home-step-next").click();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-next").click();
+  await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 15000 });
+
+  await page.goBack();
+  await expect(page).toHaveURL(/\/\?stage=question&step=6/);
+  await expect(page.getByTestId("home-step-question")).toContainText("이번엔 빼고 싶은 나라가 있나요?");
+
+  await page.getByTestId("home-step-next").click();
+  await expect(page.getByText("추천 결과를 정리하고 있어요.")).toBeVisible({ timeout: 3000 });
+  await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 15000 });
+});
+
+test("asks realistic travel conditions instead of romance-first and departure-airport questions", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("home-cta").click();
+
+  await expect(page.getByTestId("home-step-question")).toContainText("누구와 가세요?");
+  await page.getByTestId("home-step-choice-0").click();
+
+  await expect(page.getByTestId("home-step-question")).toContainText("언제쯤 떠나고 싶으세요?");
+  await page.getByRole("button", { name: /10~12월/ }).click();
+
+  await expect(page.getByTestId("home-step-question")).toContainText("며칠 정도 생각하고 있나요?");
+  await page.getByTestId("home-step-choice-1").click();
+
+  await expect(page.getByTestId("home-step-question")).toContainText("이번 여행에서는 뭐가 더 중요해요?");
+  await expect(page.getByText("체험 없는 여행은 좀 심심해")).toBeVisible();
+  await expect(page.getByText("사진 한 장은 건져야지")).toBeVisible();
+  await expect(page.getByText("이번엔 먹는 게 메인")).toBeVisible();
+  await page.getByTestId("home-step-choice-0").click();
+  await page.getByTestId("home-step-choice-8").click();
+  await page.getByTestId("home-step-next").click();
+
+  await expect(page.getByTestId("home-step-question")).toContainText("비행이나 이동 부담은 어느 정도 괜찮아요?");
+  await expect(page.getByText("가까운 곳 위주")).toBeVisible();
+  await expect(page.getByText("중거리까지 괜찮아요")).toBeVisible();
+  await expect(page.getByText("장거리도 괜찮아요")).toBeVisible();
+  await expect(page.getByText("어디든 괜찮아요")).toBeVisible();
+
+  await page.getByTestId("home-step-choice-0").click();
+  await expect(page.getByTestId("home-step-question")).toContainText("이번엔 빼고 싶은 나라가 있나요?");
+
+  await expect(page.getByText("가장 먼저 챙기고 싶은 분위기는요?")).toHaveCount(0);
+  await expect(page.getByText("출발은 어디 기준으로 볼까요?")).toHaveCount(0);
+});
+
+test("reflects the selected practical conditions in the result summary", async ({ page }) => {
+  await page.goto("/");
+  await page.getByTestId("home-cta").click();
+
+  await page.getByTestId("home-step-choice-2").click();
+  await page.getByRole("button", { name: /7~9월/ }).click();
+  await page.getByTestId("home-step-choice-2").click();
+  await page.getByTestId("home-step-choice-1").click();
+  await page.getByTestId("home-step-choice-7").click();
+  await page.getByTestId("home-step-next").click();
+  await page.getByTestId("home-step-choice-3").click();
+  await page.getByTestId("home-step-next").click();
+
+  await expect(page.getByTestId("result-filter-bar")).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId("query-summary")).toContainText("7~9월 · 7~10일");
+  await expect(page.getByTestId("query-summary")).toContainText("어디든 괜찮아요");
+  await expect(page.getByTestId("query-summary")).toContainText("도시");
+  await expect(page.getByTestId("query-summary")).toContainText("쇼핑");
+});
+
+test("redirects signed-out save actions to the social auth gate", async ({ page }) => {
+  await submitQuickRecommendation(page);
+
+  await page.getByTestId("save-snapshot").click();
+
+  await expect(page).toHaveURL(/\/auth\?/);
+  await expect(page.getByTestId("auth-provider-google")).toBeVisible();
+});
+
+test("redirects mobile save actions to the social auth gate", async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await submitQuickRecommendation(page);
 
   await page.getByTestId("save-snapshot").click();
-  await expect(page.getByTestId("sticky-compare-tray")).toBeVisible();
-  await expect(page.getByTestId("sticky-compare-action")).toBeVisible();
+  await expect(page).toHaveURL(/\/auth\?/);
+  await expect(page.getByTestId("auth-provider-google")).toBeVisible();
 });
 
-test("allows sign-up, trip history save, and personalized recommendations", async ({ page }) => {
-  const email = `trip-compass-${Date.now()}@example.com`;
-
-  await page.goto("/auth");
-  await page.getByTestId("auth-mode-sign-up").click();
-  await page.getByTestId("auth-name-input").fill("지훈");
-  await page.getByTestId("auth-email-input").fill(email);
-  await page.getByTestId("auth-password-input").fill("tripCompass123");
-  await page.getByTestId("auth-submit").click();
+test("allows social sign-in, trip history save, and personalized recommendations", async ({ page }) => {
+  await signInWithMockGoogle(page);
 
   await expect(page).toHaveURL(/\/account/);
   await expect(page.getByTestId("new-history-submit")).toBeVisible();

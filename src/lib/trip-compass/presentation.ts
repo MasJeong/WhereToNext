@@ -111,7 +111,9 @@ export const defaultRecommendationQuery: RecommendationQuery = {
   travelMonth: 10,
   pace: "balanced",
   flightTolerance: "medium",
-  vibes: ["romance"],
+  vibes: ["food"],
+  excludedCountryCodes: [],
+  excludedDestinationIds: [],
 };
 
 export const partyOptions: QueryOption<RecommendationQuery["partyType"]>[] = [
@@ -173,7 +175,53 @@ export const tripLengthOptions: QueryOption<RecommendationQuery["tripLengthDays"
   },
 ];
 
+export function formatTripLengthBand(tripLengthDays: RecommendationQuery["tripLengthDays"]): string {
+  if (tripLengthDays <= 3) {
+    return "2~3일";
+  }
+
+  if (tripLengthDays <= 6) {
+    return "4~6일";
+  }
+
+  if (tripLengthDays <= 10) {
+    return "7~10일";
+  }
+
+  return "11일 이상";
+}
+
 export const travelMonthOptions: QueryOption<RecommendationQuery["travelMonth"]>[] = [
+  {
+    value: 1,
+    label: "1월",
+    description: "새해 무드와 겨울 시즌 분위기를 기대하기 좋은 시기예요.",
+  },
+  {
+    value: 2,
+    label: "2월",
+    description: "짧은 겨울 여행이나 설 연휴 주변 일정을 떠올리기 쉬운 시기예요.",
+  },
+  {
+    value: 3,
+    label: "3월",
+    description: "초봄 공기와 가벼운 일정 감각을 떠올리기 좋은 시기예요.",
+  },
+  {
+    value: 4,
+    label: "4월",
+    description: "봄꽃과 산책 중심 여행을 생각하기 좋은 대표 봄 시즌이에요.",
+  },
+  {
+    value: 5,
+    label: "5월",
+    description: "야외 일정이 많아지는 황금연휴 감각의 대표 시즌이에요.",
+  },
+  {
+    value: 6,
+    label: "6월",
+    description: "초여름 분위기에서 한적하게 다녀오고 싶을 때 떠올리기 쉬워요.",
+  },
   {
     value: 7,
     label: "7월",
@@ -194,7 +242,7 @@ export const travelMonthOptions: QueryOption<RecommendationQuery["travelMonth"]>
 export const primaryVibeOptions: QueryOption<RecommendationQuery["vibes"][number]>[] = [
   {
     value: "romance",
-    label: "로맨틱",
+    label: "분위기",
     description: "야경, 산책, 분위기 좋은 식사가 중요한 여행이에요.",
   },
   {
@@ -295,7 +343,23 @@ export function buildRecommendationSearchParams(query: RecommendationQuery): URL
   params.set("pace", query.pace);
   params.set("flightTolerance", query.flightTolerance);
   params.set("vibes", query.vibes.join(","));
+  if (query.excludedCountryCodes && query.excludedCountryCodes.length > 0) {
+    params.set("excludedCountryCodes", query.excludedCountryCodes.join(","));
+  }
+  if (query.excludedDestinationIds && query.excludedDestinationIds.length > 0) {
+    params.set("excludedDestinationIds", query.excludedDestinationIds.join(","));
+  }
   return params;
+}
+
+function formatExcludedCountryList(countryCodes: string[] | undefined): string {
+  if (!countryCodes || countryCodes.length === 0) {
+    return "";
+  }
+
+  return countryCodes
+    .map((countryCode) => getCountryMetadata(countryCode)?.countryNameKo ?? countryCode)
+    .join(", ");
 }
 
 /**
@@ -306,7 +370,15 @@ export function buildRecommendationSearchParams(query: RecommendationQuery): URL
 export function createRecommendationCards(
   recommendations: RecommendationResult[],
 ): RecommendationCardView[] {
+  const seen = new Set<string>();
+
   return recommendations.flatMap((recommendation) => {
+    if (seen.has(recommendation.destinationId)) {
+      return [];
+    }
+
+    seen.add(recommendation.destinationId);
+
     const destination = destinationIndex.get(recommendation.destinationId);
 
     if (!destination) {
@@ -714,7 +786,11 @@ export function buildRecommendationPriorityBadge(totalScore: number): string {
  * @returns Human-readable query summary
  */
 export function buildQueryNarrative(query: RecommendationQuery): string {
-  return `${formatDepartureAirport(query.departureAirport)}에서 ${formatTravelMonth(query.travelMonth)}에 떠나는 ${query.tripLengthDays}일 ${formatPartyType(query.partyType)} 일정이에요. 예산은 ${formatBudgetBand(query.budgetBand)}, 분위기는 ${formatVibeList(query.vibes)} 중심으로 맞췄어요.`;
+  const exclusionSentence = query.excludedCountryCodes && query.excludedCountryCodes.length > 0
+    ? ` ${formatExcludedCountryList(query.excludedCountryCodes)}은 이번 추천에서 뺐어요.`
+    : "";
+
+  return `${formatTravelMonth(query.travelMonth)}에 떠나는 ${formatTripLengthBand(query.tripLengthDays)} ${formatPartyType(query.partyType)} 일정이에요. 예산은 ${formatBudgetBand(query.budgetBand)}, 이동 부담은 ${formatFlightTolerance(query.flightTolerance)} 기준으로 맞췄고 여행 스타일은 ${formatResultVibeList(query.vibes)} 쪽에 가깝게 잡았어요.${exclusionSentence}`;
 }
 
 /**
@@ -833,7 +909,7 @@ export function formatMonthList(months: number[]): string {
  */
 export function formatVibeLabel(vibe: string): string {
   if (vibe === "romance") {
-    return "로맨틱";
+    return "분위기";
   }
 
   if (vibe === "food") {
@@ -915,6 +991,15 @@ export function formatVibeList(vibes: string[]): string {
 }
 
 /**
+ * 결과 페이지용 vibe 목록을 합친다.
+ * @param vibes Destination or query vibes
+ * @returns Joined result-page vibe label string
+ */
+export function formatResultVibeList(vibes: string[]): string {
+  return vibes.map((vibe) => formatResultVibeLabel(vibe)).join(" + ");
+}
+
+/**
  * Formats the evidence freshness state.
  * @param freshnessState Evidence freshness state
  * @returns Display label
@@ -923,14 +1008,14 @@ export function formatFreshnessState(
   freshnessState: TrendEvidenceSnapshot["freshnessState"],
 ): string {
   if (freshnessState === "fresh") {
-    return "최근 반응";
+    return "요즘 많이 보는 내용";
   }
 
   if (freshnessState === "aging") {
-    return "조금 지난 반응";
+    return "조금 지난 내용";
   }
 
-  return "아카이브 반응";
+  return "계속 많이 보는 내용";
 }
 
 /**
@@ -963,10 +1048,10 @@ export function formatDepartureAirport(
  */
 export function formatEvidenceMode(mode: RecommendationApiResponse["sourceSummary"]["mode"]): string {
   if (mode === "live") {
-    return "실시간";
+    return "바로 모은 정보";
   }
 
-  return "대체";
+  return "미리 정리한 정보";
 }
 
 /**
@@ -976,18 +1061,18 @@ export function formatEvidenceMode(mode: RecommendationApiResponse["sourceSummar
  */
 export function describeSourceBadge(evidence: TrendEvidenceSnapshot): string {
   if (evidence.sourceType === "partner_account") {
-    return "공식 계정";
+    return "공식 채널";
   }
 
   if (evidence.sourceType === "hashtag_capsule") {
-    return "해시태그 기준";
+    return "많이 본 키워드";
   }
 
   if (evidence.tier === "fallback") {
-    return "대체 소스";
+    return "추가 참고";
   }
 
-  return "큐레이션";
+  return "골라본 내용";
 }
 
 /**

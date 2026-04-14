@@ -11,10 +11,13 @@
     "db:generate": "drizzle-kit generate",
     "db:seed": "tsx scripts/seed.ts",
     "test:unit": "vitest run",
+    "test:unit:ci": "vitest run tests/unit/auth tests/unit/ui tests/unit/api && vitest run tests/unit/account tests/unit/affiliate tests/unit/profile tests/unit/snapshots && vitest run tests/unit/catalog tests/unit/domain tests/unit/evidence tests/unit/recommendation tests/unit/runtime tests/unit/security tests/unit/social-video tests/unit/travel-support tests/unit/trending tests/unit/trip-compass",
     "test:e2e": "playwright test",
     "test:smoke": "npm run lint && vitest run tests/unit/smoke.spec.tsx && npm run build"
   },
   "dependencies": {
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/ios": "^8.3.0",
     "@electric-sql/pglite": "^0.3.16",
     "drizzle-orm": "^0.45.1",
     "framer-motion": "^12.38.0",
@@ -25,6 +28,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.3.0",
     "@playwright/test": "^1.58.2",
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.9.1",

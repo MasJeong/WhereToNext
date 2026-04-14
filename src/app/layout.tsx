@@ -2,24 +2,6 @@ import type { Metadata, Viewport } from "next";
 import { Cormorant_Garamond, JetBrains_Mono, Manrope } from "next/font/google";
 import "./globals.css";
 
-const bodyFont = Manrope({
-  variable: "--font-body",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-});
-
-const displayFont = Cormorant_Garamond({
-  variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["500", "600", "700"],
-});
-
-const monoFont = JetBrains_Mono({
-  variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
-});
-
 export const metadata: Metadata = {
   title: "SooGo",
   description: "한국 출발 여행자를 위한 목적지 추천 플랫폼 SooGo입니다. 검색처럼 바로 시작하고, 저장·공유·비교로 결정을 이어갈 수 있어요.",

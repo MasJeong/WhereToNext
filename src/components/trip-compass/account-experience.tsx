@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
@@ -9,6 +10,7 @@ import { buildApiUrl } from "@/lib/runtime/url";
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import type {
   ExplorationPreference,
+  RecommendationSnapshot,
   UserDestinationHistory,
   UserPreferenceProfile,
 } from "@/lib/domain/contracts";
@@ -17,18 +19,18 @@ import { getAccountHistoryDeleteTestId, getAccountHistoryEntryTestId, testIds } 
 
 import { ExperienceShell } from "./experience-shell";
 
+type AccountTab = "history" | "future-trips" | "saved" | "preferences";
+
 type AccountExperienceProps = {
   userName: string;
+  initialTab: AccountTab;
   initialProfile: UserPreferenceProfile;
   initialHistory: UserDestinationHistory[];
-};
-
-type HistoryDraft = {
-  destinationId: string;
-  rating: number;
-  tags: UserDestinationHistory["tags"];
-  wouldRevisit: boolean;
-  visitedAt: string;
+  initialSavedSnapshots: Array<{
+    id: string;
+    createdAt: string;
+    payload: RecommendationSnapshot;
+  }>;
 };
 
 const preferenceOptions: Array<{
@@ -40,13 +42,13 @@ const preferenceOptions: Array<{
   {
     value: "repeat",
     label: "반복형",
-    description: "좋았던 여행 감각을 다음 추천에서 더 강하게 이어가요.",
+    description: "좋았던 여행지 위주로 추천해요.",
     testId: testIds.account.preferenceRepeat,
   },
   {
     value: "balanced",
     label: "균형형",
-    description: "익숙한 취향과 새로운 후보를 자연스럽게 섞어 보여줘요.",
+    description: "익숙한 곳과 새로운 곳을 섞어 추천해요.",
     testId: testIds.account.preferenceBalanced,
   },
   {
@@ -63,32 +65,44 @@ function getTodayValue(): string {
 
 function buildHistoryBody(draft: HistoryDraft) {
   return {
-    destinationId: draft.destinationId,
-    rating: draft.rating,
-    tags: draft.tags,
-    wouldRevisit: draft.wouldRevisit,
-    visitedAt: new Date(`${draft.visitedAt}T00:00:00.000Z`).toISOString(),
+    nameKo: destination?.nameKo ?? destinationId,
+    nameEn: destination?.nameEn ?? destinationId,
+    countryCode: destination?.countryCode ?? "--",
   };
 }
 
 export function AccountExperience({
   userName,
+  initialTab,
   initialProfile,
   initialHistory,
+  initialSavedSnapshots,
 }: AccountExperienceProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const [activeTab, setActiveTab] = useState<AccountTab>(initialTab);
   const [profile, setProfile] = useState(initialProfile);
   const [historyEntries, setHistoryEntries] = useState(initialHistory);
-  const [draft, setDraft] = useState<HistoryDraft>({
-    destinationId: launchCatalog[0]?.id ?? "tokyo",
-    rating: 5,
-    tags: ["city"],
-    wouldRevisit: false,
-    visitedAt: getTodayValue(),
-  });
+  const [savedSnapshots, setSavedSnapshots] = useState(initialSavedSnapshots);
   const [error, setError] = useState<string | null>(null);
   const [isSavingPreference, setIsSavingPreference] = useState(false);
-  const [isCreatingHistory, setIsCreatingHistory] = useState(false);
+  const [updatingSnapshotId, setUpdatingSnapshotId] = useState<string | null>(null);
+  const [deletingSavedSnapshotId, setDeletingSavedSnapshotId] = useState<string | null>(null);
+  const [savedDeleteDialogSnapshotId, setSavedDeleteDialogSnapshotId] = useState<string | null>(null);
+  const [deletingHistoryId, setDeletingHistoryId] = useState<string | null>(null);
+  const [confirmDeleteHistoryId, setConfirmDeleteHistoryId] = useState<string | null>(null);
+  const [openHistoryGalleryId, setOpenHistoryGalleryId] = useState<string | null>(null);
+  const [historyLightboxState, setHistoryLightboxState] = useState<{
+    entryId: string;
+    imageIndex: number;
+  } | null>(null);
+  const [isClient, setIsClient] = useState(false);
+  const historyLightboxPointerStateRef = useRef<{
+    pointerId: number;
+    startX: number;
+  } | null>(null);
+  const historyLightboxDragOffsetRef = useRef(0);
+  const historyLightboxStageRef = useRef<HTMLDivElement | null>(null);
 
   const tasteSummary = useMemo(() => {
     const totalRating = historyEntries.reduce((sum, entry) => sum + entry.rating, 0);
@@ -116,13 +130,45 @@ export function AccountExperience({
         const nextTags = currentDraft.tags.filter((item) => item !== tag);
         return { ...currentDraft, tags: nextTags.length > 0 ? nextTags : currentDraft.tags };
       }
+    }
 
-      if (currentDraft.tags.length >= 4) {
-        return currentDraft;
-      }
+    return {
+      count: historyEntries.length,
+      averageRating: historyEntries.length > 0 ? (totalRating / historyEntries.length).toFixed(1) : "-",
+      revisitCount,
+      topTags: Array.from(tagCounts.entries())
+        .sort((left, right) => right[1] - left[1])
+        .slice(0, 3),
+    };
+  }, [historyEntries]);
 
-      return { ...currentDraft, tags: [...currentDraft.tags, tag] };
-    });
+  const plannedSnapshots = useMemo(
+    () => savedSnapshots.filter((snapshot) => getSnapshotStatus(snapshot.payload) === "planned"),
+    [savedSnapshots],
+  );
+  const savedCandidateSnapshots = useMemo(
+    () => savedSnapshots.filter((snapshot) => getSnapshotStatus(snapshot.payload) === "saved"),
+    [savedSnapshots],
+  );
+
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    setHistoryLightboxStageOffset(0, false);
+  }, [historyLightboxState?.entryId, historyLightboxState?.imageIndex]);
+
+  function setHistoryLightboxStageOffset(offset: number, animate: boolean) {
+    historyLightboxDragOffsetRef.current = offset;
+
+    const stage = historyLightboxStageRef.current;
+    if (!stage) {
+      return;
+    }
+
+    stage.style.transform = `translateX(${offset}px)`;
+    stage.style.transition = animate ? "transform 180ms ease-out" : "none";
   }
 
   async function savePreference(explorationPreference: ExplorationPreference) {
@@ -176,6 +222,7 @@ export function AccountExperience({
   }
 
   async function deleteHistoryEntry(historyId: string) {
+    setDeletingHistoryId(historyId);
     setError(null);
 
     try {
@@ -190,7 +237,9 @@ export function AccountExperience({
 
       setHistoryEntries((currentEntries) => currentEntries.filter((entry) => entry.id !== historyId));
     } catch {
-      setError("여행 이력을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setError("삭제하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setDeletingHistoryId((currentId) => (currentId === historyId ? null : currentId));
     }
   }
 
@@ -234,7 +283,7 @@ export function AccountExperience({
               }}
               className="compass-action-primary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
             >
-              로그아웃
+              닫기
             </button>
           </div>
         </div>

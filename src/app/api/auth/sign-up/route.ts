@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { clearSessionCookie, setSessionCookie, signUpWithEmailPassword } from "@/lib/auth";
+import { isTrustedIosShellRequest } from "@/lib/runtime/shell";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 
 const signUpBodySchema = z.object({
@@ -31,10 +32,13 @@ export async function POST(request: Request) {
 
   try {
     const body = signUpBodySchema.parse((await request.json()) as unknown);
+    const allowIosShell = isTrustedIosShellRequest(request);
     const result = await signUpWithEmailPassword({
       ...body,
       ipAddress: clientIp,
       userAgent: request.headers.get("user-agent"),
+      clientType: allowIosShell ? "ios-shell" : undefined,
+      allowIosShell,
     });
 
     if (result.error || !result.data || !result.token) {

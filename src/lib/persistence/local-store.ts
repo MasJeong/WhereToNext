@@ -4,28 +4,67 @@ import { readFile, rename, rm, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
 
 import type {
+  CommunityComment,
+  DestinationAffiliateClick,
   ComparisonSnapshot,
   RecommendationSnapshot,
   TrendEvidenceSnapshot,
   UserDestinationHistory,
+  UserFutureTrip,
   UserPreferenceProfile,
 } from "@/lib/domain/contracts";
 
 export type LocalSnapshotRecord = {
   id: string;
   kind: "recommendation" | "comparison";
+  visibility: "public" | "private";
+  ownerUserId: string | null;
   createdAt: string;
   payload: RecommendationSnapshot | ComparisonSnapshot;
   scoringVersionId: string | null;
   destinationIds: string[];
 };
 
+export type LocalSessionRecord = {
+  id: string;
+  userId: string;
+  token: string;
+  expiresAt: string;
+  clientType?: "web" | "ios-shell";
+  lastSeenAt?: string;
+  absoluteExpiresAt?: string;
+  ipAddress: string | null;
+  userAgent: string | null;
+};
+
+type SessionLifetimeMetadata = Pick<
+  LocalSessionRecord,
+  "clientType" | "lastSeenAt" | "absoluteExpiresAt"
+>;
+
+export function isLegacyLocalSessionRecord(record: SessionLifetimeMetadata): boolean {
+  return !record.clientType || !record.lastSeenAt || !record.absoluteExpiresAt;
+}
+
 type LocalStoreData = {
-  users: Record<string, { id: string; name: string; email: string; emailVerified: boolean; image: string | null }>;
-  accounts: Record<string, { id: string; userId: string; providerId: string; accountId: string; password: string | null }>;
-  sessions: Record<string, { id: string; userId: string; token: string; expiresAt: string; ipAddress: string | null; userAgent: string | null }>;
+  users: Record<string, { id: string; name: string; email: string | null; emailVerified: boolean; image: string | null }>;
+  accounts: Record<string, {
+    id: string;
+    userId: string;
+    providerId: string;
+    accountId: string;
+    password: string | null;
+    providerEmail: string | null;
+    providerEmailVerified: boolean;
+    lastLoginAt: string | null;
+  }>;
+  sessions: Record<string, LocalSessionRecord>;
+  oauthTransactions: Record<string, { state: string; codeVerifier: string; nonce: string; provider: string; next: string; intent: string; expiresAt: string }>;
   preferences: Record<string, UserPreferenceProfile>;
   history: Record<string, UserDestinationHistory>;
+  futureTrips: Record<string, UserFutureTrip>;
+  communityComments: Record<string, CommunityComment>;
+  affiliateClicks: Record<string, DestinationAffiliateClick>;
   trendSnapshots: Record<string, TrendEvidenceSnapshot>;
   snapshots: Record<string, LocalSnapshotRecord>;
 };
@@ -52,10 +91,50 @@ function createDefaultStore(): LocalStoreData {
     users: {},
     accounts: {},
     sessions: {},
+    oauthTransactions: {},
     preferences: {},
     history: {},
+    futureTrips: {},
+    communityComments: {},
+    affiliateClicks: {},
     trendSnapshots: {},
     snapshots: {},
+  };
+}
+
+function normalizeLocalStore(store: Partial<LocalStoreData>): LocalStoreData {
+  const defaults = createDefaultStore();
+
+  return {
+    users: store.users ?? defaults.users,
+    accounts: store.accounts ?? defaults.accounts,
+    sessions: Object.fromEntries(
+      Object.entries(store.sessions ?? defaults.sessions).map(([sessionId, session]) => [
+        sessionId,
+        {
+          ...session,
+          ipAddress: session.ipAddress ?? null,
+          userAgent: session.userAgent ?? null,
+        },
+      ]),
+    ) as LocalStoreData["sessions"],
+    oauthTransactions: store.oauthTransactions ?? defaults.oauthTransactions,
+    preferences: store.preferences ?? defaults.preferences,
+    history: store.history ?? defaults.history,
+    futureTrips: store.futureTrips ?? defaults.futureTrips,
+    communityComments: store.communityComments ?? defaults.communityComments,
+    affiliateClicks: store.affiliateClicks ?? defaults.affiliateClicks,
+    trendSnapshots: store.trendSnapshots ?? defaults.trendSnapshots,
+    snapshots: Object.fromEntries(
+      Object.entries(store.snapshots ?? defaults.snapshots).map(([snapshotId, snapshot]) => [
+        snapshotId,
+        {
+          ...snapshot,
+          visibility: snapshot.visibility ?? "public",
+          ownerUserId: snapshot.ownerUserId ?? null,
+        },
+      ]),
+    ) as LocalStoreData["snapshots"],
   };
 }
 

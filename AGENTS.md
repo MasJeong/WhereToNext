@@ -1,6 +1,4 @@
 # AGENTS.md
-Agent guide for the `SooGo` repository.
-Scope: entire repository.
 
 ## 1) Working Contract
 - Follow this order: user request > system/developer instructions > this file.

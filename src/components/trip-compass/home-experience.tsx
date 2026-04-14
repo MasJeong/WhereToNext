@@ -20,6 +20,7 @@ import {
   buildStructuredTripBrief,
   createRecommendationCards,
   formatDepartureAirport,
+  formatDestinationWithCountry,
   formatEvidenceMode,
   formatMonthList,
   formatTravelMonth,
@@ -50,6 +51,7 @@ import {
   getSavedSnapshotTestId,
   testIds,
 } from "@/lib/test-ids";
+import { shellHomeEvent, shellStartRecommendationEvent } from "@/lib/trip-compass/shell-events";
 
 import { ExperienceShell } from "./experience-shell";
 import { LandingPage } from "./home/landing-page";
@@ -63,6 +65,12 @@ type SaveState = {
   status: "idle" | "saving" | "saved" | "error";
   snapshotId?: string;
   shareUrl?: string;
+};
+
+type FutureTripState = {
+  status: "idle" | "saving" | "saved" | "error";
+  futureTripId?: string;
+  sourceSnapshotId?: string;
 };
 
 type SavedSnapshotCard = {
@@ -500,6 +508,8 @@ export function HomeExperience() {
   const [resultFilter, setResultFilter] = useState<ResultFilterKey>("all");
   const [resultSort, setResultSort] = useState<ResultSortKey>("fit");
   const [saveStates, setSaveStates] = useState<Record<string, SaveState>>({});
+  const [futureTripStates, setFutureTripStates] = useState<Record<string, FutureTripState>>({});
+  const [snapshotReferences, setSnapshotReferences] = useState<Record<string, SavedSnapshotCard>>({});
   const [savedSnapshots, setSavedSnapshots] = useState<SavedSnapshotCard[]>([]);
   const [copyFallbackUrl, setCopyFallbackUrl] = useState<string | null>(null);
   const [selectedCompareIds, setSelectedCompareIds] = useState<string[]>([]);
@@ -711,7 +721,161 @@ export function HomeExperience() {
       setCopyFallbackUrl(shareUrl);
       return false;
     }
-  }
+  }, []);
+
+  const createSnapshotReference = useCallback(async (card: RecommendationCardView) => {
+    if (!results) {
+      return null;
+    }
+
+    const existingReference = snapshotReferences[card.destination.id];
+    if (existingReference) {
+      return existingReference;
+    }
+
+    const existingSavedSnapshot = savedSnapshots.find((savedSnapshot) => savedSnapshot.destinationId === card.destination.id);
+    if (existingSavedSnapshot) {
+      setSnapshotReferences((currentReferences) => ({
+        ...currentReferences,
+        [card.destination.id]: existingSavedSnapshot,
+      }));
+      return existingSavedSnapshot;
+    }
+
+    const response = await fetch(buildApiUrl("/api/snapshots"), {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+      },
+      body: JSON.stringify(
+        buildRecommendationSnapshotPayload(
+          results.query,
+          card,
+          results.meta.scoringVersion,
+          "private",
+        ),
+      ),
+    });
+
+    if (!response.ok) {
+      throw new Error("save-failed");
+    }
+
+    const payload = (await response.json()) as { snapshotId: string };
+    const sharePath = `/s/${payload.snapshotId}`;
+    const shareUrl = buildAbsoluteShareUrl(sharePath);
+    const snapshotReference: SavedSnapshotCard = {
+      snapshotId: payload.snapshotId,
+      destinationId: card.destination.id,
+      destinationName: card.destination.nameKo,
+      sharePath,
+      shareUrl,
+    };
+
+    setSnapshotReferences((currentReferences) => ({
+      ...currentReferences,
+      [card.destination.id]: snapshotReference,
+    }));
+
+    return snapshotReference;
+  }, [results, savedSnapshots, snapshotReferences]);
+
+  const promoteSavedSnapshot = useCallback(
+    async (card: RecommendationCardView, snapshotReference: SavedSnapshotCard) => {
+      setSnapshotReferences((currentReferences) => ({
+        ...currentReferences,
+        [card.destination.id]: snapshotReference,
+      }));
+      setSaveStates((currentState) => ({
+        ...currentState,
+        [card.destination.id]: {
+          status: "saved",
+          snapshotId: snapshotReference.snapshotId,
+          shareUrl: snapshotReference.shareUrl,
+        },
+      }));
+      setSavedSnapshots((currentSnapshots) =>
+        currentSnapshots.some((item) => item.snapshotId === snapshotReference.snapshotId)
+          ? currentSnapshots
+          : [...currentSnapshots, snapshotReference],
+      );
+      await copyShareUrl(snapshotReference.shareUrl);
+    },
+    [copyShareUrl],
+  );
+
+  const registerFutureTrip = useCallback(async (
+    card: RecommendationCardView,
+    sourceSnapshotOverride?: SavedSnapshotCard,
+  ) => {
+    if (!session.data?.user) {
+      return;
+    }
+
+    const currentState = futureTripStates[card.destination.id];
+    if (currentState?.status === "saved") {
+      return;
+    }
+
+    setFutureTripStates((currentStates) => ({
+      ...currentStates,
+      [card.destination.id]: {
+        ...currentStates[card.destination.id],
+        status: "saving",
+      },
+    }));
+
+    try {
+      const sourceSnapshot =
+        sourceSnapshotOverride ??
+        savedSnapshots.find((savedSnapshot) => savedSnapshot.destinationId === card.destination.id) ??
+        snapshotReferences[card.destination.id];
+
+      if (!sourceSnapshot) {
+        throw new Error("source-snapshot-missing");
+      }
+
+      const response = await fetch(buildApiUrl("/api/me/future-trips"), {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+        },
+        credentials: "include",
+        body: JSON.stringify({
+          destinationId: card.destination.id,
+          sourceSnapshotId: sourceSnapshot.snapshotId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("future-trip-create-failed");
+      }
+
+      const payload = (await response.json()) as { futureTrip: UserFutureTrip };
+
+      setFutureTripStates((currentStates) => ({
+        ...currentStates,
+        [card.destination.id]: {
+          status: "saved",
+          futureTripId: payload.futureTrip.id,
+          sourceSnapshotId: payload.futureTrip.sourceSnapshotId,
+        },
+      }));
+    } catch {
+      setFutureTripStates((currentStates) => ({
+        ...currentStates,
+        [card.destination.id]: {
+          ...currentStates[card.destination.id],
+          status: "error",
+        },
+      }));
+    }
+  }, [futureTripStates, savedSnapshots, session.data?.user, snapshotReferences]);
+
+  const saveCard = useCallback(async (card: RecommendationCardView) => {
+    if (hideAccountActions) {
+      return;
+    }
 
   async function saveCard(card: RecommendationCardView) {
     if (!results) {
@@ -732,6 +896,12 @@ export function HomeExperience() {
       return;
     }
 
+    const snapshotReference = snapshotReferences[card.destination.id];
+    if (snapshotReference) {
+      await promoteSavedSnapshot(card, snapshotReference);
+      return;
+    }
+
     setSaveStates((currentState) => ({
       ...currentState,
       [card.destination.id]: { status: "saving" },
@@ -746,7 +916,9 @@ export function HomeExperience() {
         body: JSON.stringify(buildRecommendationSnapshotPayload(results.query, card, results.meta.scoringVersion)),
       });
 
-      if (!response.ok) {
+    try {
+      const nextSnapshotReference = await createSnapshotReference(card);
+      if (!nextSnapshotReference) {
         throw new Error("save-failed");
       }
 
@@ -761,19 +933,7 @@ export function HomeExperience() {
         shareUrl,
       };
 
-      setSaveStates((currentState) => ({
-        ...currentState,
-        [card.destination.id]: {
-          status: "saved",
-          snapshotId: payload.snapshotId,
-          shareUrl,
-        },
-      }));
-      setSavedSnapshots((currentSnapshots) => [...currentSnapshots, savedSnapshot]);
-      setSelectedCompareIds((currentSelection) =>
-        currentSelection.length >= 4 ? currentSelection : [...currentSelection, payload.snapshotId],
-      );
-      await copyShareUrl(shareUrl);
+      await promoteSavedSnapshot(card, nextSnapshotReference);
     } catch {
       setSaveStates((currentState) => ({
         ...currentState,
@@ -829,7 +989,7 @@ export function HomeExperience() {
     } finally {
       setCompareLoading(false);
     }
-  }
+  }, [createSnapshotReference, hideAccountActions, promoteSavedSnapshot, registerFutureTrip, results, router, savedSnapshots, session.data?.user, snapshotReferences]);
 
   async function requestRecommendations(nextQuery: RecommendationQuery) {
     const requestId = activeRecommendationRequestRef.current + 1;
@@ -1280,6 +1440,7 @@ export function HomeExperience() {
                   </button>
                 ) : null}
               </div>
+            ) : null}
 
               <div data-testid={testIds.result.topList} className="grid gap-3">
                 {secondaryCards.map((card, index) => {

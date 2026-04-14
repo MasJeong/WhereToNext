@@ -29,7 +29,13 @@ export const evidenceSourceTypeValues = [
 ] as const;
 export const freshnessStateValues = ["fresh", "aging", "stale"] as const;
 export const snapshotKindValues = ["recommendation", "comparison"] as const;
+export const snapshotVisibilityValues = ["public", "private"] as const;
+export const historyVisibilityValues = ["public", "private"] as const;
+export const snapshotStatusValues = ["saved", "planned"] as const;
 export const explorationPreferenceValues = ["repeat", "balanced", "discover"] as const;
+export const affiliatePartnerValues = ["skyscanner", "trip-com"] as const;
+export const affiliateCategoryValues = ["flight"] as const;
+export const affiliatePageTypeValues = ["destination-detail"] as const;
 
 export const destinationKindSchema = z.enum(destinationKindValues);
 export const budgetBandSchema = z.enum(budgetBandValues);
@@ -43,7 +49,13 @@ export const evidenceTierSchema = z.enum(evidenceTierValues);
 export const evidenceSourceTypeSchema = z.enum(evidenceSourceTypeValues);
 export const freshnessStateSchema = z.enum(freshnessStateValues);
 export const snapshotKindSchema = z.enum(snapshotKindValues);
+export const snapshotVisibilitySchema = z.enum(snapshotVisibilityValues);
+export const historyVisibilitySchema = z.enum(historyVisibilityValues);
+export const snapshotStatusSchema = z.enum(snapshotStatusValues);
 export const explorationPreferenceSchema = z.enum(explorationPreferenceValues);
+export const affiliatePartnerSchema = z.enum(affiliatePartnerValues);
+export const affiliateCategorySchema = z.enum(affiliateCategoryValues);
+export const affiliatePageTypeSchema = z.enum(affiliatePageTypeValues);
 
 export const scoringWeightsSchema = z.object({
   vibeMatch: z.literal(25),
@@ -91,7 +103,9 @@ export const recommendationQuerySchema = z.object({
   travelMonth: z.number().int().min(1).max(12),
   pace: paceSchema,
   flightTolerance: flightToleranceSchema,
-  vibes: z.array(vibeSchema).min(1).max(2),
+  vibes: z.array(vibeSchema).min(1).max(3),
+  excludedCountryCodes: z.array(z.string().length(2)).max(3).optional(),
+  excludedDestinationIds: z.array(z.string().min(1)).max(20).optional(),
 });
 
 export const trendEvidenceSnapshotSchema = z.object({
@@ -194,6 +208,7 @@ export const recommendationSnapshotSchema = z.object({
   results: z.array(recommendationResultSchema).min(1),
   scoringVersionId: z.string().min(1),
   trendSnapshotIds: z.array(z.string().min(1)),
+  meta: recommendationSnapshotMetaSchema.optional(),
 });
 
 export const comparisonSnapshotSchema = z.object({
@@ -212,14 +227,85 @@ export const userPreferenceProfileUpdateSchema = z.object({
   explorationPreference: explorationPreferenceSchema,
 });
 
+export const userDestinationHistoryImageContentTypeValues = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/heic",
+  "image/heif",
+] as const;
+
+export const userDestinationHistoryImageExtensionValues = [
+  ".jpg",
+  ".jpeg",
+  ".png",
+  ".webp",
+  ".heic",
+  ".heif",
+] as const;
+
+export const userDestinationHistoryImageMaxCount = 10;
+export const userDestinationHistoryImageMaxBytes = 10 * 1024 * 1024;
+const userDestinationHistoryImageMaxDataUrlLength = 14_100_000;
+
+function normalizeCustomHistoryTag(value: string): string {
+  return value.trim().replace(/^#+/, "").trim();
+}
+
+export const userDestinationHistoryCustomTagSchema = z.preprocess(
+  (value) => (typeof value === "string" ? normalizeCustomHistoryTag(value) : value),
+  z
+    .string()
+    .min(1, "INVALID_CUSTOM_TAG")
+    .max(24, "CUSTOM_TAG_TOO_LONG")
+    .regex(/^[\p{L}\p{N}_-]+$/u, "INVALID_CUSTOM_TAG"),
+);
+
+export const userDestinationHistoryImageSchema = z
+  .object({
+    name: z.string().min(1).max(120),
+    contentType: z.enum(userDestinationHistoryImageContentTypeValues),
+    dataUrl: z.string().max(userDestinationHistoryImageMaxDataUrlLength),
+  })
+  .superRefine((value, context) => {
+    const normalizedName = value.name.trim().toLowerCase();
+    const hasAllowedExtension = userDestinationHistoryImageExtensionValues.some((extension) =>
+      normalizedName.endsWith(extension),
+    );
+
+    if (!hasAllowedExtension) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "INVALID_IMAGE_EXTENSION",
+        path: ["name"],
+      });
+    }
+
+    if (!value.dataUrl.startsWith(`data:${value.contentType};base64,`)) {
+      context.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "INVALID_IMAGE_DATA_URL",
+        path: ["dataUrl"],
+      });
+    }
+  });
+
 export const userDestinationHistorySchema = z.object({
   id: z.string().uuid(),
   userId: z.string().min(1),
   destinationId: z.string().min(1),
   rating: z.number().int().min(1).max(5),
   tags: z.array(vibeSchema).min(1).max(4),
+  customTags: z
+    .array(userDestinationHistoryCustomTagSchema)
+    .max(10)
+    .nullish()
+    .transform((value) => value ?? []),
   wouldRevisit: z.boolean(),
   visitedAt: z.string().datetime(),
+  memo: z.string().trim().max(500).nullable().optional(),
+  images: z.array(userDestinationHistoryImageSchema).max(userDestinationHistoryImageMaxCount),
+  visibility: historyVisibilitySchema.default("private"),
   createdAt: z.string().datetime(),
   updatedAt: z.string().datetime(),
 });
@@ -228,8 +314,76 @@ export const userDestinationHistoryInputSchema = z.object({
   destinationId: z.string().min(1),
   rating: z.number().int().min(1).max(5),
   tags: z.array(vibeSchema).min(1).max(4),
+  customTags: z
+    .array(userDestinationHistoryCustomTagSchema)
+    .max(10)
+    .nullish()
+    .transform((value) => value ?? []),
   wouldRevisit: z.boolean(),
   visitedAt: z.string().datetime(),
+  memo: z.string().trim().max(500).nullish().transform((value) => value ?? null),
+  images: z
+    .array(userDestinationHistoryImageSchema)
+    .max(userDestinationHistoryImageMaxCount)
+    .nullish()
+    .transform((value) => value ?? []),
+  visibility: historyVisibilitySchema.optional().default("private"),
+});
+
+export const communityCommentSchema = z.object({
+  id: z.string().uuid(),
+  historyId: z.string().uuid(),
+  userId: z.string().min(1),
+  content: z.string().min(1).max(500),
+  createdAt: z.string().datetime(),
+});
+
+export const communityCommentInputSchema = z.object({
+  historyId: z.string().uuid(),
+  content: z.string().min(1).max(500),
+});
+
+export const userFutureTripSchema = z.object({
+  id: z.string().uuid(),
+  userId: z.string().min(1),
+  destinationId: z.string().min(1),
+  sourceSnapshotId: z.string().uuid(),
+  destinationNameKo: z.string().min(1),
+  countryCode: z.string().length(2),
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+});
+
+export const userFutureTripInputSchema = z.object({
+  destinationId: z.string().min(1),
+  sourceSnapshotId: z.string().uuid(),
+});
+
+export const destinationAffiliateClickSchema = z.object({
+  id: z.string().uuid(),
+  destinationId: z.string().min(1),
+  partner: affiliatePartnerSchema,
+  category: affiliateCategorySchema,
+  pageType: affiliatePageTypeSchema,
+  departureAirport: departureAirportSchema.nullable(),
+  travelMonth: z.number().int().min(1).max(12).nullable(),
+  tripLengthDays: z.number().int().min(2).max(21).nullable(),
+  flightTolerance: flightToleranceSchema.nullable(),
+  userId: z.string().min(1).nullable(),
+  sessionId: z.string().min(1).nullable(),
+  clickedAt: z.string().datetime(),
+});
+
+export const destinationAffiliateClickInputSchema = z.object({
+  destinationId: z.string().min(1),
+  partner: affiliatePartnerSchema,
+  category: affiliateCategorySchema,
+  pageType: affiliatePageTypeSchema,
+  departureAirport: departureAirportSchema.nullish().transform((value) => value ?? null),
+  travelMonth: z.number().int().min(1).max(12).nullish().transform((value) => value ?? null),
+  tripLengthDays: z.number().int().min(2).max(21).nullish().transform((value) => value ?? null),
+  flightTolerance: flightToleranceSchema.nullish().transform((value) => value ?? null),
+  sessionId: z.string().min(1).nullish().transform((value) => value ?? null),
 });
 
 export const recommendationPersonalizationContextSchema = z.object({
@@ -247,11 +401,24 @@ export type ComparisonSnapshot = z.infer<typeof comparisonSnapshotSchema>;
 export type ScoringVersion = z.infer<typeof scoringVersionSchema>;
 export type EvidenceTier = z.infer<typeof evidenceTierSchema>;
 export type EvidenceSourceType = z.infer<typeof evidenceSourceTypeSchema>;
+export type SnapshotVisibility = z.infer<typeof snapshotVisibilitySchema>;
+export type HistoryVisibility = z.infer<typeof historyVisibilitySchema>;
+export type SnapshotStatus = z.infer<typeof snapshotStatusSchema>;
 export type ExplorationPreference = z.infer<typeof explorationPreferenceSchema>;
 export type UserPreferenceProfile = z.infer<typeof userPreferenceProfileSchema>;
 export type UserPreferenceProfileUpdate = z.infer<typeof userPreferenceProfileUpdateSchema>;
+export type UserDestinationHistoryImage = z.infer<typeof userDestinationHistoryImageSchema>;
 export type UserDestinationHistory = z.infer<typeof userDestinationHistorySchema>;
 export type UserDestinationHistoryInput = z.infer<typeof userDestinationHistoryInputSchema>;
+export type CommunityComment = z.infer<typeof communityCommentSchema>;
+export type CommunityCommentInput = z.infer<typeof communityCommentInputSchema>;
+export type UserFutureTrip = z.infer<typeof userFutureTripSchema>;
+export type UserFutureTripInput = z.infer<typeof userFutureTripInputSchema>;
+export type DestinationAffiliateClick = z.infer<typeof destinationAffiliateClickSchema>;
+export type DestinationAffiliateClickInput = z.infer<typeof destinationAffiliateClickInputSchema>;
+export type AffiliatePartner = z.infer<typeof affiliatePartnerSchema>;
+export type AffiliateCategory = z.infer<typeof affiliateCategorySchema>;
+export type AffiliatePageType = z.infer<typeof affiliatePageTypeSchema>;
 export type RecommendationPersonalizationContext = z.infer<
   typeof recommendationPersonalizationContextSchema
 >;
