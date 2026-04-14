@@ -31,17 +31,21 @@ async function createHistoryEntry(page: import("@playwright/test").Page) {
 
 async function submitQuickRecommendation(page: import("@playwright/test").Page) {
   await page.goto("/");
+  await expect(page.getByTestId(testIds.home.landing)).toBeVisible();
   await page.getByTestId(testIds.home.cta).click();
+  await expect(page.getByTestId(testIds.home.question)).toBeVisible();
   await page.getByTestId("home-step-choice-0").click();
   await page.getByRole("button", { name: /10~12월/ }).click();
   await page.getByTestId("home-step-choice-1").click();
   await page.getByTestId("home-step-choice-0").click();
   await page.getByTestId(testIds.home.next).click();
   await page.getByTestId("home-step-choice-0").click();
-  await expect(page.getByTestId("result-card-0")).toBeVisible({ timeout: 10000 });
+  await page.getByTestId(testIds.home.next).click();
+  await expect(page.getByTestId(testIds.result.filterBar)).toBeVisible({ timeout: 10000 });
+  await expect(page.getByTestId(testIds.result.card0)).toBeVisible({ timeout: 10000 });
 }
 
-test("promotes a saved recommendation into 앞으로 갈 곳 and can move it back", async ({ page }) => {
+test("promotes a saved recommendation into 앞으로 갈 곳 without forcing a return action", async ({ page }) => {
   await signInWithMockGoogle(page);
 
   await page.goto("/account?tab=future-trips");
@@ -55,18 +59,15 @@ test("promotes a saved recommendation into 앞으로 갈 곳 and can move it bac
   await page.goto("/account?tab=saved");
   await expect(page.getByTestId(getSavedSnapshotTestId(0))).toBeVisible();
   await page.getByTestId(getSavedSnapshotPlanTestId(0)).click();
+
+  await expect(page).toHaveURL(/\/account\?tab=saved/);
+
   await page.getByTestId(testIds.account.tabFutureTrips).click();
   await expect(page).toHaveURL(/\/account\?tab=future-trips/);
-
   await expect(page.getByTestId(getAccountFutureTripEntryTestId(0))).toBeVisible();
-
-  await page.getByRole("button", { name: "저장 목록으로" }).first().click();
+  await expect(page.getByRole("button", { name: "저장 목록으로" })).toHaveCount(0);
 
   await page.getByTestId(testIds.account.tabHistory).click();
   await expect(page).toHaveURL(/\/account\?tab=history/);
   await expect(page.getByTestId(getAccountHistoryEntryTestId(0))).toBeVisible();
-
-  await page.getByTestId(testIds.account.tabSaved).click();
-  await expect(page).toHaveURL(/\/account\?tab=saved/);
-  await expect(page.getByTestId(getSavedSnapshotTestId(0))).toBeVisible();
 });

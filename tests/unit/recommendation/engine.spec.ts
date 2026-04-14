@@ -19,4 +19,15 @@ describe("rankDestinations", () => {
       }),
     ).toBe(false);
   });
+
+  it("hard-filters destinations that were already shown in previous results", () => {
+    const recommendations = rankDestinations({
+      ...defaultRecommendationQuery,
+      excludedDestinationIds: ["tokyo", "osaka"],
+    }, launchCatalog);
+
+    expect(recommendations.length).toBeGreaterThan(0);
+    expect(recommendations.some((recommendation) => recommendation.destinationId === "tokyo")).toBe(false);
+    expect(recommendations.some((recommendation) => recommendation.destinationId === "osaka")).toBe(false);
+  });
 });

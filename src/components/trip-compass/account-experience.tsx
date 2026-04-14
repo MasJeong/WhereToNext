@@ -2,11 +2,10 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useMemo, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 
-import { authClient } from "@/lib/auth-client";
-import { buildApiUrl } from "@/lib/runtime/url";
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import type {
   ExplorationPreference,
@@ -14,8 +13,25 @@ import type {
   UserDestinationHistory,
   UserPreferenceProfile,
 } from "@/lib/domain/contracts";
+import {
+  getAccountFutureTripEntryTestId,
+  getAccountFutureTripDeleteTestId,
+  getAccountHistoryDeleteTestId,
+  getAccountHistoryEditTestId,
+  getAccountHistoryEntryTestId,
+  getAccountHistoryGalleryImageTestId,
+  getAccountHistoryLightboxImageTestId,
+  getAccountHistoryGalleryToggleTestId,
+  getAccountFutureTripViewTestId,
+  getSavedSnapshotDeleteCancelTestId,
+  getSavedSnapshotDeleteConfirmTestId,
+  getSavedSnapshotDeleteDialogTestId,
+  getSavedSnapshotDeleteTestId,
+  getSavedSnapshotPlanTestId,
+  getSavedSnapshotTestId,
+  testIds,
+} from "@/lib/test-ids";
 import { formatVibeList } from "@/lib/trip-compass/presentation";
-import { getAccountHistoryDeleteTestId, getAccountHistoryEntryTestId, testIds } from "@/lib/test-ids";
 
 import { ExperienceShell } from "./experience-shell";
 
@@ -54,22 +70,75 @@ const preferenceOptions: Array<{
   {
     value: "discover",
     label: "발견형",
-    description: "이미 다녀온 곳보다 새로운 후보를 조금 더 먼저 보여줘요.",
+    description: "아직 안 가본 곳을 우선 추천해요.",
     testId: testIds.account.preferenceDiscover,
   },
 ];
 
-function getTodayValue(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function buildHistoryBody(draft: HistoryDraft) {
+/**
+ * 여행 기록의 목적지 표시 이름을 만든다.
+ * @param destinationId 목적지 ID
+ * @returns 한국어/영문 이름
+ */
+function findDestinationCopy(destinationId: string) {
+  const destination = launchCatalog.find((item) => item.id === destinationId);
   return {
     nameKo: destination?.nameKo ?? destinationId,
     nameEn: destination?.nameEn ?? destinationId,
     countryCode: destination?.countryCode ?? "--",
   };
 }
+
+/**
+ * ISO 날짜를 한국식 표기로 변환한다.
+ * @example "2026-03-15T00:00:00Z" → "2026. 3. 15."
+ */
+function formatHistoryDate(value: string): string {
+  const d = new Date(value);
+  return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}.`;
+}
+
+/**
+ * ISO 날짜를 상대 시간으로 변환한다.
+ * @example 3일 전, 2주 전, 1달 전
+ */
+function formatRelativeDate(value: string): string {
+  const now = Date.now();
+  const then = new Date(value).getTime();
+  const diffDays = Math.floor((now - then) / (1000 * 60 * 60 * 24));
+
+  if (diffDays < 1) return "오늘";
+  if (diffDays === 1) return "어제";
+  if (diffDays < 7) return `${diffDays}일 전`;
+  if (diffDays < 30) return `${Math.floor(diffDays / 7)}주 전`;
+  if (diffDays < 365) return `${Math.floor(diffDays / 30)}달 전`;
+  return `${Math.floor(diffDays / 365)}년 전`;
+}
+
+function getHistoryCoverImage(entry: UserDestinationHistory) {
+  return entry.images[0] ?? null;
+}
+
+/**
+ * 저장한 추천의 상태를 안전하게 읽는다.
+ * @param payload 저장된 추천 payload
+ * @returns 저장 상태
+ */
+function getSnapshotStatus(payload: RecommendationSnapshot): "saved" | "planned" {
+  return payload.meta?.status ?? "saved";
+}
+
+/**
+ * 저장한 추천 카드에서 다시 보여줄 한 줄 요약을 만든다.
+ * @param payload 저장된 추천 payload
+ * @returns 다시 보기 전용 요약 문구
+ */
+function getSavedSnapshotSummary(payload: RecommendationSnapshot): string {
+  const leadResult = payload.results[0];
+  return leadResult?.reasons[0] ?? leadResult?.whyThisFits ?? "결정 이유를 다시 보면서 다음 행동을 이어갈 수 있어요.";
+}
+
+const historyLightboxSwipeThreshold = 80;
 
 export function AccountExperience({
   userName,
@@ -104,7 +173,7 @@ export function AccountExperience({
   const historyLightboxDragOffsetRef = useRef(0);
   const historyLightboxStageRef = useRef<HTMLDivElement | null>(null);
 
-  const tasteSummary = useMemo(() => {
+  const summary = useMemo(() => {
     const totalRating = historyEntries.reduce((sum, entry) => sum + entry.rating, 0);
     const revisitCount = historyEntries.filter((entry) => entry.wouldRevisit).length;
     const tagCounts = new Map<string, number>();
@@ -112,23 +181,6 @@ export function AccountExperience({
     for (const entry of historyEntries) {
       for (const tag of entry.tags) {
         tagCounts.set(tag, (tagCounts.get(tag) ?? 0) + 1);
-      }
-    }
-
-    return {
-      averageRating: historyEntries.length > 0 ? (totalRating / historyEntries.length).toFixed(1) : "-",
-      revisitCount,
-      topTags: Array.from(tagCounts.entries())
-        .sort((left, right) => right[1] - left[1])
-        .slice(0, 4),
-    };
-  }, [historyEntries]);
-
-  function toggleDraftTag(tag: UserDestinationHistory["tags"][number]) {
-    setDraft((currentDraft) => {
-      if (currentDraft.tags.includes(tag)) {
-        const nextTags = currentDraft.tags.filter((item) => item !== tag);
-        return { ...currentDraft, tags: nextTags.length > 0 ? nextTags : currentDraft.tags };
       }
     }
 
@@ -171,12 +223,16 @@ export function AccountExperience({
     stage.style.transition = animate ? "transform 180ms ease-out" : "none";
   }
 
+  /**
+   * 취향 모드를 저장한다.
+   * @param explorationPreference 새 추천 탐색 모드
+   */
   async function savePreference(explorationPreference: ExplorationPreference) {
     setIsSavingPreference(true);
     setError(null);
 
     try {
-      const response = await fetch(buildApiUrl("/api/me/preferences"), {
+      const response = await fetch("/api/me/preferences", {
         method: "PATCH",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ explorationPreference }),
@@ -190,43 +246,22 @@ export function AccountExperience({
       const payload = (await response.json()) as { profile: UserPreferenceProfile };
       setProfile(payload.profile);
     } catch {
-      setError("취향 모드를 저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
+      setError("설정을 저장하지 못했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setIsSavingPreference(false);
     }
   }
 
-  async function createHistoryEntry() {
-    setIsCreatingHistory(true);
-    setError(null);
-
-    try {
-      const response = await fetch(buildApiUrl("/api/me/history"), {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(buildHistoryBody(draft)),
-        credentials: "include",
-      });
-
-      if (!response.ok) {
-        throw new Error("history-create-failed");
-      }
-
-      const payload = (await response.json()) as { historyEntry: UserDestinationHistory };
-      setHistoryEntries((currentEntries) => [payload.historyEntry, ...currentEntries]);
-    } catch {
-      setError("여행 이력을 저장하지 못했어요. 잠시 후 다시 시도해 주세요.");
-    } finally {
-      setIsCreatingHistory(false);
-    }
-  }
-
+  /**
+   * 여행 기록을 삭제한다.
+   * @param historyId 삭제할 여행 기록 ID
+   */
   async function deleteHistoryEntry(historyId: string) {
     setDeletingHistoryId(historyId);
     setError(null);
 
     try {
-      const response = await fetch(buildApiUrl(`/api/me/history/${historyId}`), {
+      const response = await fetch(`/api/me/history/${historyId}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -243,95 +278,823 @@ export function AccountExperience({
     }
   }
 
-  async function handleSignOut() {
-    await authClient.signOut();
-    router.push("/");
-    router.refresh();
+  async function updateSnapshotStatus(snapshotId: string, status: "saved" | "planned") {
+    setUpdatingSnapshotId(snapshotId);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/me/snapshots/${snapshotId}`, {
+        method: "PATCH",
+        headers: { "content-type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({ status }),
+      });
+
+      if (!response.ok) {
+        throw new Error("snapshot-status-update-failed");
+      }
+
+      const payload = (await response.json()) as {
+        snapshot: {
+          id: string;
+          createdAt: string;
+          payload: RecommendationSnapshot;
+        };
+      };
+
+      setSavedSnapshots((currentEntries) =>
+        currentEntries.map((entry) => (
+          entry.id === payload.snapshot.id
+            ? {
+                ...entry,
+                payload: payload.snapshot.payload,
+              }
+            : entry
+        )),
+      );
+    } catch {
+      setError("변경하지 못했습니다. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setUpdatingSnapshotId((currentId) => (currentId === snapshotId ? null : currentId));
+    }
+  }
+
+  async function deleteSavedSnapshot(snapshotId: string) {
+    setDeletingSavedSnapshotId(snapshotId);
+    setError(null);
+
+    try {
+      const response = await fetch(`/api/me/snapshots/${snapshotId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("saved-snapshot-delete-failed");
+      }
+
+      setSavedSnapshots((currentSnapshots) =>
+        currentSnapshots.filter((snapshot) => snapshot.id !== snapshotId),
+      );
+      setSavedDeleteDialogSnapshotId((currentId) => (currentId === snapshotId ? null : currentId));
+    } catch {
+      setError("저장한 추천을 삭제하지 못했어요. 잠시 후 다시 시도해 주세요.");
+    } finally {
+      setDeletingSavedSnapshotId((currentId) => (currentId === snapshotId ? null : currentId));
+    }
+  }
+
+  function openHistoryLightbox(entryId: string, imageIndex: number) {
+    setHistoryLightboxStageOffset(0, false);
+    setHistoryLightboxState({ entryId, imageIndex });
+  }
+
+  function closeHistoryLightbox() {
+    historyLightboxPointerStateRef.current = null;
+    setHistoryLightboxStageOffset(0, false);
+    setHistoryLightboxState(null);
+  }
+
+  function moveHistoryLightbox(step: -1 | 1) {
+    historyLightboxPointerStateRef.current = null;
+    setHistoryLightboxStageOffset(0, false);
+    setHistoryLightboxState((currentState) => {
+      if (!currentState) {
+        return null;
+      }
+
+      const entry = historyEntries.find((item) => item.id === currentState.entryId);
+      if (!entry || entry.images.length === 0) {
+        return null;
+      }
+
+      return {
+        entryId: currentState.entryId,
+        imageIndex: (currentState.imageIndex + step + entry.images.length) % entry.images.length,
+      };
+    });
+  }
+
+  function startHistoryLightboxDrag(pointerId: number, startX: number) {
+    historyLightboxPointerStateRef.current = { pointerId, startX };
+    setHistoryLightboxStageOffset(0, false);
+  }
+
+  function updateHistoryLightboxDrag(pointerId: number, clientX: number) {
+    const pointerState = historyLightboxPointerStateRef.current;
+
+    if (!pointerState || pointerState.pointerId !== pointerId) {
+      return;
+    }
+
+    setHistoryLightboxStageOffset(clientX - pointerState.startX, false);
+  }
+
+  function finishHistoryLightboxDrag(pointerId: number) {
+    const pointerState = historyLightboxPointerStateRef.current;
+
+    if (!pointerState || pointerState.pointerId !== pointerId) {
+      return;
+    }
+
+    historyLightboxPointerStateRef.current = null;
+
+    if (historyLightboxDragOffsetRef.current <= -historyLightboxSwipeThreshold) {
+      moveHistoryLightbox(1);
+      return;
+    }
+
+    if (historyLightboxDragOffsetRef.current >= historyLightboxSwipeThreshold) {
+      moveHistoryLightbox(-1);
+      return;
+    }
+
+    setHistoryLightboxStageOffset(0, true);
+  }
+
+  const tabItems: Array<{ key: AccountTab; label: string; testId: string; count?: number }> = [
+    { key: "history", label: "여행 기록", testId: testIds.account.tabHistory, count: summary.count },
+    { key: "future-trips", label: "예정된 여행", testId: testIds.account.tabFutureTrips, count: plannedSnapshots.length },
+    { key: "saved", label: "저장한 추천", testId: testIds.account.tabSaved, count: savedCandidateSnapshots.length },
+    { key: "preferences", label: "추천 설정", testId: testIds.account.tabPreferences },
+  ];
+
+  useEffect(() => {
+    setActiveTab(initialTab);
+  }, [initialTab]);
+
+  function navigateToTab(nextTab: AccountTab) {
+    setActiveTab(nextTab);
+
+    const nextSearchParams = new URLSearchParams(searchParams.toString());
+    nextSearchParams.set("tab", nextTab);
+    router.replace(`/account?${nextSearchParams.toString()}`, { scroll: false });
   }
 
   return (
     <ExperienceShell
-      eyebrow="내 취향"
-      title="좋아했던 여행의 결을 쌓아 두면 다음 추천이 더 나답게 좁혀져요."
-      intro="내 페이지는 설정 화면보다 가깝게, 취향과 방문 기록을 누적하는 공간이에요. 탐색 모드와 다녀온 곳만 정리해도 다음 추천 결과가 훨씬 또렷해져요."
-      capsule="탐색 모드 · 방문 기록 · 별점 · 해시태그 · 재방문 의사"
-      headerAside={
-        <div className="compass-sheet rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-          <p className="compass-editorial-kicker">{userName}님의 취향 기록</p>
-          <p className="mt-2.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-            지금은 {profile.explorationPreference} 모드예요. 남긴 기록 {historyEntries.length}개가 다음 추천의 출발점을 정리해 줘요.
-          </p>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-              평균 만족도 {tasteSummary.averageRating}
-            </span>
-            <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">
-              다시 가고 싶은 곳 {tasteSummary.revisitCount}개
-            </span>
-          </div>
-          <div className="mt-3 flex flex-wrap gap-2">
-            <Link
-              href="/"
-              className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
-            >
-              홈으로
-            </Link>
+      eyebrow=""
+      title=""
+      intro=""
+      capsule=""
+      hideHeader
+    >
+      <div data-testid={testIds.account.root} className="space-y-5 px-4 pt-6 sm:px-5">
+        {/* ── 헤더 ── */}
+        <div className="space-y-1">
+          <h1 className="text-[1.15rem] font-bold tracking-[-0.02em] text-[var(--color-ink)]">{userName}님의 여행</h1>
+          {summary.count > 0 ? (
+            <p data-testid={testIds.account.tasteSummary} className="text-[0.78rem] text-[var(--color-ink-soft)]">
+              기록 {summary.count}개 · 평균 {summary.averageRating}/5
+              {summary.revisitCount > 0 ? ` · 재방문 희망 ${summary.revisitCount}곳` : ""}
+            </p>
+          ) : (
+            <p className="text-[0.78rem] text-[var(--color-ink-soft)]">다녀온 여행을 기록하고 맞춤 추천을 받아보세요</p>
+          )}
+        </div>
+
+        {/* ── 탭 네비게이션 + 기록 추가 ── */}
+        <div className="flex items-center justify-between gap-3">
+          <nav
+            role="tablist"
+            aria-label="계정 탭"
+            className="grid flex-1 grid-cols-2 gap-2 overflow-y-hidden border-b border-[var(--color-frame-soft)] pb-2 sm:flex sm:gap-1 sm:overflow-x-auto sm:pb-0"
+          >
+            {tabItems.map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                role="tab"
+                aria-selected={activeTab === tab.key}
+                data-testid={tab.testId}
+                onClick={() => navigateToTab(tab.key)}
+                id={`tab-${tab.key}`}
+                aria-controls={`tabpanel-${tab.key}`}
+                className={`relative min-h-[44px] w-full min-w-0 cursor-pointer rounded-xl px-4 py-3 text-left text-[0.85rem] font-semibold transition-colors sm:w-auto sm:shrink-0 sm:rounded-none sm:pb-3 sm:pt-2 ${
+                  activeTab === tab.key
+                    ? "text-[var(--color-sand-deep)]"
+                    : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+                }`}
+              >
+                <span className="flex items-center gap-1.5">
+                  {tab.label}
+                  {tab.count !== undefined ? (
+                    <span className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[0.65rem] font-bold ${
+                      activeTab === tab.key
+                        ? "bg-[var(--color-sand-deep)] text-white"
+                        : "bg-[var(--color-frame-soft)] text-[var(--color-ink-soft)]"
+                    }`}>
+                      {tab.count}
+                    </span>
+                  ) : null}
+                </span>
+                {activeTab === tab.key ? (
+                  <span className="absolute inset-x-0 bottom-0 h-[2px] rounded-full bg-[var(--color-sand-deep)]" />
+                ) : null}
+              </button>
+            ))}
+          </nav>
+          <Link
+            href="/account/history/new"
+            data-testid={testIds.account.addHistoryCta}
+            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--color-frame-soft)] bg-white px-4 py-2 text-[0.78rem] font-semibold text-[var(--color-ink)] transition-colors hover:border-[var(--color-ink-soft)] hover:bg-[var(--color-surface-muted)]"
+          >
+            <span aria-hidden="true" className="text-[0.85rem]">+</span>
+            기록 추가
+          </Link>
+        </div>
+
+        {error ? (
+          <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-warning-border)] bg-[var(--color-warning-bg)] px-4 py-3">
+            <p className="text-sm text-[var(--color-warning-text)]">{error}</p>
             <button
               type="button"
-              onClick={() => {
-                void handleSignOut();
-              }}
-              className="compass-action-primary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
+              onClick={() => setError(null)}
+              aria-label="알림 닫기"
+              className="shrink-0 cursor-pointer rounded-md px-2 py-1 text-xs font-medium text-[var(--color-warning-text)] transition-opacity hover:opacity-70"
             >
               닫기
             </button>
           </div>
-        </div>
-      }
-    >
-      <div data-testid={testIds.account.root} className="grid gap-4 xl:grid-cols-[minmax(0,1.02fr)_minmax(18rem,0.98fr)]">
-        <section className="space-y-4">
-          <article data-testid={testIds.account.tasteSummary} className="compass-desk rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
-            <div className="flex flex-col gap-2.5 border-b border-[color:var(--color-frame-soft)] pb-4">
-              <p className="compass-editorial-kicker">취향 요약</p>
-              <h2 className="font-display text-[1.16rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.34rem]">
-                취향이 쌓일수록 홈에서 바로 좁혀지는 후보가 더 또렷해져요.
-              </h2>
-            </div>
+        ) : null}
 
-            <div className="compass-fact-grid-compact mt-3.5 xl:grid-cols-2">
-              <article className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-                <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">탐색 모드</p>
-                <p className="mt-2 text-base font-semibold text-[var(--color-ink)]">{profile.explorationPreference}</p>
-              </article>
-              <article className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-                <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">방문 기록</p>
-                <p className="mt-2 text-base font-semibold text-[var(--color-ink)]">{historyEntries.length}개</p>
-              </article>
-              <article className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-                <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">평균 만족도</p>
-                <p className="mt-2 text-base font-semibold text-[var(--color-ink)]">{tasteSummary.averageRating}</p>
-              </article>
-              <article className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-                <p className="text-[0.66rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">자주 남긴 해시태그</p>
-                <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">
-                  {tasteSummary.topTags.length > 0
-                    ? tasteSummary.topTags.map(([tag]) => formatVibeList([tag])).join(" · ")
-                    : "아직 없어요"}
+        {/* ── 여행 기록 탭 ── */}
+        {activeTab === "history" ? (
+          <section role="tabpanel" id="tabpanel-history" aria-labelledby="tab-history" className="space-y-3">
+            {historyEntries.length > 0 ? (
+              historyEntries.map((entry, index) => {
+                const destination = findDestinationCopy(entry.destinationId);
+                const coverImage = getHistoryCoverImage(entry);
+                const isGalleryOpen = openHistoryGalleryId === entry.id;
+
+                return (
+                  <article
+                    key={entry.id}
+                    data-testid={getAccountHistoryEntryTestId(index)}
+                    className="overflow-hidden rounded-2xl border border-[var(--color-frame-soft)] bg-white transition-shadow hover:shadow-[var(--shadow-card)]"
+                  >
+                    <div className="grid gap-0 sm:grid-cols-[12rem_minmax(0,1fr)]">
+                      <div className="relative min-h-[10rem] bg-gradient-to-b from-slate-50 to-slate-100 sm:min-h-full">
+                        {coverImage ? (
+                          <Image
+                            src={coverImage.dataUrl}
+                            alt={`${destination.nameKo} 기록 사진`}
+                            fill
+                            unoptimized
+                            sizes="(max-width: 640px) 100vw, 12rem"
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="flex h-full items-center justify-center">
+                            <span className="text-sm text-[var(--color-ink-soft)]">사진 없음</span>
+                          </div>
+                        )}
+                        {entry.images.length > 1 ? (
+                          <div className="absolute bottom-2.5 right-2.5 rounded-full bg-black/60 px-2.5 py-0.5 text-[0.7rem] font-semibold text-white backdrop-blur-sm">
+                            +{entry.images.length - 1}
+                          </div>
+                        ) : null}
+                      </div>
+
+                      <div className="min-w-0 space-y-3 px-5 py-4">
+                        <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                          <div className="min-w-0">
+                            <h3 className="text-base font-bold text-[var(--color-ink)]">
+                              {destination.nameKo}
+                              <span className="ml-2 text-sm font-normal text-[var(--color-ink-soft)]">{destination.nameEn}</span>
+                            </h3>
+                            <p className="mt-1 text-[0.82rem] text-[var(--color-ink-soft)]">
+                              {formatHistoryDate(entry.visitedAt)} · {entry.rating}/5 · {entry.wouldRevisit ? "재방문 희망" : "한 번으로 충분"}
+                            </p>
+                          </div>
+
+                          <div className="flex shrink-0 flex-wrap gap-1.5">
+                            {entry.images.length > 0 ? (
+                              <button
+                                type="button"
+                                data-testid={getAccountHistoryGalleryToggleTestId(index)}
+                                onClick={() => {
+                                  setOpenHistoryGalleryId((currentId) =>
+                                    currentId === entry.id ? null : entry.id,
+                                  );
+                                }}
+                                className="min-h-[36px] cursor-pointer rounded-lg border border-[var(--color-frame-soft)] px-3 py-1.5 text-[0.78rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-sand)] hover:text-[var(--color-sand-deep)]"
+                              >
+                                {isGalleryOpen ? "닫기" : `사진 ${entry.images.length}`}
+                              </button>
+                            ) : null}
+                            <button
+                              type="button"
+                              data-testid={getAccountHistoryEditTestId(index)}
+                              onClick={() => {
+                                router.push(`/account/history/${entry.id}/edit`);
+                              }}
+                              className="min-h-[36px] cursor-pointer rounded-lg border border-[var(--color-frame-soft)] px-3 py-1.5 text-[0.78rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-sand)] hover:text-[var(--color-sand-deep)]"
+                            >
+                              수정
+                            </button>
+                            <button
+                              type="button"
+                              data-testid={getAccountHistoryDeleteTestId(index)}
+                              disabled={deletingHistoryId === entry.id}
+                              onClick={() => {
+                                setConfirmDeleteHistoryId(entry.id);
+                              }}
+                              className="min-h-[36px] cursor-pointer rounded-lg border border-[var(--color-frame-soft)] px-3 py-1.5 text-[0.78rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:border-red-300 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                              {deletingHistoryId === entry.id ? "삭제 중..." : "삭제"}
+                            </button>
+                          </div>
+                        </div>
+
+                        {confirmDeleteHistoryId === entry.id ? (
+                          <div className="rounded-xl border border-[var(--color-frame-soft)] bg-[var(--color-surface-muted)] p-3">
+                            <p className="text-[0.82rem] font-semibold text-[var(--color-ink)]">이 기록을 삭제할까요?</p>
+                            <p className="mt-1 text-[0.78rem] text-[var(--color-ink-soft)]">
+                              삭제하면 되돌릴 수 없어요.
+                            </p>
+                            <div className="mt-3 flex gap-2">
+                              <button
+                                type="button"
+                                onClick={() => setConfirmDeleteHistoryId(null)}
+                                className="rounded-lg border border-[var(--color-frame-soft)] px-3 py-2 text-[0.78rem] font-medium text-[var(--color-ink-soft)]"
+                              >
+                                취소
+                              </button>
+                              <button
+                                type="button"
+                                disabled={deletingHistoryId === entry.id}
+                                onClick={() => {
+                                  void deleteHistoryEntry(entry.id);
+                                  setConfirmDeleteHistoryId(null);
+                                }}
+                                className="rounded-lg bg-red-500 px-3 py-2 text-[0.78rem] font-semibold text-white disabled:opacity-50"
+                              >
+                                {deletingHistoryId === entry.id ? "삭제 중..." : "삭제"}
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {entry.tags.length > 0 || entry.customTags.length > 0 ? (
+                          <div className="space-y-2">
+                            {entry.tags.length > 0 ? (
+                              <div className="space-y-1.5">
+                                <p className="text-[0.72rem] font-semibold text-[var(--color-ink-soft)]">추천 태그</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {entry.tags.map((tag) => (
+                                    <span
+                                      key={`${entry.id}-${tag}`}
+                                      className="rounded-full bg-[var(--color-accent-soft)] px-2.5 py-0.5 text-[0.75rem] font-medium text-[var(--color-sand-deep)]"
+                                    >
+                                      #{formatVibeList([tag])}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
+
+                            {entry.customTags.length > 0 ? (
+                              <div className="space-y-1.5">
+                                <p className="text-[0.72rem] font-semibold text-[var(--color-ink-soft)]">직접 등록</p>
+                                <div className="flex flex-wrap gap-1.5">
+                                  {entry.customTags.map((tag, customTagIndex) => (
+                                    <span
+                                      key={`${entry.id}-custom-${customTagIndex}-${tag}`}
+                                      className="rounded-full border border-[var(--color-frame-soft)] bg-white px-2.5 py-0.5 text-[0.75rem] font-medium text-[var(--color-ink)]"
+                                    >
+                                      #{tag}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
+                            ) : null}
+                          </div>
+                        ) : null}
+
+                        {entry.memo?.trim() ? (
+                          <p className="text-[0.85rem] leading-relaxed text-[var(--color-ink-soft)]">{entry.memo}</p>
+                        ) : null}
+
+                        {isGalleryOpen && entry.images.length > 0 ? (
+                          <div className="rounded-xl border border-[var(--color-frame-soft)] bg-slate-50/60 p-3">
+                            <div className="flex gap-3 overflow-x-auto overflow-y-hidden snap-x snap-mandatory pb-1">
+                              {entry.images.map((image, imageIndex) => (
+                                <button
+                                  type="button"
+                                  key={`${entry.id}-gallery-${imageIndex}`}
+                                  data-testid={getAccountHistoryGalleryImageTestId(imageIndex)}
+                                  onClick={() => {
+                                    openHistoryLightbox(entry.id, imageIndex);
+                                  }}
+                                  className="relative h-48 w-[min(16rem,75vw)] shrink-0 snap-start overflow-hidden rounded-xl bg-slate-100"
+                                >
+                                  <Image
+                                    src={image.dataUrl}
+                                    alt={`${destination.nameKo} 기록 사진 ${imageIndex + 1}`}
+                                    fill
+                                    unoptimized
+                                    sizes="(max-width: 640px) 75vw, 16rem"
+                                    className="object-cover"
+                                  />
+                                  <div className="absolute left-2.5 top-2.5 rounded-full bg-white/90 px-2.5 py-0.5 text-[0.7rem] font-semibold text-[var(--color-ink)] backdrop-blur-sm">
+                                    {imageIndex + 1} / {entry.images.length}
+                                  </div>
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+                        ) : null}
+
+                        {isClient && historyLightboxState?.entryId === entry.id && entry.images[historyLightboxState.imageIndex]
+                          ? createPortal(
+                              <div
+                                data-testid={testIds.account.historyLightbox}
+                                onClick={closeHistoryLightbox}
+                                className="fixed inset-0 z-[120] flex items-center justify-center bg-[rgb(15_23_42_/_0.18)] p-4 backdrop-blur-md"
+                              >
+                                <div className="relative w-full max-w-4xl px-2">
+                                  <div
+                                    className="overflow-hidden rounded-[1.5rem] border border-[var(--color-frame-soft)] bg-[linear-gradient(180deg,rgba(255,255,255,0.98),rgba(248,251,255,0.96))] shadow-[0_28px_60px_rgba(15,23,42,0.18)]"
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                    }}
+                                  >
+                                    <button
+                                      type="button"
+                                      data-testid={testIds.account.historyLightboxClose}
+                                      onClick={closeHistoryLightbox}
+                                      className="absolute right-5 top-5 z-10 rounded-full border border-[var(--color-frame-soft)] bg-white/92 px-3 py-1.5 text-[0.78rem] font-semibold text-[var(--color-ink)] shadow-[var(--shadow-paper)] backdrop-blur-sm transition-colors hover:bg-white"
+                                    >
+                                      닫기
+                                    </button>
+                                    <div
+                                      data-testid={getAccountHistoryLightboxImageTestId(historyLightboxState.imageIndex)}
+                                      className="relative aspect-[4/5] w-full bg-[linear-gradient(180deg,#f8fafc,#eef4fb)] sm:aspect-[16/10]"
+                                    >
+                                      <div
+                                        ref={historyLightboxStageRef}
+                                        className={`absolute inset-0 ${entry.images.length > 1 ? "cursor-grab active:cursor-grabbing" : ""}`}
+                                        onPointerDown={(event) => {
+                                          if (entry.images.length <= 1) {
+                                            return;
+                                          }
+
+                                          startHistoryLightboxDrag(event.pointerId, event.clientX);
+                                          event.currentTarget.setPointerCapture(event.pointerId);
+                                        }}
+                                        onPointerMove={(event) => {
+                                          if (entry.images.length <= 1) {
+                                            return;
+                                          }
+
+                                          updateHistoryLightboxDrag(event.pointerId, event.clientX);
+                                        }}
+                                        onPointerUp={(event) => {
+                                          if (entry.images.length <= 1) {
+                                            return;
+                                          }
+
+                                          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                                            event.currentTarget.releasePointerCapture(event.pointerId);
+                                          }
+
+                                          finishHistoryLightboxDrag(event.pointerId);
+                                        }}
+                                        onPointerCancel={(event) => {
+                                          if (entry.images.length <= 1) {
+                                            return;
+                                          }
+
+                                          if (event.currentTarget.hasPointerCapture(event.pointerId)) {
+                                            event.currentTarget.releasePointerCapture(event.pointerId);
+                                          }
+
+                                          historyLightboxPointerStateRef.current = null;
+                                          setHistoryLightboxStageOffset(0, true);
+                                        }}
+                                        style={{
+                                          touchAction: entry.images.length > 1 ? "pan-y" : "auto",
+                                          willChange: entry.images.length > 1 ? "transform" : "auto",
+                                        }}
+                                      >
+                                        <Image
+                                          src={entry.images[historyLightboxState.imageIndex]!.dataUrl}
+                                          alt={`${destination.nameKo} 기록 사진 크게 보기 ${historyLightboxState.imageIndex + 1}`}
+                                          fill
+                                          unoptimized
+                                          sizes="100vw"
+                                          className="object-contain"
+                                          draggable={false}
+                                        />
+                                      </div>
+                                      {entry.images.length > 1 ? (
+                                        <>
+                                          <button
+                                            type="button"
+                                            data-testid={testIds.account.historyLightboxPrev}
+                                            onClick={() => {
+                                              moveHistoryLightbox(-1);
+                                            }}
+                                            className="absolute left-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/42 text-lg font-semibold text-white shadow-[0_10px_24px_rgba(15,23,42,0.24)] backdrop-blur-sm transition-colors hover:bg-black/56"
+                                            aria-label="이전 사진 보기"
+                                          >
+                                            ‹
+                                          </button>
+                                          <button
+                                            type="button"
+                                            data-testid={testIds.account.historyLightboxNext}
+                                            onClick={() => {
+                                              moveHistoryLightbox(1);
+                                            }}
+                                            className="absolute right-3 top-1/2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/42 text-lg font-semibold text-white shadow-[0_10px_24px_rgba(15,23,42,0.24)] backdrop-blur-sm transition-colors hover:bg-black/56"
+                                            aria-label="다음 사진 보기"
+                                          >
+                                            ›
+                                          </button>
+                                        </>
+                                      ) : null}
+                                    </div>
+                                    <div className="flex items-center justify-between gap-3 border-t border-[var(--color-frame-soft)] bg-white/94 px-4 py-3 text-[var(--color-ink)]">
+                                      <div>
+                                        <p className="text-[0.85rem] font-semibold">{destination.nameKo} 사진</p>
+                                        <p className="text-[0.75rem] text-[var(--color-ink-soft)]">
+                                          {historyLightboxState.imageIndex + 1} / {entry.images.length}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>,
+                              document.body,
+                            )
+                          : null}
+                      </div>
+                    </div>
+                  </article>
+                );
+              })
+            ) : (
+              <div className="flex flex-col items-center rounded-2xl bg-[var(--color-surface-muted)] px-6 py-12 text-center">
+                <span aria-hidden="true" className="text-[2rem]">✈️</span>
+                <p className="mt-3 text-[0.92rem] font-semibold text-[var(--color-ink)]">
+                  아직 기록이 없어요
                 </p>
-              </article>
-            </div>
-          </article>
+                <p className="mt-1 text-[0.8rem] text-[var(--color-ink-soft)]">
+                  다녀온 여행을 남기면 다음 추천이 더 정확해져요
+                </p>
+                <Link
+                  href="/account/history/new"
+                  className="mt-5 inline-flex items-center justify-center rounded-full bg-[var(--color-ink)] px-6 py-2.5 text-[0.82rem] font-semibold !text-white transition-opacity hover:opacity-85"
+                >
+                  첫 여행 기록하기
+                </Link>
+              </div>
+            )}
+          </section>
+        ) : null}
 
-          <article data-testid={testIds.account.tasteMode} className="compass-sheet rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
-            <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
-              <p className="compass-editorial-kicker">탐색 모드</p>
-              <h2 className="mt-1.5 font-display text-[1.12rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.28rem]">
-                익숙한 추천을 더 볼지, 새로운 추천을 더 넓힐지 정해 보세요.
-              </h2>
-            </div>
+        {/* ── 예정된 여행 탭 ── */}
+        {activeTab === "future-trips" ? (
+          <section role="tabpanel" id="tabpanel-future-trips" aria-labelledby="tab-future-trips">
+            <p className="mb-4 text-[0.85rem] text-[var(--color-ink-soft)]">
+              실제로 갈 여행지를 모아 두세요.
+            </p>
+            <div data-testid={testIds.account.futureTripList} className="grid gap-3">
+              {plannedSnapshots.length > 0 ? (
+                plannedSnapshots.map((snapshot, index) => {
+                  const destination = findDestinationCopy(snapshot.payload.destinationIds[0]);
+                  const isDeleting = deletingSavedSnapshotId === snapshot.id;
 
-            <div className="mt-3.5 grid gap-2.5">
+                  return (
+                    <article
+                      key={snapshot.id}
+                      data-testid={getAccountFutureTripEntryTestId(index)}
+                      className="flex flex-col gap-3 rounded-2xl border border-[var(--color-frame-soft)] bg-white px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
+                      <div className="min-w-0">
+                        <h3 className="text-base font-bold text-[var(--color-ink)]">
+                          {destination.nameKo}
+                          <span className="ml-2 rounded-md bg-slate-100 px-1.5 py-0.5 text-[0.7rem] font-semibold text-[var(--color-ink-soft)]">
+                            {destination.countryCode}
+                          </span>
+                        </h3>
+                        <p className="mt-1 text-[0.82rem] text-[var(--color-ink-soft)]">
+                          {destination.nameEn} · {formatRelativeDate(snapshot.createdAt)} 저장
+                        </p>
+                        <p className="mt-2 text-[0.8rem] text-[var(--color-ink-soft)]">
+                          저장한 추천에서 올린 여행지입니다. 여기서는 일정 후보만 차분히 모아 보세요.
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 flex-col items-stretch gap-2 sm:items-end">
+                        <span className="inline-flex items-center justify-center rounded-full bg-[var(--color-selected)] px-3 py-1 text-[0.74rem] font-semibold text-[var(--color-sand-deep)]">
+                          예정된 여행
+                        </span>
+                        <Link
+                          href={`/s/${snapshot.id}`}
+                          data-testid={getAccountFutureTripViewTestId(index)}
+                          className="inline-flex min-h-[36px] items-center justify-center rounded-lg bg-[var(--color-ink)] px-3 py-1.5 text-[0.78rem] font-semibold text-white transition-opacity hover:opacity-85"
+                        >
+                          추천 다시 보기
+                        </Link>
+                        <button
+                          type="button"
+                          data-testid={getAccountFutureTripDeleteTestId(index)}
+                          disabled={isDeleting}
+                          onClick={() => {
+                            setSavedDeleteDialogSnapshotId(snapshot.id);
+                          }}
+                          className="inline-flex min-h-[36px] items-center justify-center rounded-lg border border-[var(--color-frame-soft)] px-3 py-1.5 text-[0.78rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:border-red-300 hover:text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isDeleting ? "삭제 중..." : "삭제"}
+                        </button>
+                      </div>
+
+                      {savedDeleteDialogSnapshotId === snapshot.id ? (
+                        <div
+                          data-testid={getSavedSnapshotDeleteDialogTestId(index)}
+                          className="sm:col-span-2 rounded-xl border border-[var(--color-frame-soft)] bg-[var(--color-surface-muted)] p-3"
+                        >
+                          <p className="text-[0.82rem] font-semibold text-[var(--color-ink)]">이 예정된 여행을 삭제할까요?</p>
+                          <p className="mt-1 text-[0.78rem] text-[var(--color-ink-soft)]">
+                            삭제하면 저장 목록과 예정된 여행에서 함께 사라져요.
+                          </p>
+                          <div className="mt-3 flex gap-2">
+                            <button
+                              type="button"
+                              data-testid={getSavedSnapshotDeleteCancelTestId(index)}
+                              onClick={() => setSavedDeleteDialogSnapshotId(null)}
+                              className="rounded-lg border border-[var(--color-frame-soft)] px-3 py-2 text-[0.78rem] font-medium text-[var(--color-ink-soft)]"
+                            >
+                              취소
+                            </button>
+                            <button
+                              type="button"
+                              data-testid={getSavedSnapshotDeleteConfirmTestId(index)}
+                              disabled={isDeleting}
+                              onClick={() => {
+                                void deleteSavedSnapshot(snapshot.id);
+                              }}
+                              className="rounded-lg bg-red-500 px-3 py-2 text-[0.78rem] font-semibold text-white disabled:opacity-50"
+                            >
+                              {isDeleting ? "삭제 중..." : "삭제"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+                    </article>
+                  );
+                })
+              ) : (
+                <div
+                  data-testid={testIds.account.futureTripEmptyState}
+                  className="flex flex-col items-center rounded-2xl bg-[var(--color-surface-muted)] px-6 py-12 text-center"
+                >
+                  <span aria-hidden="true" className="text-[2rem]">🗓️</span>
+                  <p className="mt-3 text-[0.92rem] font-semibold text-[var(--color-ink)]">
+                    아직 예정된 여행이 없습니다
+                  </p>
+                  <p className="mt-1 text-[0.8rem] text-[var(--color-ink-soft)]">
+                    저장 목록에서 가고 싶은 여행지를 올려 보세요.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => navigateToTab("saved")}
+                    className="mt-5 inline-flex items-center justify-center rounded-full bg-[var(--color-ink)] px-6 py-2.5 text-[0.82rem] font-semibold text-white transition-opacity hover:opacity-85"
+                  >
+                    저장한 추천 보기
+                  </button>
+                </div>
+              )}
+            </div>
+          </section>
+        ) : null}
+
+        {/* ── 저장 목록 탭 ── */}
+        {activeTab === "saved" ? (
+          <section role="tabpanel" id="tabpanel-saved" aria-labelledby="tab-saved">
+            <p className="mb-4 text-[0.85rem] text-[var(--color-ink-soft)]">
+              결과 화면에서 담아 둔 추천을 여기서 다시 보고 정리하세요.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {savedCandidateSnapshots.length > 0 ? (
+                savedCandidateSnapshots.map((snapshot, index) => {
+                  const destination = findDestinationCopy(snapshot.payload.destinationIds[0]);
+                  const isUpdating = updatingSnapshotId === snapshot.id;
+                  const summaryCopy = getSavedSnapshotSummary(snapshot.payload);
+
+                  return (
+                    <article
+                      key={snapshot.id}
+                      data-testid={getSavedSnapshotTestId(index)}
+                      className="flex flex-col justify-between rounded-2xl border border-[var(--color-frame-soft)] bg-white px-5 py-4 transition-shadow hover:shadow-[var(--shadow-card)]"
+                    >
+                      <div>
+                        <h3 className="text-base font-bold text-[var(--color-ink)]">{destination.nameKo}</h3>
+                        <p className="mt-0.5 text-[0.82rem] text-[var(--color-ink-soft)]">{destination.nameEn}</p>
+                        <p className="mt-2 text-[0.78rem] text-[var(--color-ink-soft)]">
+                          {formatRelativeDate(snapshot.createdAt)} 저장
+                        </p>
+                        <p className="mt-2 text-[0.84rem] leading-6 text-[var(--color-ink)]">
+                          {summaryCopy}
+                        </p>
+                      </div>
+                      <div className="mt-4 flex gap-2">
+                        <Link
+                          href={`/s/${snapshot.id}`}
+                          className="rounded-lg border border-[var(--color-frame-soft)] bg-white px-4 py-2 text-[0.78rem] font-medium text-[var(--color-ink)] transition-colors hover:border-[var(--color-sand)] hover:text-[var(--color-sand-deep)]"
+                        >
+                          공유 페이지
+                        </Link>
+                        <button
+                          type="button"
+                          data-testid={getSavedSnapshotPlanTestId(index)}
+                          disabled={isUpdating}
+                          onClick={() => {
+                            void updateSnapshotStatus(snapshot.id, "planned");
+                          }}
+                          className="rounded-lg bg-[var(--color-action-primary)] px-4 py-2 text-[0.78rem] font-semibold text-white transition-colors hover:bg-[var(--color-action-primary-strong)] disabled:cursor-not-allowed disabled:opacity-50"
+                        >
+                          {isUpdating ? "이동 중..." : "예정 여행으로"}
+                        </button>
+                      </div>
+                      <div className="mt-2">
+                        <button
+                          type="button"
+                          data-testid={getSavedSnapshotDeleteTestId(index)}
+                          onClick={() => {
+                            setSavedDeleteDialogSnapshotId((currentId) => currentId === snapshot.id ? null : snapshot.id);
+                          }}
+                          className="text-[0.78rem] font-medium text-[var(--color-ink-soft)] transition-colors hover:text-red-500"
+                        >
+                          삭제
+                        </button>
+                        {savedDeleteDialogSnapshotId === snapshot.id ? (
+                          <div
+                            data-testid={getSavedSnapshotDeleteDialogTestId(index)}
+                            className="mt-3 rounded-xl border border-[var(--color-frame-soft)] bg-[var(--color-surface-muted)] p-3"
+                          >
+                            <p className="text-[0.82rem] font-semibold text-[var(--color-ink)]">저장한 추천을 삭제할까요?</p>
+                            <p className="mt-1 text-[0.78rem] text-[var(--color-ink-soft)]">
+                              삭제하면 이 추천은 저장 목록과 예정된 여행에서 함께 사라져요.
+                            </p>
+                            <div className="mt-3 flex gap-2">
+                              <button
+                                type="button"
+                                data-testid={getSavedSnapshotDeleteCancelTestId(index)}
+                                onClick={() => {
+                                  setSavedDeleteDialogSnapshotId(null);
+                                }}
+                                className="rounded-lg border border-[var(--color-frame-soft)] px-3 py-2 text-[0.78rem] font-medium text-[var(--color-ink-soft)]"
+                              >
+                                취소
+                              </button>
+                              <button
+                                type="button"
+                                data-testid={getSavedSnapshotDeleteConfirmTestId(index)}
+                                disabled={deletingSavedSnapshotId === snapshot.id}
+                                onClick={() => {
+                                  void deleteSavedSnapshot(snapshot.id);
+                                }}
+                                className="rounded-lg bg-[rgb(220_38_38)] px-3 py-2 text-[0.78rem] font-semibold text-white transition-colors hover:bg-[rgb(185_28_28)] disabled:opacity-50"
+                              >
+                                {deletingSavedSnapshotId === snapshot.id ? "삭제 중..." : "삭제"}
+                              </button>
+                            </div>
+                          </div>
+                        ) : null}
+                      </div>
+                    </article>
+                  );
+                })
+              ) : (
+                <div className="col-span-full flex flex-col items-center rounded-2xl bg-[var(--color-surface-muted)] px-6 py-12 text-center">
+                  <span aria-hidden="true" className="text-[2rem]">🔖</span>
+                  <p className="mt-3 text-[0.92rem] font-semibold text-[var(--color-ink)]">
+                    아직 저장한 추천이 없습니다
+                  </p>
+                  <p className="mt-1 text-[0.8rem] text-[var(--color-ink-soft)]">
+                    추천 결과에서 마음에 드는 여행지를 저장해 보세요.
+                  </p>
+                  <Link
+                    href="/"
+                    className="mt-5 inline-flex items-center justify-center rounded-full bg-[var(--color-ink)] px-6 py-2.5 text-[0.82rem] font-semibold !text-white transition-opacity hover:opacity-85"
+                  >
+                    추천 다시 받기
+                  </Link>
+                </div>
+              )}
+            </div>
+          </section>
+        ) : null}
+
+        {/* ── 추천 설정 탭 ── */}
+        {activeTab === "preferences" ? (
+          <section role="tabpanel" id="tabpanel-preferences" aria-labelledby="tab-preferences" data-testid={testIds.account.tasteMode}>
+            <p className="mb-4 text-[0.85rem] text-[var(--color-ink-soft)]">
+              추천 방식을 선택하세요. 언제든 변경할 수 있습니다.
+            </p>
+            <div className="grid gap-3 sm:grid-cols-3">
               {preferenceOptions.map((option) => {
                 const active = profile.explorationPreference === option.value;
 
@@ -344,219 +1107,22 @@ export function AccountExperience({
                     onClick={() => {
                       void savePreference(option.value);
                     }}
-                    className={`rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-left ${
-                      active ? "compass-selected" : "compass-selection-chip"
+                    className={`rounded-2xl px-5 py-5 text-left transition-all ${
+                      active
+                        ? "border-2 border-[var(--color-sand)] bg-[var(--color-selected)] shadow-[0_0_0_1px_var(--color-sand)]"
+                        : "border border-[var(--color-frame-soft)] bg-white hover:border-[var(--color-sand)] hover:shadow-[var(--shadow-card)]"
                     }`}
                   >
-                    <p className="text-sm font-semibold text-[var(--color-ink)]">{option.label}</p>
-                    <p className="mt-2 text-xs leading-5 text-[var(--color-ink-soft)]">{option.description}</p>
+                    <p className={`text-[0.95rem] font-bold ${active ? "text-[var(--color-sand-deep)]" : "text-[var(--color-ink)]"}`}>
+                      {option.label}
+                    </p>
+                    <p className="mt-2 text-[0.82rem] leading-relaxed text-[var(--color-ink-soft)]">{option.description}</p>
                   </button>
                 );
               })}
             </div>
-          </article>
-
-          <article className="compass-sheet rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
-            <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
-              <p className="compass-editorial-kicker">새 방문 기록 추가</p>
-              <h2 className="mt-1.5 font-display text-[1.12rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.28rem]">
-                별점, 해시태그, 재방문 의사를 남겨 다음 추천에 연결하세요.
-              </h2>
-            </div>
-
-            <div className="mt-3.5 grid gap-3.5">
-              <label className="grid gap-2 text-sm text-[var(--color-ink)]">
-                <span>방문한 목적지</span>
-                <select
-                  data-testid={testIds.account.newHistoryDestination}
-                  value={draft.destinationId}
-                  onChange={(event) =>
-                    setDraft((currentDraft) => ({
-                      ...currentDraft,
-                      destinationId: event.target.value,
-                    }))
-                  }
-                  className="compass-form-field-light rounded-[calc(var(--radius-card)-10px)] px-4 py-3"
-                >
-                  {launchCatalog.map((destination) => (
-                    <option key={destination.id} value={destination.id}>
-                      {destination.nameKo}
-                    </option>
-                  ))}
-                </select>
-              </label>
-
-              <label className="grid gap-2 text-sm text-[var(--color-ink)]">
-                <span>방문 날짜</span>
-                <input
-                  data-testid={testIds.account.newHistoryDate}
-                  type="date"
-                  value={draft.visitedAt}
-                  onChange={(event) =>
-                    setDraft((currentDraft) => ({
-                      ...currentDraft,
-                      visitedAt: event.target.value,
-                    }))
-                  }
-                  className="compass-form-field-light rounded-[calc(var(--radius-card)-10px)] px-4 py-3"
-                />
-              </label>
-
-              <div>
-                <p className="mb-2 text-sm font-semibold text-[var(--color-ink)]">별점</p>
-                <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
-                  {[1, 2, 3, 4, 5].map((rating) => (
-                    <button
-                      key={rating}
-                      type="button"
-                      onClick={() => setDraft((currentDraft) => ({ ...currentDraft, rating }))}
-                      className={`rounded-[calc(var(--radius-card)-10px)] px-3 py-3 text-sm font-semibold ${
-                        draft.rating === rating ? "compass-selected" : "compass-selection-chip"
-                      }`}
-                    >
-                      {rating}점
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="mb-2 text-sm font-semibold text-[var(--color-ink)]">해시태그</p>
-                <div className="flex flex-wrap gap-2">
-                  {([
-                    "city",
-                    "nature",
-                    "food",
-                    "shopping",
-                    "beach",
-                    "culture",
-                    "nightlife",
-                    "romance",
-                  ] as const).map((tag) => {
-                    const active = draft.tags.includes(tag);
-
-                    return (
-                      <button
-                        key={tag}
-                        type="button"
-                        onClick={() => toggleDraftTag(tag)}
-                        className={`rounded-full px-3 py-2 text-xs font-semibold ${
-                          active ? "compass-selected" : "compass-selection-chip"
-                        }`}
-                      >
-                        #{formatVibeList([tag])}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <label className="compass-open-info flex items-center gap-3 rounded-[calc(var(--radius-card)-10px)] px-4 py-4 text-sm text-[var(--color-ink)]">
-                <input
-                  className="compass-checkbox"
-                  type="checkbox"
-                  checked={draft.wouldRevisit}
-                  onChange={(event) =>
-                    setDraft((currentDraft) => ({
-                      ...currentDraft,
-                      wouldRevisit: event.target.checked,
-                    }))
-                  }
-                />
-                이 목적지는 다음에도 다시 가고 싶은 쪽에 가까워요.
-              </label>
-
-              <div data-testid={testIds.account.historySave0}>
-                <button
-                  type="button"
-                  data-testid={testIds.account.newHistorySubmit}
-                  disabled={isCreatingHistory}
-                  onClick={() => {
-                    void createHistoryEntry();
-                  }}
-                  className="compass-action-primary compass-soft-press rounded-full px-5 py-3 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
-                >
-                  {isCreatingHistory ? "저장 중..." : "내 취향에 기록 저장"}
-                </button>
-              </div>
-            </div>
-          </article>
-        </section>
-
-        <section className="space-y-4">
-          {error ? (
-            <p className="compass-warning-card rounded-[var(--radius-card)] px-4 py-3.5 text-sm leading-6">
-              {error}
-            </p>
-          ) : null}
-
-          <article className="compass-desk rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5">
-            <div className="border-b border-[color:var(--color-frame-soft)] pb-4">
-              <p className="compass-editorial-kicker">방문 기록</p>
-              <h2 className="mt-1.5 font-display text-[1.16rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.34rem]">
-                다녀온 여행지의 감각이 다음 후보를 더 정확하게 좁히는 기준이 돼요.
-              </h2>
-            </div>
-
-            <div className="mt-3.5 grid gap-3">
-              {historyEntries.length > 0 ? (
-                historyEntries.map((entry, index) => {
-                  const destination = launchCatalog.find((item) => item.id === entry.destinationId);
-
-                  return (
-                    <article
-                      key={entry.id}
-                      data-testid={getAccountHistoryEntryTestId(index)}
-                      className="compass-sheet rounded-[calc(var(--radius-card)-10px)] px-4 py-4"
-                    >
-                      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                        <div>
-                          <p className="compass-editorial-kicker">{destination?.nameKo ?? entry.destinationId}</p>
-                          <p className="mt-1.5 font-display text-[1rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)]">
-                            {destination?.nameEn ?? entry.destinationId}
-                          </p>
-                          <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink)]">
-                            평점 {entry.rating}점 · 방문일 {entry.visitedAt.slice(0, 10)}
-                          </p>
-                          <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-                            {entry.wouldRevisit
-                              ? "다음 추천에서 익숙한 결을 이어가는 쪽으로 반영돼요."
-                              : "다음 추천에서 새로운 후보를 더 넓게 보는 기준으로 반영돼요."}
-                          </p>
-                          <div className="mt-2.5 flex flex-wrap gap-2">
-                            {entry.tags.map((tag) => (
-                              <span
-                                key={`${entry.id}-${tag}`}
-                                className="compass-metric-pill rounded-full px-3 py-1 text-xs font-semibold"
-                              >
-                                #{formatVibeList([tag])}
-                              </span>
-                            ))}
-                          </div>
-                        </div>
-
-                        <button
-                          type="button"
-                          data-testid={getAccountHistoryDeleteTestId(index)}
-                          onClick={() => {
-                            void deleteHistoryEntry(entry.id);
-                          }}
-                          className="compass-action-secondary compass-soft-press rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em]"
-                        >
-                          삭제
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })
-              ) : (
-                <div className="compass-note rounded-[calc(var(--radius-card)-10px)] p-4 text-sm leading-6 text-[var(--color-ink-soft)]">
-                  아직 남겨 둔 방문 기록이 없어요. 한 곳만 먼저 남겨도 다음 추천이 더 개인 취향에 가까워져요.
-                </div>
-              )}
-            </div>
-          </article>
-        </section>
+          </section>
+        ) : null}
       </div>
     </ExperienceShell>
   );

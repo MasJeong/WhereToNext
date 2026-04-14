@@ -84,7 +84,7 @@ export async function GET(request: Request) {
         ? launchCatalog.find((destination) => destination.id === leadRecommendation.destinationId) ?? null
         : null;
     const leadSupplement = leadDestination
-      ? await getDestinationTravelSupplement(leadDestination)
+      ? await getDestinationTravelSupplement(leadDestination, query.travelMonth)
       : null;
 
     return applyAcquisitionCorsHeaders(

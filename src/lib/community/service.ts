@@ -55,19 +55,6 @@ export async function listPublicPosts(cursor?: string): Promise<{
   return listPublicPostsFromDb(cursor);
 }
 
-/**
- * 공개된 여행 이야기 상세 1건을 조회한다.
- * @param historyId 여행 이야기 ID
- * @returns 공개 여행 이야기 또는 null
- */
-export async function readPublicPost(historyId: string): Promise<CommunityPostRow | null> {
-  if (!usePersistentDatabase) {
-    return readPublicPostInMemory(historyId);
-  }
-
-  return readPublicPostFromDb(historyId);
-}
-
 async function listPublicPostsInMemory(cursor?: string): Promise<{
   items: CommunityPostRow[];
   nextCursor: string | null;
@@ -120,11 +107,6 @@ async function listPublicPostsInMemory(cursor?: string): Promise<{
     items.length === PAGE_SIZE && lastItem ? lastItem.createdAt : null;
 
   return { items, nextCursor };
-}
-
-async function readPublicPostInMemory(historyId: string): Promise<CommunityPostRow | null> {
-  const { items } = await listPublicPostsInMemory();
-  return items.find((entry) => entry.historyId === historyId) ?? null;
 }
 
 async function listPublicPostsFromDb(cursor?: string): Promise<{
@@ -199,63 +181,6 @@ async function listPublicPostsFromDb(cursor?: string): Promise<{
     items.length === PAGE_SIZE && lastItem ? lastItem.createdAt : null;
 
   return { items, nextCursor };
-}
-
-async function readPublicPostFromDb(historyId: string): Promise<CommunityPostRow | null> {
-  const { db } = await getRuntimeDatabase();
-
-  const [row] = await db
-    .select({
-      historyId: userDestinationHistory.id,
-      authorName: userTable.name,
-      authorImage: userTable.image,
-      destinationNameKo: destinationProfiles.nameKo,
-      destinationId: userDestinationHistory.destinationId,
-      rating: userDestinationHistory.rating,
-      customTags: userDestinationHistory.customTags,
-      memo: userDestinationHistory.memo,
-      images: userDestinationHistory.images,
-      createdAt: userDestinationHistory.createdAt,
-    })
-    .from(userDestinationHistory)
-    .leftJoin(userTable, eq(userDestinationHistory.userId, userTable.id))
-    .leftJoin(
-      destinationProfiles,
-      eq(userDestinationHistory.destinationId, destinationProfiles.id),
-    )
-    .where(
-      and(
-        eq(userDestinationHistory.id, historyId),
-        eq(userDestinationHistory.visibility, "public"),
-      ),
-    )
-    .limit(1);
-
-  if (!row) {
-    return null;
-  }
-
-  const [commentCountRow] = await db
-    .select({ cnt: count() })
-    .from(communityComments)
-    .where(eq(communityComments.historyId, historyId));
-
-  const images = row.images as
-    | Array<{ name: string; contentType: string; dataUrl: string }>
-    | null;
-
-  return {
-    historyId: row.historyId,
-    authorName: row.authorName ?? "여행자",
-    authorImage: row.authorImage ?? null,
-    destinationName: row.destinationNameKo ?? row.destinationId,
-    rating: row.rating,
-    tags: (row.customTags as string[] | null) ?? [],
-    memo: row.memo ?? null,
-    imageUrl: images?.[0]?.dataUrl ?? null,
-    commentCount: commentCountRow?.cnt ?? 0,
-    createdAt: row.createdAt.toISOString(),
-  };
 }
 
 /* ------------------------------------------------------------------ */

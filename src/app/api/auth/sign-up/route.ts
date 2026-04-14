@@ -48,7 +48,11 @@ export async function POST(request: Request) {
     }
 
     const response = NextResponse.json({ data: result.data }, { status: 201 });
-    setSessionCookie(response, result.token, request);
+    setSessionCookie(response, result.token, request, {
+      clientType: allowIosShell ? "ios-shell" : "web",
+      allowIosShell,
+      expiresAt: result.data.session.expiresAt,
+    });
     return response;
   } catch (error) {
     if (error instanceof z.ZodError) {

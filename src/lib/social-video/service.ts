@@ -1,3 +1,8 @@
+import { existsSync, readFileSync } from "node:fs";
+import { resolve } from "node:path";
+
+import { parse as parseDotenv } from "dotenv";
+
 import type {
   DestinationProfile,
   RecommendationQuery,
@@ -47,10 +52,35 @@ const evidenceStopwords = new Set([
   "youtube",
 ]);
 
-const socialVideoHintTerms = ["한국인", "한국어", "korean", "shorts", "쇼츠"];
+const socialVideoHintTerms = ["한국인", "한국어", "korean"];
+const negativeTravelIntentTerms = [
+  "안전",
+  "위험",
+  "경보",
+  "주의",
+  "치안",
+  "뉴스",
+  "속보",
+  "사기",
+  "범죄",
+  "고어",
+  "news",
+  "scam",
+  "fraud",
+  "crime",
+  "gore",
+  "crime",
+  "danger",
+  "safe",
+  "safety",
+  "warning",
+];
+const positiveTravelIntentTerms = ["여행", "브이로그", "vlog", "휴가", "trip"];
 const YOUTUBE_SEARCH_ENDPOINT = "https://www.googleapis.com/youtube/v3/search";
 const YOUTUBE_VIDEOS_ENDPOINT = "https://www.googleapis.com/youtube/v3/videos";
 const SOCIAL_VIDEO_CACHE_TTL_SECONDS = 10_800;
+
+let cachedYouTubeApiKeyFromDotenv: string | null | undefined;
 
 type SocialVideoNameSource = {
   nameKo: string;
@@ -116,7 +146,7 @@ export type SocialVideoSearchContext = {
   leadEvidence?: ReadonlyArray<SocialVideoLeadEvidence>;
 };
 
-type SocialVideoFallbackReason = "api-disabled" | "request-failed" | "low-confidence" | "no-candidates";
+type SocialVideoFallbackReason = "api-disabled" | "quota-exceeded" | "request-failed" | "low-confidence" | "no-candidates";
 
 export type SocialVideoCandidate = {
   id: string;
@@ -174,7 +204,33 @@ function parseYouTubeCount(value: string | undefined) {
 }
 
 function getYouTubeApiKey() {
-  return process.env.YOUTUBE_API_KEY?.trim() ?? "";
+  const directApiKey = process.env.YOUTUBE_API_KEY?.trim();
+
+  if (directApiKey) {
+    return directApiKey;
+  }
+
+  if (cachedYouTubeApiKeyFromDotenv !== undefined) {
+    return cachedYouTubeApiKeyFromDotenv ?? "";
+  }
+
+  try {
+    const dotenvPath = resolve(process.cwd(), ".env.local");
+
+    if (!existsSync(dotenvPath)) {
+      cachedYouTubeApiKeyFromDotenv = null;
+      return "";
+    }
+
+    const parsed = parseDotenv(readFileSync(dotenvPath, "utf8"));
+    const fallbackApiKey = parsed.YOUTUBE_API_KEY?.trim();
+
+    cachedYouTubeApiKeyFromDotenv = fallbackApiKey || null;
+    return cachedYouTubeApiKeyFromDotenv ?? "";
+  } catch {
+    cachedYouTubeApiKeyFromDotenv = null;
+    return "";
+  }
 }
 
 function formatChannelUrl(channelId: string | undefined) {
@@ -291,44 +347,20 @@ function collectEvidenceKeywords(leadEvidence?: ReadonlyArray<SocialVideoLeadEvi
  * @returns YouTube 검색어 후보 목록
  */
 export function buildSocialVideoSearchQueries(context: SocialVideoSearchContext) {
-  const { destination, query, leadEvidence } = context;
+  const { destination } = context;
   const names = buildSocialVideoNameSource(destination);
-  const evidenceKeywords = collectEvidenceKeywords(leadEvidence);
-  const primaryVibe = mapVibeToSearchLabel(query.vibes[0]);
-  const secondaryVibe = query.vibes[1] ? mapVibeToSearchLabel(query.vibes[1]) : "";
-
-  const queries = [
-    `${names.nameKo} 여행 브이로그`,
-    `${names.nameKo} 여행 쇼츠`,
-    `${names.nameKo} ${primaryVibe} 여행`,
-    `${names.nameKo} 여행 가이드`,
-    `${names.nameKo} 가볼만한곳`,
-    `${names.nameEn} travel vlog`,
-    `${names.nameEn} travel shorts`,
-    `${names.nameEn} things to do`,
-    `${names.countryName} travel guide`,
-    `${names.nameKo} ${secondaryVibe} 여행`,
-  ];
-
-  if (evidenceKeywords[0]) {
-    queries.splice(2, 0, `${names.nameKo} ${evidenceKeywords[0]} 여행`);
-  }
-
-  if (evidenceKeywords[1]) {
-    queries.splice(5, 0, `${names.nameEn} ${evidenceKeywords[1]} travel`);
-  }
-
-  return dedupeQueries(queries).slice(0, SOCIAL_VIDEO_MAX_QUERIES);
+  return dedupeQueries([
+    `${names.nameKo} 여행`,
+    `${names.nameKo} 브이로그`,
+  ]).slice(0, SOCIAL_VIDEO_MAX_QUERIES);
 }
 
 export function buildSocialVideoFallbackSearches(context: SocialVideoSearchContext) {
   const names = buildSocialVideoNameSource(context.destination);
 
   return [
-    `${names.nameKo} 여행 브이로그`,
-    `${names.nameKo} 여행 가이드`,
-    `${names.nameEn} travel vlog`,
-    `${names.countryName} things to do`,
+    `${names.nameKo} 여행`,
+    `${names.nameKo} 브이로그`,
   ].map((query) => ({
     label: query,
     url: `https://www.youtube.com/results?search_query=${encodeURIComponent(query)}`,
@@ -341,6 +373,8 @@ function buildFallbackMeta(context: SocialVideoSearchContext, reason: SocialVide
     headline:
       reason === "api-disabled"
         ? "지금은 YouTube 연결이 꺼져 있어요"
+        : reason === "quota-exceeded"
+          ? "지금은 YouTube 할당량이 잠시 다 찼어요"
         : reason === "request-failed"
           ? "지금은 영상을 바로 불러오지 못했어요"
           : reason === "low-confidence"
@@ -349,6 +383,8 @@ function buildFallbackMeta(context: SocialVideoSearchContext, reason: SocialVide
     description:
       reason === "api-disabled"
         ? "연결이 복구되면 자동으로 대표 영상을 다시 붙여드릴게요."
+        : reason === "quota-exceeded"
+          ? "오늘 할당량이 다시 열리면 대표 영상을 자동으로 붙여드릴게요. 아래 검색 링크로 바로 이어 볼 수 있어요."
         : reason === "request-failed"
           ? "잠시 후 다시 시도하거나 아래 검색 링크로 바로 찾아볼 수 있어요."
           : reason === "low-confidence"
@@ -419,6 +455,14 @@ function scoreDestinationRelevance(candidate: SocialVideoCandidate, context: Soc
     score += 4;
   }
 
+  if (positiveTravelIntentTerms.some((term) => title.includes(normalizeForSearch(term)))) {
+    score += 8;
+  }
+
+  if (positiveTravelIntentTerms.some((term) => description.includes(normalizeForSearch(term)))) {
+    score += 3;
+  }
+
   if (vibeKeywords.some((term) => term && title.includes(term))) {
     score += 4;
   }
@@ -431,7 +475,15 @@ function scoreDestinationRelevance(candidate: SocialVideoCandidate, context: Soc
     score += 3;
   }
 
-  return Math.min(score, 35);
+  if (negativeTravelIntentTerms.some((term) => title.includes(normalizeForSearch(term)))) {
+    score -= 28;
+  }
+
+  if (negativeTravelIntentTerms.some((term) => description.includes(normalizeForSearch(term)))) {
+    score -= 16;
+  }
+
+  return Math.max(0, Math.min(score, 35));
 }
 
 /**
@@ -448,7 +500,7 @@ function scoreKoreanSignals(candidate: SocialVideoCandidate) {
   let score = 0;
 
   if (hasHangul(title) || hasHangul(description)) {
-    score += 6;
+    score += 8;
   }
 
   if (hasHangul(channelTitle)) {
@@ -511,23 +563,22 @@ function scoreFreshness(candidate: SocialVideoCandidate) {
 
   const elapsedDays = Math.max(0, (Date.now() - publishedAt.getTime()) / 86_400_000);
 
-  if (elapsedDays <= 7) {
-    return 10;
+  return 0;
+}
+
+function isWithinFreshnessWindow(candidate: SocialVideoCandidate) {
+  if (!candidate.publishedAt) {
+    return false;
   }
 
-  if (elapsedDays <= 30) {
-    return 8;
+  const publishedAt = new Date(candidate.publishedAt);
+
+  if (Number.isNaN(publishedAt.getTime())) {
+    return false;
   }
 
-  if (elapsedDays <= 90) {
-    return 5;
-  }
-
-  if (elapsedDays <= 180) {
-    return 3;
-  }
-
-  return 1;
+  const elapsedDays = Math.max(0, (Date.now() - publishedAt.getTime()) / 86_400_000);
+  return elapsedDays <= 730;
 }
 
 /**
@@ -552,12 +603,19 @@ function scoreEngagementQuality(candidate: SocialVideoCandidate) {
   const absoluteReach = Math.log10(Math.max(views, 1));
   const engagementPerDay = ((likes * 2.5) + (comments * 4)) / elapsedDays;
   const viewVelocity = Math.log10(Math.max(views / elapsedDays, 1));
+  const reachBonus =
+    views >= 500_000 ? 8
+    : views >= 200_000 ? 6
+    : views >= 100_000 ? 4
+    : views >= 50_000 ? 2
+    : 0;
   const rawScore =
-    (absoluteReach * 1.8) +
-    (viewVelocity * 1.6) +
-    Math.log10(Math.max(engagementPerDay, 1)) * 2.4;
+    (absoluteReach * 3.6) +
+    (viewVelocity * 1.3) +
+    (Math.log10(Math.max(engagementPerDay, 1)) * 1.8) +
+    reachBonus;
 
-  return Math.max(0, Math.min(16, Math.round(rawScore)));
+  return Math.max(0, Math.min(22, Math.round(rawScore)));
 }
 
 /**
@@ -568,43 +626,43 @@ function scoreEngagementQuality(candidate: SocialVideoCandidate) {
 function scoreDurationPreference(candidate: SocialVideoCandidate) {
   const title = normalizeForSearch(candidate.title);
   const description = normalizeForSearch(candidate.description ?? "");
-  const shortsHint = ["shorts", "쇼츠", "릴스"].some((term) => title.includes(term) || description.includes(term));
+  const shortFormHint = ["shorts", "쇼츠", "릴스"].some((term) => title.includes(term) || description.includes(term));
 
   if (typeof candidate.durationSeconds !== "number") {
-    return shortsHint ? 8 : 0;
+    return 0;
   }
 
   const duration = candidate.durationSeconds;
 
-  if (duration <= 30) {
-    return 8;
-  }
-
-  if (duration <= 60) {
-    return 14;
+  if (duration <= 45) {
+    return 2;
   }
 
   if (duration <= 90) {
-    return 16;
+    return 6;
   }
 
-  if (duration <= 120) {
+  if (duration <= 180) {
+    return 12;
+  }
+
+  if (duration <= 360) {
     return 18;
   }
 
-  if (duration <= 240) {
+  if (duration <= 600) {
     return 16;
   }
 
-  if (duration <= 480) {
+  if (duration <= 900) {
     return 10;
   }
 
-  if (duration <= 900) {
-    return 5;
+  if (duration <= 1500) {
+    return 4;
   }
 
-  return shortsHint ? 1 : 0;
+  return shortFormHint ? 0 : 1;
 }
 
 /**
@@ -644,6 +702,7 @@ export function rankSocialVideoCandidates(
   context: SocialVideoSearchContext,
 ): SocialVideoScoredCandidate[] {
   return candidates
+    .filter((candidate) => isWithinFreshnessWindow(candidate))
     .filter((candidate) => hasStrongKoreanPublishingSignals(candidate))
     .map((candidate) => ({
       candidate,
@@ -664,6 +723,13 @@ export function rankSocialVideoCandidates(
 
       if (right.score.engagementQuality !== left.score.engagementQuality) {
         return right.score.engagementQuality - left.score.engagementQuality;
+      }
+
+      const leftViewCount = left.candidate.viewCount ?? 0;
+      const rightViewCount = right.candidate.viewCount ?? 0;
+
+      if (rightViewCount !== leftViewCount) {
+        return rightViewCount - leftViewCount;
       }
 
       if (right.score.freshness !== left.score.freshness) {
@@ -715,20 +781,6 @@ export function selectSocialVideoCandidate(
   }
 
   return bestCandidate;
-}
-
-function hasRecentPublishedAt(candidate: SocialVideoCandidate) {
-  if (!candidate.publishedAt) {
-    return false;
-  }
-
-  const publishedAt = new Date(candidate.publishedAt);
-
-  if (Number.isNaN(publishedAt.getTime())) {
-    return false;
-  }
-
-  return Date.now() - publishedAt.getTime() <= 30 * 86_400_000;
 }
 
 function pickDiverseCandidate(
@@ -793,38 +845,6 @@ export function selectSocialVideoCandidates(
     primaryCandidate.candidate.channelId ? [primaryCandidate.candidate.channelId] : [],
   );
 
-  const recentCandidate = pickDiverseCandidate(
-    rankedCandidates,
-    selectedVideoIds,
-    selectedChannelIds,
-    minScore,
-    (candidate) => hasRecentPublishedAt(candidate.candidate),
-  );
-
-  if (recentCandidate) {
-    selected.push(recentCandidate);
-    selectedVideoIds.add(recentCandidate.candidate.id);
-    if (recentCandidate.candidate.channelId) {
-      selectedChannelIds.add(recentCandidate.candidate.channelId);
-    }
-  }
-
-  const shortCandidate = pickDiverseCandidate(
-    rankedCandidates,
-    selectedVideoIds,
-    selectedChannelIds,
-    minScore,
-    (candidate) => (candidate.candidate.durationSeconds ?? Number.POSITIVE_INFINITY) <= 90,
-  );
-
-  if (shortCandidate) {
-    selected.push(shortCandidate);
-    selectedVideoIds.add(shortCandidate.candidate.id);
-    if (shortCandidate.candidate.channelId) {
-      selectedChannelIds.add(shortCandidate.candidate.channelId);
-    }
-  }
-
   while (selected.length < 3) {
     const fallbackCandidate = pickDiverseCandidate(
       rankedCandidates,
@@ -880,6 +900,12 @@ async function fetchYouTubeSearchResults(
   });
 
   if (!response.ok) {
+    const errorText = await response.text().catch(() => "");
+
+    if (response.status === 403 && errorText.includes("quotaExceeded")) {
+      throw new Error("YOUTUBE_QUOTA_EXCEEDED");
+    }
+
     return null;
   }
 
@@ -978,7 +1004,6 @@ export async function getLeadSocialVideos(context: SocialVideoSearchContext): Pr
   }
 
   const candidatesById = new Map<string, SocialVideoCandidate>();
-  const publishedAfter = new Date(Date.now() - (30 * 86_400_000)).toISOString();
 
   for (const query of buildSocialVideoSearchQueries(context)) {
     const searchPayload = await fetchYouTubeSearchResults(query, apiKey, {
@@ -1000,26 +1025,6 @@ export async function getLeadSocialVideos(context: SocialVideoSearchContext): Pr
 
     if (candidatesById.size >= 12) {
       break;
-    }
-  }
-
-  for (const query of buildSocialVideoSearchQueries(context).slice(0, 3)) {
-    const searchPayload = await fetchYouTubeSearchResults(query, apiKey, {
-      order: "date",
-      publishedAfter,
-    });
-
-    if (!searchPayload?.items?.length) {
-      continue;
-    }
-
-    const videoIds = searchPayload.items
-      .map((item) => item.id?.videoId)
-      .filter((value): value is string => Boolean(value));
-    const detailsMap = await fetchYouTubeVideoDetails(videoIds, apiKey);
-
-    for (const candidate of hydrateCandidatesFromYouTube(searchPayload, detailsMap)) {
-      candidatesById.set(candidate.id, candidate);
     }
   }
 
@@ -1049,83 +1054,76 @@ export async function getLeadSocialVideoResult(context: SocialVideoSearchContext
     };
   }
 
-  const strictItems = await getLeadSocialVideos(context);
-  if (strictItems.length > 0) {
-    return {
-      status: "ok",
-      item: strictItems[0]!,
-      items: strictItems,
-    };
-  }
-
-  const candidatesById = new Map<string, SocialVideoCandidate>();
-  const publishedAfter = new Date(Date.now() - (30 * 86_400_000)).toISOString();
-
-  for (const query of buildSocialVideoSearchQueries(context)) {
-    const searchPayload = await fetchYouTubeSearchResults(query, apiKey, { order: "relevance" });
-    if (!searchPayload?.items?.length) {
-      continue;
+  try {
+    const strictItems = await getLeadSocialVideos(context);
+    if (strictItems.length > 0) {
+      return {
+        status: "ok",
+        item: strictItems[0]!,
+        items: strictItems,
+      };
     }
 
-    const videoIds = searchPayload.items
-      .map((item) => item.id?.videoId)
-      .filter((value): value is string => Boolean(value));
-    const detailsMap = await fetchYouTubeVideoDetails(videoIds, apiKey);
+    const candidatesById = new Map<string, SocialVideoCandidate>();
 
-    for (const candidate of hydrateCandidatesFromYouTube(searchPayload, detailsMap)) {
-      candidatesById.set(candidate.id, candidate);
+    for (const query of buildSocialVideoSearchQueries(context)) {
+      const searchPayload = await fetchYouTubeSearchResults(query, apiKey, { order: "relevance" });
+      if (!searchPayload?.items?.length) {
+        continue;
+      }
+
+      const videoIds = searchPayload.items
+        .map((item) => item.id?.videoId)
+        .filter((value): value is string => Boolean(value));
+      const detailsMap = await fetchYouTubeVideoDetails(videoIds, apiKey);
+
+      for (const candidate of hydrateCandidatesFromYouTube(searchPayload, detailsMap)) {
+        candidatesById.set(candidate.id, candidate);
+      }
     }
-  }
 
-  for (const query of buildSocialVideoSearchQueries(context).slice(0, 4)) {
-    const searchPayload = await fetchYouTubeSearchResults(query, apiKey, {
-      order: "date",
-      publishedAfter,
-    });
-    if (!searchPayload?.items?.length) {
-      continue;
+    const fallbackSelection = selectSocialVideoCandidates(
+      Array.from(candidatesById.values()),
+      context,
+      SOCIAL_VIDEO_FALLBACK_MIN_SCORE,
+    ).map((selected) => ({
+      provider: "youtube" as const,
+      videoId: selected.candidate.id,
+      title: selected.candidate.title,
+      channelTitle: selected.candidate.channelTitle,
+      channelUrl: formatChannelUrl(selected.candidate.channelId ?? undefined),
+      videoUrl: selected.candidate.url,
+      thumbnailUrl: selected.candidate.thumbnailUrl,
+      publishedAt: selected.candidate.publishedAt ?? new Date(0).toISOString(),
+      durationSeconds: selected.candidate.durationSeconds ?? 1,
+      viewCount: selected.candidate.viewCount ?? undefined,
+    }));
+
+    if (fallbackSelection.length > 0) {
+      return {
+        status: "fallback",
+        item: fallbackSelection[0] ?? null,
+        items: fallbackSelection,
+        fallback: buildFallbackMeta(context, "low-confidence"),
+      };
     }
 
-    const videoIds = searchPayload.items
-      .map((item) => item.id?.videoId)
-      .filter((value): value is string => Boolean(value));
-    const detailsMap = await fetchYouTubeVideoDetails(videoIds, apiKey);
-
-    for (const candidate of hydrateCandidatesFromYouTube(searchPayload, detailsMap)) {
-      candidatesById.set(candidate.id, candidate);
-    }
-  }
-
-  const fallbackSelection = selectSocialVideoCandidates(
-    Array.from(candidatesById.values()),
-    context,
-    SOCIAL_VIDEO_FALLBACK_MIN_SCORE,
-  ).map((selected) => ({
-    provider: "youtube" as const,
-    videoId: selected.candidate.id,
-    title: selected.candidate.title,
-    channelTitle: selected.candidate.channelTitle,
-    channelUrl: formatChannelUrl(selected.candidate.channelId ?? undefined),
-    videoUrl: selected.candidate.url,
-    thumbnailUrl: selected.candidate.thumbnailUrl,
-    publishedAt: selected.candidate.publishedAt ?? new Date(0).toISOString(),
-    durationSeconds: selected.candidate.durationSeconds ?? 1,
-    viewCount: selected.candidate.viewCount ?? undefined,
-  }));
-
-  if (fallbackSelection.length > 0) {
     return {
       status: "fallback",
-      item: fallbackSelection[0] ?? null,
-      items: fallbackSelection,
-      fallback: buildFallbackMeta(context, "low-confidence"),
+      item: null,
+      items: [],
+      fallback: buildFallbackMeta(context, "no-candidates"),
     };
-  }
+  } catch (error) {
+    if (error instanceof Error && error.message === "YOUTUBE_QUOTA_EXCEEDED") {
+      return {
+        status: "fallback",
+        item: null,
+        items: [],
+        fallback: buildFallbackMeta(context, "quota-exceeded"),
+      };
+    }
 
-  return {
-    status: "fallback",
-    item: null,
-    items: [],
-    fallback: buildFallbackMeta(context, "no-candidates"),
-  };
+    throw error;
+  }
 }
