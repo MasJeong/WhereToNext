@@ -74,6 +74,7 @@ const historyEntry: UserDestinationHistory = {
     { name: "two.jpg", contentType: "image/jpeg", dataUrl: "data:image/jpeg;base64,TWO" },
     { name: "three.jpg", contentType: "image/jpeg", dataUrl: "data:image/jpeg;base64,THREE" },
   ],
+  visibility: "private",
   createdAt: "2026-02-01T00:00:00.000Z",
   updatedAt: "2026-02-01T00:00:00.000Z",
 };

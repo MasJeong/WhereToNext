@@ -34,6 +34,20 @@ test("mock google login redirects to account", async ({ page }) => {
   await expect(page.getByTestId("identity-card")).toContainText("내 여행");
 });
 
+test("logged-in user can sign out from the header and returns to home", async ({ page }) => {
+  await page.goto("/auth?next=%2Faccount&intent=account");
+  await page.getByTestId("auth-provider-google").click();
+
+  await expect(page).toHaveURL(/\/account/);
+  await expect(page.getByTestId("auth-cta")).toHaveText("로그아웃");
+
+  await page.getByTestId("auth-cta").click();
+
+  await expect(page).toHaveURL(/\/$/);
+  await expect(page.getByTestId("auth-cta")).toHaveText("로그인");
+  await expect(page.getByTestId("identity-card")).toHaveCount(0);
+});
+
 test("mock social login resumes saving after auth", async ({ page }) => {
   await submitQuickRecommendation(page);
   await page.getByTestId("save-snapshot").click();

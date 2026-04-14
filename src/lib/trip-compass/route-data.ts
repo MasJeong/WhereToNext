@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 
 import { activeScoringVersion } from "@/lib/catalog/scoring-version";
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
+import { getSessionOrNull } from "@/lib/auth-session";
 import { getDestinationEvidence, buildEvidenceMap } from "@/lib/evidence/service";
 import type {
   DestinationTravelSupplement,
@@ -103,12 +104,13 @@ function getFirstValue(value: string | string[] | undefined): string | null {
 export async function resolveSnapshotRestorePageData(
   snapshotId: string,
 ): Promise<SnapshotRestorePageData> {
-  const snapshot = await readSnapshot(snapshotId);
+  const session = await getSessionOrNull();
+  const snapshot = await readSnapshot(snapshotId, session?.user.id ?? null);
 
   if (!snapshot || snapshot.kind !== "recommendation") {
     return {
       kind: "error",
-      message: "저장한 여행 링크를 다시 확인하거나 홈에서 새 추천을 내 일정에 담아 보세요.",
+      message: "저장한 여행 링크를 다시 확인하거나 홈에서 새 추천을 담아 보세요.",
     };
   }
 
@@ -118,7 +120,7 @@ export async function resolveSnapshotRestorePageData(
     if (!restored.primaryCard) {
       return {
         kind: "error",
-        message: "저장해 둔 여행 정보를 다시 불러오지 못했어요. 홈에서 새 추천을 내 일정에 담아 다시 공유해 주세요.",
+        message: "저장해 둔 여행 정보를 다시 불러오지 못했어요. 홈에서 새 추천을 담아 다시 공유해 주세요.",
       };
     }
 
@@ -132,12 +134,15 @@ export async function resolveSnapshotRestorePageData(
       card: restored.primaryCard,
       query: restored.query,
       evidence: restored.primaryCard.recommendation.trendEvidence,
-      supplement: await getDestinationTravelSupplement(restored.primaryCard.destination),
+      supplement: await getDestinationTravelSupplement(
+        restored.primaryCard.destination,
+        restored.query.travelMonth,
+      ),
     };
   } catch {
     return {
       kind: "error",
-      message: "저장해 둔 여행 정보를 다시 불러오지 못했어요. 홈에서 새 추천을 내 일정에 담아 다시 공유해 주세요.",
+      message: "저장해 둔 여행 정보를 다시 불러오지 못했어요. 홈에서 새 추천을 담아 다시 공유해 주세요.",
     };
   }
 }
@@ -150,7 +155,8 @@ export async function resolveSnapshotRestorePageData(
 export async function resolveCompareRestorePageData(
   snapshotId: string,
 ): Promise<CompareRestorePageData> {
-  const snapshot = await readSnapshot(snapshotId);
+  const session = await getSessionOrNull();
+  const snapshot = await readSnapshot(snapshotId, session?.user.id ?? null);
 
   if (!snapshot || snapshot.kind !== "comparison") {
     return {
@@ -162,7 +168,7 @@ export async function resolveCompareRestorePageData(
   try {
     return {
       kind: "ready",
-      columns: await hydrateComparisonSnapshot(snapshot.payload),
+      columns: await hydrateComparisonSnapshot(snapshot.payload, session?.user.id ?? null),
     };
   } catch {
     return {
@@ -190,9 +196,10 @@ export async function resolveDestinationDetailPageData(
 
   async function resolveRecommendationContext() {
     const snapshotId = getFirstValue(rawSearchParams.snapshotId);
+    const session = await getSessionOrNull();
 
     if (snapshotId) {
-      const snapshot = await readSnapshot(snapshotId);
+      const snapshot = await readSnapshot(snapshotId, session?.user.id ?? null);
 
       if (snapshot?.kind === "recommendation") {
         try {
@@ -240,11 +247,15 @@ export async function resolveDestinationDetailPageData(
     }
   }
 
-  const [evidenceResult, recommendationContext, supplement] = await Promise.all([
+  const recommendationContextPromise = resolveRecommendationContext();
+  const [evidenceResult, recommendationContext] = await Promise.all([
     getDestinationEvidence(destination),
-    resolveRecommendationContext(),
-    getDestinationTravelSupplement(destination),
+    recommendationContextPromise,
   ]);
+  const supplement = await getDestinationTravelSupplement(
+    destination,
+    recommendationContext.query?.travelMonth ?? undefined,
+  );
 
   return {
     destination,

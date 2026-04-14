@@ -88,9 +88,13 @@ body {
   min-height: 100vh;
   background: transparent;
   color: var(--color-ink);
-  font-family: var(--font-body), sans-serif;
+  font-family: var(--font-ko), var(--font-body), "Noto Sans KR", -apple-system, BlinkMacSystemFont, sans-serif;
   text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
   overflow-x: clip;
+  letter-spacing: -0.01em;
+  word-break: keep-all;
+  line-height: 1.7;
 }
 
 .compass-app-body {
@@ -191,12 +195,12 @@ textarea:focus-visible {
   position: sticky;
   top: max(0.35rem, env(safe-area-inset-top));
   z-index: 30;
-  border: 1px solid rgb(223 123 18 / 0.08);
+  border: 1px solid rgb(15 23 42 / 0.08);
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.96), rgb(255 252 244 / 0.92)),
-    linear-gradient(90deg, transparent, rgb(255 198 85 / 0.05), transparent);
-  box-shadow: 0 8px 18px rgb(200 107 16 / 0.06);
-  backdrop-filter: blur(10px);
+    linear-gradient(180deg, rgb(255 255 255 / 0.97), rgb(247 250 255 / 0.95)),
+    linear-gradient(90deg, transparent, rgb(74 180 255 / 0.03), transparent);
+  box-shadow: 0 10px 24px rgb(15 23 42 / 0.05);
+  backdrop-filter: blur(12px);
 }
 
 .compass-shell-topbar::before {
@@ -210,26 +214,53 @@ textarea:focus-visible {
 }
 
 .compass-shell-brand {
-  transition: opacity var(--transition-smooth), transform var(--transition-smooth);
+  grid-area: brand;
+  position: relative;
+  justify-self: start;
+  border: none;
+  border-radius: calc(var(--radius-card) - 6px);
+  padding: 0.25rem 0;
+  background: transparent;
+  transition:
+    opacity var(--transition-smooth),
+    transform var(--transition-smooth);
+}
+
+.compass-shell-topbar-layout {
+  display: grid;
+  grid-template-areas: "brand nav auth";
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0 0.6rem;
+}
+
+.compass-shell-primary-nav {
+  grid-area: nav;
+  display: flex;
+  min-width: 0;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
 }
 
 .compass-shell-brand:hover {
-  transform: translateY(-1px);
-  opacity: 0.92;
-}
-
-.compass-shell-brand-mark {
-  border: 1px solid rgb(0 127 84 / 0.14);
-  background: linear-gradient(135deg, rgb(0 170 108 / 0.98), rgb(0 127 84 / 0.94));
-  color: var(--color-paper-sheet);
-  box-shadow: 0 8px 18px rgb(0 127 84 / 0.16);
+  opacity: 0.8;
 }
 
 .compass-shell-identity {
   border: 1px solid rgb(15 23 42 / 0.08);
-  background: rgb(248 251 255 / 0.92);
-  color: var(--color-ink-soft);
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.48);
+  background: rgb(248 251 255 / 0.94);
+  color: var(--color-ink);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.48),
+    0 6px 14px rgb(15 23 42 / 0.04);
+}
+
+.compass-shell-identity-active {
+  border-color: var(--color-selected-border);
+  background: linear-gradient(180deg, var(--color-selected), var(--color-selected-strong));
+  box-shadow: 0 10px 20px rgb(30 136 229 / 0.12);
 }
 
 .compass-shell-route-note {
@@ -237,6 +268,132 @@ textarea:focus-visible {
   background: rgb(236 249 243 / 0.92);
   color: var(--color-sand-deep);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.52);
+}
+
+.compass-shell-nav-link {
+  display: inline-flex;
+  min-height: 2.25rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  padding: 0.35rem 0.72rem;
+  background: transparent;
+  color: var(--color-ink-soft);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  transition:
+    background var(--transition-smooth),
+    border-color var(--transition-smooth),
+    box-shadow var(--transition-smooth),
+    color var(--transition-smooth),
+    transform var(--transition-smooth);
+}
+
+.compass-shell-nav-link:hover {
+  border-color: rgb(30 136 229 / 0.12);
+  background: rgb(237 247 255 / 0.82);
+  color: var(--color-ink-strong);
+  transform: translateY(-1px);
+}
+
+.compass-shell-nav-link-active {
+  border-color: var(--color-selected-border);
+  background: linear-gradient(180deg, var(--color-selected), var(--color-selected-strong));
+  color: var(--color-selected-text);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5);
+}
+
+/* CTA button styles removed — all nav links use uniform text style (per industry standard) */
+
+.compass-shell-auth-nav {
+  grid-area: auth;
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.45rem 0.7rem;
+}
+
+.compass-shell-auth-text-link,
+.compass-shell-auth-text-action {
+  border: 1px solid transparent;
+  border-radius: 999px;
+  color: var(--color-ink-soft);
+  transition:
+    background var(--transition-smooth),
+    border-color var(--transition-smooth),
+    box-shadow var(--transition-smooth),
+    color var(--transition-smooth),
+    transform var(--transition-smooth);
+}
+
+.compass-shell-auth-text-link:hover,
+.compass-shell-auth-text-action:hover {
+  color: var(--color-ink-strong);
+  border-color: rgb(30 136 229 / 0.12);
+  background: rgb(237 247 255 / 0.8);
+  transform: translateY(-1px);
+}
+
+.compass-shell-auth-text-link-active {
+  border-color: var(--color-selected-border);
+  background: linear-gradient(180deg, var(--color-selected), var(--color-selected-strong));
+  color: var(--color-selected-text);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.5);
+}
+
+.compass-shell-auth-pill {
+  border: 1px solid rgb(15 23 42 / 0.1);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(247 250 255 / 0.94));
+  color: var(--color-ink-strong);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.56),
+    0 6px 14px rgb(15 23 42 / 0.04);
+}
+
+.compass-shell-auth-pill:hover {
+  border-color: var(--color-selected-border);
+}
+
+.compass-shell-auth-pill-active {
+  border-color: var(--color-selected-border);
+  background: linear-gradient(180deg, var(--color-selected), var(--color-selected-strong));
+  color: var(--color-selected-text);
+  box-shadow: 0 10px 20px rgb(30 136 229 / 0.12);
+}
+
+.compass-shell-identity-badge {
+  background: linear-gradient(135deg, var(--color-accent), var(--color-sand-deep));
+}
+
+.compass-shell-brand:focus-visible,
+.compass-shell-nav-link:focus-visible,
+.compass-shell-auth-text-link:focus-visible,
+.compass-shell-auth-text-action:focus-visible,
+.compass-shell-auth-pill:focus-visible,
+.compass-shell-identity:focus-visible {
+  outline: 2px solid var(--color-selected-strong);
+  outline-offset: 3px;
+}
+
+@media (min-width: 768px) {
+  .compass-shell-topbar-layout {
+    gap: 0 1rem;
+  }
+
+  .compass-shell-primary-nav {
+    justify-content: center;
+  }
+
+  .compass-shell-auth-nav {
+    justify-self: end;
+    padding-left: 0.95rem;
+    border-left: 1px solid var(--color-stage-divider);
+  }
 }
 
 .compass-shell-context {
@@ -779,16 +936,16 @@ textarea:focus-visible {
 }
 
 .compass-action-primary {
-  border: 1px solid var(--color-action-primary-border);
-  background: linear-gradient(180deg, var(--color-action-primary), var(--color-action-primary-strong));
-  color: var(--color-action-primary-text);
-  box-shadow: 0 12px 28px rgb(0 127 84 / 0.2);
+  border: none;
+  background: var(--color-action-primary);
+  color: white;
+  box-shadow: none;
 }
 
 .compass-action-primary:hover {
-  transform: translateY(-2px);
-  background: linear-gradient(180deg, #0ab97a, #00875a);
-  box-shadow: 0 16px 28px rgb(0 127 84 / 0.24);
+  transform: none;
+  background: var(--color-action-primary-strong);
+  box-shadow: none;
 }
 
 .compass-action-secondary {
@@ -814,7 +971,7 @@ textarea:focus-visible {
 .compass-selection-chip:hover {
   transform: translateY(-2px);
   border-color: var(--color-sand);
-  box-shadow: 0 14px 28px rgb(0 127 84 / 0.12);
+  box-shadow: 0 10px 24px rgb(30 136 229 / 0.12);
 }
 
 .compass-selected {
@@ -855,10 +1012,9 @@ textarea:focus-visible {
 }
 
 .compass-editorial-kicker {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
 }
 
 .compass-editorial-rule {
@@ -1637,39 +1793,38 @@ textarea:focus-visible {
 }
 
 .compass-compare-wrap {
-  border: 1px solid var(--color-stage-divider-strong);
+  border: 1px solid rgb(15 23 42 / 0.08);
   background:
-    linear-gradient(180deg, rgb(252 248 241 / 0.94), rgb(243 236 224 / 0.74)),
-    linear-gradient(90deg, transparent, rgb(216 180 123 / 0.08), transparent);
-  box-shadow: var(--shadow-paper);
+    linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(245 249 255 / 0.95)),
+    linear-gradient(135deg, rgb(190 223 255 / 0.08), transparent 58%);
+  box-shadow: 0 14px 30px rgb(15 23 42 / 0.06);
 }
 
 .compass-compare-grid {
   border: 0;
-  background: rgb(184 138 74 / 0.08);
+  background: rgb(15 23 42 / 0.06);
   box-shadow: none;
   padding: 1px;
 }
 
 .compass-compare-column {
-  border-bottom: 1px solid rgb(93 76 50 / 0.1);
-  background:
-    linear-gradient(180deg, rgb(252 248 241 / 0.96), rgb(243 236 224 / 0.82));
+  border-bottom: 1px solid rgb(15 23 42 / 0.08);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(245 249 255 / 0.95));
 }
 
 .compass-compare-label {
-  border-bottom: 1px solid rgb(93 76 50 / 0.1);
-  background: linear-gradient(180deg, rgb(248 240 226 / 0.98), rgb(231 214 185 / 0.88));
+  border-bottom: 1px solid rgb(15 23 42 / 0.08);
+  background: linear-gradient(180deg, rgb(244 249 255 / 0.98), rgb(233 243 255 / 0.92));
   color: var(--color-ink);
 }
 
 .compass-compare-cell {
-  border-bottom: 1px solid rgb(93 76 50 / 0.08);
-  background: linear-gradient(180deg, rgb(253 250 244 / 0.96), rgb(245 238 228 / 0.84));
+  border-bottom: 1px solid rgb(15 23 42 / 0.06);
+  background: linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(248 251 255 / 0.95));
 }
 
 .compass-compare-cell-warning {
-  background: rgb(243 229 204 / 0.8);
+  background: linear-gradient(180deg, rgb(255 248 238 / 0.98), rgb(250 238 220 / 0.92));
 }
 
 .compass-compare-column-summary {
@@ -1678,14 +1833,16 @@ textarea:focus-visible {
 }
 
 .compass-compare-toolbar {
-  border: 1px solid rgb(93 76 50 / 0.12);
-  background: linear-gradient(180deg, rgb(252 248 241 / 0.96), rgb(243 236 224 / 0.8));
-  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.56);
+  border: 1px solid rgb(15 23 42 / 0.08);
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(245 249 255 / 0.95)),
+    linear-gradient(135deg, rgb(190 223 255 / 0.08), transparent 58%);
+  box-shadow: 0 12px 24px rgb(15 23 42 / 0.05);
 }
 
 .compass-compare-header-block {
   display: grid;
-  gap: 0.75rem;
+  gap: 0.5rem;
   min-height: 100%;
 }
 
@@ -1811,6 +1968,59 @@ textarea:focus-visible {
   transform: translateX(-100%);
   background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.42), transparent);
   animation: compass-shimmer 1.45s ease-in-out infinite;
+}
+
+@keyframes compass-result-loading-progress {
+  0% {
+    width: 0%;
+  }
+
+  15% {
+    width: 30%;
+  }
+
+  40% {
+    width: 58%;
+  }
+
+  65% {
+    width: 74%;
+  }
+
+  85% {
+    width: 88%;
+  }
+
+  100% {
+    width: 100%;
+  }
+}
+
+@keyframes compass-result-loading-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(250%);
+  }
+}
+
+.compass-result-loading-progress {
+  position: relative;
+  width: 0%;
+  animation: compass-result-loading-progress 4.5s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+  box-shadow: 0 0 10px rgb(30 136 229 / 0.35), 0 0 3px rgb(30 136 229 / 0.18);
+  overflow: hidden;
+}
+
+.compass-result-loading-progress::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.4), transparent);
+  animation: compass-result-loading-shimmer 1.5s ease-in-out infinite;
 }
 
 .compass-orbit {

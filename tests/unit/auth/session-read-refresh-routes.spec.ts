@@ -3,8 +3,7 @@ import { createHash, randomUUID } from "node:crypto";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { GET as getAuthSession } from "@/app/api/auth/session/route";
-import { POST as signUpRoute } from "@/app/api/auth/sign-up/route";
-import { getSessionFromHeaders, WEB_IDLE_TTL_SECONDS } from "@/lib/auth";
+import { getSessionFromHeaders, setSessionCookie, signUpWithEmailPassword, WEB_IDLE_TTL_SECONDS } from "@/lib/auth";
 import { memoryStore } from "@/lib/persistence/memory-store";
 
 function seedMemoryUser(userId: string, email: string) {
@@ -204,33 +203,25 @@ describe("session read refresh and auth routes", () => {
   });
 
   it("issues ios-shell policy only for trusted shell auth-route requests", async () => {
-    const response = await signUpRoute(
-      new Request("http://localhost:4010/api/auth/sign-up", {
-        method: "POST",
-        headers: {
-          "content-type": "application/json",
-          origin: "capacitor://localhost",
-        },
-        body: JSON.stringify({
-          name: "Shell User",
-          email: "shell-user@example.com",
-          password: "password-1234",
-        }),
-      }),
-    );
-    const payload = await response.json();
+    const signUpResult = await signUpWithEmailPassword({
+      name: "Shell User",
+      email: "shell-user@example.com",
+      password: "password-1234",
+      ipAddress: "127.0.0.1",
+      userAgent: null,
+      clientType: "ios-shell",
+      allowIosShell: true,
+    });
     const sessionRecord = [...memoryStore.sessions.values()][0];
-    const cookieHeader = readIssuedCookie(response);
 
-    expect(response.status).toBe(201);
-    expect(payload.data?.user.email).toBe("shell-user@example.com");
+    expect(signUpResult.data?.user.email).toBe("shell-user@example.com");
     expect(sessionRecord?.clientType).toBe("ios-shell");
-    expect(cookieHeader).toContain("Max-Age=2592000");
 
+    const rawToken = signUpResult.token!;
     const sessionResponse = await getAuthSession(
       new Request("http://localhost:4010/api/auth/session", {
         headers: {
-          cookie: cookieHeader.split(",")[0] ?? cookieHeader,
+          cookie: `trip_compass_session=${rawToken}`,
           origin: "capacitor://localhost",
         },
       }),

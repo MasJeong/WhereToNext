@@ -55,19 +55,6 @@ export async function listPublicPosts(cursor?: string): Promise<{
   return listPublicPostsFromDb(cursor);
 }
 
-/**
- * 공개된 여행 이야기 상세 1건을 조회한다.
- * @param historyId 여행 이야기 ID
- * @returns 공개 여행 이야기 또는 null
- */
-export async function readPublicPost(historyId: string): Promise<CommunityPostRow | null> {
-  if (!usePersistentDatabase) {
-    return readPublicPostInMemory(historyId);
-  }
-
-  return readPublicPostFromDb(historyId);
-}
-
 async function listPublicPostsInMemory(cursor?: string): Promise<{
   items: CommunityPostRow[];
   nextCursor: string | null;
@@ -120,11 +107,6 @@ async function listPublicPostsInMemory(cursor?: string): Promise<{
     items.length === PAGE_SIZE && lastItem ? lastItem.createdAt : null;
 
   return { items, nextCursor };
-}
-
-async function readPublicPostInMemory(historyId: string): Promise<CommunityPostRow | null> {
-  const { items } = await listPublicPostsInMemory();
-  return items.find((entry) => entry.historyId === historyId) ?? null;
 }
 
 async function listPublicPostsFromDb(cursor?: string): Promise<{
@@ -201,7 +183,61 @@ async function listPublicPostsFromDb(cursor?: string): Promise<{
   return { items, nextCursor };
 }
 
-async function readPublicPostFromDb(historyId: string): Promise<CommunityPostRow | null> {
+/* ------------------------------------------------------------------ */
+/*  Single post                                                        */
+/* ------------------------------------------------------------------ */
+
+export async function readPublicPost(
+  historyId: string,
+): Promise<CommunityPostRow | null> {
+  if (!usePersistentDatabase) {
+    return readPublicPostInMemory(historyId);
+  }
+
+  return readPublicPostFromDb(historyId);
+}
+
+async function readPublicPostInMemory(
+  historyId: string,
+): Promise<CommunityPostRow | null> {
+  const historyEntries = useLocalFileStore
+    ? Object.values((await readLocalStore()).history)
+    : [...memoryStore.history.values()];
+
+  const entry = historyEntries.find(
+    (e) => e.id === historyId && e.visibility === "public",
+  );
+  if (!entry) return null;
+
+  const users = useLocalFileStore
+    ? (await readLocalStore()).users
+    : Object.fromEntries(memoryStore.users.entries());
+
+  const comments = useLocalFileStore
+    ? Object.values((await readLocalStore()).communityComments)
+    : [...memoryStore.communityComments.values()];
+
+  const author = users[entry.userId];
+  const destination = launchCatalog.find((d) => d.id === entry.destinationId);
+  const entryComments = comments.filter((c) => c.historyId === entry.id);
+
+  return {
+    historyId: entry.id,
+    authorName: author?.name ?? "여행자",
+    authorImage: author?.image ?? null,
+    destinationName: destination?.nameKo ?? entry.destinationId,
+    rating: entry.rating,
+    tags: entry.customTags ?? [],
+    memo: entry.memo ?? null,
+    imageUrl: entry.images?.[0]?.dataUrl ?? null,
+    commentCount: entryComments.length,
+    createdAt: entry.createdAt,
+  };
+}
+
+async function readPublicPostFromDb(
+  historyId: string,
+): Promise<CommunityPostRow | null> {
   const { db } = await getRuntimeDatabase();
 
   const [row] = await db
@@ -231,11 +267,9 @@ async function readPublicPostFromDb(historyId: string): Promise<CommunityPostRow
     )
     .limit(1);
 
-  if (!row) {
-    return null;
-  }
+  if (!row) return null;
 
-  const [commentCountRow] = await db
+  const [commentResult] = await db
     .select({ cnt: count() })
     .from(communityComments)
     .where(eq(communityComments.historyId, historyId));
@@ -253,7 +287,7 @@ async function readPublicPostFromDb(historyId: string): Promise<CommunityPostRow
     tags: (row.customTags as string[] | null) ?? [],
     memo: row.memo ?? null,
     imageUrl: images?.[0]?.dataUrl ?? null,
-    commentCount: commentCountRow?.cnt ?? 0,
+    commentCount: commentResult?.cnt ?? 0,
     createdAt: row.createdAt.toISOString(),
   };
 }

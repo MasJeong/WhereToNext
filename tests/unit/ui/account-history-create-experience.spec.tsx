@@ -49,6 +49,7 @@ const initialEntry: UserDestinationHistory = {
   visitedAt: "2026-02-01T00:00:00.000Z",
   memo: "골목 분위기가 좋았어요.",
   images: [],
+  visibility: "private",
   createdAt: "2026-02-01T00:00:00.000Z",
   updatedAt: "2026-02-01T00:00:00.000Z",
 };

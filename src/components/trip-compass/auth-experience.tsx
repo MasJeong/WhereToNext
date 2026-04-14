@@ -1,8 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 
 import { brandDisplayName } from "@/lib/brand";
 import { testIds } from "@/lib/test-ids";
@@ -18,23 +17,53 @@ type ProviderCta = {
   testId: string;
 };
 
-function getAuthErrorMessage(result: AuthResultLike, fallback: string): string {
-  return result?.error?.message?.trim() || fallback;
+const providerCtas: ProviderCta[] = [
+  {
+    id: "kakao",
+    label: "카카오로 계속하기",
+    testId: testIds.auth.providerKakao,
+  },
+  {
+    id: "google",
+    label: "Google로 계속하기",
+    testId: testIds.auth.providerGoogle,
+  },
+  {
+    id: "apple",
+    label: "Apple로 계속하기",
+    testId: testIds.auth.providerApple,
+  },
+];
+
+function normalizeIntent(value: string | null): AuthIntent {
+  if (value === "save" || value === "share" || value === "account") {
+    return value;
+  }
+
+  return "default";
 }
 
-export function AuthExperience() {
-  const router = useRouter();
-  const [mode, setMode] = useState<AuthMode>("sign-in");
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+function buildAuthHeading(intent: AuthIntent): { title: string; intro: string } {
+  if (intent === "save") {
+    return {
+      title: "추천 결과를 저장할까요?",
+      intro: "로그인하면 저장한 여행을 언제든 다시 볼 수 있어요.",
+    };
+  }
 
-  async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
+  if (intent === "share") {
+    return {
+      title: "여행 카드를 공유하려면",
+      intro: "로그인 후 공유 링크를 만들 수 있어요.",
+    };
+  }
+
+  if (intent === "account") {
+    return {
+      title: "내 여행 기록 보기",
+      intro: "로그인하면 저장한 추천과 취향 기록을 볼 수 있어요.",
+    };
+  }
 
   return {
     title: "로그인하고 여행 기록 이어가기",
@@ -47,166 +76,181 @@ function getCollisionErrorMessage(errorCode: string | null): string | null {
     return null;
   }
 
-        if (result.error) {
-          setError(
-            getAuthErrorMessage(result, "로그인하지 못했어요. 이메일과 비밀번호를 다시 확인해 주세요."),
-          );
-          return;
-        }
-      }
+  const normalized = errorCode.toLowerCase();
 
-      router.push("/account");
-    } catch {
-      setError(
-        mode === "sign-up"
-          ? "계정을 만들지 못했어요. 잠시 후 다시 시도해 주세요."
-          : "로그인하지 못했어요. 잠시 후 다시 시도해 주세요.",
-      );
-    } finally {
-      setIsSubmitting(false);
-    }
+  return normalized.includes("collision") || normalized.includes("mismatch")
+    ? "이미 다른 로그인 방식으로 이어진 계정이에요. 이전에 쓰던 방식으로 다시 로그인해 주세요."
+    : null;
+}
+
+function getSafeAuthErrorMessage(errorCode: string | null): string | null {
+  if (!errorCode) {
+    return null;
+  }
+
+  if (getCollisionErrorMessage(errorCode)) {
+    return null;
+  }
+
+  if (errorCode === "access_denied" || errorCode === "cancelled") {
+    return "로그인을 마치지 않았어요. 괜찮아요, 원할 때 다시 이어서 시도해 보세요.";
+  }
+
+  return "지금은 로그인을 이어 주지 못했어요. 잠시 후 다시 시도해 주세요.";
+}
+
+function buildProviderHref(
+  provider: Provider,
+  next: string | null,
+  intent: AuthIntent,
+  mockCase: string | null,
+): string {
+  const params = new URLSearchParams();
+
+  if (next) {
+    params.set("next", next);
+  }
+
+  if (intent !== "default") {
+    params.set("intent", intent);
+  }
+
+  if (mockCase) {
+    params.set("mockCase", mockCase);
+  }
+
+  const query = params.toString();
+  return `/api/auth/oauth/${provider}/start${query ? `?${query}` : ""}`;
+}
+
+function buildContinueHref(next: string | null): string {
+  if (!next || !next.startsWith("/")) {
+    return "/";
+  }
+
+  return next;
+}
+
+function ProviderIcon({ provider }: { provider: Provider }) {
+  if (provider === "kakao") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 text-[var(--color-ink)]">
+        <path
+          fill="currentColor"
+          d="M12 4.5c-4.7 0-8.5 2.95-8.5 6.6 0 2.33 1.58 4.37 3.97 5.54l-.99 3.51a.42.42 0 0 0 .64.46l4.21-2.77c.22.01.44.02.67.02 4.69 0 8.5-2.96 8.5-6.6S16.69 4.5 12 4.5Z"
+        />
+      </svg>
+    );
+  }
+
+  if (provider === "google") {
+    return (
+      <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 text-[var(--color-ink)]">
+        <path
+          fill="currentColor"
+          d="M20.28 12.23c0-.63-.06-1.23-.16-1.81H12v3.43h4.64a3.95 3.95 0 0 1-1.72 2.6v2.17h2.78c1.63-1.5 2.58-3.72 2.58-6.39Z"
+        />
+        <path
+          fill="currentColor"
+          d="M12 20.5c2.33 0 4.28-.77 5.7-2.08l-2.78-2.17c-.78.52-1.77.83-2.92.83-2.25 0-4.15-1.52-4.83-3.56H4.29v2.23A8.5 8.5 0 0 0 12 20.5Z"
+        />
+        <path
+          fill="currentColor"
+          d="M7.17 13.52a5.05 5.05 0 0 1 0-3.04V8.25H4.29a8.5 8.5 0 0 0 0 7.5l2.88-2.23Z"
+        />
+        <path
+          fill="currentColor"
+          d="M12 6.92c1.27 0 2.41.44 3.3 1.29l2.47-2.47C16.27 4.31 14.32 3.5 12 3.5a8.5 8.5 0 0 0-7.71 4.75l2.88 2.23c.68-2.04 2.58-3.56 4.83-3.56Z"
+        />
+      </svg>
+    );
   }
 
   return (
-    <ExperienceShell eyebrow="" title="" intro="" capsule="" hideHeader bareBody>
-      <div className="grid gap-3.5 xl:grid-cols-[minmax(0,0.92fr)_minmax(0,1.08fr)] xl:items-start">
-        <aside className="order-2 compass-desk rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5 xl:order-1 lg:px-6 lg:py-6">
-          <p className="compass-editorial-kicker">가벼운 로그인</p>
-          <h1 className="mt-2 font-display text-[1.3rem] leading-[0.96] tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.62rem]">
-            추천과 저장은 로그인 없이 충분하고, 계정은 취향 기록이 필요할 때만 쓰면 돼요.
-          </h1>
-          <p className="mt-2.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-            핵심 흐름은 탐색, 추천, 내 일정 저장, 비교예요. 계정은 다녀온 여행 기록과 취향 모드를 남겨 다음 추천을 더 나답게 만드는 보조 루프예요.
-          </p>
+    <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5 text-[var(--color-ink)]">
+      <path
+        fill="currentColor"
+        d="M16.71 12.59c0-2.02 1.65-2.99 1.72-3.03-.94-1.37-2.4-1.56-2.91-1.58-1.23-.13-2.42.73-3.05.73-.65 0-1.63-.71-2.68-.69-1.38.02-2.65.8-3.36 2.04-1.44 2.49-.37 6.17 1.03 8.2.69.99 1.51 2.09 2.6 2.05 1.04-.05 1.43-.66 2.69-.66s1.61.66 2.71.64c1.12-.02 1.82-1 2.5-2 .79-1.14 1.11-2.25 1.12-2.31-.03-.01-2.37-.91-2.37-3.39Zm-1.93-5.85c.56-.68.94-1.61.84-2.55-.81.03-1.79.54-2.37 1.21-.52.6-.98 1.56-.86 2.48.91.07 1.83-.46 2.39-1.14Z"
+      />
+    </svg>
+  );
+}
 
-          <div className="mt-3.5 grid gap-2.5 sm:grid-cols-3 xl:grid-cols-1">
-            <div className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-              <p className="text-[0.66rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">로그인 없이</p>
-              <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">탐색 · 추천 · 내 일정 저장 · 비교</p>
-            </div>
-            <div className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-              <p className="text-[0.66rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">로그인 후</p>
-              <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">취향 모드와 방문 기록 누적</p>
-            </div>
-            <div className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-              <p className="text-[0.66rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">효과</p>
-              <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">다음 추천 결과가 더 빨라짐</p>
+export function AuthExperience() {
+  const searchParams = useSearchParams();
+  const next = searchParams.get("next");
+  const intent = normalizeIntent(searchParams.get("intent"));
+  const mockCase = searchParams.get("mockCase");
+  const errorCode = searchParams.get("error") ?? searchParams.get("code");
+  const collisionError = getCollisionErrorMessage(errorCode);
+  const authError = getSafeAuthErrorMessage(errorCode);
+  const heading = buildAuthHeading(intent);
+
+  return (
+    <ExperienceShell eyebrow="" title="" intro="" capsule="" hideHeader bareBody>
+      <div className="mx-auto flex min-h-[calc(100vh-5rem)] max-w-md items-center justify-center px-4 py-8 sm:px-6">
+        <section className="w-full text-center">
+          <div className="relative mx-auto flex h-24 w-24 items-center justify-center">
+            <div className="absolute inset-0 rounded-full bg-[radial-gradient(circle,_rgb(74_180_255_/_0.18),_transparent_68%)]" />
+            <div className="relative h-18 w-18 rounded-[1.6rem] bg-[linear-gradient(180deg,rgb(86_187_255),rgb(30_136_229))] shadow-[0_16px_34px_rgb(30_136_229_/_0.16)]">
+              <span className="absolute left-1/2 top-[0.58rem] h-[2.55rem] w-[2.55rem] -translate-x-1/2 rounded-full border-[3px] border-white" />
+              <span className="absolute left-1/2 top-[2.15rem] h-[1.9rem] w-[1.9rem] -translate-x-1/2 rotate-45 rounded-[0.62rem] border-b-[3px] border-r-[3px] border-white" />
+              <span className="absolute left-[1.8rem] top-[1.5rem] h-[0.32rem] w-[1.2rem] rounded-full bg-white/95" />
+              <span className="absolute left-[2.48rem] top-[1.48rem] h-[0.42rem] w-[0.42rem] rounded-full bg-[rgb(255_212_72)] shadow-[0_0_0_4px_rgb(255_212_72_/_0.16)]" />
             </div>
           </div>
         </aside>
 
-        <section className="order-1 compass-sheet rounded-[var(--radius-card)] px-4 py-4 sm:px-5 sm:py-5 xl:order-2 lg:px-6 lg:py-6">
-          <div className="border-b border-[color:var(--color-frame-soft)] pb-3.5">
-            <p className="compass-editorial-kicker">계정 시작</p>
-            <h2 className="mt-1.5 font-display text-[1.14rem] leading-tight tracking-[-0.04em] text-[var(--color-ink)] sm:text-[1.32rem]">
-              {mode === "sign-up" ? "내 취향 기록을 시작해요." : "저장한 취향으로 다시 이어가요."}
-            </h2>
-            <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-              {mode === "sign-up"
-                ? "계정을 만들면 방문 기록과 탐색 모드를 저장해 다음 추천에 반영할 수 있어요."
-                : "로그인하면 저장한 여행 기록과 취향 모드를 다시 불러와요."}
+          <div className="mt-5">
+            <p className="text-[0.7rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-ink-soft)]">
+              {brandDisplayName}
             </p>
+            <h1 className="mt-3 text-[1.85rem] font-semibold leading-[1.03] tracking-[-0.05em] text-[var(--color-ink)] sm:text-[2.15rem]">
+              {heading.title}
+            </h1>
+            <p className="mx-auto mt-3 max-w-sm text-[0.93rem] leading-6 text-[var(--color-ink-soft)]">{heading.intro}</p>
           </div>
 
-          <div className="mt-3.5 flex flex-wrap gap-2 border-b border-[color:var(--color-frame-soft)] pb-3.5">
-            <button
-              type="button"
-              data-testid={testIds.auth.modeSignIn}
-              onClick={() => {
-                setMode("sign-in");
-                setError(null);
-              }}
-              className={`rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em] ${mode === "sign-in" ? "compass-selected" : "compass-selection-chip"}`}
+          {collisionError ? (
+            <p
+              data-testid={testIds.auth.collisionError}
+              className="compass-warning-card mt-4 rounded-[1.1rem] px-4 py-3 text-left text-sm leading-6"
             >
-              로그인
-            </button>
-            <button
-              type="button"
-              data-testid={testIds.auth.modeSignUp}
-              onClick={() => {
-                setMode("sign-up");
-                setError(null);
-              }}
-              className={`rounded-full px-4 py-2 text-xs font-semibold tracking-[0.04em] ${mode === "sign-up" ? "compass-selected" : "compass-selection-chip"}`}
-            >
-              회원가입
-            </button>
-          </div>
+              {collisionError}
+            </p>
+          ) : null}
 
-          <form className="mt-3.5 grid gap-3" onSubmit={handleSubmit}>
-            {mode === "sign-up" ? (
-              <label className="grid gap-2 text-sm text-[var(--color-ink)]">
-                <span>이름</span>
-                <input
-                  data-testid={testIds.auth.nameInput}
-                  type="text"
-                  value={name}
-                  onChange={(event) => setName(event.target.value)}
-                  required
-                  className="compass-form-field-light rounded-[calc(var(--radius-card)-10px)] px-4 py-3"
-                  placeholder="예: 지훈"
-                />
-              </label>
-            ) : null}
+          {authError ? (
+            <p className="compass-warning-card mt-4 rounded-[1.1rem] px-4 py-3 text-left text-sm leading-6">{authError}</p>
+          ) : null}
 
-            <label className="grid gap-2 text-sm text-[var(--color-ink)]">
-              <span>이메일</span>
-              <input
-                data-testid={testIds.auth.emailInput}
-                type="email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                required
-                className="compass-form-field-light rounded-[calc(var(--radius-card)-10px)] px-4 py-3"
-                placeholder="you@example.com"
-              />
-            </label>
-
-            <label className="grid gap-2 text-sm text-[var(--color-ink)]">
-              <span>비밀번호</span>
-              <input
-                data-testid={testIds.auth.passwordInput}
-                type="password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                required
-                minLength={8}
-                className="compass-form-field-light rounded-[calc(var(--radius-card)-10px)] px-4 py-3"
-                placeholder="8자 이상 입력해 주세요"
-              />
-            </label>
-
-            {error ? (
-              <p
-                data-testid={testIds.auth.error}
-                className="compass-warning-card rounded-[calc(var(--radius-card)-10px)] px-4 py-3 text-sm leading-6"
-              >
-                {error}
-              </p>
-            ) : null}
-
-            <div className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-3.5 text-sm leading-6 text-[var(--color-ink-soft)]">
-              로그인 없이도 추천 흐름은 그대로 사용할 수 있어요. 계정은 여행 기록과 취향을 남겨 다음 추천을 더 개인화하는 용도예요.
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              <button
-                data-testid={testIds.auth.submit}
-                type="submit"
-                disabled={isSubmitting}
-                className="compass-action-primary compass-soft-press rounded-full px-5 py-2.5 text-sm font-semibold tracking-[0.04em] disabled:cursor-not-allowed disabled:opacity-60"
-              >
-                {isSubmitting
-                  ? "처리 중..."
-                  : mode === "sign-up"
-                    ? "계정 만들고 취향 기록 시작"
-                    : "로그인하고 취향 이어보기"}
-              </button>
+          <div className="mt-6 grid gap-3 text-left">
+            {providerCtas.map((provider) => (
               <Link
-                href="/"
-                className="text-sm leading-5 text-[var(--color-ink-soft)] underline decoration-[color:var(--color-frame-strong)] underline-offset-4"
+                key={provider.id}
+                href={buildProviderHref(provider.id, next, intent, mockCase)}
+                data-testid={provider.testId}
+                className="compass-panel compass-soft-press block rounded-[1.3rem] px-4 py-4.5"
               >
-                로그인 없이 추천 계속 보기
+                <div className="flex items-center gap-3.5">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[color:var(--color-frame-soft)] bg-white shadow-[var(--shadow-paper)]">
+                    <ProviderIcon provider={provider.id} />
+                  </span>
+                  <span className="min-w-0 flex-1 self-center">
+                    <span className="block text-[0.78rem] font-semibold uppercase tracking-[0.12em] text-[var(--color-ink-soft)]">
+                      {provider.id}
+                    </span>
+                    <span className="mt-1 block text-[1rem] font-semibold leading-6 tracking-[-0.02em] text-[var(--color-ink)] sm:text-[1.04rem]">
+                      {provider.label}
+                    </span>
+                  </span>
+                  <span
+                    aria-hidden="true"
+                    className="shrink-0 self-center text-[0.95rem] font-semibold text-[var(--color-ink-soft)]"
+                  >
+                    →
+                  </span>
+                </div>
               </Link>
             ))}
           </div>
