@@ -301,7 +301,15 @@ export function TravelSupportPanel({
         </p>
       ) : null}
 
-      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(15rem,0.9fr)]">
+      <div className="grid gap-2 sm:grid-cols-2 xl:grid-cols-3">
+        {supplement.map ? (
+          <InteractiveDestinationMapCard
+            map={supplement.map}
+            destinationName={destinationName}
+            className="bg-[var(--color-funnel-muted)] sm:col-span-2 xl:col-span-2"
+          />
+        ) : null}
+
         {supplement.travelMonthWeather ? (
           <article className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3">
             <p className="text-[0.66rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
@@ -348,14 +356,6 @@ export function TravelSupportPanel({
               {supplement.exchangeRate.baseCurrency} 기준 · {formatObservedTime(supplement.exchangeRate.observedAt)}
             </p>
           </article>
-        ) : null}
-
-        {supplement.map ? (
-          <InteractiveDestinationMapCard
-            map={supplement.map}
-            destinationName={destinationName}
-            className="bg-[var(--color-funnel-muted)]"
-          />
         ) : null}
       </div>
 

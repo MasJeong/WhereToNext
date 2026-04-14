@@ -3,6 +3,7 @@
 - 이 문서는 App Store Connect의 `App Privacy` 질문에 답할 때 바로 옮겨 적을 수 있도록 현재 코드 기준 데이터 수집 항목을 정리한 표다.
 - 2026-04-10 기준 `떠나볼까?`는 로그인, 저장한 추천, 여행 기록, 소셜 로그인 공급자 정보가 핵심 사용자 데이터다.
 - 지도, 영상, 이미지, 소셜 로그인은 외부 서비스와 함께 동작하므로 Apple 질문에서는 자사 코드뿐 아니라 서드파티 처리도 함께 확인해야 한다.
+- `Capacitor`는 Apple의 third-party SDK requirement 목록에 포함돼 있으므로, App Privacy 입력 전 Xcode `Privacy Report`에서 SDK manifest가 실제 archive 결과에 포함되는지 확인하는 편이 안전하다.
 
 # App Privacy 초안
 
@@ -42,6 +43,7 @@
 1. Apple 질문은 우리 코드뿐 아니라 서드파티 SDK/서비스 처리도 포함하는지 다시 확인
 2. 광고 추적, 서드파티 광고 SDK, IDFA 사용이 없다는 점 재확인
 3. `데이터가 사용자와 연결되는지`, `추적에 쓰는지` 질문을 항목별로 나눠 입력
+4. archive 후 Xcode `Privacy Report`에서 Capacitor/Cordova 관련 항목이 누락되지 않는지 확인
 
 # 코드 근거
 

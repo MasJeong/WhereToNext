@@ -121,12 +121,12 @@ describe("TravelSupportPanel", () => {
     expect(screen.getByText("평균 24.1°~30.2°")).toBeInTheDocument();
     expect(screen.getByText("맑은 편")).toBeInTheDocument();
     expect(screen.getByText("지금 맑아요")).toBeInTheDocument();
-    expect(screen.getByText("구글맵으로 발리 위치를 바로 확인해 보세요.")).toBeInTheDocument();
-    expect(screen.getByText("구글맵 보기")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "지도 새 탭에서 열기" })).toHaveAttribute(
+    expect(screen.getByText("위치 먼저 보기")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Google 지도 열기" })).toHaveAttribute(
       "href",
       "https://www.google.com/maps/search/?api=1&query=-8.34%2C115.09",
     );
+    expect(screen.getByText("지금은 미리보기 지도는 열 수 없어서 Google 지도로 바로 연결해 드려요.")).toBeInTheDocument();
   });
 
   it("shows a fallback summary block when external weather data is unavailable", () => {

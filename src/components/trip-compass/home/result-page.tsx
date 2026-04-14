@@ -136,7 +136,22 @@ export function ResultPage({
           </div>
         </section>
 
-        {leadWeatherSlot ? <div>{leadWeatherSlot}</div> : null}
+        {leadWeatherSlot ? (
+          <section className="space-y-3 rounded-[1.3rem] border border-[color:var(--color-funnel-border)] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)] sm:p-5">
+            <div className="space-y-1.5">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                위치 먼저 보기
+              </p>
+              <h3 className="text-[1rem] font-semibold tracking-[-0.03em] text-[var(--color-funnel-text)]">
+                항공권이나 일정 확정 전에 도시 위치와 동선을 먼저 확인해 보세요.
+              </h3>
+              <p className="text-sm leading-6 text-[var(--color-funnel-text-soft)]">
+                감으로 고르기보다 지도에서 위치를 한 번 보고 나면 이동 부담과 주변 분위기를 더 빠르게 판단할 수 있어요.
+              </p>
+            </div>
+            {leadWeatherSlot}
+          </section>
+        ) : null}
 
         {leadSupportSlot ? (
           <section className="space-y-3 rounded-[1.3rem] border border-[color:var(--color-funnel-border)] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)] sm:p-5">

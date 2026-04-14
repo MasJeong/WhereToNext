@@ -147,23 +147,24 @@ export function InteractiveDestinationMapCard({
   const shellClassName = `overflow-hidden rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-white ${className}`.trim();
   const previewHeightClassName = size === "summary" ? "h-48 sm:h-52" : "h-44";
   const interactiveHeightClassName = size === "summary" ? "h-60 sm:h-68" : "h-52";
+  const title = "위치 먼저 보기";
+  const externalLinkText = "Google 지도 열기";
+  const primaryActionText = "지도 열기";
 
   return (
     <article className={shellClassName}>
       <div className="border-b border-[color:var(--color-funnel-border)] px-3.5 py-3">
         <div className="flex flex-wrap items-center justify-between gap-2">
-          <div>
-            <p className="text-sm font-semibold text-[var(--color-funnel-text)]">
-              구글맵으로 {destinationName} 위치를 바로 확인해 보세요.
-            </p>
-          </div>
+          <p className="text-sm font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
+            {title}
+          </p>
           <a
             href={map.googleMapsUrl}
             target="_blank"
             rel="noreferrer"
             className="text-[0.72rem] font-semibold text-[var(--color-action-primary)] transition-colors duration-200 hover:text-[var(--color-action-primary-strong)]"
           >
-            지도 새 탭에서 열기
+            {externalLinkText}
           </a>
         </div>
       </div>
@@ -176,9 +177,12 @@ export function InteractiveDestinationMapCard({
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.22)_1px,transparent_1px),linear-gradient(rgba(255,255,255,0.22)_1px,transparent_1px)] bg-[size:24px_24px]" />
           <div className="relative z-10" />
 
-          <div className="relative z-10 space-y-2">
-            <p className="max-w-sm text-base font-semibold leading-6 text-[var(--color-funnel-text)]">
-              구글맵 보기
+          <div className="relative z-10 max-w-sm space-y-2.5">
+            <div className="inline-flex items-center rounded-full border border-white/60 bg-white/72 px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)] backdrop-blur-sm">
+              {destinationName}
+            </div>
+            <p className="text-sm leading-6 text-[var(--color-funnel-text)]">
+              중심 위치를 먼저 보고, 이동 동선이 맞으면 바로 Google 지도로 이어서 확인해 보세요.
             </p>
             {canOpenInteractiveMap ? (
               <button
@@ -190,18 +194,12 @@ export function InteractiveDestinationMapCard({
                 }}
                 className="inline-flex min-h-[2.5rem] items-center rounded-full bg-[var(--color-action-primary)] px-4 py-2 text-[0.72rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
               >
-                지도 직접 보기
+                {primaryActionText}
               </button>
             ) : (
-              <a
-                data-testid={testIds.detail.travelMapActivate}
-                href={map.googleMapsUrl}
-                target="_blank"
-                rel="noreferrer"
-                className="inline-flex min-h-[2.5rem] items-center rounded-full bg-[var(--color-action-primary)] px-4 py-2 text-[0.72rem] font-semibold text-white transition-colors duration-200 hover:bg-[var(--color-action-primary-strong)]"
-              >
-                Google 지도에서 보기
-              </a>
+              <p className="text-[0.72rem] font-medium text-[var(--color-funnel-text-soft)]">
+                지금은 미리보기 지도는 열 수 없어서 Google 지도로 바로 연결해 드려요.
+              </p>
             )}
           </div>
         </div>
@@ -215,13 +213,25 @@ export function InteractiveDestinationMapCard({
           {loadState !== "ready" ? (
             <div className="absolute inset-0 flex items-center justify-center bg-white/72 backdrop-blur-sm">
               <div className="space-y-2 text-center">
-                <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                  Interactive Map
-                </p>
                 <p className="text-sm font-semibold text-[var(--color-funnel-text)]">
                   {loadState === "error" ? "지도를 바로 열지 못했어요." : "지도를 준비하고 있어요."}
                 </p>
               </div>
+            </div>
+          ) : null}
+          {loadState === "ready" ? (
+            <div className="pointer-events-none absolute inset-x-3 top-3 flex items-start justify-between gap-3">
+              <div className="rounded-full bg-white/92 px-3 py-1 text-[0.72rem] font-semibold text-[var(--color-funnel-text)] shadow-[0_8px_18px_rgba(15,23,42,0.12)] backdrop-blur-sm">
+                {destinationName}
+              </div>
+              <a
+                href={map.googleMapsUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="pointer-events-auto rounded-full bg-white/92 px-3 py-1 text-[0.72rem] font-semibold text-[var(--color-action-primary)] shadow-[0_8px_18px_rgba(15,23,42,0.12)] backdrop-blur-sm"
+              >
+                {externalLinkText}
+              </a>
             </div>
           ) : null}
         </div>
