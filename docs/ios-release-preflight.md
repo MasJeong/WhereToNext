@@ -4,6 +4,7 @@
 - 저장소 안 기준으로는 `capacitor.config.ts`, `apps/ios-shell/out`, `ios/App/**`가 이미 존재한다.
 - 오늘 2시간 안에 현실적으로 노릴 수 있는 목표는 `TestFlight 내부 배포 업로드 완료`다.
 - App Store 심사 제출까지도 같은 흐름으로 이어갈 수 있지만, `메타데이터`, `스크린샷`, `App Privacy`, `리뷰 정보` 입력 속도에 따라 2시간을 넘길 수 있다.
+- 2026-04-28 이후 App Store Connect 업로드는 `iOS 26 SDK` 이상으로 빌드해야 하므로, 집에서 배포할 때는 `Xcode 26` 이상 사용 여부를 먼저 확인해야 한다.
 
 # iOS 출시 전 점검
 
@@ -43,14 +44,18 @@
 ## 3. 지금 남은 진짜 차단 항목
 
 ### 로컬/Xcode
+- [ ] `Xcode 26` 이상 설치 여부 확인
 - [ ] Mac에 로그인된 Apple Developer 계정
 - [ ] Xcode에서 `Signing & Capabilities` 설정
 - [ ] `Team` 선택으로 `DEVELOPMENT_TEAM` 반영
 - [ ] 실제 기기 또는 시뮬레이터에서 최소 1회 smoke 확인
 - [ ] `Product > Archive` 성공
+- [ ] archive 전에 `Privacy Report`에서 Capacitor privacy manifest 포함 여부 확인
 
 ### App Store Connect
 - [ ] 앱 생성 또는 기존 앱 레코드 확인
+- [ ] 배포 국가가 `대한민국`만 선택돼 있는지 확인하고, EU storefront가 빠져 있는지 점검
+- [ ] App Store Connect에 `DSA trader status` 관련 화면이 보이면 `EU 미배포` 기준으로 처리할지 확인
 - [ ] `Privacy Policy URL`
 - [ ] `Support URL`
 - [ ] `App Privacy`
@@ -66,6 +71,7 @@
 2. `open ios/App/App.xcodeproj`로 Xcode를 연다.
 3. Xcode에서 `Signing & Capabilities`로 들어가 `Team`을 지정한다.
 4. Bundle ID가 App Store Connect의 앱 레코드와 일치하는지 확인한다.
+5. `Xcode 26` 이상인지 확인하고, archive 전에 `Privacy Report`를 열어 Capacitor manifest가 합쳐지는지 확인한다.
 
 ### 20~45분
 1. 시뮬레이터 또는 연결된 iPhone에서 1회 실행한다.
@@ -84,6 +90,7 @@
 
 ### 75~120분
 1. App Store Connect에서 아래 메타데이터를 채운다.
+   - `DSA trader status`
    - `Privacy Policy URL`
    - `Support URL`
    - `App Privacy`
@@ -99,6 +106,7 @@
 ### Signing
 - `Team`이 비어 있으면 업로드가 막힌다.
 - `Bundle Identifier`는 `kr.soogo.tteonabolkka`를 그대로 쓸지, 실제 배포용 식별자로 바꿀지 먼저 결정해야 한다.
+- 2026-04-28 이후에는 `Xcode 26`과 `iOS 26 SDK`로 archive 해야 업로드 자체가 된다.
 
 ### Versioning
 - 현재 프로젝트 값은 `1.0 (1)`이다.
@@ -111,6 +119,7 @@
 ## 6. App Store Connect에 넣을 정보
 
 ### 필수
+- `DSA trader status` 선언
 - `Privacy Policy URL`
 - `Support URL`
 - `App Privacy`
@@ -135,6 +144,13 @@
 - 일반적인 HTTPS/TLS 사용 앱도 App Store Connect에서 질문에 답해야 한다.
 - 이 항목은 `Info.plist`보다 App Store Connect 입력이 먼저다.
 - 비표준 암호화를 직접 구현하지 않았다면 대개 표준 암호화 사용 여부와 면제 범위를 기준으로 답하게 된다.
+
+## 7-1. 최신 추가 체크
+
+- `Support URL`은 실제 연락 가능한 안내 페이지여야 하고, 한국 한정 배포라면 심사 연락용 `이름, 이메일, 전화번호`가 우선이다.
+- `Capacitor`는 Apple의 privacy manifest/signature 요구 SDK 목록에 포함돼 있으므로, archive 전에 Xcode `Privacy Report`에서 manifest 결합 결과를 확인하는 편이 안전하다.
+- EU 배포를 하지 않는다면 DSA trader 공개 연락처 요건은 직접 적용되지 않지만, 배포 국가 설정과 App Store Connect의 관련 질문지는 한 번 확인하는 편이 안전하다.
+- Age rating 시스템이 더 세분화됐으므로 기존 기본값을 그대로 두지 말고 현재 질문지를 한 번 다시 확인하는 편이 안전하다.
 
 ## 8. 오늘 바로 쓸 리뷰 메모 초안
 

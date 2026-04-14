@@ -3,6 +3,7 @@
 - 이 문서는 `떠나볼까?` iOS 앱을 App Store Connect에 올릴 때 바로 입력할 값과 아직 비어 있는 값을 한 번에 정리한 제출 패키지다.
 - 2026-04-10 기준 내부적으로 준비된 URL은 `/privacy`, `/support`이고, 실제 App Store Connect에는 운영 도메인 기준 절대 URL로 넣어야 한다.
 - 지금 남은 외부 작업은 `Team 지정`, `Archive/Upload`, `App Privacy`, `Age Rating`, `Export Compliance`, `App Review Information`, `screenshots`다.
+- 최신 기준으로는 여기에 `DSA trader status`와 `Xcode 26 / iOS 26 SDK` 확인도 같이 들어간다.
 
 # 제출용 값
 
@@ -11,6 +12,18 @@
 - Privacy Policy URL: `https://<운영도메인>/privacy`
 - Support URL: `https://<운영도메인>/support`
 - Marketing URL: 선택
+
+## 현재 남은 실물 보강 항목
+
+- 현재 기준 배포 대상이 `대한민국`만이라면 `/support` 페이지에는 실제 심사/문의 대응이 가능한 `이름, 이메일, 전화번호`가 우선 필요하다.
+- 나중에 EU storefront를 열 계획이 생기면 그때 DSA trader 공개 연락처 기준에 맞춰 `주소 또는 P.O. Box`까지 다시 검토해야 한다.
+
+## App Store Connect 사전 확인
+
+- 배포 국가가 `대한민국`만 선택돼 있는지
+- App Store Connect에 `DSA trader status` 관련 화면이 보이면 한국 한정 배포 기준으로 처리했는지
+- `Xcode 26` 이상으로 archive 했는지
+- archive 전 Xcode `Privacy Report`에서 Capacitor manifest가 반영됐는지
 
 ## 앱 기본 정보
 
@@ -22,9 +35,9 @@
 
 ## App Review Information 초안
 
-- 연락처 이름: 배포 담당자 실명
-- 연락처 이메일: 심사 응답 가능한 메일
-- 연락처 전화번호: 심사 연락 가능한 번호
+- 연락처 이름: `정지훈`
+- 연락처 이메일: `jihun365430@gmail.com`
+- 연락처 전화번호: `010-4010-2987`
 - Review notes:
 
 ```text
@@ -51,6 +64,8 @@
 
 ## 아직 직접 입력해야 하는 항목
 
+- 배포 국가
+- DSA trader status 관련 질문지
 - App Privacy
 - Age Rating
 - Export Compliance

@@ -11,6 +11,7 @@
 3. 운영 도메인을 확정하고 아래 URL을 실제 값으로 바꿔 메모해 둔다.
    - `https://<운영도메인>/privacy`
    - `https://<운영도메인>/support`
+4. `Xcode 26` 이상 설치 여부를 먼저 확인한다.
 
 # Mac에서 할 일
 
@@ -26,6 +27,7 @@
 3. `Signing & Capabilities`에서 `Team` 지정
 4. Bundle ID 확인
 5. 버전 `1.0`, build `1` 확인
+6. archive 전에 `Privacy Report`에서 Capacitor manifest가 보이는지 확인
 
 ## 3. 기기 smoke 확인
 
@@ -46,6 +48,8 @@
 
 ## 1. 앱 정보
 
+- 배포 국가가 `대한민국`만 선택돼 있는지
+- App Store Connect에 `DSA trader status` 관련 질문지가 보이면 한국 한정 배포 기준으로 처리했는지
 - Privacy Policy URL
 - Support URL
 - Age Rating
