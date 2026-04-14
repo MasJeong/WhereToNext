@@ -147,7 +147,7 @@
 
 ## 7-1. 최신 추가 체크
 
-- `Support URL`은 실제 연락 가능한 안내 페이지여야 하고, 한국 한정 배포라면 심사 연락용 `이름, 이메일, 전화번호`가 우선이다.
+- `Support URL`은 공개 안내 페이지이므로, 한국 한정 배포라면 공개 가능한 `운영자 표시 이름`과 `이메일`을 우선 두고 전화번호는 `App Review Information`에만 넣는 편이 안전하다.
 - `Capacitor`는 Apple의 privacy manifest/signature 요구 SDK 목록에 포함돼 있으므로, archive 전에 Xcode `Privacy Report`에서 manifest 결합 결과를 확인하는 편이 안전하다.
 - EU 배포를 하지 않는다면 DSA trader 공개 연락처 요건은 직접 적용되지 않지만, 배포 국가 설정과 App Store Connect의 관련 질문지는 한 번 확인하는 편이 안전하다.
 - Age rating 시스템이 더 세분화됐으므로 기존 기본값을 그대로 두지 말고 현재 질문지를 한 번 다시 확인하는 편이 안전하다.

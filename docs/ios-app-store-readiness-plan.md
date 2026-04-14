@@ -62,7 +62,7 @@
 
 ### 2026-04-10 Apple 공식 문서 재확인 메모
 1. `Privacy Policy URL`은 iOS 앱에 필수다.
-2. `Support URL`은 platform version metadata에서 required로 표시되고, 한국 한정 배포 기준으로는 실제 연락 가능한 `이름, 이메일, 전화번호`를 우선 준비하는 편이 안전하다.
+2. `Support URL`은 platform version metadata에서 required로 표시되고, 공개 페이지라는 점을 감안해 한국 한정 배포 기준으로는 `운영자 표시 이름`과 `이메일`을 우선 두고 전화번호는 `App Review Information`에만 넣는 편이 안전하다.
 3. `App Review Information`에는 연락처, notes, 로그인 필요 시 만료되지 않는 demo account가 필요하다.
 4. `screenshots`는 제출용 필수 자산이고, `app previews`는 선택 항목이다.
 5. 일반적인 HTTPS/TLS 접근만 있어도 export compliance 질문을 거쳐야 할 수 있다.
@@ -169,7 +169,7 @@
 2. 계정 기반 기능 검토를 위해 만료되지 않는 `demo account`를 준비한다.
 3. `review notes`에 로그인 방식, demo 접근, 외부 제휴 링크 동작을 정리한다.
 4. App Review 연락처 이름, 이메일, 전화번호를 정리한다.
-5. `Support URL` 페이지에 실제 연락 가능한 이름, 이메일, 전화번호가 있는지 확인하고, 배포 국가가 한국만으로 제한돼 있는지 함께 점검한다.
+5. `Support URL` 페이지에 공개 가능한 운영자 이름과 이메일이 있는지 확인하고, 심사 연락용 전화번호는 `App Review Information`에만 넣는지 점검한다.
 6. App Store Connect 입력용 `DSA trader status`, `Privacy Policy URL`, `Support URL`, `Age Rating`, `export compliance`, `screenshots` 체크리스트를 만든다.
 7. 심사 기간 동안 백엔드와 제출 메타데이터의 URL이 살아 있는지 확인한다.
 8. `app previews`는 선택 항목으로 관리한다.

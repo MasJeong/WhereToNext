@@ -34,8 +34,7 @@ export default function SupportPage() {
         <div className="rounded-2xl border border-[var(--color-frame-soft)] bg-white px-5 py-5">
           <h2 className="text-[0.95rem] font-bold text-[var(--color-ink)]">문의 채널</h2>
           <div className="mt-3 space-y-2 text-[0.88rem] leading-7 text-[var(--color-ink-soft)]">
-            <p>담당자: 정지훈</p>
-            <p>전화: 010-4010-2987</p>
+            <p>담당자: 떠나볼까? 운영자</p>
             <p>이메일: jihun365430@gmail.com</p>
             <p>응답 기준: 영업일 기준 1~2일 안에 확인해 드려요.</p>
             <p>심사나 TestFlight 확인용 문의라면 메일 제목에 `App Review` 또는 `TestFlight`를 함께 적어 주세요.</p>
