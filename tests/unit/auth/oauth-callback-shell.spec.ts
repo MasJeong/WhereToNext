@@ -83,4 +83,43 @@ describe("oauth callback shell session issuance", () => {
     expect(Number(maxAgeMatch?.[1] ?? 0)).toBeGreaterThanOrEqual(expectedMaxAge - 1);
     expect(Number(maxAgeMatch?.[1] ?? 0)).toBeLessThanOrEqual(expectedMaxAge + 1);
   });
+
+  it("redirects with the previous provider when the account was created with a different login method", async () => {
+    mocks.consumeOAuthTransaction.mockResolvedValue({
+      state: "state-456",
+      codeVerifier: "verifier-456",
+      nonce: "nonce-456",
+      provider: "kakao",
+      next: "/account",
+      intent: "login",
+      clientType: "web",
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    });
+    mocks.exchangeOAuthCallback.mockResolvedValue({
+      providerId: "kakao",
+      accountId: "kakao-sub-123",
+      email: "collision@example.com",
+      emailVerified: true,
+      name: "Collision User",
+      image: null,
+    });
+    mocks.signInWithProviderIdentity.mockResolvedValue({
+      error: {
+        code: "ACCOUNT_PROVIDER_MISMATCH",
+        message: "same email already exists",
+        providerId: "google",
+      },
+    });
+
+    const response = await oauthGoogleCallback(
+      new Request("http://localhost:4010/api/auth/oauth/kakao/callback?code=code-456&state=state-456"),
+      { params: Promise.resolve({ provider: "kakao" }) },
+    );
+    const redirectUrl = new URL(response.headers.get("location") ?? "", "http://localhost:4010");
+
+    expect(redirectUrl.pathname).toBe("/auth");
+    expect(redirectUrl.searchParams.get("error")).toBe("ACCOUNT_PROVIDER_MISMATCH");
+    expect(redirectUrl.searchParams.get("existingProvider")).toBe("google");
+    expect(redirectUrl.searchParams.get("attemptedProvider")).toBe("kakao");
+  });
 });

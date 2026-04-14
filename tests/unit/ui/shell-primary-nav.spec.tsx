@@ -38,8 +38,8 @@ vi.mock("@/lib/auth-client", () => ({
 }));
 
 describe("ExperienceShell primary navigation", () => {
-  it("shows the stay entry in the header", () => {
-    mockUsePathname.mockReturnValue("/stays");
+  it("shows recommendation, community, and account entries in the header", () => {
+    mockUsePathname.mockReturnValue("/community");
     mockSearchParamsToString.mockReturnValue("");
     mockUseSession.mockReturnValue({
       data: null,
@@ -53,6 +53,8 @@ describe("ExperienceShell primary navigation", () => {
     );
 
     expect(screen.getByLabelText("주요 메뉴")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "스테이" })).toHaveAttribute("href", "/stays");
+    expect(screen.getByRole("link", { name: "추천 받기" })).toHaveAttribute("href", "/?stage=question&step=1");
+    expect(screen.getByRole("link", { name: "여행 이야기" })).toHaveAttribute("href", "/community");
+    expect(screen.getByRole("link", { name: "내 여행" })).toHaveAttribute("href", "/account");
   });
 });

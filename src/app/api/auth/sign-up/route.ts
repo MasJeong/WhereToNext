@@ -6,7 +6,7 @@ import { isTrustedIosShellRequest } from "@/lib/runtime/shell";
 import { checkRateLimit, getClientIp } from "@/lib/security/rate-limit";
 
 const signUpBodySchema = z.object({
-  name: z.string().trim().min(1).max(60),
+  name: z.string().trim().max(60).optional(),
   email: z.email(),
   password: z.string().min(8).max(128),
 });

@@ -6,6 +6,7 @@
 ## 1) 우선순위와 기본 원칙
 - 우선순위는 `사용자 요청 > 시스템/개발자 지침 > 이 파일` 순서입니다.
 - 실제 파일, 스크립트, 설정을 읽고 확인한 뒤 행동합니다.
+- 저장소에 처음 진입했거나 프로젝트 성격을 빠르게 파악해야 하면 먼저 `INIT.md`를 읽습니다.
 - 라우트, 스키마, 명령어, 워크플로를 추측으로 만들지 않습니다.
 - 변경은 작고 국소적으로 유지하고, 주변 패턴과 맞춥니다.
 - 기존 helper, 서비스 계층, parser를 재사용하고 병렬 추상화를 새로 만들지 않습니다.
@@ -32,12 +33,12 @@
 - 테스트: `Vitest`, `Playwright`
 - 린트: `ESLint 9`
 
-## 5) Branch and Command Sources
-- Treat `main` as production and `dev` as integration; prefer `feature/*` branches for work.
-- Treat `package.json` as the canonical source for scripts.
-- Treat `vitest.config.ts` as the source of truth for unit-test runner behavior.
-- Treat `playwright.config.ts` as the source of truth for e2e runner behavior.
-- Use `README.md`, `docs/deployment.md`, and `docs/ios-release-preflight.md` as supporting docs, not as substitutes for config files.
+## 4) 보조 문서 소스
+- `INIT.md`는 저장소 첫 진입용 문서로 사용합니다.
+- `README.md`, `docs/deployment.md`, `docs/ios-release-preflight.md`는 보조 문서로 사용하되, 실제 설정 파일을 대신하는 기준으로 쓰지 않습니다.
+- 실행 스크립트의 기준은 `package.json`입니다.
+- 단위 테스트 러너 동작의 기준은 `vitest.config.ts`입니다.
+- e2e 동작의 기준은 `playwright.config.ts`입니다.
 
 ## 5) `.sisyphus/`와 `memory/`의 역할
 - `.sisyphus/`는 내부 계획과 스크래치 공간입니다. 공개 기록을 대신하면 안 됩니다.
@@ -70,19 +71,6 @@
 - 스모크 검증: `npm run test:smoke`
 - iOS 셸 빌드: `npm run shell:build`
 
-## 9) Required Verification Before Finishing
-- Minimum for code changes: `npm run lint && npm run test:unit && npm run build`.
-- Run `npm run test:e2e` when the change affects user-visible flows, routing, or browser behavior.
-- When touching a specific domain module, run the closest single-file or named test first, then the broader suite.
-
-## 10) Formatting and General Style
-- Follow existing ESLint + Next formatting; do not assume Prettier is active.
-- Match the current style: double quotes, semicolons, trailing commas, and 2-space indentation.
-- Keep diffs focused; avoid drive-by refactors during bug fixes.
-- Prefer small pure helpers for domain logic and thin route handlers for transport concerns.
-- Add concise JSDoc to every new or materially changed function.
-- Match surrounding documentation language: core/business files often use Korean JSDoc, UI files often use English JSDoc.
-
 ## 10) 작업 완료 전 최소 검증
 - 코드 변경의 최소 기준은 `npm run lint && npm run test:unit && npm run build`입니다.
 - 사용자에게 보이는 플로우, 라우팅, 브라우저 동작을 건드렸다면 `npm run test:e2e`도 실행합니다.
@@ -102,6 +90,7 @@
 - 버그를 수정할 때는 곁가지 리팩터링을 하지 말고 diff를 작게 유지합니다.
 - 새 함수나 크게 수정한 함수에는 짧은 JSDoc을 붙입니다.
 - 코어/도메인 파일은 한국어 JSDoc이 많고, UI 파일은 영어 JSDoc이 섞여 있으므로 주변 스타일을 맞춥니다.
+- 작고 순수한 helper와 얇은 route handler를 선호합니다.
 - ChatGPT Codex 커넥터가 남기는 PR 리뷰, 인라인 리뷰 코멘트, 이슈 코멘트, 리뷰 답글은 사용자가 별도 요청하지 않는 한 기본적으로 한국어로 작성합니다.
 - 리뷰 코멘트는 불필요한 번역투를 피하고, 파일 경로, 코드 식별자, 에러 코드, 명령어는 원문 그대로 유지합니다.
 
@@ -121,15 +110,6 @@
 - payload 구조를 바꾸면 schema, parser, service, API response, test를 함께 갱신합니다.
 - snapshot `kind` 같은 discriminated union은 깨지지 않게 유지합니다.
 - `allowJs`가 켜져 있어도 새 코드는 기본적으로 `.ts`/`.tsx`를 사용합니다.
-
-## 15) Validation, Errors, and API Behavior
-- Validate all external input with Zod; prefer shared parsers in `src/lib/security/validation.ts`.
-- Return structured JSON errors from API routes.
-- Preserve stable error `code` values where a route already defines them.
-- Keep user-facing errors safe and generic; never leak stack traces or internal details.
-- Preserve rate-limit headers where already used.
-- Catch blocks must end in an intentional fallback, null state, boolean failure, or safe user message.
-- In route handlers, prefer early returns for auth, validation, and rate-limit failures.
 
 ## 15) Next.js / React 패턴
 - `src/app/` 아래는 기본적으로 Server Component로 유지합니다.
@@ -163,10 +143,11 @@
 - 인터랙티브 UI 변경 시 `src/lib/test-ids.ts`의 selector를 재사용하거나 추가합니다.
 - raw `data-testid` 문자열을 임의로 흩뿌리지 않습니다.
 - 계약, recommendation weight, snapshot, selector, 복원 동작을 바꾸면 테스트도 같이 갱신합니다.
-- 명령, 환경 변수, 규칙이 바뀌면 `README.md`, `AGENTS.md`, `.env.example`도 함께 갱신합니다.
+- 명령, 환경 변수, 규칙, 온보딩 경로가 바뀌면 `README.md`, `INIT.md`, `AGENTS.md`, `.env.example`도 함께 갱신합니다.
 - 로컬 참조 이미지가 주어졌다면 UI 작업 전에 반드시 확인하고 시각 기준으로 삼습니다.
 
 ## 19) 마무리 체크리스트
+- 작업 완료 후 사용자에게 보내는 최종 응답의 첫줄에는 방금 수행한 작업을 한 문장으로 먼저 적습니다.
 - 실제 존재하는 스크립트와 도구만 사용했는가?
 - 타입 안전성과 기존 계약을 유지했는가?
 - 외부 입력 검증과 보안 헤더를 보존했는가?

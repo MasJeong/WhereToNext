@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 
-import { and, count, desc, eq, lt } from "drizzle-orm";
+import { and, asc, count, desc, eq, ilike, lt, or, sql } from "drizzle-orm";
 
 import { launchCatalog } from "@/lib/catalog/launch-catalog";
 import { getRuntimeDatabase } from "@/lib/db/runtime";
@@ -40,24 +40,105 @@ export type CommentRow = {
   createdAt: string;
 };
 
+/**
+ * 특정 여행 이야기가 현재 공개 상태로 읽을 수 있는지 확인한다.
+ * @param historyId 여행 이력 식별자
+ * @returns 공개 상태 여부
+ */
+export async function isPublicPostVisible(historyId: string): Promise<boolean> {
+  if (!usePersistentDatabase) {
+    const historyEntries = useLocalFileStore
+      ? Object.values((await readLocalStore()).history)
+      : [...memoryStore.history.values()];
+
+    return historyEntries.some(
+      (entry) => entry.id === historyId && entry.visibility === "public",
+    );
+  }
+
+  const { db } = await getRuntimeDatabase();
+  const [entry] = await db
+    .select({ id: userDestinationHistory.id })
+    .from(userDestinationHistory)
+    .where(
+      and(
+        eq(userDestinationHistory.id, historyId),
+        eq(userDestinationHistory.visibility, "public"),
+      ),
+    )
+    .limit(1);
+
+  return Boolean(entry);
+}
+
 /* ------------------------------------------------------------------ */
 /*  Community feed                                                     */
 /* ------------------------------------------------------------------ */
 
-export async function listPublicPosts(cursor?: string): Promise<{
+export type FeedSort = "recommended" | "latest" | "ratingHigh" | "ratingLow";
+
+export type FeedFilter = {
+  cursor?: string;
+  sort?: FeedSort;
+  search?: string;
+  photosOnly?: boolean;
+};
+
+export async function listPublicPosts(filter?: FeedFilter): Promise<{
   items: CommunityPostRow[];
   nextCursor: string | null;
+  totalCount: number;
+  photoCount: number;
 }> {
   if (!usePersistentDatabase) {
-    return listPublicPostsInMemory(cursor);
+    return listPublicPostsInMemory(filter);
   }
 
-  return listPublicPostsFromDb(cursor);
+  return listPublicPostsFromDb(filter);
 }
 
-async function listPublicPostsInMemory(cursor?: string): Promise<{
+function matchesSearch(
+  entry: { destinationId: string; memo?: string | null; customTags?: string[] | null },
+  term: string,
+): boolean {
+  const destination = launchCatalog.find((d) => d.id === entry.destinationId);
+  const searchable = [
+    destination?.nameKo ?? entry.destinationId,
+    entry.memo ?? "",
+    ...(entry.customTags ?? []),
+  ]
+    .join(" ")
+    .toLowerCase();
+  return searchable.includes(term);
+}
+
+function sortPostRows(items: CommunityPostRow[], sort: FeedSort): CommunityPostRow[] {
+  const sorted = [...items];
+  if (sort === "latest") {
+    return sorted.sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  }
+  if (sort === "ratingHigh") {
+    return sorted.sort((a, b) => b.rating - a.rating || b.createdAt.localeCompare(a.createdAt));
+  }
+  if (sort === "ratingLow") {
+    return sorted.sort((a, b) => a.rating - b.rating || b.createdAt.localeCompare(a.createdAt));
+  }
+  // recommended
+  return sorted.sort((a, b) => {
+    const ai = Number(Boolean(a.imageUrl));
+    const bi = Number(Boolean(b.imageUrl));
+    if (ai !== bi) return bi - ai;
+    if (a.commentCount !== b.commentCount) return b.commentCount - a.commentCount;
+    if (a.rating !== b.rating) return b.rating - a.rating;
+    return b.createdAt.localeCompare(a.createdAt);
+  });
+}
+
+async function listPublicPostsInMemory(filter?: FeedFilter): Promise<{
   items: CommunityPostRow[];
   nextCursor: string | null;
+  totalCount: number;
+  photoCount: number;
 }> {
   const historyEntries = useLocalFileStore
     ? Object.values((await readLocalStore()).history)
@@ -67,26 +148,33 @@ async function listPublicPostsInMemory(cursor?: string): Promise<{
     ? (await readLocalStore()).users
     : Object.fromEntries(memoryStore.users.entries());
 
-  const comments = useLocalFileStore
+  const allComments = useLocalFileStore
     ? Object.values((await readLocalStore()).communityComments)
     : [...memoryStore.communityComments.values()];
 
-  const publicEntries = historyEntries
-    .filter((entry) => entry.visibility === "public")
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+  const cursor = filter?.cursor;
+  const sort = filter?.sort ?? "recommended";
+  const search = filter?.search?.trim().toLowerCase() ?? "";
+  const photosOnly = filter?.photosOnly ?? false;
 
-  let filtered = publicEntries;
-  if (cursor) {
-    const cursorIndex = filtered.findIndex((entry) => entry.createdAt < cursor);
-    filtered = cursorIndex >= 0 ? filtered.slice(cursorIndex) : [];
+  let publicEntries = historyEntries.filter((entry) => entry.visibility === "public");
+
+  if (search) {
+    publicEntries = publicEntries.filter((entry) => matchesSearch(entry, search));
   }
 
-  const page = filtered.slice(0, PAGE_SIZE);
+  if (photosOnly) {
+    publicEntries = publicEntries.filter((entry) => Boolean(entry.images?.[0]?.dataUrl));
+  }
 
-  const items: CommunityPostRow[] = page.map((entry) => {
+  const totalCount = publicEntries.length;
+  const photoCount = publicEntries.filter((entry) => Boolean(entry.images?.[0]?.dataUrl)).length;
+
+  // Build rows first, then sort
+  const allRows: CommunityPostRow[] = publicEntries.map((entry) => {
     const author = users[entry.userId];
     const destination = launchCatalog.find((d) => d.id === entry.destinationId);
-    const entryComments = comments.filter((c) => c.historyId === entry.id);
+    const entryComments = allComments.filter((c) => c.historyId === entry.id);
 
     return {
       historyId: entry.id,
@@ -102,23 +190,92 @@ async function listPublicPostsInMemory(cursor?: string): Promise<{
     };
   });
 
-  const lastItem = items[items.length - 1];
-  const nextCursor =
-    items.length === PAGE_SIZE && lastItem ? lastItem.createdAt : null;
+  const sorted = sortPostRows(allRows, sort);
 
-  return { items, nextCursor };
+  let startIndex = 0;
+  if (cursor) {
+    const cursorIdx = sorted.findIndex((row) => row.createdAt < cursor);
+    startIndex = cursorIdx >= 0 ? cursorIdx : sorted.length;
+  }
+
+  const page = sorted.slice(startIndex, startIndex + PAGE_SIZE);
+
+  const lastItem = page[page.length - 1];
+  const nextCursor =
+    page.length === PAGE_SIZE && lastItem ? lastItem.createdAt : null;
+
+  return { items: page, nextCursor, totalCount, photoCount };
 }
 
-async function listPublicPostsFromDb(cursor?: string): Promise<{
+async function listPublicPostsFromDb(filter?: FeedFilter): Promise<{
   items: CommunityPostRow[];
   nextCursor: string | null;
+  totalCount: number;
+  photoCount: number;
 }> {
   const { db } = await getRuntimeDatabase();
+
+  const cursor = filter?.cursor;
+  const sort = filter?.sort ?? "recommended";
+  const search = filter?.search?.trim() ?? "";
+  const photosOnly = filter?.photosOnly ?? false;
 
   const whereConditions = [eq(userDestinationHistory.visibility, "public")];
 
   if (cursor) {
     whereConditions.push(lt(userDestinationHistory.createdAt, new Date(cursor)));
+  }
+
+  if (search) {
+    whereConditions.push(
+      or(
+        ilike(destinationProfiles.nameKo, `%${search}%`),
+        ilike(userDestinationHistory.memo, `%${search}%`),
+        sql`${userDestinationHistory.customTags}::text ILIKE ${"%" + search + "%"}`,
+      )!,
+    );
+  }
+
+  if (photosOnly) {
+    whereConditions.push(sql`jsonb_array_length(COALESCE(${userDestinationHistory.images}, '[]'::jsonb)) > 0`);
+  }
+
+  const countConditions = [eq(userDestinationHistory.visibility, "public")];
+
+  if (search) {
+    countConditions.push(
+      or(
+        ilike(destinationProfiles.nameKo, `%${search}%`),
+        ilike(userDestinationHistory.memo, `%${search}%`),
+        sql`${userDestinationHistory.customTags}::text ILIKE ${"%" + search + "%"}`,
+      )!,
+    );
+  }
+
+  if (photosOnly) {
+    countConditions.push(sql`jsonb_array_length(COALESCE(${userDestinationHistory.images}, '[]'::jsonb)) > 0`);
+  }
+
+  const [totals] = await db
+    .select({
+      totalCount: count(),
+      photoCount: sql<number>`count(*) filter (where jsonb_array_length(COALESCE(${userDestinationHistory.images}, '[]'::jsonb)) > 0)`,
+    })
+    .from(userDestinationHistory)
+    .innerJoin(destinationProfiles, eq(destinationProfiles.id, userDestinationHistory.destinationId))
+    .where(and(...countConditions));
+
+  // Order by sort
+  const orderClauses = [];
+  if (sort === "ratingHigh") {
+    orderClauses.push(desc(userDestinationHistory.rating));
+    orderClauses.push(desc(userDestinationHistory.createdAt));
+  } else if (sort === "ratingLow") {
+    orderClauses.push(asc(userDestinationHistory.rating));
+    orderClauses.push(desc(userDestinationHistory.createdAt));
+  } else {
+    // latest and recommended both sort by createdAt desc for DB query
+    orderClauses.push(desc(userDestinationHistory.createdAt));
   }
 
   const rows = await db
@@ -141,7 +298,7 @@ async function listPublicPostsFromDb(cursor?: string): Promise<{
       eq(userDestinationHistory.destinationId, destinationProfiles.id),
     )
     .where(and(...whereConditions))
-    .orderBy(desc(userDestinationHistory.createdAt))
+    .orderBy(...orderClauses)
     .limit(PAGE_SIZE);
 
   const historyIds = rows.map((r) => r.historyId);
@@ -157,7 +314,7 @@ async function listPublicPostsFromDb(cursor?: string): Promise<{
     }
   }
 
-  const items: CommunityPostRow[] = rows.map((row) => {
+  let items: CommunityPostRow[] = rows.map((row) => {
     const images = row.images as
       | Array<{ name: string; contentType: string; dataUrl: string }>
       | null;
@@ -176,11 +333,21 @@ async function listPublicPostsFromDb(cursor?: string): Promise<{
     };
   });
 
+  // recommended sort needs post-processing (image + comments + rating)
+  if (sort === "recommended") {
+    items = sortPostRows(items, "recommended");
+  }
+
   const lastItem = items[items.length - 1];
   const nextCursor =
     items.length === PAGE_SIZE && lastItem ? lastItem.createdAt : null;
 
-  return { items, nextCursor };
+  return {
+    items,
+    nextCursor,
+    totalCount: totals?.totalCount ?? 0,
+    photoCount: totals?.photoCount ?? 0,
+  };
 }
 
 /* ------------------------------------------------------------------ */

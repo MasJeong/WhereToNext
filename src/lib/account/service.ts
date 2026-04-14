@@ -4,6 +4,7 @@ import { getRuntimeDatabase } from "@/lib/db/runtime";
 import { recommendationSnapshots, user } from "@/lib/db/schema";
 import { readLocalStore, writeLocalStore } from "@/lib/persistence/local-store";
 import { memoryStore } from "@/lib/persistence/memory-store";
+import { resolveUserDisplayName } from "@/lib/user-display-name";
 
 const usePersistentDatabase = Boolean(process.env.DATABASE_URL);
 const useLocalFileStore = !usePersistentDatabase && process.env.NODE_ENV !== "test";
@@ -113,4 +114,70 @@ export async function deleteUserAccount(userId: string): Promise<boolean> {
   await db.delete(user).where(eq(user.id, userId));
 
   return true;
+}
+
+/**
+ * 사용자 표시 이름을 수정한다.
+ * @param userId 인증 사용자 ID
+ * @param nextName 새로 저장할 이름
+ * @returns 갱신된 사용자 기본 정보 또는 null
+ */
+export async function updateUserDisplayName(
+  userId: string,
+  nextName: string,
+): Promise<{ id: string; name: string; email: string | null } | null> {
+  const displayName = resolveUserDisplayName(nextName);
+
+  if (!usePersistentDatabase) {
+    if (useLocalFileStore) {
+      const store = await readLocalStore();
+      const targetUser = store.users[userId];
+
+      if (!targetUser) {
+        return null;
+      }
+
+      targetUser.name = displayName;
+      await writeLocalStore(store);
+
+      return {
+        id: targetUser.id,
+        name: targetUser.name,
+        email: targetUser.email,
+      };
+    }
+
+    const targetUser = memoryStore.users.get(userId);
+    if (!targetUser) {
+      return null;
+    }
+
+    targetUser.name = displayName;
+
+    return {
+      id: targetUser.id,
+      name: targetUser.name,
+      email: targetUser.email,
+    };
+  }
+
+  const { db } = await getRuntimeDatabase();
+  const [updatedUser] = await db
+    .update(user)
+    .set({
+      name: displayName,
+      updatedAt: new Date(),
+    })
+    .where(eq(user.id, userId))
+    .returning();
+
+  if (!updatedUser) {
+    return null;
+  }
+
+  return {
+    id: updatedUser.id,
+    name: updatedUser.name ?? displayName,
+    email: updatedUser.email,
+  };
 }

@@ -56,7 +56,7 @@ export function ShellPrimaryNav({ items }: ShellPrimaryNavProps) {
         }}
       >
         <span className="text-[1.1rem] font-extrabold leading-none tracking-[-0.035em] text-[var(--color-action-primary)]">
-          떠나볼까
+          {brandDisplayName}
         </span>
       </Link>
 

@@ -85,4 +85,24 @@ describe("ShellAuthNav", () => {
       expect(mockRefresh).toHaveBeenCalled();
     });
   });
+
+  it("shows the logged-in user name in the header identity card", () => {
+    mockUsePathname.mockReturnValue("/");
+    mockSearchParamsToString.mockReturnValue("");
+    mockUseSession.mockReturnValue({
+      data: {
+        user: {
+          id: "user-1",
+          name: "정지훈",
+          email: "jihun@example.com",
+        },
+      },
+      isPending: false,
+    });
+
+    render(<ShellAuthNav />);
+
+    expect(screen.getByTestId(testIds.shell.identityCard)).toBeInTheDocument();
+    expect(screen.getByTestId(testIds.shell.identityName)).toHaveTextContent("정지훈");
+  });
 });

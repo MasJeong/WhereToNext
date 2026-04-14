@@ -234,7 +234,7 @@ async function getDestinationLocation(
  * @param accessKey Unsplash access key
  * @returns 대표 이미지 또는 undefined
  */
-async function getHeroImage(
+export async function getHeroImage(
   destination: DestinationProfile,
   countryName: string,
   accessKey: string,

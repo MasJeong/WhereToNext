@@ -25,6 +25,12 @@ type MutationResponse = {
   payload: AuthResponse;
 };
 
+type AccountUpdateResponse = {
+  data?: SessionPayload;
+  error?: string;
+  code?: string;
+};
+
 /**
  * 인증 세션을 조회하는 클라이언트 훅이다.
  * @returns 세션 데이터와 로딩 상태
@@ -104,6 +110,20 @@ export const authClient = {
       ok: response.ok,
       status: response.status,
       payload,
+    };
+  },
+  updateDisplayName: async (name: string) => {
+    const response = await fetch(buildApiUrl("/api/me/account"), {
+      method: "PATCH",
+      headers: { "content-type": "application/json" },
+      credentials: "same-origin",
+      body: JSON.stringify({ name }),
+    });
+
+    return {
+      ok: response.ok,
+      status: response.status,
+      payload: (await response.json()) as AccountUpdateResponse,
     };
   },
 };

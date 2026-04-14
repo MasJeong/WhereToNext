@@ -13,6 +13,8 @@
 
 [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MasJeong/WhereToNext)
 
+처음 작업하는 사람이나 에이전트라면 [INIT.md](./INIT.md)부터 읽는 편이 가장 빠릅니다.
+
 ## 핵심 특징
 
 - 로그인 없이 바로 추천, 저장 링크, 비교 링크 생성
