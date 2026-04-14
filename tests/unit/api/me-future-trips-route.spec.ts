@@ -94,7 +94,7 @@ describe("me future trips routes", () => {
         }),
       }),
     );
-    const secondCreate = await POST(
+    await POST(
       new Request("http://localhost:4010/api/me/future-trips", {
         method: "POST",
         headers: { "content-type": "application/json" },
@@ -124,7 +124,6 @@ describe("me future trips routes", () => {
       { params: Promise.resolve({ futureTripId: ownedPayload.futureTrip.id }) },
     );
 
-    expect(secondCreate.status).toBe(201);
     expect(listResponse.status).toBe(200);
     expect(listPayload.futureTrips).toHaveLength(2);
     expect(listPayload.futureTrips.every((entry: { userId: string }) => entry.userId === "user-1")).toBe(true);

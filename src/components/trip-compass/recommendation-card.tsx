@@ -1,9 +1,5 @@
-"use client";
-
-import { useState } from "react";
 import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
-import { AnimatePresence, motion } from "framer-motion";
 
 import type { RecommendationQuery } from "@/lib/domain/contracts";
 import {
@@ -13,7 +9,6 @@ import {
   buildRecommendationEvidenceLead,
   buildRecommendationSceneCopy,
   buildRecommendationVerdict,
-  formatDestinationWithCountry,
   formatVibeList,
   type RecommendationCardView,
 } from "@/lib/trip-compass/presentation";
@@ -59,11 +54,6 @@ function resolveVisualStyle(card: RecommendationCardView, index: number): CSSPro
   };
 }
 
-const disclosureVariants = {
-  collapsed: { opacity: 0, height: 0 },
-  open: { opacity: 1, height: "auto" },
-};
-
 export function RecommendationCard({
   card,
   index,
@@ -71,7 +61,6 @@ export function RecommendationCard({
   actionSlot,
   snapshotId,
 }: RecommendationCardProps) {
-  const [detailOpen, setDetailOpen] = useState(false);
   const destination = card.destination;
   const detailPath = buildDestinationDetailPath(destination, query, snapshotId);
   const verdict = buildRecommendationVerdict(card, query);
@@ -89,13 +78,12 @@ export function RecommendationCard({
       style={{ animationDelay: `${140 + index * 80}ms` }}
     >
       <div className="compass-result-card compass-card-settle rounded-[var(--radius-card)] p-3.5 sm:p-4">
-        {/* Hero — always visible */}
         <div className="rounded-[calc(var(--radius-card)-10px)] p-4 text-white shadow-[0_20px_40px_rgb(16_21_27_/_0.22)]" style={visualStyle}>
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div data-testid={getResultTopItemTestId(index)} className="min-w-0">
               <p className="text-[0.62rem] font-semibold uppercase tracking-[0.18em] text-white/72">{sceneCopy.eyebrow}</p>
               <h2 className="mt-2 font-display text-[1.38rem] leading-[0.92] tracking-[-0.05em] sm:text-[1.6rem]">
-                {formatDestinationWithCountry(destination)}
+                {destination.nameKo}
               </h2>
               <p className="mt-1 text-sm text-white/76">{destination.nameEn}</p>
             </div>
@@ -110,9 +98,12 @@ export function RecommendationCard({
             </div>
           </div>
 
-          <p className="mt-4 max-w-md text-lg font-semibold leading-7 tracking-[-0.02em] text-white">{sceneCopy.headline}</p>
+          <div className="mt-5 max-w-md space-y-2">
+            <p className="text-lg font-semibold leading-7 tracking-[-0.02em] text-white">{sceneCopy.headline}</p>
+            <p className="text-sm leading-6 text-white/78">{sceneCopy.atmosphere}</p>
+          </div>
 
-          <div className="mt-4 flex flex-wrap gap-2 text-[11px]">
+          <div className="mt-5 flex flex-wrap gap-2 text-[11px]">
             <span className="rounded-full border border-white/16 bg-white/12 px-3 py-1 font-semibold text-white/88">
               {sceneCopy.supportingLabel}
             </span>
@@ -122,93 +113,65 @@ export function RecommendationCard({
           </div>
         </div>
 
-        {/* Summary strip — always visible */}
-        <div className="mt-3">
-          <section className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-3.5">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="compass-editorial-kicker">추천 이유</span>
-              <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">{verdict.label}</span>
-            </div>
-            <p className="mt-2 text-base font-semibold leading-6 tracking-[-0.02em] text-[var(--color-ink)]">{leadReason}</p>
-          </section>
-        </div>
-
-        {/* Actions + toggle */}
-        <div className="mt-3 flex flex-wrap items-center gap-2.5">
-          {actionSlot}
-          <Link
-            href={detailPath}
-            className="compass-action-primary compass-soft-press inline-flex min-h-[2.25rem] items-center rounded-full border border-[color:var(--color-stage-divider)] bg-white px-4 py-2 text-xs font-semibold tracking-[0.04em] text-[var(--color-ink)] transition-colors hover:bg-[var(--color-funnel-muted)]"
-          >
-            이 도시 알아보기
-          </Link>
-          <button
-            type="button"
-            onClick={() => setDetailOpen((prev) => !prev)}
-            className="inline-flex min-h-[2.25rem] items-center rounded-full px-3.5 py-2 text-xs font-semibold text-[var(--color-ink-soft)] transition-colors hover:text-[var(--color-ink)]"
-          >
-            {detailOpen ? "접기" : "더 보기"}
-          </button>
-        </div>
-
-        {/* Collapsible detail sections */}
-        <AnimatePresence initial={false}>
-          {detailOpen ? (
-            <motion.div
-              key="card-detail"
-              className="mt-3 grid gap-3 overflow-hidden xl:grid-cols-[minmax(0,1.04fr)_minmax(17rem,0.96fr)] xl:items-start"
-              variants={disclosureVariants}
-              initial="collapsed"
-              animate="open"
-              exit="collapsed"
-              transition={{ duration: 0.25, ease: "easeOut" }}
-            >
-              <div className="space-y-3">
-                <section className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-                  <p className="compass-editorial-kicker">왜 잘 맞나요</p>
-                  <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{card.recommendation.whyThisFits}</p>
-                </section>
-
-                <section className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-                  <p className="compass-editorial-kicker">Day-flow</p>
-                  <div className="mt-3 grid gap-2 sm:grid-cols-3">
-                    {dayFlow.map((step) => (
-                      <article key={step.id} className="rounded-[calc(var(--radius-card)-14px)] border border-[color:var(--color-stage-divider)] bg-white/60 px-3 py-3">
-                        <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">{step.label}</p>
-                        <p className="mt-1.5 text-sm font-semibold leading-5 text-[var(--color-ink)]">{step.title}</p>
-                        <p className="mt-1.5 text-xs leading-5 text-[var(--color-ink-soft)]">{step.detail}</p>
-                      </article>
-                    ))}
-                  </div>
-                </section>
+        <div className="mt-3 grid gap-3 xl:grid-cols-[minmax(0,1.04fr)_minmax(17rem,0.96fr)] xl:items-start">
+          <div className="space-y-3">
+            <section className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="compass-editorial-kicker">추천 이유</span>
+                <span className="compass-metric-pill rounded-full px-3 py-1 text-[11px] font-semibold">{verdict.label}</span>
               </div>
+              <p className="mt-2.5 text-base font-semibold leading-6 tracking-[-0.02em] text-[var(--color-ink)]">{leadReason}</p>
+              <p className="mt-2 text-sm leading-6 text-[var(--color-ink-soft)]">{card.recommendation.whyThisFits}</p>
+            </section>
 
-              <aside className="space-y-3">
-                <section className="compass-note rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
-                  <p className="compass-editorial-kicker">여행 판단 포인트</p>
-                  <div className="mt-3 grid gap-2.5">
-                    {decisionFacts.map((fact) => (
-                      <article key={fact.id} className="rounded-[calc(var(--radius-card)-14px)] border border-[color:var(--color-stage-divider)] bg-white/58 px-3 py-3">
-                        <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">{fact.label}</p>
-                        <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">{fact.value}</p>
-                        <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{fact.detail}</p>
-                      </article>
-                    ))}
-                  </div>
-                </section>
+            <section className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
+              <p className="compass-editorial-kicker">Day-flow</p>
+              <div className="mt-3 grid gap-2 sm:grid-cols-3">
+                {dayFlow.map((step) => (
+                  <article key={step.id} className="rounded-[calc(var(--radius-card)-14px)] border border-[color:var(--color-stage-divider)] bg-white/60 px-3 py-3">
+                    <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">{step.label}</p>
+                    <p className="mt-1.5 text-sm font-semibold leading-5 text-[var(--color-ink)]">{step.title}</p>
+                    <p className="mt-1.5 text-xs leading-5 text-[var(--color-ink-soft)]">{step.detail}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+          </div>
 
-                <section
-                  data-testid={getInstagramVibeTestId(index)}
-                  className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4"
-                >
-                  <p className="compass-editorial-kicker">분위기 메모</p>
-                  <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">{primaryEvidence.label}</p>
-                  <p className="mt-1.5 text-xs leading-5 text-[var(--color-ink-soft)]">{primaryEvidence.detail}</p>
-                </section>
-              </aside>
-            </motion.div>
-          ) : null}
-        </AnimatePresence>
+          <aside className="space-y-3">
+            <section className="compass-note rounded-[calc(var(--radius-card)-10px)] px-4 py-4">
+              <p className="compass-editorial-kicker">결정 포인트</p>
+              <div className="mt-3 grid gap-2.5">
+                {decisionFacts.map((fact) => (
+                  <article key={fact.id} className="rounded-[calc(var(--radius-card)-14px)] border border-[color:var(--color-stage-divider)] bg-white/58 px-3 py-3">
+                    <p className="text-[0.62rem] uppercase tracking-[0.18em] text-[var(--color-ink-soft)]">{fact.label}</p>
+                    <p className="mt-1.5 text-sm font-semibold text-[var(--color-ink)]">{fact.value}</p>
+                    <p className="mt-1 text-xs leading-5 text-[var(--color-ink-soft)]">{fact.detail}</p>
+                  </article>
+                ))}
+              </div>
+            </section>
+
+            <section
+              data-testid={getInstagramVibeTestId(index)}
+              className="compass-open-info rounded-[calc(var(--radius-card)-10px)] px-4 py-4"
+            >
+              <p className="compass-editorial-kicker">분위기 근거</p>
+              <p className="mt-2 text-sm font-semibold text-[var(--color-ink)]">{primaryEvidence.label}</p>
+              <p className="mt-1.5 text-xs leading-5 text-[var(--color-ink-soft)]">{primaryEvidence.detail}</p>
+            </section>
+
+            <div className="compass-action-rail gap-2 pt-0">
+              <Link
+                href={detailPath}
+                className="compass-action-primary compass-soft-press rounded-full px-4 py-2.5 text-xs font-semibold tracking-[0.04em]"
+              >
+                상세 보기
+              </Link>
+              {actionSlot}
+            </div>
+          </aside>
+        </div>
       </div>
     </article>
   );

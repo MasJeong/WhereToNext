@@ -39,7 +39,6 @@ type HistoryDraft = {
   visitedAt: string;
   memo: string;
   images: UserDestinationHistoryImage[];
-  visibility: "private" | "public";
 };
 
 type HistoryDestinationOption = Pick<DestinationProfile, "id" | "nameKo" | "nameEn" | "countryCode">;
@@ -228,7 +227,6 @@ function buildHistoryBody(draft: HistoryDraft) {
     visitedAt: new Date(`${draft.visitedAt}T00:00:00.000Z`).toISOString(),
     memo: draft.memo.trim() || null,
     images: draft.images,
-    visibility: draft.visibility,
   };
 }
 
@@ -328,7 +326,6 @@ export function AccountHistoryCreateExperience({
     visitedAt: initialEntry ? initialEntry.visitedAt.slice(0, 10) : getTodayValue(),
     memo: initialEntry?.memo ?? "",
     images: initialEntry?.images ?? [],
-    visibility: initialEntry?.visibility ?? "private",
   };
   const initialDestination = destinations.find((item) => item.id === initialDraft.destinationId);
   const initialDestinationQuery = formatDestinationSearchLabel(initialDestination);
@@ -949,8 +946,8 @@ export function AccountHistoryCreateExperience({
               <div className="space-y-4">
                 <section className="space-y-2.5">
                   <div>
-                    <p className="text-[0.78rem] font-semibold text-[var(--color-ink)]">여행 스타일 태그</p>
-                    <p className="mt-1 text-[0.78rem] text-[var(--color-ink-soft)]">다음 추천에 참고돼요.</p>
+                    <p className="text-[0.78rem] font-semibold text-[var(--color-ink)]">추천 해시태그</p>
+                    <p className="mt-1 text-[0.78rem] text-[var(--color-ink-soft)]">추천 기준에 반영돼요.</p>
                   </div>
                   <div className="flex flex-wrap gap-2">
                     {historyRecommendedTags.map((tag) => {
@@ -975,8 +972,8 @@ export function AccountHistoryCreateExperience({
 
                 <section className="space-y-3 rounded-2xl border border-[var(--color-frame-soft)] bg-[var(--color-surface-muted)] px-4 py-4">
                   <div>
-                    <p className="text-[0.78rem] font-semibold text-[var(--color-ink)]">나만의 태그</p>
-                    <p className="mt-1 text-[0.78rem] text-[var(--color-ink-soft)]">자유롭게 기록하고 나중에 다시 찾아보세요.</p>
+                    <p className="text-[0.78rem] font-semibold text-[var(--color-ink)]">직접 등록</p>
+                    <p className="mt-1 text-[0.78rem] text-[var(--color-ink-soft)]">기록용 태그예요. 추천 기준과는 따로 저장돼요.</p>
                   </div>
 
                   <div className="flex flex-col gap-2 sm:flex-row">
@@ -1177,37 +1174,6 @@ export function AccountHistoryCreateExperience({
                         {suggestion}
                       </span>
                     ))}
-                  </div>
-                </div>
-
-                {/* ── 공개 설정 ── */}
-                <div className="rounded-xl border border-[var(--color-frame-soft)] bg-[var(--color-surface-muted)] px-4 py-3">
-                  <p className="mb-2.5 text-[0.78rem] font-semibold text-[var(--color-ink)]">
-                    다른 여행자들과 이야기를 나눌까요?
-                  </p>
-                  <div className="inline-flex rounded-lg border border-[var(--color-frame-soft)] bg-white p-0.5">
-                    <button
-                      type="button"
-                      onClick={() => setDraft((d) => ({ ...d, visibility: "private" }))}
-                      className={`min-h-[36px] rounded-md px-3.5 py-1.5 text-[0.82rem] font-medium transition-colors ${
-                        draft.visibility === "private"
-                          ? "bg-[var(--color-sand)] text-white"
-                          : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
-                      }`}
-                    >
-                      🔒 나만 보기
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setDraft((d) => ({ ...d, visibility: "public" }))}
-                      className={`min-h-[36px] rounded-md px-3.5 py-1.5 text-[0.82rem] font-medium transition-colors ${
-                        draft.visibility === "public"
-                          ? "bg-[var(--color-sand)] text-white"
-                          : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
-                      }`}
-                    >
-                      🌏 모두에게 공개
-                    </button>
                   </div>
                 </div>
               </div>

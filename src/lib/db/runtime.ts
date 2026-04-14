@@ -61,11 +61,14 @@ export function resolvePGliteDataDir(): string | null {
  */
 async function applySqlMigrations(db: RuntimeDatabase["db"]): Promise<void> {
   const migrationsFolder = getMigrationsFolder();
-  const migrationFiles = (await readdir(migrationsFolder))
-    .filter((fileName) => fileName.endsWith(".sql"))
-    .sort();
+  const migrationFiles = await listMigrationFiles();
+  const appliedIds = await ensurePGliteMigrationState(db, migrationFiles);
 
   for (const fileName of migrationFiles) {
+    if (appliedIds.has(fileName)) {
+      continue;
+    }
+
     const content = await readFile(resolve(migrationsFolder, fileName), "utf8");
     const statements = content
       .split("--> statement-breakpoint")
@@ -75,6 +78,12 @@ async function applySqlMigrations(db: RuntimeDatabase["db"]): Promise<void> {
     for (const statement of statements) {
       await db.execute(sql.raw(statement));
     }
+
+    await db.execute(sql.raw(`
+      INSERT INTO "${PGLITE_MIGRATIONS_TABLE}" ("id")
+      VALUES ('${fileName.replaceAll("'", "''")}')
+      ON CONFLICT ("id") DO NOTHING
+    `));
   }
 }
 

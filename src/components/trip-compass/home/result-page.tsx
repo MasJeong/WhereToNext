@@ -1,21 +1,21 @@
-"use client";
-
 import { motion, useReducedMotion } from "framer-motion";
 import type { ReactNode } from "react";
 
 import { testIds } from "@/lib/test-ids";
-import type { WorkspaceBriefItemView } from "@/lib/trip-compass/presentation";
+import type {
+  RecommendationDecisionFactView,
+  WorkspaceBriefItemView,
+} from "@/lib/trip-compass/presentation";
 
 type ResultPageProps = {
   testId: string;
   leadTitle: string;
+  leadReason: string;
   leadDescription: string;
-  leadMetaTags?: string[];
+  leadVisual: ReactNode;
   leadTags: string[];
-  leadHeroAsideSlot?: ReactNode;
+  leadFacts: RecommendationDecisionFactView[];
   leadSupportSlot?: ReactNode;
-  leadWeatherSlot?: ReactNode;
-  leadActionsSlot?: ReactNode;
   leadDetails: ReactNode;
   resultMeta?: ReactNode;
   personalized: boolean;
@@ -29,13 +29,12 @@ type ResultPageProps = {
 export function ResultPage({
   testId,
   leadTitle,
+  leadReason,
   leadDescription,
-  leadMetaTags = [],
+  leadVisual,
   leadTags,
-  leadHeroAsideSlot,
+  leadFacts,
   leadSupportSlot,
-  leadWeatherSlot,
-  leadActionsSlot,
   leadDetails,
   resultMeta,
   personalized,
@@ -46,139 +45,110 @@ export function ResultPage({
   savedSlot,
 }: ResultPageProps) {
   const prefersReducedMotion = useReducedMotion();
-  const visibleTags = leadTags.slice(0, 2);
 
   return (
     <motion.section
-      className="mx-auto max-w-6xl space-y-4 px-5 py-6 sm:px-8 sm:py-8"
+      className="mx-auto max-w-5xl space-y-6 px-6 py-8 sm:px-8 sm:py-10"
       data-testid={testId}
       initial={prefersReducedMotion ? false : { opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       exit={prefersReducedMotion ? undefined : { opacity: 0, y: -16 }}
       transition={prefersReducedMotion ? { duration: 0 } : { duration: 0.26, ease: "easeOut" }}
     >
-      {/* Query summary — inline tag strip */}
-      {briefItems.length > 0 ? (
-        <div
-          data-testid={testIds.result.querySummary}
-          className="flex flex-wrap items-center gap-2 rounded-[1.15rem] border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-3 shadow-[0_10px_24px_rgba(15,23,42,0.04)] sm:px-4"
-        >
-          {briefItems.map((item) => (
-            <span
-              key={item.id}
-              className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1.5 text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)]"
-            >
-              {item.label} <span className="text-[var(--color-funnel-text)]">{item.value}</span>
-            </span>
-          ))}
-          {resultMeta}
-          {personalized ? (
-            <span
-              data-testid={testIds.shell.personalizedNote}
-              className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1.5 text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)]"
-            >
-              개인화 반영
-            </span>
-          ) : null}
-        </div>
-      ) : null}
-
-      <div data-testid={testIds.home.topSummary} className="space-y-4">
-        <section
-          data-testid={testIds.result.card0}
-          className="overflow-hidden rounded-[1.4rem] border border-[color:var(--color-funnel-border)] bg-[linear-gradient(180deg,#ffffff_0%,#fbfdff_100%)] shadow-[0_16px_40px_rgba(15,23,42,0.06)]"
-        >
-          <div className="space-y-4 p-4 sm:p-5">
-            <div className="rounded-[1.05rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-4">
-              <div className={`grid gap-4 ${leadHeroAsideSlot ? "lg:grid-cols-[minmax(0,1.35fr)_minmax(15rem,0.65fr)] lg:items-start" : ""}`}>
-                <div className="max-w-[34rem] space-y-3">
-                  <span className="inline-block rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1 text-[0.66rem] font-semibold uppercase tracking-[0.14em] text-[var(--color-funnel-text-soft)]">
-                    지금 조건 기준 1순위
-                  </span>
-
-                  <h2 className="text-[1.9rem] font-semibold leading-[1.02] tracking-[-0.04em] text-[var(--color-funnel-text)] sm:text-[2.3rem]">
-                    {leadTitle}
-                  </h2>
-
-                  <p className="line-clamp-3 text-[0.95rem] leading-7 tracking-[-0.01em] text-[var(--color-funnel-text)]">
-                    {leadDescription}
-                  </p>
-
-                  {visibleTags.length > 0 ? (
-                    <div className="flex flex-wrap items-center gap-1.5">
-                      {visibleTags.map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-2.5 py-1 text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)]"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                      {leadMetaTags.slice(0, 1).map((tag) => (
-                        <span
-                          key={tag}
-                          className="rounded-full border border-[color:var(--color-funnel-border)] bg-white px-2.5 py-1 text-[0.68rem] font-semibold text-[var(--color-funnel-text-soft)]"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  ) : null}
-                </div>
-
-                {leadHeroAsideSlot ? <div>{leadHeroAsideSlot}</div> : null}
-              </div>
-            </div>
-
-            <div className="rounded-[1.05rem] border border-[color:var(--color-funnel-border)] bg-white px-4 py-4">
-              {leadDetails}
-            </div>
+      <article
+        data-testid={testIds.home.topSummary}
+        className="overflow-hidden rounded-[2rem] border border-[color:var(--color-funnel-border)] bg-white"
+      >
+        <div className="grid gap-0 lg:grid-cols-[minmax(0,1.1fr)_minmax(20rem,0.9fr)]">
+          <div className="border-b border-[color:var(--color-funnel-border)] p-4 sm:p-5 lg:border-b-0 lg:border-r">
+            {leadVisual}
           </div>
-        </section>
 
-        {leadWeatherSlot ? <div>{leadWeatherSlot}</div> : null}
+          <div className="flex flex-col p-5 sm:p-6 lg:p-7">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-[0.72rem] font-semibold uppercase tracking-[0.18em] text-[var(--color-funnel-text-soft)]">
+                가장 잘 맞는 추천
+              </span>
+              {resultMeta}
+            </div>
 
-        {leadSupportSlot ? (
-          <section className="space-y-3 rounded-[1.3rem] border border-[color:var(--color-funnel-border)] bg-white p-4 shadow-[0_10px_24px_rgba(15,23,42,0.04)] sm:p-5">
-            <p className="text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-              대표 영상
+            <h2 className="mt-4 text-[2.2rem] font-semibold leading-[0.94] tracking-[-0.06em] text-[var(--color-funnel-text)] sm:text-[3.2rem]">
+              {leadTitle}
+            </h2>
+            <p className="mt-3 text-[1rem] font-semibold leading-7 text-[var(--color-funnel-text)]">{leadReason}</p>
+            <p className="mt-2 text-[0.95rem] leading-6 text-[var(--color-funnel-text-soft)] sm:text-[1rem] sm:leading-7">
+              {leadDescription}
             </p>
-            {leadSupportSlot}
-          </section>
-        ) : (
-          <div className="overflow-hidden rounded-[1.25rem] border border-[color:var(--color-funnel-border)] bg-white shadow-[0_10px_24px_rgba(15,23,42,0.04)]">
-            <div className="flex min-h-[16rem] flex-col justify-between gap-4 p-5 sm:min-h-[18rem] sm:p-6">
-              <div className="flex flex-wrap items-center gap-2">
-                <p className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1 text-[0.72rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
-                  YouTube
-                </p>
-                <span className="inline-flex items-center gap-2 rounded-full border border-[color:var(--color-funnel-border)] bg-white px-3 py-1 text-[0.72rem] font-semibold text-[var(--color-funnel-text-soft)]">
-                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-action-primary)] animate-pulse" />
-                  준비 중
-                </span>
-              </div>
-              <p className="text-sm font-semibold text-[var(--color-funnel-text)]">
-                영상을 불러오고 있어요
-              </p>
-              <div className="grid gap-2.5 sm:grid-cols-[minmax(0,1fr)_11rem]">
-                <div className="space-y-2 rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3">
-                  <div className="h-3 w-24 rounded-full bg-white" />
-                  <div className="h-3 w-full rounded-full bg-white" />
-                  <div className="h-3 w-5/6 rounded-full bg-white" />
-                </div>
-                <div className="rounded-[1rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3.5 py-3">
-                  <div className="aspect-[4/3] rounded-[0.8rem] bg-white" />
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
 
-        {leadActionsSlot ? <div>{leadActionsSlot}</div> : null}
+            {leadTags.length > 0 ? (
+              <div className="mt-5 flex flex-wrap gap-2">
+                {leadTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="rounded-full border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-3 py-1.5 text-xs font-semibold text-[var(--color-funnel-text-soft)]"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            ) : null}
+
+            <div className="mt-6 grid gap-3 sm:grid-cols-3">
+              {leadFacts.map((fact) => (
+                <article
+                  key={fact.id}
+                  className="rounded-[1.15rem] border border-[color:var(--color-funnel-border)] bg-[var(--color-funnel-muted)] px-4 py-3.5"
+                >
+                  <p className="text-[0.7rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+                    {fact.label}
+                  </p>
+                  <p className="mt-2 text-[0.98rem] font-semibold tracking-[-0.02em] text-[var(--color-funnel-text)]">
+                    {fact.value}
+                  </p>
+                  <p className="mt-1 text-xs leading-5 text-[var(--color-funnel-text-soft)]">{fact.detail}</p>
+                </article>
+              ))}
+            </div>
+
+            {leadSupportSlot ? <div className="mt-4">{leadSupportSlot}</div> : null}
+          </div>
+        </div>
+
+        <div data-testid={testIds.result.card0} className="border-t border-[color:var(--color-funnel-border)] px-5 py-5 sm:px-6 lg:px-7">
+          {leadDetails}
+        </div>
+
+        {personalized ? (
+          <p
+            data-testid={testIds.shell.personalizedNote}
+            className="border-t border-[color:var(--color-funnel-border)] px-5 py-4 text-xs leading-5 text-[var(--color-funnel-text-soft)] sm:px-6 lg:px-7"
+          >
+            개인화 안내 · 로그인한 여행 기록과 취향 모드가 함께 반영되고 있어요.
+          </p>
+        ) : null}
+      </article>
+
+      <div
+        data-testid={testIds.result.querySummary}
+        className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4"
+      >
+        {briefItems.map((item) => (
+          <article
+            key={item.id}
+            className="rounded-[1.1rem] border border-[color:var(--color-funnel-border)] bg-white px-3.5 py-3"
+          >
+            <p className="text-[0.64rem] font-semibold uppercase tracking-[0.16em] text-[var(--color-funnel-text-soft)]">
+              {item.label}
+            </p>
+            <p className="mt-1.5 text-sm font-semibold leading-5 tracking-[-0.02em] text-[var(--color-funnel-text)]">
+              {item.value}
+            </p>
+          </article>
+        ))}
       </div>
 
-      {statusSlot}
       {filtersSlot}
+      {statusSlot}
       {resultsSlot}
       {savedSlot}
     </motion.section>

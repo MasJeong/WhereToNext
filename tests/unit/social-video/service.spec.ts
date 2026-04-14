@@ -53,11 +53,16 @@ describe("social-video service", () => {
   it("builds Korean-first YouTube search queries in a stable order", () => {
     const queries = buildSocialVideoSearchQueries(buildTestContext());
 
-    expect(queries).toEqual(["도쿄 여행", "도쿄 브이로그"]);
+    expect(queries[0]).toBe("도쿄 여행 브이로그");
+    expect(queries).not.toContain("도쿄 한국인 여행");
+    expect(queries).toContain("도쿄 여행 가이드");
+    expect(queries).not.toContain("Tokyo korean travel vlog");
+    expect(queries.some((query) => query.includes("Tokyo") || query.includes("일본"))).toBe(true);
+    expect(queries.some((query) => query.includes("쇼츠") || query.toLowerCase().includes("shorts"))).toBe(true);
     expect(new Set(queries).size).toBe(queries.length);
   });
 
-  it("keeps search queries simple even for romance vibes", () => {
+  it("maps romance vibes to non-romantic search labels", () => {
     const destination = launchCatalog.find((item) => item.id === "tokyo");
 
     if (!destination) {
@@ -73,32 +78,28 @@ describe("social-video service", () => {
       leadEvidence: [],
     });
 
-    expect(queries).toContain("도쿄 여행");
-    expect(queries).toContain("도쿄 브이로그");
+    expect(queries).toContain("도쿄 야경 여행");
     expect(queries).not.toContain("도쿄 로맨틱 여행");
   });
 
   it("builds direct YouTube fallback searches for the destination", () => {
     const searches = buildSocialVideoFallbackSearches(buildTestContext());
 
-    expect(searches).toHaveLength(2);
-    expect(searches[0]?.label).toBe("도쿄 여행");
+    expect(searches).toHaveLength(4);
+    expect(searches[0]?.label).toBe("도쿄 여행 브이로그");
     expect(searches[0]?.url).toContain("youtube.com/results?search_query=");
   });
 
-  it("scores Korean standard vlog candidates above generic long-form candidates", () => {
+  it("scores Korean short-form candidates above generic long-form candidates", () => {
     const context = buildTestContext();
     const shortKoreanCandidate = buildCandidate({
-      id: "standard-korean",
-      title: "도쿄 여행 브이로그",
+      id: "short-korean",
+      title: "도쿄 여행 브이로그 59초",
       channelTitle: "지훈의 여행일기",
-      durationSeconds: 260,
-      description: "도쿄 여행 코스와 야경, 맛집 동선을 자세히 정리",
+      durationSeconds: 59,
+      description: "도쿄 여행 코스와 야경을 짧게 정리",
       languageHint: "ko",
       creatorCountryCode: "KR",
-      viewCount: 180000,
-      likeCount: 3200,
-      commentCount: 210,
     });
     const longGenericCandidate = buildCandidate({
       id: "long-generic",
@@ -135,7 +136,7 @@ describe("social-video service", () => {
     });
     const recentShortCandidate = buildCandidate({
       id: "recent-short",
-      title: "도쿄 여행 하이라이트",
+      title: "도쿄 여행 쇼츠",
       channelTitle: "빠른 여행 컷",
       durationSeconds: 27,
       description: "도쿄 골목 하이라이트",
@@ -151,174 +152,6 @@ describe("social-video service", () => {
 
     expect(selected[0]?.candidate.id).toBe("main-candidate");
     expect(selected).toHaveLength(2);
-  });
-
-  it("prefers a strong high-view video over a merely newer one when both are still recent enough", () => {
-    const context = buildTestContext();
-    const highViewCandidate = buildCandidate({
-      id: "high-view",
-      title: "도쿄 여행 가이드",
-      channelTitle: "도쿄 제대로 보기",
-      durationSeconds: 210,
-      description: "도쿄 일정과 맛집, 동선을 자세히 정리",
-      publishedAt: "2026-02-20T00:00:00.000Z",
-      viewCount: 420000,
-      likeCount: 8200,
-      commentCount: 480,
-    });
-    const newerCandidate = buildCandidate({
-      id: "newer",
-      title: "도쿄 여행 하이라이트",
-      channelTitle: "빠른 여행 컷",
-      durationSeconds: 58,
-      description: "도쿄 하이라이트를 짧게 모음",
-      publishedAt: "2026-03-28T00:00:00.000Z",
-      viewCount: 28000,
-      likeCount: 420,
-      commentCount: 32,
-    });
-
-    const selected = selectSocialVideoCandidate([newerCandidate, highViewCandidate], context);
-
-    expect(selected?.candidate.id).toBe("high-view");
-  });
-
-  it("ignores videos older than two years even when their view count is high", () => {
-    const context = buildTestContext();
-    const tooOldHighViewCandidate = buildCandidate({
-      id: "too-old-high-view",
-      title: "도쿄 여행 가이드",
-      channelTitle: "도쿄 제대로 보기",
-      durationSeconds: 260,
-      description: "도쿄 일정과 맛집을 자세히 정리",
-      publishedAt: "2023-01-01T00:00:00.000Z",
-      viewCount: 980000,
-      likeCount: 12000,
-      commentCount: 950,
-    });
-    const withinTwoYearsCandidate = buildCandidate({
-      id: "within-window",
-      title: "도쿄 여행 브이로그",
-      channelTitle: "지훈의 여행일기",
-      durationSeconds: 300,
-      description: "도쿄 동선을 한국어로 정리",
-      publishedAt: "2025-08-01T00:00:00.000Z",
-      viewCount: 110000,
-      likeCount: 1800,
-      commentCount: 130,
-    });
-
-    const selected = selectSocialVideoCandidate([tooOldHighViewCandidate, withinTwoYearsCandidate], context);
-
-    expect(selected?.candidate.id).toBe("within-window");
-  });
-
-  it("penalizes safety-warning videos even when the destination name matches", () => {
-    const destination = launchCatalog.find((item) => item.id === "bali");
-
-    if (!destination) {
-      throw new Error("Expected bali destination to exist in launch catalog.");
-    }
-
-    const context = {
-      destination,
-      query: defaultRecommendationQuery,
-      leadEvidence: [],
-    } as const;
-
-    const safetyVideo = buildCandidate({
-      id: "bali-safety",
-      title: "발리 안전 괜찮을까",
-      description: "발리 여행 전에 꼭 알아야 할 위험과 주의사항",
-      viewCount: 420000,
-      likeCount: 2500,
-      commentCount: 300,
-    });
-    const standardVlog = buildCandidate({
-      id: "bali-vlog",
-      title: "발리 여행 브이로그",
-      description: "발리 숙소와 카페, 동선을 정리한 여행 브이로그",
-      viewCount: 240000,
-      likeCount: 3400,
-      commentCount: 220,
-    });
-
-    const selected = selectSocialVideoCandidate([safetyVideo, standardVlog], context);
-
-    expect(selected?.candidate.id).toBe("bali-vlog");
-  });
-
-  it("rejects news-style destination alerts in favor of travel vlog intent", () => {
-    const destination = launchCatalog.find((item) => item.id === "bali");
-
-    if (!destination) {
-      throw new Error("Expected bali destination to exist in launch catalog.");
-    }
-
-    const context = {
-      destination,
-      query: defaultRecommendationQuery,
-      leadEvidence: [],
-    } as const;
-
-    const newsAlertVideo = buildCandidate({
-      id: "bali-news-alert",
-      title: "발리 여행 가실 분, 잠시만요",
-      channelTitle: "KBS News",
-      description: "발리 여행 위험과 사기 사례를 다룬 뉴스",
-      viewCount: 520000,
-      likeCount: 1800,
-      commentCount: 900,
-    });
-    const travelVlog = buildCandidate({
-      id: "bali-real-vlog",
-      title: "발리 브이로그",
-      description: "발리 카페와 숙소, 일정 감을 담은 브이로그",
-      viewCount: 110000,
-      likeCount: 2100,
-      commentCount: 140,
-    });
-
-    const selected = selectSocialVideoCandidate([newsAlertVideo, travelVlog], context);
-
-    expect(selected?.candidate.id).toBe("bali-real-vlog");
-  });
-
-  it("prefers a higher-view destination vlog within two years over a merely newer one", () => {
-    const destination = launchCatalog.find((item) => item.id === "bali");
-
-    if (!destination) {
-      throw new Error("Expected bali destination to exist in launch catalog.");
-    }
-
-    const context = {
-      destination,
-      query: defaultRecommendationQuery,
-      leadEvidence: [],
-    } as const;
-
-    const highViewVlog = buildCandidate({
-      id: "bali-high-view",
-      title: "발리 여행 브이로그",
-      description: "발리 여행 코스와 분위기를 자세히 담은 브이로그",
-      publishedAt: "2025-04-10T00:00:00.000Z",
-      viewCount: 610000,
-      likeCount: 7200,
-      commentCount: 480,
-    });
-    const newerLowerViewVlog = buildCandidate({
-      id: "bali-newer",
-      title: "발리 여행",
-      description: "발리 최근 여행 기록",
-      publishedAt: "2026-02-15T00:00:00.000Z",
-      viewCount: 52000,
-      likeCount: 620,
-      commentCount: 40,
-    });
-
-    const selected = selectSocialVideoCandidate([newerLowerViewVlog, highViewVlog], context);
-
-    expect(selected?.candidate.id).toBe("bali-high-view");
   });
 
   it("falls back to a relevant standard video when short-form quality is low", () => {
@@ -404,26 +237,5 @@ describe("social-video service", () => {
     const selected = selectSocialVideoCandidate([foreignAirportSecurityCandidate, koreanCandidate], context);
 
     expect(selected?.candidate.id).toBe("korean-nairobi");
-  });
-
-  it("keeps Korean-title videos eligible even when channel metadata is mostly English", () => {
-    const context = buildTestContext();
-    const koreanTitleCandidate = buildCandidate({
-      id: "korean-title",
-      title: "싱가포르 여행 브이로그",
-      channelTitle: "Urban Travel Archive",
-      description: "마리나베이와 맛집 동선을 한국어로 정리",
-      languageHint: "en",
-      creatorCountryCode: "SG",
-      durationSeconds: 320,
-      viewCount: 135000,
-      likeCount: 2100,
-      commentCount: 140,
-    });
-
-    const selected = selectSocialVideoCandidate([koreanTitleCandidate], context);
-
-    expect(selected?.candidate.id).toBe("korean-title");
-    expect(selected?.score.koreanSignals).toBeGreaterThanOrEqual(8);
   });
 });

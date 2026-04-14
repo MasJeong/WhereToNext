@@ -88,20 +88,20 @@ export function FlightAffiliatePanel({
       <div className="flex flex-wrap items-start justify-between gap-3 border-b border-[color:var(--color-frame-soft)] pb-4">
         <div className="min-w-0">
           <p className="compass-editorial-kicker">{link.eyebrow}</p>
-          <h3 className="mt-1.5 text-[1.02rem] font-semibold leading-7 tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.12rem]">
+          <h3 className="mt-1.5 font-display text-[1.08rem] leading-tight tracking-[-0.03em] text-[var(--color-ink)] sm:text-[1.2rem]">
             {link.title}
           </h3>
-          <p className="mt-1.5 text-[0.93rem] leading-6 text-[var(--color-ink-soft)]">
+          <p className="mt-1.5 text-sm leading-6 text-[var(--color-ink-soft)]">
             {destinationName} 기준으로 {link.summary}
           </p>
         </div>
 
-        <span className="rounded-full bg-[var(--color-funnel-muted)] px-2 py-0.5 text-[0.62rem] font-semibold text-[var(--color-ink-soft)]">
-          광고
+        <span className="rounded-full border border-[color:var(--color-frame-strong)] bg-white/80 px-3 py-1 text-[0.68rem] font-semibold tracking-[0.04em] text-[var(--color-sand-deep)]">
+          {link.partnerLabel}
         </span>
       </div>
 
-      <div className="mt-4">
+      <div className="mt-4 space-y-2">
         <a
           data-testid={testIds.detail.flightAffiliateCta}
           href={link.url}
@@ -116,10 +116,16 @@ export function FlightAffiliatePanel({
               query,
             });
           }}
-          className="compass-action-primary compass-soft-press inline-flex rounded-full px-4 py-2.5 text-[0.82rem] font-semibold tracking-[0.01em]"
+          className="compass-action-primary compass-soft-press inline-flex rounded-full px-4 py-2.5 text-xs font-semibold tracking-[0.04em]"
         >
           {link.ctaLabel}
         </a>
+
+        <p className="text-[0.76rem] leading-5 text-[var(--color-ink-soft)]">
+          <span className="font-semibold text-[var(--color-ink)]">{link.disclosureLabel}</span>
+          {" · "}
+          {link.disclosureDetail}
+        </p>
       </div>
     </article>
   );

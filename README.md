@@ -18,13 +18,11 @@
 - 로그인 없이 바로 추천, 저장 링크, 비교 링크 생성
 - 결정형 추천 엔진 기반의 설명 가능한 결과
 - 인스타그램은 추천 엔진이 아니라 분위기/최신성 증거 레이어로만 사용
-- 대표 추천 1곳에는 여행지 이미지, 날씨, 인터랙티브 지도, 주변 장소, 환율 참고 정보가 함께 붙음
-- 대표 추천 1곳에는 YouTube 우선 소셜 비디오 블록이 선택적으로 붙음
-- 소셜 비디오는 한국어/한국인 업로드 후보를 우선하고, 짧은 형식 영상을 선호하되 적절한 후보가 없으면 일반 여행 영상도 허용함
+- 대표 추천 1곳에는 여행지 이미지, 날씨, 작은 지도, 주변 장소, 환율 참고 정보가 함께 붙음
 - 저장 링크 `/s/[snapshotId]`, 비교 링크 `/compare/[snapshotId]`
 - 추천 둘러보기는 익명으로 열어 두고, 저장/공유/계정 연속성은 소셜 로그인 + 세션 쿠키 방식으로 처리
 - 다녀온 여행지 평점, 태그, 재방문 의사에 따라 추천을 미세하게 개인화
-- 운영은 `DATABASE_URL` 기반 Postgres를 사용하고, 로컬/테스트는 `PGlite` 대체 경로로 동작
+- 운영은 `DATABASE_URL` 기반 Postgres를 사용하고, 로컬/테스트는 `PGlite` fallback으로 동작
 
 ## 실행 방법
 
@@ -44,34 +42,15 @@ npm run dev
 ```bash
 DATABASE_URL=postgres://postgres:postgres@localhost:5432/trip_compass
 PGLITE_DATA_DIR=.data/trip-compass
-NEXT_PUBLIC_GOOGLE_MAPS_API_KEY=
 UNSPLASH_ACCESS_KEY=
 GOOGLE_MAPS_API_KEY=
 EXCHANGERATE_HOST_ACCESS_KEY=
-YOUTUBE_API_KEY=
-OPENAI_API_KEY=
-OPENAI_TRIP_ACTIONS_MODEL=gpt-5-mini
-GOOGLE_CLIENT_ID=
-GOOGLE_CLIENT_SECRET=
-KAKAO_CLIENT_ID=
-KAKAO_CLIENT_SECRET=
-APPLE_CLIENT_ID=
-APPLE_CLIENT_SECRET=
-MOCK_OAUTH_PROVIDER=false
 ```
 
-> 참고: 현재 GitHub 원격 저장소 식별값은 `MasJeong/WhereToNext`입니다.
-
-`DATABASE_URL`이 없으면 `PGlite` 대체 경로를 사용합니다.
+`DATABASE_URL`이 없으면 `PGlite` fallback을 사용합니다.
 로컬 개발에서 `PGLITE_DATA_DIR`가 설정되어 있으면 해당 디렉터리에 데이터를 유지하고, 테스트에서는 메모리 기반 `PGlite`를 사용합니다.
 배포 환경에서는 반드시 외부 Postgres를 연결하세요.
 외부 여행 보조 데이터는 대표 추천 1곳에만 붙고, 공유 링크를 열면 이미지/날씨/지도/환율을 다시 조회합니다. 공급자 키가 없거나 일부 호출이 실패하면 해당 블록만 숨기고 추천 결과 자체는 그대로 보여줍니다.
-인터랙티브 지도는 `NEXT_PUBLIC_GOOGLE_MAPS_API_KEY`를 사용하고, 서버에서 주변 장소 검색을 할 때는 `GOOGLE_MAPS_API_KEY`를 사용합니다. 공개 지도 키는 반드시 localhost와 실제 도메인 기준 referrer 제한을 걸어 두세요.
-YouTube 소셜 비디오는 서버에서 `YOUTUBE_API_KEY`를 사용해 조회하며, 키가 없거나 후보 품질이 낮으면 블록을 숨기고 추천 결과는 그대로 유지합니다.
-AI 행동 제안은 서버에서 `OPENAI_API_KEY`를 사용해 생성하며, 키가 없거나 응답이 실패하면 규칙 기반 fallback 문구로 내려갑니다. `OPENAI_TRIP_ACTIONS_MODEL`을 지정하지 않으면 `gpt-5-mini`를 기본으로 사용합니다.
-소셜 로그인은 Google / Kakao / Apple 공급자를 사용하며, 각 공급자의 콜백 URL은 `/api/auth/oauth/[provider]/callback` 형식으로 맞춰야 합니다.
-Playwright 기반 소셜 로그인 E2E는 `MOCK_OAUTH_PROVIDER=true`일 때 로컬 모의 authorize 라우트를 사용합니다.
-실제 공급자 콘솔 설정과 운영 반영 방법은 `docs/social-login-setup.md`를 참고하세요.
 
 ## 주요 스크립트
 
@@ -87,10 +66,10 @@ npm run db:seed
 
 ## Git 운영 방식
 
-자동 배포를 유지하는 사이드프로젝트 기준이라면 `main`을 바로 작업하기보다 `feature -> dev -> main` 흐름으로 운영하는 편을 권장합니다.
+자동 배포를 유지하는 사이드프로젝트 기준으로는 `main`을 바로 작업하는 대신 `feature -> dev -> main` 흐름으로 운영하는 것을 권장합니다.
 
 1. 기능 작업은 항상 `feature/...` 브랜치에서 진행합니다.
-2. 기능이 준비되면 `feature -> dev`로 병합합니다.
+2. 기능이 준비되면 `feature -> dev`로 merge 합니다.
 3. `dev`에서는 push 또는 PR 기준으로 CI를 통해 통합 상태를 계속 검증합니다.
 4. 배포할 준비가 되었을 때만 `dev -> main`으로 올립니다.
 5. 프로덕션 자동 배포는 `main`에 반영된 코드만 기준으로 진행합니다.
@@ -118,8 +97,8 @@ VERCEL_PROJECT_ID=
 
 배포 상세 체크리스트는 `docs/deployment.md`를 참고하세요.
 
-현재 저장소 설정에서는 `main`에 push한 뒤 CI가 성공하면 프로덕션 배포가 이어질 수 있습니다.
-그래서 평소 작업과 통합 검증은 `dev` 브랜치에서 마치고, `main`은 배포 시점에만 업데이트하는 편이 더 안전합니다.
+현재 저장소 설정 기준으로 `main` push 이후 CI가 성공하면 프로덕션 배포가 이어질 수 있으므로,
+평소 작업과 통합 검증은 `dev` 브랜치에서 마치고 `main`은 배포 시점에만 업데이트하는 편이 안전합니다.
 
 ## 데이터 / 저장 정책
 

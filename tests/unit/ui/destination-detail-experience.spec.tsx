@@ -60,9 +60,14 @@ describe("DestinationDetailExperience", () => {
     );
 
     expect(screen.getByTestId(testIds.detail.root)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "도쿄 · 일본" })).toBeInTheDocument();
     expect(screen.getByTestId(testIds.detail.watchOuts)).toBeInTheDocument();
+    expect(screen.queryByTestId(testIds.detail.fitReason)).not.toBeInTheDocument();
     expect(screen.queryByTestId(testIds.detail.evidence)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByText("세부 정보 보기"));
+
+    expect(screen.getByTestId(testIds.detail.fitReason)).toBeInTheDocument();
+    expect(screen.getByTestId(testIds.detail.evidence)).toBeInTheDocument();
   });
 
   it("shows the flight affiliate panel and logs a click with sponsored disclosure", () => {
@@ -83,10 +88,11 @@ describe("DestinationDetailExperience", () => {
     );
 
     expect(screen.getByTestId(testIds.detail.flightAffiliate)).toBeInTheDocument();
-    expect(screen.getByText("Skyscanner에서 항공권을 확인해 보세요.")).toBeInTheDocument();
+    expect(screen.getByText("제휴 링크 포함")).toBeInTheDocument();
+    expect(screen.getByText("Skyscanner")).toBeInTheDocument();
 
     const cta = screen.getByTestId(testIds.detail.flightAffiliateCta);
-    expect(cta.textContent).toBe("10월 항공권 보기");
+    expect(cta.textContent).toBe("인천(ICN) 출발 10월 항공권 보기");
     expect(cta).toHaveAttribute(
       "href",
       "https://www.skyscanner.co.kr/routes/icn/tyoa/incheon-international-airport-to-tokyo.html",

@@ -61,7 +61,6 @@ describe("deleteUserAccount", () => {
       visitedAt: "2026-02-01T00:00:00.000Z",
       memo: "다시 가고 싶어요.",
       images: [],
-      visibility: "private",
     });
     await upsertUserFutureTrip(userId, {
       destinationId: "lisbon",

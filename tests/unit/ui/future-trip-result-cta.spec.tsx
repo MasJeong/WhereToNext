@@ -327,63 +327,6 @@ describe("HomeExperience future-trip result CTA", () => {
       sourceSnapshotId,
     });
   });
-
-  it("rerolls results without previously shown destinations when users ask again", async () => {
-    const firstResponse = buildRecommendationResponse();
-    const secondQueryCapture: string[] = [];
-    let recommendationRequestCount = 0;
-
-    vi.spyOn(globalThis, "fetch").mockImplementation(async (input) => {
-      const url = typeof input === "string" ? input : input.toString();
-
-      if (url.includes("/api/recommendations?")) {
-        recommendationRequestCount += 1;
-
-        if (recommendationRequestCount === 1) {
-          return new Response(JSON.stringify(firstResponse), {
-            status: 200,
-            headers: { "content-type": "application/json" },
-          });
-        }
-
-        secondQueryCapture.push(url);
-        return new Response(JSON.stringify({
-          ...firstResponse,
-          query: {
-            ...firstResponse.query,
-            excludedDestinationIds: firstResponse.recommendations.map((item) => item.destinationId),
-          },
-          recommendations: rankDestinations({
-            ...query,
-            excludedDestinationIds: firstResponse.recommendations.map((item) => item.destinationId),
-          }).slice(0, 4),
-        }), {
-          status: 200,
-          headers: { "content-type": "application/json" },
-        });
-      }
-
-      throw new Error(`UNHANDLED_FETCH:${url}`);
-    });
-
-    render(<HomeExperience />);
-
-    await expectResultCard();
-
-    fireEvent.click(screen.getByRole("button", { name: "다시 고르기" }));
-
-    await waitFor(() => {
-      expect(secondQueryCapture.length).toBeGreaterThan(0);
-    });
-
-    const rerollMatch = secondQueryCapture
-      .map((value) => new URL(value, "http://localhost:4010"))
-      .find((value) => value.searchParams.has("excludedDestinationIds"));
-
-    expect(rerollMatch?.searchParams.get("excludedDestinationIds")?.split(",")).toEqual(
-      firstResponse.recommendations.map((item) => item.destinationId),
-    );
-  });
 });
 
 async function expectResultCard() {

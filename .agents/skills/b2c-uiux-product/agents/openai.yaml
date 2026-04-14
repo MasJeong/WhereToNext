@@ -1,0 +1,4 @@
+interface:
+  display_name: "B2C UI/UX Product"
+  short_description: "B2C 제품 UI/UX 판단과 개선 흐름을 제공하는 스킬"
+  default_prompt: "Use $b2c-uiux-product to improve this B2C product's UI/UX with concrete product decisions."

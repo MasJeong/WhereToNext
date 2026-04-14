@@ -1,4 +1,4 @@
-# 떠나볼래? 배포 안내
+# WhereToNext Deployment Guide
 
 ## 대상 환경
 
@@ -15,7 +15,7 @@
 배포 안정성을 위해 아래 흐름을 권장합니다.
 
 1. `feature/*`에서 작업합니다.
-2. 작업이 정리되면 `feature -> dev`로 병합합니다.
+2. 작업이 정리되면 `feature -> dev`로 merge 합니다.
 3. `dev` push 또는 관련 PR에서 CI로 통합 상태를 계속 검증합니다.
 4. 실제 배포가 필요할 때만 `dev -> main`으로 올립니다.
 5. `main` 반영 후 CI가 성공하면 프로덕션 배포가 진행됩니다.
@@ -64,10 +64,10 @@ npm run test:e2e
 
 ### 1. GitHub 저장소 가져오기
 
-- 저장소 이름 대상: `WhereToNext`
-- 현재 원격 저장소 식별값: `MasJeong/WhereToNext`
-- 프레임워크 프리셋: Next.js
-- 루트 디렉터리: 저장소 루트
+- Repository name target: `WhereToNext`
+- Current remote slug: `MasJeong/WhereToNext`
+- Framework Preset: Next.js
+- Root Directory: repo root
 
 ### 2. 환경 변수
 
