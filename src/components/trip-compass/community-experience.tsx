@@ -278,12 +278,7 @@ function PostCard({
   isLoggedIn: boolean;
 }) {
   const [showComments, setShowComments] = useState(false);
-  const [localCommentCount, setLocalCommentCount] = useState(post.commentCount);
-
-  /* Keep count in sync when comments section tells us */
-  useEffect(() => {
-    setLocalCommentCount(post.commentCount);
-  }, [post.commentCount]);
+  const localCommentCount = post.commentCount;
 
   return (
     <article className="py-5">
