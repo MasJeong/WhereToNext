@@ -91,3 +91,4 @@
 - `docs/ios-release-preflight.md`
 - `docs/ios-app-privacy-matrix.md`
 - `docs/ios-at-home-release-checklist.md`
+- `docs/ios-domain-hosting-strategy.md`

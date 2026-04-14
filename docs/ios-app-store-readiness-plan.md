@@ -242,6 +242,7 @@
 ## 관련 문서
 
 - [docs/ios-release-preflight.md](C:/jihun_roject/trip-compass/docs/ios-release-preflight.md)
+- [docs/ios-domain-hosting-strategy.md](C:/jihun_roject/trip-compass/docs/ios-domain-hosting-strategy.md)
 - [.sisyphus/plans/ios-launch-path.md](C:/jihun_roject/trip-compass/.sisyphus/plans/ios-launch-path.md)
 - [.sisyphus/plans/static-webdir-strategy.md](C:/jihun_roject/trip-compass/.sisyphus/plans/static-webdir-strategy.md)
 - [docs/social-login-setup.md](C:/jihun_roject/trip-compass/docs/social-login-setup.md)

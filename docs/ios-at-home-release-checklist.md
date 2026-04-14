@@ -7,7 +7,7 @@
 # 출발 전 확인
 
 1. 최신 브랜치 받기: `feature/ios-release-prep`
-2. 이 문서와 [docs/ios-app-store-connect-submission-pack.md](C:/jihun_roject/trip-compass/docs/ios-app-store-connect-submission-pack.md), [docs/ios-app-privacy-matrix.md](C:/jihun_roject/trip-compass/docs/ios-app-privacy-matrix.md)를 옆에 띄워 둔다.
+2. 이 문서와 [docs/ios-app-store-connect-submission-pack.md](C:/jihun_roject/trip-compass/docs/ios-app-store-connect-submission-pack.md), [docs/ios-app-privacy-matrix.md](C:/jihun_roject/trip-compass/docs/ios-app-privacy-matrix.md), [docs/ios-domain-hosting-strategy.md](C:/jihun_roject/trip-compass/docs/ios-domain-hosting-strategy.md)를 옆에 띄워 둔다.
 3. 운영 도메인을 확정하고 아래 URL을 실제 값으로 바꿔 메모해 둔다.
    - `https://<운영도메인>/privacy`
    - `https://<운영도메인>/support`
