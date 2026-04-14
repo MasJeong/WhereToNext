@@ -11,7 +11,7 @@
 대표 추천 1곳에는 외부 여행 보조 데이터와 함께 YouTube 기반 소셜 비디오 근거 블록이 붙을 수 있습니다.
 대표 추천과 상세 페이지에는 AI 기반 행동 제안 블록이 붙을 수 있습니다.
 
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MasJeong/SooGo)
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/MasJeong/WhereToNext)
 
 ## 핵심 특징
 

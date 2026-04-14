@@ -1,6 +1,4 @@
 # AGENTS.md
-Agent guide for the `SooGo` repository.
-Scope: entire repository.
 
 `떠나볼까?` 제품을 다루는 `WhereToNext` 저장소용 에이전트 작업 가이드입니다.
 적용 범위는 저장소 전체입니다.
