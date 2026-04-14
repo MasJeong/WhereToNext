@@ -8,21 +8,28 @@ import { getSessionFromHeaders, rotateSessionForUser } from "@/lib/auth";
 import { readLocalStore, writeLocalStore } from "@/lib/persistence/local-store";
 import { memoryStore } from "@/lib/persistence/memory-store";
 import type { NormalizedProviderIdentity } from "@/lib/provider-identity";
+import { buildRandomUserDisplayName, resolveUserDisplayName } from "@/lib/user-display-name";
 
 const usePersistentDatabase = Boolean(process.env.DATABASE_URL);
 const useLocalFileStore = !usePersistentDatabase && process.env.NODE_ENV !== "test";
 
 type ProviderAuthErrorCode = "ACCOUNT_PROVIDER_MISMATCH" | "ALREADY_SIGNED_IN";
 
+type ProviderAuthErrorProviderId = "google" | "kakao" | "apple" | "credentials";
+
 type ProviderAuthResult = {
   data?: Awaited<ReturnType<typeof rotateSessionForUser>>;
   error?: {
     code: ProviderAuthErrorCode;
     message: string;
+    providerId?: ProviderAuthErrorProviderId;
   };
 };
 
-function buildProviderAuthError(code: ProviderAuthErrorCode): ProviderAuthResult {
+function buildProviderAuthError(
+  code: ProviderAuthErrorCode,
+  providerId?: ProviderAuthErrorProviderId,
+): ProviderAuthResult {
   if (code === "ALREADY_SIGNED_IN") {
     return {
       error: {
@@ -36,17 +43,32 @@ function buildProviderAuthError(code: ProviderAuthErrorCode): ProviderAuthResult
     error: {
       code,
       message: "같은 이메일의 다른 로그인 수단이 있어 자동으로 연결하지 않았어요. 계정을 확인해 주세요.",
+      providerId,
     },
   };
 }
 
-function buildDisplayName(identity: NormalizedProviderIdentity): string {
-  return identity.name ?? "여행자";
+function toProviderAuthErrorProviderId(
+  providerId: string | null | undefined,
+): ProviderAuthErrorProviderId | undefined {
+  if (
+    providerId === "google" ||
+    providerId === "kakao" ||
+    providerId === "apple" ||
+    providerId === "credentials"
+  ) {
+    return providerId;
+  }
+
+  return undefined;
+}
+
+function buildInitialSocialDisplayName(): string {
+  return buildRandomUserDisplayName();
 }
 
 function getStoredUserDisplayName(name: string | null | undefined): string {
-  const normalizedName = name?.trim();
-  return normalizedName ? normalizedName : "여행자";
+  return resolveUserDisplayName(name);
 }
 
 export async function signInWithProviderIdentity(input: {
@@ -83,7 +105,6 @@ export async function signInWithProviderIdentity(input: {
         matchedAccount.providerEmail = input.identity.email;
         matchedAccount.providerEmailVerified = input.identity.emailVerified;
         matchedAccount.lastLoginAt = new Date().toISOString();
-        matchedUser.name = buildDisplayName(input.identity);
         matchedUser.image = input.identity.image;
         if (input.identity.email) {
           matchedUser.email = input.identity.email;
@@ -111,13 +132,17 @@ export async function signInWithProviderIdentity(input: {
         ? Object.values(store.users).find((entry) => entry.email === input.identity.email)
         : null;
       if (collidingUser) {
-        return buildProviderAuthError("ACCOUNT_PROVIDER_MISMATCH");
+        const existingAccount = Object.values(store.accounts).find((entry) => entry.userId === collidingUser.id);
+        return buildProviderAuthError(
+          "ACCOUNT_PROVIDER_MISMATCH",
+          toProviderAuthErrorProviderId(existingAccount?.providerId),
+        );
       }
 
       const userId = randomUUID();
       const nextUser = {
         id: userId,
-        name: buildDisplayName(input.identity),
+        name: buildInitialSocialDisplayName(),
         email: input.identity.email,
         emailVerified: input.identity.emailVerified,
         image: input.identity.image,
@@ -165,7 +190,6 @@ export async function signInWithProviderIdentity(input: {
       matchedAccount.providerEmail = input.identity.email;
       matchedAccount.providerEmailVerified = input.identity.emailVerified;
       matchedAccount.lastLoginAt = new Date().toISOString();
-      matchedUser.name = buildDisplayName(input.identity);
       matchedUser.image = input.identity.image;
       if (input.identity.email) {
         matchedUser.email = input.identity.email;
@@ -192,13 +216,17 @@ export async function signInWithProviderIdentity(input: {
       ? [...memoryStore.users.values()].find((entry) => entry.email === input.identity.email)
       : null;
     if (collidingUser) {
-      return buildProviderAuthError("ACCOUNT_PROVIDER_MISMATCH");
+      const existingAccount = [...memoryStore.accounts.values()].find((entry) => entry.userId === collidingUser.id);
+      return buildProviderAuthError(
+        "ACCOUNT_PROVIDER_MISMATCH",
+        toProviderAuthErrorProviderId(existingAccount?.providerId),
+      );
     }
 
     const userId = randomUUID();
     memoryStore.users.set(userId, {
       id: userId,
-      name: buildDisplayName(input.identity),
+      name: buildInitialSocialDisplayName(),
       email: input.identity.email,
       emailVerified: input.identity.emailVerified,
       image: input.identity.image,
@@ -219,7 +247,7 @@ export async function signInWithProviderIdentity(input: {
       data: await rotateSessionForUser({
         user: {
           id: userId,
-          name: buildDisplayName(input.identity),
+          name: getStoredUserDisplayName(memoryStore.users.get(userId)?.name),
           email: input.identity.email,
         },
         requestHeaders: input.requestHeaders,
@@ -258,7 +286,6 @@ export async function signInWithProviderIdentity(input: {
     await db
       .update(user)
       .set({
-        name: buildDisplayName(input.identity),
         image: input.identity.image,
         email: input.identity.email ?? matchedUser.email,
         emailVerified: input.identity.email ? input.identity.emailVerified : matchedUser.emailVerified,
@@ -272,7 +299,7 @@ export async function signInWithProviderIdentity(input: {
       data: await rotateSessionForUser({
         user: {
           id: matchedUser.id,
-          name: buildDisplayName(input.identity),
+          name: getStoredUserDisplayName(matchedUser.name),
           email: input.identity.email ?? matchedUser.email,
         },
         requestHeaders: input.requestHeaders,
@@ -288,14 +315,21 @@ export async function signInWithProviderIdentity(input: {
     ? await db.query.user.findFirst({ where: eq(user.email, input.identity.email) })
     : null;
   if (collidingUser) {
-    return buildProviderAuthError("ACCOUNT_PROVIDER_MISMATCH");
+    const existingAccount = await db.query.account.findFirst({
+      where: eq(account.userId, collidingUser.id),
+    });
+    return buildProviderAuthError(
+      "ACCOUNT_PROVIDER_MISMATCH",
+      toProviderAuthErrorProviderId(existingAccount?.providerId),
+    );
   }
 
   const userId = randomUUID();
+  const initialDisplayName = buildInitialSocialDisplayName();
   await db.transaction(async (tx) => {
     await tx.insert(user).values({
       id: userId,
-      name: buildDisplayName(input.identity),
+      name: initialDisplayName,
       email: input.identity.email,
       emailVerified: input.identity.emailVerified,
       image: input.identity.image,
@@ -328,7 +362,7 @@ export async function signInWithProviderIdentity(input: {
     data: await rotateSessionForUser({
       user: {
         id: userId,
-        name: buildDisplayName(input.identity),
+        name: initialDisplayName,
         email: input.identity.email,
       },
       requestHeaders: input.requestHeaders,

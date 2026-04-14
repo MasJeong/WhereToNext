@@ -2,6 +2,8 @@ import { sql } from "drizzle-orm";
 
 import { getRuntimeDatabase } from "@/lib/db/runtime";
 import { destinationProfiles } from "@/lib/db/schema";
+import { getCountryMetadata } from "@/lib/travel-support/country-metadata";
+import { getHeroImage } from "@/lib/travel-support/service";
 
 const DEFAULT_WINDOW_DAYS = 7;
 const TOP_N = 3;
@@ -13,6 +15,7 @@ const FALLBACK_DESTINATIONS = ["다낭", "오사카", "방콕"];
 export type TrendingDestination = {
   destinationId: string;
   nameKo: string;
+  imageUrl?: string;
   score: number;
 };
 
@@ -25,7 +28,14 @@ export async function getTrendingDestinations(
 ): Promise<TrendingDestination[]> {
   const { db } = await getRuntimeDatabase();
 
-  type Row = { destination_id: string; name_ko: string; rec_cnt: number; click_cnt: number };
+  type Row = {
+    destination_id: string;
+    name_ko: string;
+    name_en: string;
+    country_code: string;
+    rec_cnt: number;
+    click_cnt: number;
+  };
 
   const result = await db.execute<Row>(sql`
     WITH rec_counts AS (
@@ -53,6 +63,8 @@ export async function getTrendingDestinations(
     SELECT
       combined.destination_id,
       dp.name_ko,
+      dp.name_en,
+      dp.country_code,
       combined.rec_cnt,
       combined.click_cnt
     FROM combined
@@ -63,11 +75,25 @@ export async function getTrendingDestinations(
   `);
 
   const rows = Array.from(result as Iterable<Row>);
-  const results: TrendingDestination[] = rows.map((row) => ({
-    destinationId: row.destination_id,
-    nameKo: row.name_ko,
-    score: row.rec_cnt * WEIGHT_RECOMMENDATION + row.click_cnt * WEIGHT_CLICK,
-  }));
+  const unsplashKey = process.env.UNSPLASH_ACCESS_KEY?.trim() ?? "";
+
+  const results: TrendingDestination[] = await Promise.all(
+    rows.map(async (row) => {
+      const imageUrl = await resolveHeroImageUrl(
+        row.destination_id,
+        row.name_ko,
+        row.name_en,
+        row.country_code,
+        unsplashKey,
+      );
+      return {
+        destinationId: row.destination_id,
+        nameKo: row.name_ko,
+        imageUrl,
+        score: row.rec_cnt * WEIGHT_RECOMMENDATION + row.click_cnt * WEIGHT_CLICK,
+      };
+    }),
+  );
 
   if (results.length >= TOP_N) {
     return results;
@@ -82,6 +108,30 @@ export async function getTrendingDestinations(
   }
 
   return results;
+}
+
+async function resolveHeroImageUrl(
+  destinationId: string,
+  nameKo: string,
+  nameEn: string,
+  countryCode: string,
+  unsplashKey: string,
+): Promise<string | undefined> {
+  if (!unsplashKey) return undefined;
+
+  const countryMeta = getCountryMetadata(countryCode);
+  const countryName = countryMeta?.countryName ?? "";
+
+  try {
+    const heroImage = await getHeroImage(
+      { id: destinationId, nameKo, nameEn, countryCode } as Parameters<typeof getHeroImage>[0],
+      countryName,
+      unsplashKey,
+    );
+    return heroImage?.url;
+  } catch {
+    return undefined;
+  }
 }
 
 /**

@@ -55,8 +55,12 @@ export function ShellAuthNav() {
             <span className="compass-shell-identity-badge inline-flex h-7 w-7 items-center justify-center rounded-full text-[11px] font-semibold text-white">
               {getInitial(user.name)}
             </span>
-            <span className="min-w-0">
-              <span className="block truncate text-[12px] font-semibold leading-4">
+            <span className="min-w-0 max-w-[9.5rem]">
+              <span
+                data-testid={testIds.shell.identityName}
+                className="block truncate text-[12.5px] font-semibold leading-4.5 text-[var(--color-ink-strong)]"
+                title={user.name}
+              >
                 {user.name}
               </span>
               <span className="block text-[10px] leading-4 text-[var(--color-ink-soft)]">

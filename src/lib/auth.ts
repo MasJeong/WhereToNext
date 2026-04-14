@@ -8,6 +8,7 @@ import { getRuntimeDatabase } from "@/lib/db/runtime";
 import { account, session, user } from "@/lib/db/schema";
 import { readLocalStore, writeLocalStore } from "@/lib/persistence/local-store";
 import { memoryStore } from "@/lib/persistence/memory-store";
+import { resolveUserDisplayName } from "@/lib/user-display-name";
 
 const SESSION_COOKIE_NAME = "trip_compass_session";
 const SESSION_REFRESH_THROTTLE_SECONDS = 60 * 60 * 6;
@@ -351,8 +352,7 @@ type AuthSession = {
 };
 
 function getDisplayName(name: string | null | undefined): string {
-  const normalizedName = name?.trim();
-  return normalizedName ? normalizedName : "여행자";
+  return resolveUserDisplayName(name);
 }
 
 /**
@@ -627,7 +627,7 @@ export function clearSessionCookie(response: import("next/server").NextResponse,
  * @returns 생성된 세션 또는 에러
  */
 export async function signUpWithEmailPassword(input: {
-  name: string;
+  name?: string | null;
   email: string;
   password: string;
   ipAddress?: string | null;
@@ -636,6 +636,7 @@ export async function signUpWithEmailPassword(input: {
   allowIosShell?: boolean;
 }): Promise<AuthResult & { token?: string }> {
   const email = input.email.trim().toLowerCase();
+  const displayName = resolveUserDisplayName(input.name);
   const userId = randomUUID();
   const now = new Date();
   const stamp = computeIssuedSessionStamp({
@@ -663,7 +664,7 @@ export async function signUpWithEmailPassword(input: {
       const expiresAtIso = stamp.expiresAt.toISOString();
       store.users[userId] = {
         id: userId,
-        name: input.name.trim(),
+        name: displayName,
         email,
         emailVerified: false,
         image: null,
@@ -696,7 +697,7 @@ export async function signUpWithEmailPassword(input: {
         data: {
           user: {
             id: userId,
-            name: input.name.trim(),
+            name: displayName,
             email,
           },
           session: {
@@ -722,7 +723,7 @@ export async function signUpWithEmailPassword(input: {
 
     memoryStore.users.set(userId, {
       id: userId,
-      name: input.name.trim(),
+      name: displayName,
       email,
       emailVerified: false,
       image: null,
@@ -754,7 +755,7 @@ export async function signUpWithEmailPassword(input: {
       data: {
         user: {
           id: userId,
-          name: input.name.trim(),
+          name: displayName,
           email,
         },
         session: {
@@ -789,7 +790,7 @@ export async function signUpWithEmailPassword(input: {
         .insert(user)
         .values({
           id: userId,
-          name: input.name.trim(),
+          name: displayName,
           email,
           emailVerified: false,
           image: null,

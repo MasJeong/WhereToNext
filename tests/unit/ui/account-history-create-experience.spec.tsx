@@ -295,10 +295,29 @@ describe("AccountHistoryCreateExperience destination autocomplete", () => {
     });
 
     fireEvent.click(screen.getByRole("button", { name: /메모/ }));
-    fireEvent.click(screen.getByTestId(testIds.account.newHistorySubmit));
 
-    expect(screen.getByText("목적지를 목록에서 선택해 주세요.")).toBeInTheDocument();
+    act(() => {
+      vi.runAllTimers();
+    });
+
+    expect(screen.getAllByText("목록에서 여행지를 선택해 주세요.").length).toBeGreaterThan(0);
+    expect(screen.getByTestId(testIds.account.newHistoryStep)).toHaveTextContent("어디를 다녀왔나요?");
+    expect(screen.getByTestId(testIds.account.newHistoryDestinationSearch)).toHaveFocus();
     expect(mockPush).not.toHaveBeenCalled();
+  });
+
+  it("blocks moving to a future tab when the current step is required", () => {
+    render(<AccountHistoryCreateExperience />);
+
+    fireEvent.click(screen.getByRole("button", { name: /날짜/ }));
+
+    act(() => {
+      vi.runAllTimers();
+    });
+
+    expect(screen.getAllByText("목록에서 여행지를 선택해 주세요.").length).toBeGreaterThan(0);
+    expect(screen.getByTestId(testIds.account.newHistoryStep)).toHaveTextContent("어디를 다녀왔나요?");
+    expect(screen.getByTestId(testIds.account.newHistoryDestinationSearch)).toHaveFocus();
   });
 
   it("leaves immediately when cancel is pressed without any changes", () => {

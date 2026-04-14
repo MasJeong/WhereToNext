@@ -10,11 +10,23 @@ function parseProvider(provider: string): OAuthProviderId | null {
   return provider === "google" || provider === "kakao" || provider === "apple" ? provider : null;
 }
 
-function buildAuthRedirect(request: Request, next: string, error?: string) {
+function buildAuthRedirect(
+  request: Request,
+  next: string,
+  error?: string,
+  existingProvider?: "google" | "kakao" | "apple" | "credentials",
+  attemptedProvider?: "google" | "kakao" | "apple",
+) {
   const url = new URL("/auth", request.url);
   url.searchParams.set("next", next);
   if (error) {
     url.searchParams.set("error", error);
+  }
+  if (existingProvider) {
+    url.searchParams.set("existingProvider", existingProvider);
+  }
+  if (attemptedProvider) {
+    url.searchParams.set("attemptedProvider", attemptedProvider);
   }
   return NextResponse.redirect(url);
 }
@@ -88,7 +100,13 @@ async function handleCallback(request: Request, provider: OAuthProviderId) {
   }
 
   if (result.error || !result.data || !result.data.token) {
-    return buildAuthRedirect(request, transaction.next, result.error?.code ?? "OAUTH_CALLBACK_FAILED");
+    return buildAuthRedirect(
+      request,
+      transaction.next,
+      result.error?.code ?? "OAUTH_CALLBACK_FAILED",
+      result.error?.providerId,
+      provider,
+    );
   }
 
   const response = NextResponse.redirect(new URL(transaction.next, request.url));

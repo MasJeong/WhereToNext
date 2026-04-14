@@ -31,6 +31,7 @@ import {
   getSavedSnapshotTestId,
   testIds,
 } from "@/lib/test-ids";
+import { buildApiUrl } from "@/lib/runtime/url";
 import { formatVibeList } from "@/lib/trip-compass/presentation";
 
 import { ExperienceShell } from "./experience-shell";
@@ -439,70 +440,73 @@ export function AccountExperience({
       capsule=""
       hideHeader
     >
-      <div data-testid={testIds.account.root} className="space-y-5 px-4 pt-6 sm:px-5">
+      <div data-testid={testIds.account.root} className="mx-auto max-w-4xl space-y-6 px-4 pt-6 sm:px-5">
         {/* ── 헤더 ── */}
-        <div className="space-y-1">
-          <h1 className="text-[1.15rem] font-bold tracking-[-0.02em] text-[var(--color-ink)]">{userName}님의 여행</h1>
-          {summary.count > 0 ? (
-            <p data-testid={testIds.account.tasteSummary} className="text-[0.78rem] text-[var(--color-ink-soft)]">
-              기록 {summary.count}개 · 평균 {summary.averageRating}/5
-              {summary.revisitCount > 0 ? ` · 재방문 희망 ${summary.revisitCount}곳` : ""}
-            </p>
-          ) : (
-            <p className="text-[0.78rem] text-[var(--color-ink-soft)]">다녀온 여행을 기록하고 맞춤 추천을 받아보세요</p>
-          )}
-        </div>
-
-        {/* ── 탭 네비게이션 + 기록 추가 ── */}
-        <div className="flex items-center justify-between gap-3">
-          <nav
-            role="tablist"
-            aria-label="계정 탭"
-            className="grid flex-1 grid-cols-2 gap-2 overflow-y-hidden border-b border-[var(--color-frame-soft)] pb-2 sm:flex sm:gap-1 sm:overflow-x-auto sm:pb-0"
-          >
-            {tabItems.map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                role="tab"
-                aria-selected={activeTab === tab.key}
-                data-testid={tab.testId}
-                onClick={() => navigateToTab(tab.key)}
-                id={`tab-${tab.key}`}
-                aria-controls={`tabpanel-${tab.key}`}
-                className={`relative min-h-[44px] w-full min-w-0 cursor-pointer rounded-xl px-4 py-3 text-left text-[0.85rem] font-semibold transition-colors sm:w-auto sm:shrink-0 sm:rounded-none sm:pb-3 sm:pt-2 ${
-                  activeTab === tab.key
-                    ? "text-[var(--color-sand-deep)]"
-                    : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
-                }`}
-              >
-                <span className="flex items-center gap-1.5">
-                  {tab.label}
-                  {tab.count !== undefined ? (
-                    <span className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[0.65rem] font-bold ${
-                      activeTab === tab.key
-                        ? "bg-[var(--color-sand-deep)] text-white"
-                        : "bg-[var(--color-frame-soft)] text-[var(--color-ink-soft)]"
-                    }`}>
-                      {tab.count}
-                    </span>
-                  ) : null}
-                </span>
-                {activeTab === tab.key ? (
-                  <span className="absolute inset-x-0 bottom-0 h-[2px] rounded-full bg-[var(--color-sand-deep)]" />
-                ) : null}
-              </button>
-            ))}
-          </nav>
+        <div className="flex items-start justify-between gap-4">
+          <div className="min-w-0 space-y-1.5">
+            <h1 className="text-[1.25rem] font-bold tracking-[-0.02em] text-[var(--color-ink)] sm:text-[1.4rem]">{userName}님의 여행</h1>
+            {summary.count > 0 ? (
+              <p data-testid={testIds.account.tasteSummary} className="text-[0.82rem] text-[var(--color-ink-soft)]">
+                기록 {summary.count}개 · 평균 {summary.averageRating}/5
+                {summary.revisitCount > 0 ? ` · 재방문 희망 ${summary.revisitCount}곳` : ""}
+              </p>
+            ) : (
+              <p className="text-[0.82rem] text-[var(--color-ink-soft)]">다녀온 여행을 기록하고 맞춤 추천을 받아보세요</p>
+            )}
+          </div>
           <Link
-            href="/account/history/new"
-            data-testid={testIds.account.addHistoryCta}
-            className="inline-flex shrink-0 items-center gap-1 rounded-full border border-[var(--color-frame-soft)] bg-white px-4 py-2 text-[0.78rem] font-semibold text-[var(--color-ink)] transition-colors hover:border-[var(--color-ink-soft)] hover:bg-[var(--color-surface-muted)]"
+            href="/account/settings"
+            data-testid={testIds.account.settingsLink}
+            aria-label="계정 설정"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-[var(--color-frame-soft)] text-[var(--color-ink-soft)] transition-colors hover:border-[var(--color-sand)] hover:bg-[var(--color-surface-muted)] hover:text-[var(--color-ink)]"
           >
-            <span aria-hidden="true" className="text-[0.85rem]">+</span>
-            기록 추가
+            <svg viewBox="0 0 20 20" fill="none" className="h-[18px] w-[18px]" aria-hidden="true">
+              <path d="M10 12.5a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5Z" stroke="currentColor" strokeWidth="1.4" />
+              <path d="M16.17 12.5a1.39 1.39 0 0 0 .28 1.53l.05.05a1.69 1.69 0 1 1-2.39 2.39l-.05-.05a1.39 1.39 0 0 0-1.53-.28 1.39 1.39 0 0 0-.84 1.27v.15a1.69 1.69 0 1 1-3.38 0v-.08a1.39 1.39 0 0 0-.91-1.27 1.39 1.39 0 0 0-1.53.28l-.05.05a1.69 1.69 0 1 1-2.39-2.39l.05-.05a1.39 1.39 0 0 0 .28-1.53 1.39 1.39 0 0 0-1.27-.84h-.15a1.69 1.69 0 0 1 0-3.38h.08a1.39 1.39 0 0 0 1.27-.91 1.39 1.39 0 0 0-.28-1.53l-.05-.05a1.69 1.69 0 1 1 2.39-2.39l.05.05a1.39 1.39 0 0 0 1.53.28h.07a1.39 1.39 0 0 0 .84-1.27v-.15a1.69 1.69 0 1 1 3.38 0v.08a1.39 1.39 0 0 0 .84 1.27 1.39 1.39 0 0 0 1.53-.28l.05-.05a1.69 1.69 0 1 1 2.39 2.39l-.05.05a1.39 1.39 0 0 0-.28 1.53v.07a1.39 1.39 0 0 0 1.27.84h.15a1.69 1.69 0 0 1 0 3.38h-.08a1.39 1.39 0 0 0-1.27.84Z" stroke="currentColor" strokeWidth="1.4" />
+            </svg>
           </Link>
         </div>
+
+        {/* ── 탭 네비게이션 ── */}
+        <nav
+          role="tablist"
+          aria-label="계정 탭"
+          className="flex gap-1 overflow-x-auto border-b border-[var(--color-frame-soft)]"
+        >
+          {tabItems.map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.key}
+              data-testid={tab.testId}
+              onClick={() => navigateToTab(tab.key)}
+              id={`tab-${tab.key}`}
+              aria-controls={`tabpanel-${tab.key}`}
+              className={`relative min-h-[44px] shrink-0 cursor-pointer px-3.5 pb-3 pt-2 text-[0.82rem] font-semibold transition-colors ${
+                activeTab === tab.key
+                  ? "text-[var(--color-sand-deep)]"
+                  : "text-[var(--color-ink-soft)] hover:text-[var(--color-ink)]"
+              }`}
+            >
+              <span className="flex items-center gap-1.5">
+                {tab.label}
+                {tab.count !== undefined ? (
+                  <span className={`inline-flex h-5 min-w-5 items-center justify-center rounded-full px-1.5 text-[0.65rem] font-bold ${
+                    activeTab === tab.key
+                      ? "bg-[var(--color-sand-deep)] text-white"
+                      : "bg-[var(--color-frame-soft)] text-[var(--color-ink-soft)]"
+                  }`}>
+                    {tab.count}
+                  </span>
+                ) : null}
+              </span>
+              {activeTab === tab.key ? (
+                <span className="absolute inset-x-0 bottom-0 h-[2px] rounded-full bg-[var(--color-sand-deep)]" />
+              ) : null}
+            </button>
+          ))}
+        </nav>
 
         {error ? (
           <div role="alert" className="flex items-center justify-between gap-3 rounded-xl border border-[var(--color-warning-border)] bg-[var(--color-warning-bg)] px-4 py-3">
@@ -522,7 +526,18 @@ export function AccountExperience({
         {activeTab === "history" ? (
           <section role="tabpanel" id="tabpanel-history" aria-labelledby="tab-history" className="space-y-3">
             {historyEntries.length > 0 ? (
-              historyEntries.map((entry, index) => {
+              <>
+                <div className="flex justify-end">
+                  <Link
+                    href="/account/history/new"
+                    data-testid={testIds.account.addHistoryCta}
+                    className="inline-flex items-center gap-1 rounded-full border border-[var(--color-frame-soft)] bg-white px-4 py-2 text-[0.78rem] font-semibold text-[var(--color-ink)] transition-colors hover:border-[var(--color-sand)] hover:bg-[var(--color-surface-muted)]"
+                  >
+                    <span aria-hidden="true" className="text-[0.85rem]">+</span>
+                    기록 추가
+                  </Link>
+                </div>
+              {historyEntries.map((entry, index) => {
                 const destination = findDestinationCopy(entry.destinationId);
                 const coverImage = getHistoryCoverImage(entry);
                 const isGalleryOpen = openHistoryGalleryId === entry.id;
@@ -833,7 +848,8 @@ export function AccountExperience({
                     </div>
                   </article>
                 );
-              })
+              })}
+              </>
             ) : (
               <div className="flex flex-col items-center rounded-2xl bg-[var(--color-surface-muted)] px-6 py-12 text-center">
                 <span aria-hidden="true" className="text-[2rem]">✈️</span>

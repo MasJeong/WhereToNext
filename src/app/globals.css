@@ -5,55 +5,55 @@
   --color-ink-strong: #0f172a;
   --color-ink-soft: #5f6b7a;
   --color-paper: #ffffff;
-  --color-paper-soft: #e8f7f1;
+  --color-paper-soft: #edf7ff;
   --color-paper-sheet: #ffffff;
   --color-paper-elevated: #ffffff;
   --color-paper-frost: rgb(255 255 255 / 0.96);
-  --color-sand: #00aa6c;
-  --color-sand-deep: #007f54;
-  --color-sand-muted: #bdebd7;
+  --color-sand: #1e88e5;
+  --color-sand-deep: #0b63ce;
+  --color-sand-muted: #d7ebff;
   --color-muted: rgb(95 107 122 / 0.8);
-  --color-wash: rgb(0 170 108 / 0.08);
-  --color-wash-strong: rgb(0 170 108 / 0.14);
+  --color-wash: rgb(30 136 229 / 0.1);
+  --color-wash-strong: rgb(30 136 229 / 0.18);
   --color-frame: rgb(15 23 42 / 0.12);
-  --color-frame-strong: rgb(0 170 108 / 0.24);
+  --color-frame-strong: rgb(30 136 229 / 0.24);
   --color-frame-soft: rgb(15 23 42 / 0.08);
   --color-frame-deep: rgb(15 23 42 / 0.14);
-  --color-accent: #287dfa;
-  --color-accent-soft: #edf5ff;
-  --color-accent-deep: #1763d6;
+  --color-accent: #4ab4ff;
+  --color-accent-soft: #edf7ff;
+  --color-accent-deep: #1254c7;
   --color-moss: #6b7280;
   --color-surface-base: #ffffff;
   --color-surface-elevated: #ffffff;
-  --color-surface-muted: #f5fbf8;
+  --color-surface-muted: #f5faff;
   --color-surface-mist: rgb(255 255 255 / 0.92);
-  --color-action-primary: #00aa6c;
-  --color-action-primary-strong: #00875a;
-  --color-action-primary-border: #007f54;
+  --color-action-primary: #1e88e5;
+  --color-action-primary-strong: #0b63ce;
+  --color-action-primary-border: #1254c7;
   --color-action-primary-text: #ffffff;
   --color-action-secondary-bg: #ffffff;
   --color-action-secondary-border: rgb(15 23 42 / 0.12);
   --color-action-secondary-text: #0f172a;
-  --color-selected: #e7f8f1;
-  --color-selected-strong: #d1f0e3;
-  --color-selected-border: rgb(0 170 108 / 0.26);
-  --color-selected-text: #007a50;
-  --color-decision-highlight: #eef8ff;
-  --color-decision-highlight-strong: #e2f2ff;
-  --color-decision-highlight-border: rgb(40 125 250 / 0.16);
+  --color-selected: #edf7ff;
+  --color-selected-strong: #d9edff;
+  --color-selected-border: rgb(30 136 229 / 0.34);
+  --color-selected-text: #0b63ce;
+  --color-decision-highlight: #eef7ff;
+  --color-decision-highlight-strong: #dcebff;
+  --color-decision-highlight-border: rgb(30 136 229 / 0.16);
   --color-trust-info-bg: rgb(244 249 255 / 0.98);
-  --color-trust-info-border: rgb(40 125 250 / 0.14);
+  --color-trust-info-border: rgb(30 136 229 / 0.14);
   --color-warning-bg: #fff8e8;
   --color-warning-border: rgb(245 158 11 / 0.18);
   --color-warning-text: #9a6700;
   --color-stage-divider: rgb(15 23 42 / 0.08);
-  --color-stage-divider-strong: rgb(0 170 108 / 0.18);
-  --shadow-shell: 0 14px 28px rgb(200 107 16 / 0.08);
-  --shadow-hero: 0 22px 48px rgb(237 126 16 / 0.12);
-  --shadow-card: 0 12px 26px rgb(200 107 16 / 0.08);
-  --shadow-paper: 0 10px 22px rgb(200 107 16 / 0.06);
-  --shadow-float: 0 14px 28px rgb(200 107 16 / 0.1);
-  --shadow-stage: 0 16px 34px rgb(200 107 16 / 0.07);
+  --color-stage-divider-strong: rgb(30 136 229 / 0.24);
+  --shadow-shell: 0 14px 28px rgb(30 136 229 / 0.1);
+  --shadow-hero: 0 22px 48px rgb(30 136 229 / 0.16);
+  --shadow-card: 0 12px 26px rgb(30 136 229 / 0.08);
+  --shadow-paper: 0 10px 22px rgb(30 136 229 / 0.06);
+  --shadow-float: 0 14px 28px rgb(30 136 229 / 0.1);
+  --shadow-stage: 0 16px 34px rgb(30 136 229 / 0.07);
   --shadow-inset: inset 0 1px 0 rgb(255 255 255 / 0.74);
   --radius-shell: 1.5rem;
   --radius-card: 1.35rem;
@@ -63,15 +63,15 @@
   --transition-settle: 760ms cubic-bezier(0.18, 0.92, 0.22, 1);
   --color-funnel-bg: #ffffff;
   --color-funnel-surface: #ffffff;
-  --color-funnel-muted: #f3faf7;
+  --color-funnel-muted: #f1f8ff;
   --color-funnel-border: rgb(17 24 39 / 0.1);
-  --color-funnel-border-strong: rgb(0 170 108 / 0.22);
+  --color-funnel-border-strong: rgb(30 136 229 / 0.28);
   --color-funnel-text: #0f172a;
   --color-funnel-text-strong: #030712;
   --color-funnel-text-soft: #667085;
-  --color-funnel-accent-soft: #dff5eb;
-  --color-funnel-accent-muted: #bdebd7;
-  --color-funnel-accent-subtle: #f5fbf8;
+  --color-funnel-accent-soft: #d6ebff;
+  --color-funnel-accent-muted: #a9d7ff;
+  --color-funnel-accent-subtle: #eef7ff;
   --shadow-funnel-soft: 0 20px 44px rgb(15 23 42 / 0.06);
   --shadow-funnel-card: 0 8px 24px rgb(15 23 42 / 0.05);
 }
@@ -174,7 +174,7 @@ input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
   border-color: var(--color-selected-border);
-  box-shadow: 0 0 0 4px rgb(216 180 123 / 0.16);
+  box-shadow: 0 0 0 4px rgb(30 136 229 / 0.16);
 }
 
 ::selection {
@@ -197,10 +197,10 @@ textarea:focus-visible {
   z-index: 30;
   border: 1px solid rgb(15 23 42 / 0.08);
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.97), rgb(247 250 255 / 0.95)),
-    linear-gradient(90deg, transparent, rgb(74 180 255 / 0.03), transparent);
+    linear-gradient(180deg, rgb(255 255 255 / 1), rgb(250 252 255 / 0.99)),
+    linear-gradient(90deg, transparent, rgb(74 180 255 / 0.02), transparent);
   box-shadow: 0 10px 24px rgb(15 23 42 / 0.05);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(20px);
 }
 
 .compass-shell-topbar::before {
@@ -210,7 +210,7 @@ textarea:focus-visible {
   pointer-events: none;
   background:
     linear-gradient(180deg, rgb(255 255 255 / 0.58), transparent 42%),
-    linear-gradient(90deg, rgb(255 232 183 / 0.16), transparent 24%, transparent 76%, rgb(255 190 84 / 0.1));
+    linear-gradient(90deg, rgb(74 180 255 / 0.06), transparent 24%, transparent 76%, rgb(30 136 229 / 0.05));
 }
 
 .compass-shell-brand {
@@ -249,6 +249,7 @@ textarea:focus-visible {
 }
 
 .compass-shell-identity {
+  min-width: 0;
   border: 1px solid rgb(15 23 42 / 0.08);
   background: rgb(248 251 255 / 0.94);
   color: var(--color-ink);
@@ -588,8 +589,8 @@ textarea:focus-visible {
 .compass-panel {
   border: 1px solid var(--color-frame);
   background:
-    radial-gradient(circle at top right, rgb(255 210 122 / 0.18), transparent 28%),
-    linear-gradient(180deg, rgb(255 253 248 / 0.98), rgb(255 246 224 / 0.96));
+    radial-gradient(circle at top right, rgb(74 180 255 / 0.12), transparent 28%),
+    linear-gradient(180deg, rgb(255 255 255 / 0.98), rgb(245 250 255 / 0.96));
   box-shadow: var(--shadow-shell);
   backdrop-filter: blur(18px);
 }
@@ -597,7 +598,7 @@ textarea:focus-visible {
 .compass-panel::before {
   background:
     linear-gradient(180deg, rgb(255 255 255 / 0.76), transparent 24%),
-    radial-gradient(circle at 92% 14%, rgb(244 165 44 / 0.16), transparent 26%);
+    radial-gradient(circle at 92% 14%, rgb(74 180 255 / 0.12), transparent 26%);
 }
 
 .compass-hero {
@@ -659,11 +660,11 @@ textarea:focus-visible {
   position: relative;
   overflow: hidden;
   isolation: isolate;
-  border: 1px solid rgb(223 123 18 / 0.08);
+  border: 1px solid rgb(15 23 42 / 0.08);
   background:
-    linear-gradient(180deg, rgb(255 255 255 / 0.94), rgb(255 252 245 / 0.86)),
-    linear-gradient(145deg, rgb(255 198 85 / 0.04), transparent 62%);
-  box-shadow: 0 6px 18px rgb(200 107 16 / 0.04);
+    linear-gradient(180deg, rgb(255 255 255 / 0.96), rgb(248 251 255 / 0.9)),
+    linear-gradient(145deg, rgb(30 136 229 / 0.03), transparent 62%);
+  box-shadow: 0 6px 18px rgb(15 23 42 / 0.04);
   backdrop-filter: blur(6px);
 }
 
@@ -675,7 +676,7 @@ textarea:focus-visible {
   pointer-events: none;
   background:
     linear-gradient(180deg, rgb(255 255 255 / 0.52), transparent 16%),
-    linear-gradient(90deg, transparent 76%, rgb(255 190 84 / 0.04));
+    linear-gradient(90deg, transparent 76%, rgb(30 136 229 / 0.03));
 }
 
 .compass-shell-body > * {

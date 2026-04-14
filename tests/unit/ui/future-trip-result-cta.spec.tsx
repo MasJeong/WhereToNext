@@ -1,6 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import type { AnchorHTMLAttributes } from "react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { HomeExperience } from "@/components/trip-compass/home-experience";
 import type { RecommendationQuery } from "@/lib/domain/contracts";
@@ -63,6 +63,10 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+vi.mock("@/components/trip-compass/home/result-loading-panel", () => ({
+  ResultLoadingPanel: () => <div data-testid={testIds.home.loadingState}>loading</div>,
+}));
+
 vi.mock("@/lib/auth-client", () => ({
   authClient: {
     useSession: () => mockSession,
@@ -101,10 +105,8 @@ describe("HomeExperience future-trip result CTA", () => {
       isPending: false,
     });
 
-    vi.stubGlobal("requestAnimationFrame", (callback: FrameRequestCallback) => {
-      callback(0);
-      return 0;
-    });
+    vi.stubGlobal("requestAnimationFrame", vi.fn().mockReturnValue(0));
+    vi.stubGlobal("cancelAnimationFrame", vi.fn());
     vi.stubGlobal("matchMedia", vi.fn().mockReturnValue({
       matches: false,
       media: "",
@@ -121,6 +123,10 @@ describe("HomeExperience future-trip result CTA", () => {
         writeText: vi.fn().mockResolvedValue(undefined),
       },
     });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it("creates a source snapshot, auto-registers a future trip, and keeps users on the results page", async () => {
@@ -370,7 +376,7 @@ describe("HomeExperience future-trip result CTA", () => {
 
     await expectResultCard();
 
-    fireEvent.click(screen.getByRole("button", { name: "다시 고르기" }));
+    fireEvent.click(screen.getByRole("button", { name: "다시 선택하기" }));
 
     await waitFor(() => {
       expect(secondQueryCapture.length).toBeGreaterThan(0);

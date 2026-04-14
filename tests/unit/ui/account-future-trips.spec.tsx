@@ -182,6 +182,12 @@ describe("AccountExperience future trips tab", () => {
     expect(screen.getByTestId(getSavedSnapshotTestId(0))).toHaveTextContent("리스본");
   });
 
+  it("exposes a direct link to account settings for nickname changes", () => {
+    renderAccountExperience();
+
+    expect(screen.getByTestId(testIds.account.settingsLink)).toHaveAttribute("href", "/account/settings");
+  });
+
   it("promotes a saved snapshot into the planned list without forcing a tab change", async () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch").mockResolvedValue(
       new Response(JSON.stringify({

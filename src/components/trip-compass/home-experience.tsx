@@ -620,7 +620,7 @@ export function HomeExperience() {
   const [snapshotReferences, setSnapshotReferences] = useState<Record<string, SavedSnapshotCard>>({});
   const [savedSnapshots, setSavedSnapshots] = useState<SavedSnapshotCard[]>([]);
   const [copyFallbackUrl, setCopyFallbackUrl] = useState<string | null>(null);
-  const [trendingDestinations, setTrendingDestinations] = useState<string[] | null>(null);
+  const [trendingDestinations, setTrendingDestinations] = useState<Array<{ nameKo: string; imageUrl?: string }> | null>(null);
   const [trendingLoading, setTrendingLoading] = useState(true);
   const [todayRecommendationCount, setTodayRecommendationCount] = useState(0);
   const [excludedCountrySearchQuery, setExcludedCountrySearchQuery] = useState("");
@@ -952,9 +952,9 @@ export function HomeExperience() {
     const controller = new AbortController();
     fetch(buildApiUrl("/api/trending-destinations"), { signal: controller.signal })
       .then((res) => res.json())
-      .then((data: { destinations?: Array<{ nameKo: string }>; todayCount?: number }) => {
+      .then((data: { destinations?: Array<{ nameKo: string; imageUrl?: string }>; todayCount?: number }) => {
         if (data.destinations) {
-          setTrendingDestinations(data.destinations.map((d) => d.nameKo));
+          setTrendingDestinations(data.destinations.map((d) => ({ nameKo: d.nameKo, imageUrl: d.imageUrl })));
         }
         if (typeof data.todayCount === "number") {
           setTodayRecommendationCount(data.todayCount);
@@ -1128,6 +1128,20 @@ export function HomeExperience() {
     setSubmitError(null);
     setCopyFallbackUrl(null);
     syncQuestionRoute(0, defaultAnswers, "push");
+  }
+
+  function startFunnelWithCompanion(whoWith: HomeStepAnswers["whoWith"]) {
+    activeRecommendationRequestRef.current += 1;
+    const prefilled: Partial<HomeStepAnswers> = { whoWith };
+    setStage("question");
+    setCurrentStepIndex(1);
+    setAnswers(prefilled);
+    setResults(null);
+    setCards([]);
+    setIsSubmitting(false);
+    setSubmitError(null);
+    setCopyFallbackUrl(null);
+    syncQuestionRoute(1, prefilled, "push");
   }
 
   const copyShareUrl = useCallback(async (shareUrl: string) => {
@@ -1602,6 +1616,7 @@ export function HomeExperience() {
       testId={testIds.home.landing}
       heroTestId={testIds.home.heroVisual}
       onStart={startFunnel}
+      onStartWithCompanion={startFunnelWithCompanion}
       trendingDestinations={trendingDestinations}
       trendingLoading={trendingLoading}
       todayCount={todayRecommendationCount}
@@ -1937,7 +1952,7 @@ export function HomeExperience() {
   );
 
   return (
-    <ExperienceShell eyebrow="" title="" intro="" capsule="" hideHeader hideTopbar bareBody>
+    <ExperienceShell eyebrow="" title="" intro="" capsule="" bareBody>
       <div
         className={`-mx-3 min-h-screen bg-white sm:-mx-4 ${savedSnapshots.length > 0 && effectiveStage === "result" ? "pb-28 md:pb-0" : ""}`}
       >

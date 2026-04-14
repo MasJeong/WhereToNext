@@ -5,10 +5,11 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { AccountSettingsExperience } from "@/components/trip-compass/account-settings-experience";
 import { testIds } from "@/lib/test-ids";
 
-const { mockPush, mockRefresh, mockDeleteAccount } = vi.hoisted(() => ({
+const { mockPush, mockRefresh, mockDeleteAccount, mockUpdateDisplayName } = vi.hoisted(() => ({
   mockPush: vi.fn(),
   mockRefresh: vi.fn(),
   mockDeleteAccount: vi.fn(),
+  mockUpdateDisplayName: vi.fn(),
 }));
 
 vi.mock("next/navigation", () => ({
@@ -31,6 +32,7 @@ vi.mock("next/link", () => ({
 vi.mock("@/lib/auth-client", () => ({
   authClient: {
     deleteAccount: mockDeleteAccount,
+    updateDisplayName: mockUpdateDisplayName,
     useSession: () => ({
       data: {
         user: {
@@ -46,6 +48,37 @@ vi.mock("@/lib/auth-client", () => ({
 describe("AccountSettingsExperience", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it("lets the user update their nickname", async () => {
+    mockUpdateDisplayName.mockResolvedValue({
+      ok: true,
+      status: 200,
+      payload: {
+        data: {
+          user: {
+            id: "user-1",
+            name: "바꾼 닉네임",
+            email: "user@example.com",
+          },
+        },
+      },
+    });
+
+    render(<AccountSettingsExperience userName="테스트 사용자" />);
+
+    fireEvent.change(screen.getByTestId(testIds.account.settingsNameInput), {
+      target: { value: "바꾼 닉네임" },
+    });
+    fireEvent.click(screen.getByTestId(testIds.account.settingsNameSave));
+
+    await waitFor(() => {
+      expect(mockUpdateDisplayName).toHaveBeenCalledWith("바꾼 닉네임");
+    });
+
+    await waitFor(() => {
+      expect(mockRefresh).toHaveBeenCalled();
+    });
   });
 
   it("contains the privacy link and account deletion flow", async () => {

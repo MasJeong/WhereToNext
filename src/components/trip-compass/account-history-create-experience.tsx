@@ -95,7 +95,7 @@ const historySteps: Array<{
     id: "tags",
     label: "태그",
     title: "어떤 점이 좋았나요?",
-    helper: "추천 태그를 고르고, 직접 태그는 따로 남겨 주세요.",
+    helper: "좋았던 포인트를 골라 주세요.",
   },
   {
     id: "image",
@@ -237,7 +237,7 @@ function getHistoryDraftValidationError(
   selectedDestination: HistoryDestinationOption | undefined,
 ): string | null {
   if (!selectedDestination) {
-    return "목적지를 목록에서 선택해 주세요.";
+    return "목록에서 여행지를 선택해 주세요.";
   }
 
   if (!draft.visitedAt) {
@@ -250,6 +250,32 @@ function getHistoryDraftValidationError(
 
   if (draft.tags.length < 1 || draft.tags.length > 4) {
     return "태그를 1~4개 선택해 주세요.";
+  }
+
+  return null;
+}
+
+function getStepValidationError(
+  step: HistoryCreateStep,
+  draft: HistoryDraft,
+  selectedDestination: HistoryDestinationOption | undefined,
+): string | null {
+  if (step === "destination") {
+    return selectedDestination ? null : "목록에서 여행지를 선택해 주세요.";
+  }
+
+  if (step === "date") {
+    return draft.visitedAt ? null : "방문 날짜를 선택해 주세요.";
+  }
+
+  if (step === "rating") {
+    return draft.rating >= 1 && draft.rating <= 5 ? null : "평점을 선택해 주세요.";
+  }
+
+  if (step === "tags") {
+    return draft.tags.length >= 1 && draft.tags.length <= 4
+      ? null
+      : "태그를 1개 이상 선택해 주세요.";
   }
 
   return null;
@@ -342,7 +368,10 @@ export function AccountHistoryCreateExperience({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
+  const destinationInputRef = useRef<HTMLInputElement | null>(null);
   const dateInputRef = useRef<HTMLInputElement | null>(null);
+  const ratingGroupRef = useRef<HTMLDivElement | null>(null);
+  const tagsGroupRef = useRef<HTMLDivElement | null>(null);
 
   const currentStep = historySteps[stepIndex];
   const selectedDestination = destinations.find((item) => item.id === draft.destinationId);
@@ -372,7 +401,7 @@ export function AccountHistoryCreateExperience({
       .slice(0, 8);
   }, [destinationQuery, destinations]);
   const hasDestinationQuery = normalizeDestinationSearchValue(destinationQuery).length > 0;
-  const hasDestinationSelection = Boolean(selectedDestination);
+  const currentStepValidationError = getStepValidationError(currentStep.id, draft, selectedDestination);
   const isDirty = JSON.stringify(draft) !== JSON.stringify(initialDraft)
     || destinationQuery !== initialDestinationQuery
     || customTagInput.trim().length > 0;
@@ -399,6 +428,7 @@ export function AccountHistoryCreateExperience({
    */
   function toggleTag(tag: UserDestinationHistory["tags"][number]) {
     setCustomTagError(null);
+    setError(null);
     setDraft((currentDraft) => {
       if (currentDraft.tags.includes(tag)) {
         const nextTags = currentDraft.tags.filter((item) => item !== tag);
@@ -448,6 +478,7 @@ export function AccountHistoryCreateExperience({
     }));
     setCustomTagInput("");
     setCustomTagError(null);
+    setError(null);
   }
 
   function addCustomTag() {
@@ -465,12 +496,59 @@ export function AccountHistoryCreateExperience({
       customTags: currentDraft.customTags.filter((tag) => tag !== tagToRemove),
     }));
     setCustomTagError(null);
+    setError(null);
+  }
+
+  /**
+   * 현재 step에서 사용자가 바로 수정해야 할 입력으로 포커스를 이동한다.
+   * @param stepId 현재 step 식별자
+   */
+  function focusStepField(stepId: HistoryCreateStep) {
+    window.setTimeout(() => {
+      if (stepId === "destination") {
+        destinationInputRef.current?.focus();
+        return;
+      }
+
+      if (stepId === "date") {
+        dateInputRef.current?.focus();
+        return;
+      }
+
+      if (stepId === "rating") {
+        ratingGroupRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+        return;
+      }
+
+      if (stepId === "tags") {
+        tagsGroupRef.current?.querySelector<HTMLButtonElement>("button")?.focus();
+      }
+    }, 0);
+  }
+
+  /**
+   * 현재 step 검증이 끝난 뒤에만 다음 단계로 이동할 수 있게 한다.
+   */
+  function validateCurrentStepBeforeMove() {
+    const validationError = getStepValidationError(currentStep.id, draft, selectedDestination);
+
+    if (validationError) {
+      setError(validationError);
+      focusStepField(currentStep.id);
+      return false;
+    }
+
+    setError(null);
+    return true;
   }
 
   /**
    * 다음 step으로 이동한다.
    */
   function moveNext() {
+    if (!validateCurrentStepBeforeMove()) {
+      return;
+    }
     setStepIndex((current) => Math.min(current + 1, historySteps.length - 1));
   }
 
@@ -496,6 +574,7 @@ export function AccountHistoryCreateExperience({
       ...currentDraft,
       destinationId: destination.id,
     }));
+    setError(null);
     moveNextSoon();
   }
 
@@ -625,6 +704,16 @@ export function AccountHistoryCreateExperience({
    * @param nextStepIndex 이동할 단계 인덱스
    */
   function jumpToStep(nextStepIndex: number) {
+    if (nextStepIndex <= stepIndex) {
+      setError(null);
+      setStepIndex(nextStepIndex);
+      return;
+    }
+
+    if (!validateCurrentStepBeforeMove()) {
+      return;
+    }
+
     setStepIndex(nextStepIndex);
   }
 
@@ -710,18 +799,22 @@ export function AccountHistoryCreateExperience({
           {historySteps.map((step, index) => {
             const isCurrent = stepIndex === index;
             const isPast = index < stepIndex;
+            const isBlockedFutureStep = index > stepIndex && Boolean(currentStepValidationError);
 
             return (
               <button
                 key={step.id}
                 type="button"
+                aria-disabled={isBlockedFutureStep}
                 onClick={() => jumpToStep(index)}
-                className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-[0.78rem] font-medium transition-colors cursor-pointer min-h-[36px] ${
+                className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-2 text-[0.78rem] font-medium transition-colors min-h-[36px] ${
                   isCurrent
                     ? "bg-[var(--color-sand)] text-white"
                     : isPast
                       ? "bg-[var(--color-accent-soft)] text-[var(--color-sand-deep)]"
-                      : "text-[var(--color-ink-soft)] hover:bg-slate-50"
+                      : isBlockedFutureStep
+                        ? "cursor-not-allowed text-[var(--color-ink-soft)] opacity-45"
+                        : "cursor-pointer text-[var(--color-ink-soft)] hover:bg-slate-50"
                 }`}
               >
                 <span className={`inline-flex h-5 w-5 items-center justify-center rounded-full text-[0.65rem] font-bold ${
@@ -729,7 +822,9 @@ export function AccountHistoryCreateExperience({
                     ? "bg-white/30 text-white"
                     : isPast
                       ? "bg-[var(--color-sand-deep)] text-white"
-                      : "bg-[var(--color-frame-soft)] text-[var(--color-ink-soft)]"
+                      : isBlockedFutureStep
+                        ? "bg-[var(--color-frame-soft)] text-[var(--color-ink-soft)] opacity-70"
+                        : "bg-[var(--color-frame-soft)] text-[var(--color-ink-soft)]"
                 }`}>
                   {isPast ? "✓" : index + 1}
                 </span>
@@ -745,8 +840,13 @@ export function AccountHistoryCreateExperience({
             <h2 data-testid={testIds.account.newHistoryStep} className="text-[1.1rem] font-bold text-[var(--color-ink)] sm:text-[1.2rem]">
               {currentStep.title}
             </h2>
-            <p className="mt-1 text-[0.85rem] text-[var(--color-ink-soft)]">
-              {currentStep.helper}
+            <p
+              className={`mt-1 text-[0.85rem] ${
+                currentStepValidationError ? "text-[var(--color-warning-text)]" : "text-[var(--color-ink-soft)]"
+              }`}
+              aria-live="polite"
+            >
+              {currentStepValidationError ?? currentStep.helper}
             </p>
           </div>
 
@@ -754,12 +854,14 @@ export function AccountHistoryCreateExperience({
             {currentStep.id === "destination" ? (
               <div className="space-y-3">
                 <input
+                  ref={destinationInputRef}
                   data-testid={testIds.account.newHistoryDestinationSearch}
                   type="text"
                   value={destinationQuery}
                   onChange={(event) => {
                     const nextValue = event.target.value;
                     setDestinationQuery(nextValue);
+                    setError(null);
                     setDraft((currentDraft) =>
                       formatDestinationSearchLabel(selectedDestination) === nextValue
                         ? currentDraft
@@ -863,6 +965,7 @@ export function AccountHistoryCreateExperience({
                         ...currentDraft,
                         visitedAt: event.target.value,
                       }));
+                      setError(null);
                       if (event.target.value) {
                         moveNextSoon();
                       }
@@ -883,6 +986,7 @@ export function AccountHistoryCreateExperience({
                             ...currentDraft,
                             visitedAt: value,
                           }));
+                          setError(null);
                           moveNextSoon();
                         }}
                         className={`min-h-[52px] cursor-pointer rounded-2xl border px-4 py-3 text-left transition-colors ${
@@ -904,13 +1008,14 @@ export function AccountHistoryCreateExperience({
 
             {currentStep.id === "rating" ? (
               <div className="space-y-4">
-                <div className="flex gap-2">
+                <div ref={ratingGroupRef} className="flex gap-2">
                   {[1, 2, 3, 4, 5].map((rating) => (
                     <button
                       key={rating}
                       type="button"
                       onClick={() => {
                         setDraft((currentDraft) => ({ ...currentDraft, rating }));
+                        setError(null);
                       }}
                       className={`flex h-14 w-14 cursor-pointer items-center justify-center rounded-2xl text-lg font-bold transition-all ${
                         draft.rating === rating
@@ -934,6 +1039,7 @@ export function AccountHistoryCreateExperience({
                         ...currentDraft,
                         wouldRevisit: event.target.checked,
                       }));
+                      setError(null);
                       if (event.target.checked && draft.rating >= 1) {
                         moveNextSoon();
                       }
@@ -949,10 +1055,10 @@ export function AccountHistoryCreateExperience({
               <div className="space-y-4">
                 <section className="space-y-2.5">
                   <div>
-                    <p className="text-[0.78rem] font-semibold text-[var(--color-ink)]">여행 스타일 태그</p>
-                    <p className="mt-1 text-[0.78rem] text-[var(--color-ink-soft)]">다음 추천에 참고돼요.</p>
+                    <p className="text-[0.78rem] font-semibold text-[var(--color-ink)]">추천 태그</p>
+                    <p className="mt-1 text-[0.78rem] text-[var(--color-ink-soft)]">다음 추천에 반영돼요.</p>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div ref={tagsGroupRef} className="flex flex-wrap gap-2">
                     {historyRecommendedTags.map((tag) => {
                       const active = draft.tags.includes(tag);
 
@@ -976,7 +1082,7 @@ export function AccountHistoryCreateExperience({
                 <section className="space-y-3 rounded-2xl border border-[var(--color-frame-soft)] bg-[var(--color-surface-muted)] px-4 py-4">
                   <div>
                     <p className="text-[0.78rem] font-semibold text-[var(--color-ink)]">나만의 태그</p>
-                    <p className="mt-1 text-[0.78rem] text-[var(--color-ink-soft)]">자유롭게 기록하고 나중에 다시 찾아보세요.</p>
+                    <p className="mt-1 text-[0.78rem] text-[var(--color-ink-soft)]">기억하고 싶은 표현을 남겨 보세요.</p>
                   </div>
 
                   <div className="flex flex-col gap-2 sm:flex-row">
@@ -1015,7 +1121,7 @@ export function AccountHistoryCreateExperience({
                         event.preventDefault();
                         addCustomTag();
                       }}
-                      placeholder="#노을맛집 처럼 추가"
+                      placeholder="#노을맛집처럼 추가"
                       aria-label="직접 등록 해시태그"
                       className="w-full rounded-xl border border-[var(--color-frame-soft)] bg-white px-4 py-3 text-[0.88rem] text-[var(--color-ink)] outline-none transition-colors focus:border-[var(--color-sand)] focus:ring-2 focus:ring-[var(--color-sand)]/20"
                     />
@@ -1030,7 +1136,7 @@ export function AccountHistoryCreateExperience({
                   </div>
 
                   <p className={`text-[0.76rem] ${customTagError ? "text-[var(--color-warning-text)]" : "text-[var(--color-ink-soft)]"}`}>
-                    {customTagError ?? `직접 등록 태그는 최대 ${maxCustomHistoryTags}개까지 남길 수 있어요.`}
+                    {customTagError ?? `${draft.customTags.length}/${maxCustomHistoryTags}개까지 직접 남길 수 있어요.`}
                   </p>
 
                   {draft.customTags.length > 0 ? (
@@ -1248,7 +1354,7 @@ export function AccountHistoryCreateExperience({
                 type="button"
                 data-testid={testIds.account.newHistoryNext}
                 onClick={moveNext}
-                disabled={currentStep.id === "destination" && !hasDestinationSelection}
+                disabled={Boolean(currentStepValidationError)}
                 className="compass-action-primary cursor-pointer rounded-lg px-6 py-2.5 text-[0.85rem] font-semibold min-h-[44px] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 다음

@@ -17,6 +17,9 @@ import { destinationProfiles, scoringVersions } from "@/lib/db/schema";
 import * as schema from "@/lib/db/schema";
 
 type RuntimeDatabase = Awaited<ReturnType<typeof createRuntimeDatabase>>;
+type MigrationDatabase = { execute: (query: ReturnType<typeof sql.raw>) => Promise<unknown> };
+type PostgresErrorLike = { code?: string; message?: string; cause?: unknown };
+type RowsResultLike = { rows?: unknown[] };
 
 declare global {
   var __tripCompassDb: Promise<RuntimeDatabase> | undefined;
@@ -30,7 +33,53 @@ function getMigrationsFolder(): string {
   return resolve(process.cwd(), "drizzle");
 }
 
+const PGLITE_MIGRATIONS_TABLE = "__trip_compass_pglite_migrations";
 const DEFAULT_PGLITE_DATA_DIR = ".data/trip-compass";
+
+/**
+ * 마이그레이션 폴더에서 SQL 파일 목록을 정렬된 순서로 읽는다.
+ * @returns 실행 대상 SQL 파일 목록
+ */
+async function listMigrationFiles(): Promise<string[]> {
+  return (await readdir(getMigrationsFolder()))
+    .filter((fileName) => fileName.endsWith(".sql"))
+    .sort();
+}
+
+/**
+ * PGlite 마이그레이션 상태 테이블을 보장하고 이미 적용된 SQL 파일 목록을 읽는다.
+ * @param db 마이그레이션 SQL을 직접 실행할 데이터베이스
+ * @param migrationFiles 현재 실행 가능한 SQL 파일 목록
+ * @returns 이미 적용된 SQL 파일 이름 집합
+ */
+async function ensurePGliteMigrationState(
+  db: MigrationDatabase,
+  migrationFiles: string[],
+): Promise<Set<string>> {
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS "${PGLITE_MIGRATIONS_TABLE}" (
+      "id" text PRIMARY KEY
+    )
+  `));
+
+  const result = await db.execute(sql.raw(`
+    SELECT "id"
+    FROM "${PGLITE_MIGRATIONS_TABLE}"
+    WHERE "id" IN (${migrationFiles.map((fileName) => `'${fileName.replaceAll("'", "''")}'`).join(", ") || "NULL"})
+  `));
+
+  const rows: unknown[] = Array.isArray(result)
+    ? result
+    : typeof result === "object" && result !== null && Array.isArray((result as RowsResultLike).rows)
+      ? (result as RowsResultLike).rows ?? []
+      : [];
+
+  return new Set(
+    rows
+      .map((row) => (row && typeof row === "object" && "id" in row ? row.id : null))
+      .filter((value): value is string => typeof value === "string"),
+  );
+}
 
 /**
  * 서버 런타임에서 사용할 PGlite 데이터 디렉터리를 문자열 경로로 정규화한다.
@@ -60,6 +109,19 @@ export function resolvePGliteDataDir(): string | null {
  * @returns Promise<void>
  */
 async function applySqlMigrations(db: RuntimeDatabase["db"]): Promise<void> {
+  await applySqlMigrationsFromFolder(db);
+}
+
+/**
+ * SQL migration 파일을 순서대로 적용한다.
+ * @param db Drizzle 데이터베이스 인스턴스
+ * @param options 기존 객체 충돌을 건너뛸지 여부
+ * @returns Promise<void>
+ */
+async function applySqlMigrationsFromFolder(
+  db: MigrationDatabase,
+  options?: { tolerateExisting?: boolean },
+): Promise<void> {
   const migrationsFolder = getMigrationsFolder();
   const migrationFiles = await listMigrationFiles();
   const appliedIds = await ensurePGliteMigrationState(db, migrationFiles);
@@ -76,7 +138,15 @@ async function applySqlMigrations(db: RuntimeDatabase["db"]): Promise<void> {
       .filter(Boolean);
 
     for (const statement of statements) {
-      await db.execute(sql.raw(statement));
+      try {
+        await db.execute(sql.raw(statement));
+      } catch (error) {
+        if (options?.tolerateExisting && isIgnorablePostgresMigrationError(error)) {
+          continue;
+        }
+
+        throw error;
+      }
     }
 
     await db.execute(sql.raw(`
@@ -85,6 +155,30 @@ async function applySqlMigrations(db: RuntimeDatabase["db"]): Promise<void> {
       ON CONFLICT ("id") DO NOTHING
     `));
   }
+}
+
+/**
+ * Postgres 런타임에서 이미 있는 스키마 객체를 다시 만드는 충돌인지 판별한다.
+ * migration journal이 비어 있어도 조회 경로를 막지 않기 위한 fallback 판단에 사용한다.
+ * @param error 드라이버 에러
+ * @returns 건너뛰어도 되는 기존 객체 충돌 여부
+ */
+export function isIgnorablePostgresMigrationError(error: unknown): boolean {
+  if (!error || typeof error !== "object") {
+    return false;
+  }
+
+  const { code, message, cause } = error as PostgresErrorLike;
+
+  if (code && ["42710", "42P07", "42701", "42P06", "42723"].includes(code)) {
+    return true;
+  }
+
+  if (typeof message === "string" && message.toLowerCase().includes("already exists")) {
+    return true;
+  }
+
+  return cause ? isIgnorablePostgresMigrationError(cause) : false;
 }
 
 /**
@@ -133,7 +227,17 @@ async function createRuntimeDatabase() {
     const client = postgres(databaseUrl, { prepare: false });
     const db = drizzlePostgresJs(client, { schema });
 
-    await migratePostgresJs(db, { migrationsFolder: getMigrationsFolder() });
+    try {
+      await migratePostgresJs(db, { migrationsFolder: getMigrationsFolder() });
+    } catch (error) {
+      if (!isIgnorablePostgresMigrationError(error)) {
+        throw error;
+      }
+
+      console.warn("[db/runtime] migration journal mismatch detected, applying best-effort SQL migrations.");
+      await applySqlMigrationsFromFolder(db, { tolerateExisting: true });
+    }
+
     await ensureSeedData(db);
 
     return {
@@ -172,7 +276,10 @@ async function createRuntimeDatabase() {
  */
 export async function getRuntimeDatabase(): Promise<RuntimeDatabase> {
   if (!globalThis.__tripCompassDb) {
-    globalThis.__tripCompassDb = createRuntimeDatabase();
+    globalThis.__tripCompassDb = createRuntimeDatabase().catch((error) => {
+      globalThis.__tripCompassDb = undefined;
+      throw error;
+    });
   }
 
   return globalThis.__tripCompassDb;
