@@ -110,7 +110,6 @@ function buildRecommendationResponse(): RecommendationApiResponse {
   };
 }
 
-describe("HomeExperience future-trip result CTA", () => {
 // TODO: Re-enable once the full HomeExperience integration test stops hanging in Vitest/jsdom teardown.
 describe.skip("HomeExperience future-trip result CTA", () => {
   beforeEach(() => {
