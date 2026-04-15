@@ -70,6 +70,10 @@ export const testIds = {
     fallbackBlock: "social-video-fallback",
     fallbackLink0: "social-video-fallback-link-0",
   },
+  stays: {
+    root: "stays-root",
+    card0: "stays-card-0",
+  },
   detail: {
     root: "destination-detail-root",
     actionPlan: "destination-action-plan",

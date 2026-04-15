@@ -19,6 +19,7 @@ import * as schema from "@/lib/db/schema";
 type RuntimeDatabase = Awaited<ReturnType<typeof createRuntimeDatabase>>;
 type MigrationDatabase = { execute: (query: ReturnType<typeof sql.raw>) => Promise<unknown> };
 type PostgresErrorLike = { code?: string; message?: string; cause?: unknown };
+type RowsResultLike = { rows?: unknown[] };
 
 declare global {
   var __tripCompassDb: Promise<RuntimeDatabase> | undefined;
@@ -32,7 +33,53 @@ function getMigrationsFolder(): string {
   return resolve(process.cwd(), "drizzle");
 }
 
+const PGLITE_MIGRATIONS_TABLE = "__trip_compass_pglite_migrations";
 const DEFAULT_PGLITE_DATA_DIR = ".data/trip-compass";
+
+/**
+ * 마이그레이션 폴더에서 SQL 파일 목록을 정렬된 순서로 읽는다.
+ * @returns 실행 대상 SQL 파일 목록
+ */
+async function listMigrationFiles(): Promise<string[]> {
+  return (await readdir(getMigrationsFolder()))
+    .filter((fileName) => fileName.endsWith(".sql"))
+    .sort();
+}
+
+/**
+ * PGlite 마이그레이션 상태 테이블을 보장하고 이미 적용된 SQL 파일 목록을 읽는다.
+ * @param db 마이그레이션 SQL을 직접 실행할 데이터베이스
+ * @param migrationFiles 현재 실행 가능한 SQL 파일 목록
+ * @returns 이미 적용된 SQL 파일 이름 집합
+ */
+async function ensurePGliteMigrationState(
+  db: MigrationDatabase,
+  migrationFiles: string[],
+): Promise<Set<string>> {
+  await db.execute(sql.raw(`
+    CREATE TABLE IF NOT EXISTS "${PGLITE_MIGRATIONS_TABLE}" (
+      "id" text PRIMARY KEY
+    )
+  `));
+
+  const result = await db.execute(sql.raw(`
+    SELECT "id"
+    FROM "${PGLITE_MIGRATIONS_TABLE}"
+    WHERE "id" IN (${migrationFiles.map((fileName) => `'${fileName.replaceAll("'", "''")}'`).join(", ") || "NULL"})
+  `));
+
+  const rows: unknown[] = Array.isArray(result)
+    ? result
+    : typeof result === "object" && result !== null && Array.isArray((result as RowsResultLike).rows)
+      ? (result as RowsResultLike).rows ?? []
+      : [];
+
+  return new Set(
+    rows
+      .map((row) => (row && typeof row === "object" && "id" in row ? row.id : null))
+      .filter((value): value is string => typeof value === "string"),
+  );
+}
 
 /**
  * 서버 런타임에서 사용할 PGlite 데이터 디렉터리를 문자열 경로로 정규화한다.
@@ -76,11 +123,14 @@ async function applySqlMigrationsFromFolder(
   options?: { tolerateExisting?: boolean },
 ): Promise<void> {
   const migrationsFolder = getMigrationsFolder();
-  const migrationFiles = (await readdir(migrationsFolder))
-    .filter((fileName) => fileName.endsWith(".sql"))
-    .sort();
+  const migrationFiles = await listMigrationFiles();
+  const appliedIds = await ensurePGliteMigrationState(db, migrationFiles);
 
   for (const fileName of migrationFiles) {
+    if (appliedIds.has(fileName)) {
+      continue;
+    }
+
     const content = await readFile(resolve(migrationsFolder, fileName), "utf8");
     const statements = content
       .split("--> statement-breakpoint")
@@ -98,6 +148,12 @@ async function applySqlMigrationsFromFolder(
         throw error;
       }
     }
+
+    await db.execute(sql.raw(`
+      INSERT INTO "${PGLITE_MIGRATIONS_TABLE}" ("id")
+      VALUES ('${fileName.replaceAll("'", "''")}')
+      ON CONFLICT ("id") DO NOTHING
+    `));
   }
 }
 
