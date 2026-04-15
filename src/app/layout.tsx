@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import type { CSSProperties } from "react";
+import { Analytics } from "@vercel/analytics/next";
 import { brandDisplayName } from "@/lib/brand";
 import "./globals.css";
 
@@ -61,6 +62,7 @@ export default function RootLayout({
         <div className="compass-app-frame compass-app-shell">
           <div className="compass-route-stage">{children}</div>
         </div>
+        <Analytics />
       </body>
     </html>
   );
